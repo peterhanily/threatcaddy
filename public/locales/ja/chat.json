@@ -12,6 +12,7 @@
     "backToThreads": "スレッドに戻る",
     "clickToRename": "クリックして名前を変更",
     "threadTitleAria": "チャットスレッドタイトル",
+    "recoveredThreadTitle": "復元された中断済みの応答",
     "filterThreadsAria": "ソースでスレッドをフィルター",
     "filterAll": "すべて",
     "filterHuman": "人間",
@@ -122,6 +123,7 @@
     "branchTitle": "ここから会話をブランチ",
     "rewindTitle": "このメッセージに巻き戻す",
     "undoTitle": "取り消し：このアクション前の状態にエンティティを戻す",
+    "lockInterrupted": "[ワークスペースのロックにより応答が中断されました。]",
     "attachmentAlt": "添付ファイル {{index}}",
     "tokenCount": "{{count}} トークン",
     "tokenCountTitle": "入力：{{input}} トークン、出力：{{output}} トークン"
@@ -129,6 +131,7 @@
   "tool": {
     "noInput": "（入力なし）",
     "errorPrefix": "エラー：{{message}}",
+    "lockInterrupted": "ワークスペースのロックにより中断されました。このツールを再試行する前に、保存された項目またはチェックポイントを確認してください。",
     "resultCount_one": "{{count}} 件の結果",
     "resultCount_other": "{{count}} 件の結果",
     "doneWithLabel": "完了：{{label}}",

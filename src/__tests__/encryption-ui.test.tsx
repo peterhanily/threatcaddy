@@ -55,6 +55,7 @@ vi.mock('../lib/encryptionMiddleware', () => ({
 vi.mock('../db', () => ({
   db: { delete: vi.fn(async () => {}) },
 }));
+vi.mock('../lib/page-reload', () => ({ reloadPage: vi.fn() }));
 
 vi.mock('../contexts/ToastContext', () => ({
   useToast: () => ({ addToast: vi.fn(), toasts: [], removeToast: vi.fn() }),
@@ -70,7 +71,10 @@ import { PassphraseDialog } from '../components/Encryption/PassphraseDialog';
 import { EncryptionSettings } from '../components/Encryption/EncryptionSettings';
 import { db } from '../db';
 import { clearEncryptionMeta } from '../lib/encryptionStore';
-import { deriveWrappingKey } from '../lib/crypto';
+import { deriveWrappingKey, wrapMasterKey } from '../lib/crypto';
+import { authStorageKey } from '../lib/auth-storage';
+import { workspaceStorageKey } from '../lib/workspace-profiles';
+import { reloadPage } from '../lib/page-reload';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -250,6 +254,34 @@ describe('PassphraseDialog', () => {
     expect(clearEncryptionMeta).not.toHaveBeenCalled();
     expect(input).toHaveValue('DELETE'); expect(button).toBeEnabled();
   });
+
+  it('signs the reset workspace out of its team server, reloads within 3 s while revocation hangs, and keeps other profiles', async () => {
+    vi.clearAllMocks();
+    const team = { serverUrl: 'https://team.example', accessToken: 'access-fixture', refreshToken: 'refresh-fixture',
+      user: { id: 'fixture', email: 'fixture@example.invalid', displayName: 'Fixture', role: 'analyst' } };
+    const otherProfile = workspaceStorageKey('threatcaddy-auth', 'other-profile');
+    localStorage.setItem(authStorageKey, JSON.stringify(team));
+    localStorage.setItem(otherProfile, JSON.stringify({ ...team, refreshToken: 'other-profile-refresh' }));
+    // An unreachable server never answers; local sign-out must not wait for it.
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})));
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      render(<PassphraseDialog onUnlocked={vi.fn()} />);
+      fireEvent.click(screen.getByText('Forgot passphrase?'));
+      changeInput(screen.getByRole('textbox', { name: 'Type DELETE to confirm.' }), 'DELETE');
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Delete All Data & Start Fresh' })); });
+      expect(fetch).toHaveBeenCalledWith('https://team.example/api/auth/logout', expect.objectContaining({
+        body: JSON.stringify({ refreshToken: 'refresh-fixture' }),
+      }));
+      expect(localStorage.getItem(authStorageKey)).toBeNull();
+      expect(localStorage.getItem(otherProfile)).not.toBeNull();
+      expect(clearEncryptionMeta).toHaveBeenCalled();
+      await act(async () => { vi.advanceTimersByTime(2_999); });
+      expect(reloadPage).not.toHaveBeenCalled();
+      await act(async () => { vi.advanceTimersByTime(1); });
+      expect(reloadPage).toHaveBeenCalledOnce();
+    } finally { vi.useRealTimers(); vi.unstubAllGlobals(); localStorage.removeItem(authStorageKey); localStorage.removeItem(otherProfile); }
+  });
 });
 
 // ── EncryptionSettings ───────────────────────────────────────────────
@@ -281,8 +313,40 @@ describe('EncryptionSettings', () => {
 
     render(<EncryptionSettings />);
     expect(screen.getByText('Encryption is enabled')).toBeInTheDocument();
+    expect(screen.getByText(/Locking does not sign you out of a team server/)).toBeInTheDocument();
     expect(screen.getByText('Change Passphrase')).toBeInTheDocument();
     expect(screen.getByText('Disable Encryption')).toBeInTheDocument();
+  });
+
+  it('reports an unfinished passphrase change separately from a wrong current passphrase', async () => {
+    mockIsEncryptionEnabled.mockReturnValue(true);
+    mockGetEncryptionMeta.mockReturnValue({ version: 1, salt: 'salt', wrappedKey: 'key', recoverySalt: 'rsalt', recoveryWrappedKey: 'rkey', enabledAt: 1 });
+    const unwrap = vi.spyOn(crypto.subtle, 'unwrapKey').mockResolvedValue({} as CryptoKey);
+    vi.mocked(wrapMasterKey).mockRejectedValueOnce(new Error('Synthetic wrapping failure'));
+    try {
+      render(<EncryptionSettings />);
+      fireEvent.click(screen.getByText('Change Passphrase'));
+      changeInput(screen.getByLabelText('Current passphrase'), 'fictional current passphrase');
+      changeInput(screen.getByLabelText('New passphrase (min 8 characters)'), 'fictional new passphrase');
+      changeInput(screen.getByLabelText('Confirm new passphrase'), 'fictional new passphrase');
+      const [, submit] = screen.getAllByRole('button', { name: 'Change Passphrase' });
+      await act(async () => { fireEvent.click(submit); });
+      expect(screen.getByText(/current passphrase was accepted, but the change did not finish: Synthetic wrapping failure/)).toBeInTheDocument();
+      expect(screen.queryByText('Wrong current passphrase.')).not.toBeInTheDocument();
+    } finally { unwrap.mockRestore(); }
+  });
+
+  it('reports unreadable metadata when disabling and keeps the dialog closable', async () => {
+    mockIsEncryptionEnabled.mockReturnValue(true);
+    mockGetEncryptionMeta.mockReturnValue({ version: 1, salt: 'salt', wrappedKey: 'key', recoverySalt: 'rsalt', recoveryWrappedKey: 'rkey', enabledAt: 1 });
+    render(<EncryptionSettings />);
+    fireEvent.click(screen.getByText('Disable Encryption'));
+    mockGetEncryptionMeta.mockReturnValue(null);
+    changeInput(screen.getByPlaceholderText('Enter passphrase...'), 'fictional passphrase');
+    const [, submit] = screen.getAllByRole('button', { name: 'Disable Encryption' });
+    await act(async () => { fireEvent.click(submit); });
+    expect(screen.getByText('Encryption metadata could not be read. Restore it from a backup before opening this workspace.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
   });
 
   it('shows session duration selector when enabled', () => {

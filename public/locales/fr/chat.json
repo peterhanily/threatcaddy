@@ -12,6 +12,7 @@
     "backToThreads": "Retour aux fils",
     "clickToRename": "Cliquer pour renommer",
     "threadTitleAria": "Titre du fil de discussion",
+    "recoveredThreadTitle": "Réponse interrompue récupérée",
     "filterThreadsAria": "Filtrer les fils par source",
     "filterAll": "tous",
     "filterHuman": "humain",
@@ -123,6 +124,7 @@
     "branchTitle": "Bifurquer la conversation à partir d'ici",
     "rewindTitle": "Rembobiner jusqu'à ce message",
     "undoTitle": "Annuler : restaurer les entités à leur état avant cette action",
+    "lockInterrupted": "[Réponse interrompue lors du verrouillage de l'espace de travail.]",
     "attachmentAlt": "Pièce jointe {{index}}",
     "tokenCount": "{{count}} tokens",
     "tokenCountTitle": "Entrée : {{input}} tokens, Sortie : {{output}} tokens"
@@ -130,6 +132,7 @@
   "tool": {
     "noInput": "(aucune entrée)",
     "errorPrefix": "Erreur : {{message}}",
+    "lockInterrupted": "Interrompu par le verrouillage de l'espace de travail. Vérifiez l'élément enregistré ou le point de contrôle avant de relancer cet outil.",
     "resultCount_one": "{{count}} résultat",
     "resultCount_other": "{{count}} résultats",
     "doneWithLabel": "Terminé : {{label}}",

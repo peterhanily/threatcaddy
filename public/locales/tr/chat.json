@@ -12,6 +12,7 @@
     "backToThreads": "Konulara dön",
     "clickToRename": "Yeniden adlandırmak için tıklayın",
     "threadTitleAria": "Sohbet konusu başlığı",
+    "recoveredThreadTitle": "Kurtarılan yarıda kesilmiş yanıt",
     "filterThreadsAria": "Konuları kaynağa göre filtrele",
     "filterAll": "tümü",
     "filterHuman": "insan",
@@ -122,6 +123,7 @@
     "branchTitle": "Konuşmayı buradan dallandır",
     "rewindTitle": "Bu mesaja geri al",
     "undoTitle": "Geri al: varlıkları bu işlemden önceki haline döndür",
+    "lockInterrupted": "[Çalışma alanı kilitlendiğinde yanıt yarıda kesildi.]",
     "attachmentAlt": "Ek {{index}}",
     "attachmentAria": "Ek {{index}}",
     "tokenCount": "{{count}} token",
@@ -130,6 +132,7 @@
   "tool": {
     "noInput": "(girdi yok)",
     "errorPrefix": "Hata: {{message}}",
+    "lockInterrupted": "Çalışma alanı kilitlendiği için yarıda kesildi. Bu aracı yeniden denemeden önce kaydedilen öğeyi veya kontrol noktasını kontrol edin.",
     "resultCount_one": "{{count}} sonuç",
     "resultCount_other": "{{count}} sonuç",
     "doneWithLabel": "Tamamlandı: {{label}}",

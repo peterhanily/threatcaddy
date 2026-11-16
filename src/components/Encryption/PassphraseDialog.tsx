@@ -7,6 +7,12 @@ import { setSessionKey, getSessionKey, getSessionGeneration, getSessionStartedAt
 import { restoreWorkspaceRecovery } from '../../lib/workspace-lock';
 import { initializeWorkspace } from '../../lib/workspace-initialization';
 import { db } from '../../db';
+import { authStorageKey, readStoredAuth } from '../../lib/auth-storage';
+import { revokeRemoteSessions } from '../../lib/session-logout';
+import { reloadPage } from '../../lib/page-reload';
+
+/** An unreachable team server delays a completed reset at most this long. */
+const RESET_REVOCATION_WAIT_MS = 3_000;
 
 interface PassphraseDialogProps {
   onUnlocked: () => void;
@@ -40,6 +46,8 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
     setError('');
     setUnlocking(true);
     let keyVerified = false;
+    let sessionChanged = false;
+    const changed = () => { sessionChanged = true; return new Error('Encryption settings changed. Unlock again.'); };
     let generation = getSessionGeneration();
     const current = () => mounted.current && generation === getSessionGeneration();
     try {
@@ -65,7 +73,7 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
 
       // Import as non-extractable for actual use
       const sessionKey = await unwrapMasterKey(wrappedKey, wrappingKey);
-      if (!current() || JSON.stringify(getEncryptionMeta()) !== JSON.stringify(meta)) throw new Error('Encryption settings changed. Unlock again.');
+      if (!current() || JSON.stringify(getEncryptionMeta()) !== JSON.stringify(meta)) throw changed();
       keyVerified = true;
       setSessionKey(sessionKey, rawB64);
       generation = getSessionGeneration();
@@ -74,13 +82,17 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
       if (resumingDisable && !isEncryptionEnabled() && getSessionGeneration() === generation + 1 && !getSessionKey()) generation = getSessionGeneration();
       await restoreWorkspaceRecovery(sessionKey, () => current() && (getSessionKey() === sessionKey || (resumingDisable && !isEncryptionEnabled())));
       if (isEncryptionEnabled()) {
-        if (!current() || getSessionKey() !== sessionKey) return;
+        if (!current() || getSessionKey() !== sessionKey) throw changed();
         cacheSessionKey(rawB64, getSessionDuration(), getSessionStartedAt());
       }
-      if (current()) onUnlocked();
+      if (!current()) throw changed();
+      onUnlocked();
     } catch (err) {
+      // A lock or settings write from elsewhere is not a wrong passphrase.
+      if (keyVerified && !current()) sessionChanged = true;
       if (current()) lockEncryptionSession();
-      setError(keyVerified
+      setError(sessionChanged ? t('passphrase.sessionChanged')
+        : keyVerified
         ? t('passphrase.prepareFailed', { defaultValue: 'Your key was accepted, but preparing the workspace failed: {{error}}. Unlock again to retry.', error: err instanceof Error ? err.message : String(err) })
         : useRecovery ? t('passphrase.invalidRecoveryKey') : t('passphrase.wrongPassphrase'));
     } finally {
@@ -105,7 +117,19 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
       await db.delete();
       clearEncryptionMeta();
       clearSessionCache();
-      window.location.reload();
+      // A fresh workspace must sign in again; it never re-downloads team data
+      // with the previous credentials. Revocation is best effort and bounded.
+      const team = readStoredAuth();
+      localStorage.removeItem(authStorageKey);
+      if (team) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        await Promise.race([
+          revokeRemoteSessions(team.serverUrl, [{ refreshToken: team.refreshToken, accessToken: team.accessToken }]).catch(() => {}),
+          new Promise(resolve => { timer = setTimeout(resolve, RESET_REVOCATION_WAIT_MS); }),
+        ]);
+        clearTimeout(timer);
+      }
+      reloadPage();
     } catch {
       resetInFlight.current = false;
       setResetError(true);

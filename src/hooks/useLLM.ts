@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { registerLockParticipant } from '../lib/workspace-lock';
 import { retainLockedChatResult, type ChatRecoveryTarget } from '../lib/locked-chat-recovery';
 import { postMessageOrigin } from '../lib/utils';
+import i18n from '../i18n';
 
 interface ToolDef {
   name: string;
@@ -470,11 +471,11 @@ export function useLLM() {
       const content = accumulatedRef.current;
       const toolCalls = [...(state?.allToolCalls ?? []), ...[...(state?.runningTools.values() ?? [])].map(tool => ({
         id: tool.id, name: tool.name, input: tool.input as Record<string, unknown>,
-        result: 'Interrupted by workspace lock. Check the saved item or checkpoint before retrying this tool.', isError: true,
+        result: i18n.t('tool.lockInterrupted', { ns: 'chat' }), isError: true,
       }))];
       if ((requestIdRef.current || state) && target && (content || toolCalls.length)) retainLockedChatResult(target, {
         id: target.messageId, role: 'assistant', model: target.model,
-        content: content + '\n\n[Response interrupted when the workspace locked.]',
+        content: content + '\n\n' + i18n.t('message.lockInterrupted', { ns: 'chat' }),
         toolCalls: toolCalls.length ? toolCalls : undefined,
         tokenCount: state?.totalUsage, createdAt: Date.now(),
       }, key);

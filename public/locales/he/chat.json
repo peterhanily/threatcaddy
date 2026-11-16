@@ -12,6 +12,7 @@
     "backToThreads": "חזרה לשרשורים",
     "clickToRename": "לחץ לשינוי שם",
     "threadTitleAria": "כותרת שרשור צ'אט",
+    "recoveredThreadTitle": "תגובה שנקטעה ששוחזרה",
     "filterThreadsAria": "סנן שרשורים לפי מקור",
     "filterAll": "הכל",
     "filterHuman": "אנושי",
@@ -123,6 +124,7 @@
     "branchTitle": "הסתעף שיחה מכאן",
     "rewindTitle": "קרוי אחורה להודעה זו",
     "undoTitle": "בטל: שחזר ישויות לפני פעולה זו",
+    "lockInterrupted": "[התגובה נקטעה כאשר סביבת העבודה ננעלה.]",
     "attachmentAlt": "קובץ מצורף {{index}}",
     "tokenCount": "{{count}} אסימונים",
     "tokenCountTitle": "קלט: {{input}} אסימונים, פלט: {{output}} אסימונים"
@@ -130,6 +132,7 @@
   "tool": {
     "noInput": "(אין קלט)",
     "errorPrefix": "שגיאה: {{message}}",
+    "lockInterrupted": "נקטע עקב נעילת סביבת העבודה. בדוק את הפריט השמור או את נקודת הביקורת לפני שתנסה להפעיל כלי זה שוב.",
     "resultCount_one": "{{count}} תוצאה",
     "resultCount_other": "{{count}} תוצאות",
     "doneWithLabel": "הושלם: {{label}}",

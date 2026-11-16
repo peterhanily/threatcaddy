@@ -12,6 +12,7 @@
     "backToThreads": "Quay lại luồng",
     "clickToRename": "Nhấp để đổi tên",
     "threadTitleAria": "Tiêu đề luồng trò chuyện",
+    "recoveredThreadTitle": "Phản hồi bị gián đoạn đã được khôi phục",
     "filterThreadsAria": "Lọc luồng theo nguồn",
     "filterAll": "tất cả",
     "filterHuman": "người dùng",
@@ -122,6 +123,7 @@
     "branchTitle": "Phân nhánh cuộc trò chuyện từ đây",
     "rewindTitle": "Tua lại đến tin nhắn này",
     "undoTitle": "Hoàn tác: khôi phục thực thể về trước hành động này",
+    "lockInterrupted": "[Phản hồi bị gián đoạn khi không gian làm việc bị khóa.]",
     "attachmentAlt": "Đính kèm {{index}}",
     "tokenCount": "{{count}} token",
     "tokenCountTitle": "Đầu vào: {{input}} token, Đầu ra: {{output}} token"
@@ -129,6 +131,7 @@
   "tool": {
     "noInput": "(không có đầu vào)",
     "errorPrefix": "Lỗi: {{message}}",
+    "lockInterrupted": "Bị gián đoạn do không gian làm việc bị khóa. Hãy kiểm tra mục đã lưu hoặc điểm kiểm tra trước khi thử lại công cụ này.",
     "resultCount_one": "{{count}} kết quả",
     "resultCount_other": "{{count}} kết quả",
     "doneWithLabel": "Xong: {{label}}",

@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { ServerConnection } from '../components/Settings/ServerConnection';
 import { REMOTE_LOGOUT_FAILED } from '../lib/session-logout';
+import i18n from '../i18n';
+import deSettings from '../../public/locales/de/settings.json';
 
 const mocks = vi.hoisted(() => ({ logout: vi.fn(), setServerUrl: vi.fn(), addToast: vi.fn() }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({
@@ -26,6 +28,18 @@ describe('server disconnect feedback', () => {
     expect(mocks.addToast).not.toHaveBeenCalled();
     await act(async () => { rejectLogout(new Error(REMOTE_LOGOUT_FAILED)); });
     expect(mocks.addToast).toHaveBeenCalledExactlyOnceWith('warning', REMOTE_LOGOUT_FAILED, 12_000);
+  });
+
+  it('shows the unconfirmed-revocation warning in the selected language', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'settings', deSettings, true, true);
+    await act(async () => { await i18n.changeLanguage('de'); });
+    try {
+      mocks.logout.mockRejectedValue(new Error(REMOTE_LOGOUT_FAILED));
+      render(<ServerConnection settings={{ serverUrl: 'https://team.example' }} onUpdateSettings={vi.fn()} />);
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: deSettings['server.disconnectLogout'] })); });
+      expect(mocks.addToast).toHaveBeenCalledExactlyOnceWith('warning', deSettings['server.remoteLogoutFailed'], 12_000);
+    } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
   });
 
   it('shows the normal disconnect receipt only after remote revocation succeeds', async () => {

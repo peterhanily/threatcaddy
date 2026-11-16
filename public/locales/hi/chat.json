@@ -12,6 +12,7 @@
     "backToThreads": "थ्रेड पर वापस",
     "clickToRename": "नाम बदलने के लिए क्लिक करें",
     "threadTitleAria": "चैट थ्रेड शीर्षक",
+    "recoveredThreadTitle": "पुनर्प्राप्त बाधित प्रतिक्रिया",
     "filterThreadsAria": "स्रोत अनुसार थ्रेड फ़िल्टर करें",
     "filterAll": "सभी",
     "filterHuman": "मानव",
@@ -122,6 +123,7 @@
     "branchTitle": "यहाँ से बातचीत ब्रांच करें",
     "rewindTitle": "इस संदेश पर रिवाइंड करें",
     "undoTitle": "पूर्ववत करें: इस क्रिया से पहले एंटिटी पुनर्स्थापित करें",
+    "lockInterrupted": "[कार्यस्थान लॉक होने पर प्रतिक्रिया बाधित हुई।]",
     "attachmentAlt": "अटैचमेंट {{index}}",
     "tokenCount": "{{count}} टोकन",
     "tokenCountTitle": "इनपुट: {{input}} टोकन, आउटपुट: {{output}} टोकन"
@@ -129,6 +131,7 @@
   "tool": {
     "noInput": "(कोई इनपुट नहीं)",
     "errorPrefix": "त्रुटि: {{message}}",
+    "lockInterrupted": "कार्यस्थान लॉक होने से बाधित हुआ। इस टूल को दोबारा चलाने से पहले सहेजे गए आइटम या चेकपॉइंट की जाँच करें।",
     "resultCount_one": "{{count}} परिणाम",
     "resultCount_other": "{{count}} परिणाम",
     "doneWithLabel": "पूर्ण: {{label}}",

@@ -47,15 +47,25 @@ let sessionStartedAt = 0;
 let sessionExpiresAt = 0;
 let sessionGeneration = 0;
 let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+let warningTimer: ReturnType<typeof setTimeout> | undefined;
 let locking = false;
 const plaintextTransactions = new WeakSet<object>();
 
+/** A timed session announces its deadline this long before locking. */
+export const SESSION_WARNING_MS = 2 * 60 * 1000;
+
 function scheduleExpiry(): void {
   clearTimeout(expiryTimer);
-  if (sessionKey && sessionExpiresAt) expiryTimer = setTimeout(() => {
-    if (Date.now() >= sessionExpiresAt) lockEncryptionSession();
-    else scheduleExpiry();
-  }, Math.max(0, sessionExpiresAt - Date.now()));
+  clearTimeout(warningTimer);
+  if (sessionKey && sessionExpiresAt) {
+    expiryTimer = setTimeout(() => {
+      if (Date.now() >= sessionExpiresAt) lockEncryptionSession();
+      else scheduleExpiry();
+    }, Math.max(0, sessionExpiresAt - Date.now()));
+    const warnAt = sessionExpiresAt - SESSION_WARNING_MS;
+    if (Date.now() < warnAt) warningTimer = setTimeout(scheduleExpiry, warnAt - Date.now());
+  }
+  window.dispatchEvent(new Event('workspace-session-deadline'));
 }
 
 export function setSessionKey(key: CryptoKey | null, rawBase64?: string, unlockedAt = Date.now(), expiresAt?: number): void {
@@ -90,6 +100,17 @@ export function lockEncryptionSession(): void {
 
 export function getSessionGeneration(): number { return sessionGeneration; }
 export function getSessionStartedAt(): number { return sessionStartedAt; }
+export function getSessionExpiresAt(): number { return sessionKey ? sessionExpiresAt : 0; }
+/** Passphrase re-entry restarts a timed session from now. Activity alone never
+ * extends it, and a key already revoked or replaced is never revived. */
+export function renewSession(rawBase64: string, generation: number): boolean {
+  if (!activeKey() || generation !== sessionGeneration || !sessionKeyRawB64 || rawBase64 !== sessionKeyRawB64) return false;
+  sessionStartedAt = Date.now();
+  sessionExpiresAt = sessionDeadline(getSessionDuration(), sessionStartedAt);
+  cacheSessionKey(sessionKeyRawB64, getSessionDuration(), sessionStartedAt);
+  scheduleExpiry();
+  return true;
+}
 export function getSessionKey(): CryptoKey | null { return activeKey(); }
 export function getSessionKeyRaw(): string | null { return activeKey() ? sessionKeyRawB64 : null; }
 export function updateSessionDuration(): void {

@@ -8,6 +8,8 @@ import { ensureSyncWorkspace } from './sync-workspace';
 import { assertSyncCaptureReady, ensureSyncCaptureCoverage, normalizeSyncWorkspaceIdentity, isSyncWorkspaceIdentity,
   SYNC_WORKSPACE_KEY, SYNC_RECOVERY_KEY, SYNC_HISTORY_MESSAGE } from './sync-capture-policy';
 import { uncachedFolderKey, cacheOperationKey, rotateCacheOperation, CACHE_REPLAY_CANCELLED } from './sync-cache';
+import { getSessionGeneration, getSessionKey } from './encryptionMiddleware';
+import { isEncryptionEnabled } from './encryptionStore';
 
 const dynamicDb = db as unknown as DexieType;
 const CURSOR_KEY = 'syncCursorV2';
@@ -177,6 +179,13 @@ export class SyncEngine {
   }
 
   private async push(epoch: number) {
+    // While locked, queued rows read back as ciphertext envelopes and an
+    // accepted push could not be acknowledged, so nothing is sent. A real lock
+    // stops the engine; enabling encryption stores metadata before the key, so
+    // the push waits quietly for the next interval instead of reporting a lock.
+    const session = getSessionGeneration();
+    const locked = () => isEncryptionEnabled() && !getSessionKey();
+    if (locked()) return;
     const history = (await dynamicDb.table('_syncMeta').get(HISTORY_KEY))?.value;
     if (typeof history !== 'string') throw new Error('Server history has not been verified; pending edits were retained.');
     const queue: SyncQueueEntry[] = await dynamicDb.table('_syncQueue').toArray();
@@ -227,6 +236,10 @@ export class SyncEngine {
       const batch = deliverable.map(item => item.entries);
       const changes = deliverable.map(item => item.change);
       await this.assertCurrentWorkspace(epoch);
+      if (locked()) return;
+      // A re-key (passphrase change, enabling encryption) is not a lock, but the
+      // queue was read under the previous session: read it again shortly.
+      if (isEncryptionEnabled() && session !== getSessionGeneration()) { this.scheduleSync(); return; }
       const { results } = await syncPush(changes, history);
       if (epoch !== this.epoch) return;
       await dynamicDb.transaction('rw', '_syncQueue', '_syncMeta', '_localMigrations', async () => {
@@ -505,3 +518,6 @@ export class SyncEngine {
 }
 
 export const syncEngine = new SyncEngine();
+// Stop when the key is revoked, not when React later unmounts the workspace.
+// The remounted workspace starts sync again after unlock.
+if (typeof window !== 'undefined') window.addEventListener('workspace-will-lock', () => syncEngine.stop());
