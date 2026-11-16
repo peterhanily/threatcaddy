@@ -63,6 +63,8 @@ describe('keyboard focus indicator contrast (WCAG 1.4.11)', () => {
     for (const theme of ['dark', 'light'] as const) {
       it(`${scheme.id} ${theme}: the focus ring reaches 3:1 on every surface and against the unfocused border`, () => {
         const token = (name: string) => scheme[theme][name] ?? defaults[theme][name];
+        // A scheme that recolours the accent must also set its own ring, not inherit indigo's.
+        if (scheme[theme]['--color-accent']) expect(scheme[theme]['--color-focus-ring'], 'scheme focus ring').toBeDefined();
         const ring = token('--color-focus-ring');
         expect(ring, 'focus ring token').toMatch(/^#[0-9a-f]{6}$/i);
         const against = { ...Object.fromEntries(surfaces.map(name => [name, token(name)])), ...grays[theme] };
@@ -108,7 +110,9 @@ describe('accent foreground utilities', () => {
       it(`${scheme.id} ${theme}: accent and purple text follow the scheme and reach 4.5:1 on every surface`, () => {
         const token = (name: string) => scheme[theme][name] ?? defaults[theme][name];
         const backgrounds = Object.entries(grays[theme]).filter(([name]) => !name.startsWith('border-'));
-        const against = { ...Object.fromEntries(surfaces.map(surface => [surface, token(surface)])), ...Object.fromEntries(backgrounds) };
+        // Selected items put accent and purple text on --color-bg-active (sidebar, IOC toggles).
+        const textSurfaces = [...surfaces, '--color-bg-active'];
+        const against = { ...Object.fromEntries(textSurfaces.map(surface => [surface, token(surface)])), ...Object.fromEntries(backgrounds) };
         for (const name of ['--color-accent-text', '--color-purple-text']) {
           // A scheme that recolours the accent must not fall back to indigo text.
           if (scheme[theme]['--color-accent']) expect(scheme[theme][name], `${name} override`).toBeDefined();
