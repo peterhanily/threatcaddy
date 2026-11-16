@@ -35,8 +35,10 @@ import {
   executeCreateNote, executeUpdateNote, executeCreateTask, executeUpdateTask,
   executeCreateIOC, executeUpdateIOC, executeBulkCreateIOCs,
   executeCreateTimelineEvent, executeUpdateTimelineEvent,
-  executeLinkEntities, executeGenerateReport, executeCreateInInvestigation, isIOCType,
+  executeLinkEntities, executeGenerateReport, executeCreateInInvestigation, isIOCType, enumInput,
 } from './llm-tools-write';
+import { AGENT_COMPETITIVENESS, CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES } from './entity-enums';
+import { mergeEnrichment } from './ioc-enrichment-persistence';
 
 // Analysis tools
 import {
@@ -578,11 +580,12 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
   const title = String(inp.title || '');
   const description = String(inp.description || '');
   const assignToProfile = String(inp.assignToProfile || '');
-  const priority = String(inp.priority || 'medium');
+  const priority = enumInput(inp.priority, 'priority', TASK_PRIORITIES);
 
   if (!title || !description || !assignToProfile) {
     return JSON.stringify({ error: 'title, description, and assignToProfile are required' });
   }
+  if (priority.error) return priority.error;
 
   // Prevent infinite delegation chains by checking depth
   const delegatedTasks = await db.tasks
@@ -629,7 +632,7 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
     description: `[Delegated by Lead Analyst]\n\n${description}`,
     folderId,
     status: 'todo' as const,
-    priority: priority as 'low' | 'medium' | 'high',
+    priority: priority.value ?? 'medium',
     completed: false,
     tags: ['agent-delegated'],
     assignedDeploymentId: targetDeploymentId,
@@ -773,7 +776,7 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
                 id: entityId,
                 type: fields.type,
                 value: String(fields.value || ''),
-                confidence: String(fields.confidence || 'medium') as import('../types').ConfidenceLevel,
+                confidence: normalizeEnum(fields.confidence, CONFIDENCE_VALUES) ?? 'medium',
                 folderId,
                 tags: ['agent-enrichment'],
                 trashed: false, archived: false,
@@ -787,7 +790,16 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
             const existing = await db.standaloneIOCs.get(id);
             if (!existing || existing.trashed) throw new Error('The IOC target is missing or deleted.');
             if (fields.type !== undefined && !isIOCType(fields.type)) throw new Error('The integration returned an unsupported IOC type.');
-            if (await db.standaloneIOCs.update(id, { ...fields, updatedAt: Date.now() }) !== 1) throw new Error('The IOC update was not saved.');
+            // Only fields every backup accepts; earlier enrichment snapshots are kept.
+            const now = Date.now();
+            const updates: Partial<import('../types').StandaloneIOC> = { updatedAt: now };
+            if (isIOCType(fields.type)) updates.type = fields.type;
+            if (fields.iocStatus !== undefined) updates.iocStatus = String(fields.iocStatus);
+            const confidence = normalizeEnum(fields.confidence, CONFIDENCE_VALUES);
+            if (confidence) updates.confidence = confidence;
+            const enrichment = fields.enrichment !== undefined ? mergeEnrichment(existing, fields.enrichment, now) : undefined;
+            if (enrichment) updates.enrichment = enrichment;
+            if (await db.standaloneIOCs.update(id, updates) !== 1) throw new Error('The IOC update was not saved.');
           }),
         },
         signal,
@@ -1136,11 +1148,13 @@ async function executeCreateTicket(inp: Record<string, unknown>, folderId?: stri
     request.signal.throwIfAborted();
     const s = (settings || JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}')) as Record<string, unknown>;
     if (!s.ticketEndpoint) {
-      // Fallback: create local task
+      // Fallback: create local task. Tasks have no 'critical'; a configured system still receives it.
+      const local = enumInput(/^critical$/i.test(priority) ? 'high' : priority, 'priority', TASK_PRIORITIES);
+      if (local.error) return local.error;
       const taskId = nanoid();
       await db.tasks.add({
         id: taskId, title: `[TICKET] ${title}`, description,
-        folderId, status: 'todo' as const, priority: priority as 'low' | 'medium' | 'high',
+        folderId, status: 'todo' as const, priority: local.value ?? 'medium',
         completed: false, tags: ['external-ticket'], order: 0, trashed: false, archived: false,
         createdBy: 'agent:ticket', createdAt: Date.now(), updatedAt: Date.now(),
       });
@@ -1396,7 +1410,8 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
   }
 
   const existing = await db.agentDeployments.filter(d => d.investigationId === folderId).toArray();
-  const competitiveness = String(inp.competitiveness || 'cooperative') as 'cooperative' | 'competitive' | 'independent';
+  const competitiveness = enumInput(inp.competitiveness, 'competitiveness', AGENT_COMPETITIVENESS);
+  if (competitiveness.error) return competitiveness.error;
 
   const deploymentId = nanoid();
   const threadId = nanoid();
@@ -1418,7 +1433,7 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
     profileId: profile.id,
     threadId,
     status: 'idle',
-    competitiveness,
+    competitiveness: competitiveness.value ?? 'cooperative',
     shift: 'active',
     order: existing.length,
     createdAt: now,
@@ -1520,9 +1535,10 @@ async function executeRunAgentCycle(folderId?: string): Promise<string> {
 async function executeSpawnAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
   const profileName = String(inp.profileName || '');
   const reason = String(inp.reason || '');
-  const competitiveness = String(inp.competitiveness || 'cooperative') as 'cooperative' | 'competitive' | 'independent';
+  const competitiveness = enumInput(inp.competitiveness, 'competitiveness', AGENT_COMPETITIVENESS);
   if (!profileName || !reason) return JSON.stringify({ error: 'profileName and reason are required' });
   if (!folderId) return JSON.stringify({ error: 'No active investigation' });
+  if (competitiveness.error) return competitiveness.error;
 
   // Find matching profile (builtin + user)
   const profiles = await getAllAgentProfiles();
@@ -1543,7 +1559,7 @@ async function executeSpawnAgent(inp: Record<string, unknown>, folderId?: string
     investigationId: folderId,
     profileId: profile.id,
     status: 'idle',
-    competitiveness,
+    competitiveness: competitiveness.value ?? 'cooperative',
     shift: 'active',
     order: existing.length,
     createdAt: Date.now(),

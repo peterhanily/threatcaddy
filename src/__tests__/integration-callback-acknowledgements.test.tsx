@@ -126,6 +126,24 @@ describe.each(['bulk', 'tool'] as const)('%s create callback acknowledgements', 
   });
 });
 
+describe.each(['bulk', 'tool'] as const)('%s integration confidence', caller => {
+  it.each([['High', 'high'], ['score-7', 'low']])('stores %s as %s, a value every backup accepts', async (value, stored) => {
+    // Stored as 'low' so an unsupported value visibly keeps it instead of taking the create default.
+    await db.standaloneIOCs.update(subject.id, { confidence: 'low' });
+    const run = await invoke(caller, definition([{ id: 'update', label: 'Update', type: 'update-entity',
+      entityType: 'ioc', entityId: subject.id, fields: { confidence: value } }]));
+    expect(run).toMatchObject({ status: 'success', entitiesUpdated: 1 });
+    expect((await db.standaloneIOCs.get(subject.id))?.confidence).toBe(stored);
+  });
+
+  it('stores a non-text IOC status as text, a value every backup accepts', async () => {
+    const run = await invoke(caller, definition([{ id: 'update', label: 'Update', type: 'update-entity',
+      entityType: 'ioc', entityId: subject.id, fields: { iocStatus: 7 } }]));
+    expect(run).toMatchObject({ status: 'success', entitiesUpdated: 1 });
+    expect((await db.standaloneIOCs.get(subject.id))?.iocStatus).toBe('7');
+  });
+});
+
 it('keeps bulk note creation deliberately disabled without claiming a created entity', async () => {
   const template = definition();
   template.outputs = [{ type: 'create-note', template: { title: 'Local fixture' } }];

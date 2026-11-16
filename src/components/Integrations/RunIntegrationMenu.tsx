@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { IntegrationExecutor } from '../../lib/integration-executor';
 import { integrationWrite } from '../../lib/integration-cancellation';
 import { isIOCType } from '../../lib/llm-tools-write';
+import { CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES } from '../../lib/entity-enums';
 import type { ExecutionOptions } from '../../lib/integration-executor';
 import { IntegrationResultModal } from './IntegrationResultModal';
 import { db } from '../../db';
@@ -148,7 +149,7 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
                   id,
                   type: iocType,
                   value: (fields.value as string) || '',
-                  confidence: (fields.confidence as string) || 'medium',
+                  confidence: normalizeEnum(fields.confidence, CONFIDENCE_VALUES) ?? 'medium',
                   tags: (fields.tags as string[]) || [],
                   folderId: (fields.folderId as string) || investigation?.id,
                   trashed: false,
@@ -165,7 +166,7 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
                   description: (fields.description as string) || '',
                   folderId: (fields.folderId as string) || investigation?.id,
                   status: 'todo',
-                  priority: (fields.priority as string) || 'medium',
+                  priority: normalizeEnum(fields.priority, TASK_PRIORITIES) ?? 'medium',
                   completed: false,
                   order: 0,
                   tags: (fields.tags as string[]) || [],
@@ -186,8 +187,10 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
               if (!existing || existing.trashed) throw new Error('The IOC update target is missing or in trash.');
               const updates: Partial<StandaloneIOC> = { updatedAt: Date.now() };
               // Copy simple scalar fields
-              if (fields.iocStatus !== undefined) updates.iocStatus = fields.iocStatus as string;
-              if (fields.confidence !== undefined) updates.confidence = fields.confidence as StandaloneIOC['confidence'];
+              if (fields.iocStatus !== undefined) updates.iocStatus = String(fields.iocStatus);
+              // An unsupported value keeps the stored one: every backup refuses it.
+              const confidence = normalizeEnum(fields.confidence, CONFIDENCE_VALUES);
+              if (confidence) updates.confidence = confidence;
               // Merge enrichment as timestamped snapshots
               if (fields.enrichment) {
                 const existingEnrichment = existing.enrichment || {};

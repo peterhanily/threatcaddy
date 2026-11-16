@@ -70,6 +70,7 @@
     "createdFromPlaybook": "已从剧本创建\"{{name}}\"",
     "exported": "调查\"{{name}}\"已导出",
     "exportFailed": "导出调查失败",
+    "exportFailedDetail": "导出调查失败：{{error}}",
     "reportGenerated": "已生成\"{{name}}\"的报告"
   },
   "encryption": {

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db';
 import { buildDifferentialPayload, buildFullBackupPayload } from '../lib/backup-data';
+import { MAX_BACKUP_BYTES } from '../lib/backup-records';
 import { restoreFullReplace, restoreMerge } from '../lib/backup-restore';
 import { BUILTIN_INTEGRATIONS } from '../lib/builtin-integrations';
 import { exportInvestigationJSON, importJSON, mergeImportJSON } from '../lib/export';
@@ -82,6 +83,23 @@ describe('Export Investigation files never replace the workspace', () => {
     const file = await exportInvestigationJSON('A');
     await mergeImportJSON(file);
     expect(await remaining()).toEqual(everything);
+  });
+
+  it('refuses to write an investigation file its own import would refuse', async () => {
+    await twoInvestigations();
+    await db.tasks.add({ ...base, id: 'tA', title: 'Task A', folderId: 'A', status: 'todo', completed: false, priority: 'urgent' as never, order: 0 });
+    await expect(exportInvestigationJSON('A')).rejects.toThrow('Invalid backup field tasks.priority in record tasks:tA');
+    await db.tasks.update('tA', { priority: 'high' });
+    const file = await exportInvestigationJSON('A');
+    await db.tasks.delete('tA');
+    await expect(importJSON(file)).resolves.toMatchObject({ tasks: 1 });
+    expect((await db.tasks.get('tA'))?.priority).toBe('high');
+  });
+
+  it('refuses to write an investigation file larger than its own import accepts', async () => {
+    await twoInvestigations();
+    await db.notes.update('nA', { content: 'x'.repeat(MAX_BACKUP_BYTES) });
+    await expect(exportInvestigationJSON('A')).rejects.toThrow('Backup file too large (maximum 50 MiB)');
   });
 });
 

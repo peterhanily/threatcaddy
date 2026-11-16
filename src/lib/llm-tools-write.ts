@@ -3,10 +3,11 @@ import DOMPurify from 'dompurify';
 import { db } from '../db';
 import { IOC_TYPE_LABELS } from '../types';
 import type {
-  IOCType, ConfidenceLevel, TimelineEventType, Priority, TaskStatus,
+  IOCType, ConfidenceLevel,
   Note, Task, StandaloneIOC, TimelineEvent,
 } from '../types';
 import { isUserTimeline } from './sync-capture-policy';
+import { CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES, TASK_STATUSES, TIMELINE_EVENT_TYPES } from './entity-enums';
 
 const MAX_SNIPPET = 200;
 /** Max stored length for LLM-supplied free-text fields (prevents memory abuse from runaway agents) */
@@ -28,6 +29,15 @@ export const isIOCType = (type: unknown): type is IOCType => typeof type === 'st
 function iocTypeError(type: unknown): string | undefined {
   if (type == null || type === '' || isIOCType(type)) return undefined;
   return JSON.stringify({ error: `Unsupported IOC type "${String(type).slice(0, 40)}". Use one of: ${IOC_TYPES.join(', ')}.` });
+}
+
+/** Every backup refuses other enum values, so they are refused like IOC types.
+ * Absent or empty input keeps the tool's default. */
+export function enumInput<T extends string>(value: unknown, field: string, allowed: readonly T[]): { value?: T; error?: string } {
+  if (value == null || value === '') return {};
+  const normalized = normalizeEnum(value, allowed);
+  if (normalized) return { value: normalized };
+  return { error: JSON.stringify({ error: `Unsupported ${field} "${String(value).slice(0, 40)}". Use one of: ${allowed.join(', ')}.` }) };
 }
 
 /** The team server's assigneeId refers to users; agents are assigned with delegate_task. */
@@ -72,7 +82,9 @@ export async function executeUpdateNote(input: Record<string, unknown>): Promise
 }
 
 export async function executeCreateTask(input: Record<string, unknown>, folderId?: string): Promise<string> {
-  const refused = await agentAssigneeError(input.assigneeId);
+  const priority = enumInput(input.priority, 'priority', TASK_PRIORITIES);
+  const status = enumInput(input.status, 'status', TASK_STATUSES);
+  const refused = priority.error ?? status.error ?? await agentAssigneeError(input.assigneeId);
   if (refused) return refused;
   const now = Date.now();
   const count = folderId
@@ -83,9 +95,9 @@ export async function executeCreateTask(input: Record<string, unknown>, folderId
     id: nanoid(),
     title: String(input.title || 'Untitled Task'),
     description: input.description ? sanitizeText(String(input.description)) : undefined,
-    completed: false,
-    priority: (input.priority as Priority) || 'none',
-    status: (input.status as TaskStatus) || 'todo',
+    completed: status.value === 'done',
+    priority: priority.value ?? 'none',
+    status: status.value ?? 'todo',
     order: count,
     folderId: folderId || undefined,
     tags: [],
@@ -105,17 +117,19 @@ export async function executeUpdateTask(input: Record<string, unknown>): Promise
 
   const task = await db.tasks.get(id);
   if (!task) return JSON.stringify({ error: 'Task not found' });
-  const refused = await agentAssigneeError(input.assigneeId);
+  const priority = enumInput(input.priority, 'priority', TASK_PRIORITIES);
+  const status = enumInput(input.status, 'status', TASK_STATUSES);
+  const refused = priority.error ?? status.error ?? await agentAssigneeError(input.assigneeId);
   if (refused) return refused;
 
   const updates: Partial<Task> = { updatedAt: Date.now() };
   if (input.title !== undefined) updates.title = String(input.title);
   if (input.description !== undefined) updates.description = sanitizeText(String(input.description));
-  if (input.status !== undefined) {
-    updates.status = input.status as TaskStatus;
-    updates.completed = input.status === 'done';
+  if (status.value) {
+    updates.status = status.value;
+    updates.completed = status.value === 'done';
   }
-  if (input.priority !== undefined) updates.priority = input.priority as Priority;
+  if (priority.value) updates.priority = priority.value;
   if (input.assigneeId !== undefined) updates.assigneeId = input.assigneeId ? String(input.assigneeId) : undefined;
 
   await db.tasks.update(id, updates);
@@ -123,14 +137,15 @@ export async function executeUpdateTask(input: Record<string, unknown>): Promise
 }
 
 export async function executeCreateIOC(input: Record<string, unknown>, folderId?: string): Promise<string> {
-  const refused = iocTypeError(input.type);
+  const confidence = enumInput(input.confidence, 'confidence', CONFIDENCE_VALUES);
+  const refused = iocTypeError(input.type) ?? confidence.error;
   if (refused) return refused;
   const now = Date.now();
   const ioc = {
     id: nanoid(),
     type: (input.type as IOCType) || 'domain',
     value: String(input.value || ''),
-    confidence: (input.confidence as ConfidenceLevel) || 'medium',
+    confidence: confidence.value ?? 'medium',
     analystNotes: input.analystNotes ? sanitizeText(String(input.analystNotes)) : undefined,
     folderId: folderId || undefined,
     tags: [],
@@ -149,13 +164,14 @@ export async function executeUpdateIOC(input: Record<string, unknown>): Promise<
 
   const ioc = await db.standaloneIOCs.get(id);
   if (!ioc) return JSON.stringify({ error: 'IOC not found' });
-  const refused = iocTypeError(input.type);
+  const confidence = enumInput(input.confidence, 'confidence', CONFIDENCE_VALUES);
+  const refused = iocTypeError(input.type) ?? confidence.error;
   if (refused) return refused;
 
   const updates: Partial<StandaloneIOC> = { updatedAt: Date.now() };
   if (input.type) updates.type = input.type as IOCType;
   if (input.value !== undefined) updates.value = String(input.value);
-  if (input.confidence !== undefined) updates.confidence = input.confidence as ConfidenceLevel;
+  if (confidence.value) updates.confidence = confidence.value;
   if (input.analystNotes !== undefined) updates.analystNotes = sanitizeText(String(input.analystNotes));
   if (input.attribution !== undefined) updates.attribution = String(input.attribution);
   if (input.iocSubtype !== undefined) updates.iocSubtype = String(input.iocSubtype);
@@ -170,19 +186,22 @@ export async function executeBulkCreateIOCs(input: Record<string, unknown>, fold
   if (!Array.isArray(iocInputs) || iocInputs.length === 0) {
     return JSON.stringify({ error: 'iocs array is required and must not be empty' });
   }
+  const confidences: (ConfidenceLevel | undefined)[] = [];
   for (const iocInput of iocInputs) {
-    const refused = iocTypeError(iocInput?.type);
+    const confidence = enumInput(iocInput?.confidence, 'confidence', CONFIDENCE_VALUES);
+    const refused = iocTypeError(iocInput?.type) ?? confidence.error;
     if (refused) return refused;
+    confidences.push(confidence.value);
   }
 
   const now = Date.now();
   const created: { id: string; type: string; value: string }[] = [];
 
-  const iocs = iocInputs.map((iocInput) => ({
+  const iocs = iocInputs.map((iocInput, index) => ({
     id: nanoid(),
     type: (iocInput.type as IOCType) || 'domain',
     value: String(iocInput.value || ''),
-    confidence: (iocInput.confidence as ConfidenceLevel) || 'medium',
+    confidence: confidences[index] ?? 'medium',
     analystNotes: iocInput.analystNotes ? sanitizeText(String(iocInput.analystNotes)) : undefined,
     folderId: folderId || undefined,
     tags: [],
@@ -204,6 +223,8 @@ export async function executeBulkCreateIOCs(input: Record<string, unknown>, fold
 }
 
 export async function executeCreateTimelineEvent(input: Record<string, unknown>, folderId?: string): Promise<string> {
+  const eventType = enumInput(input.eventType, 'eventType', TIMELINE_EVENT_TYPES);
+  if (eventType.error) return eventType.error;
   const now = Date.now();
   let timestamp = now;
   if (input.timestamp) {
@@ -233,7 +254,7 @@ export async function executeCreateTimelineEvent(input: Record<string, unknown>,
     timestamp,
     title: String(input.title || 'Untitled Event'),
     description: input.description ? sanitizeText(String(input.description)) : undefined,
-    eventType: (input.eventType as TimelineEventType) || 'other',
+    eventType: eventType.value ?? 'other',
     source: input.source ? String(input.source) : 'CaddyAI',
     confidence: 'medium' as const,
     linkedIOCIds: [],
@@ -261,6 +282,10 @@ export async function executeUpdateTimelineEvent(input: Record<string, unknown>)
 
   const event = await db.timelineEvents.get(id);
   if (!event) return JSON.stringify({ error: 'Timeline event not found' });
+  const eventType = enumInput(input.eventType, 'eventType', TIMELINE_EVENT_TYPES);
+  const confidence = enumInput(input.confidence, 'confidence', CONFIDENCE_VALUES);
+  const refused = eventType.error ?? confidence.error;
+  if (refused) return refused;
 
   const updates: Partial<TimelineEvent> = { updatedAt: Date.now() };
   if (input.title !== undefined) updates.title = String(input.title);
@@ -269,10 +294,10 @@ export async function executeUpdateTimelineEvent(input: Record<string, unknown>)
     const parsed = new Date(String(input.timestamp)).getTime();
     if (!isNaN(parsed)) updates.timestamp = parsed;
   }
-  if (input.eventType !== undefined) updates.eventType = input.eventType as TimelineEventType;
+  if (eventType.value) updates.eventType = eventType.value;
   if (input.source !== undefined) updates.source = String(input.source);
   if (input.actor !== undefined) updates.actor = String(input.actor);
-  if (input.confidence !== undefined) updates.confidence = input.confidence as ConfidenceLevel;
+  if (confidence.value) updates.confidence = confidence.value;
 
   const lat = typeof input.latitude === 'number' ? input.latitude : undefined;
   const lng = typeof input.longitude === 'number' ? input.longitude : undefined;

@@ -71,6 +71,7 @@
     "createdFromPlaybook": "\"{{name}}\" creada desde playbook",
     "exported": "Investigación \"{{name}}\" exportada",
     "exportFailed": "Error al exportar la investigación",
+    "exportFailedDetail": "Error al exportar la investigación: {{error}}",
     "reportGenerated": "Informe generado para \"{{name}}\""
   },
   "encryption": {

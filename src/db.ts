@@ -6,6 +6,7 @@ import { installSyncOutbox } from './lib/sync-outbox';
 import { isEncryptionEnabled } from './lib/encryptionStore';
 import { suppressSyncInCurrentTransaction } from './lib/sync-state';
 import { getWorkspaceDatabaseName } from './lib/workspace-profiles';
+import { AGENT_COMPETITIVENESS, CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES, TASK_STATUSES, TIMELINE_EVENT_TYPES } from './lib/entity-enums';
 
 const db = new Dexie(getWorkspaceDatabaseName()) as Dexie & {
   notes: EntityTable<Note, 'id'>;
@@ -297,18 +298,25 @@ export async function runWorkspaceContentMigrations(): Promise<void> {
     await restoreFalsePositiveEvidenceNotes(tx);
     await markers.add({ key: 'content-v1', completedAt: Date.now() });
   });
-  await db.transaction('rw', ['agentActions', 'agentMeetings', 'agentDeployments', 'chatThreads', '_localMigrations'], async tx => {
-    suppressSyncInCurrentTransaction();
-    const markers = tx.table('_localMigrations');
-    if (await markers.get('backup-integrity-v1')) return;
-    await repairBackupIntegrity(tx);
-    await markers.add({ key: 'backup-integrity-v1', completedAt: Date.now() });
-  });
+  try {
+    await db.transaction('rw', ['agentActions', 'agentMeetings', 'agentDeployments', 'chatThreads', 'notes', 'tasks', 'standaloneIOCs', 'timelineEvents', '_localMigrations'], async tx => {
+      suppressSyncInCurrentTransaction();
+      const markers = tx.table('_localMigrations');
+      if (await markers.get('backup-integrity-v1')) return;
+      await repairBackupIntegrity(tx);
+      await markers.add({ key: 'backup-integrity-v1', completedAt: Date.now() });
+    });
+  } catch (error) {
+    // Startup never depends on this repair. Without its marker it retries on the next load.
+    console.warn('Backup integrity repair failed; it will retry on the next load.', error instanceof Error ? error.name : typeof error);
+  }
 }
 
 /** Rows written before the 2.0.2 writer fixes made every backup fail: NaN token
  * usage from the team-server proxy, agent history stamped with updatedAt or
- * stripped of its required thread, and recovery restores that wrote `result`.
+ * stripped of its required thread, recovery restores that wrote `result`,
+ * AI tool writes with enum values the backup validator refuses, and enrich_ioc
+ * enrichment stored as one object per provider.
  * Repaired in place; modification times and sync capture are left alone.
  * Recovery archive restores rerun it: their rows can predate the marker. */
 export async function repairBackupIntegrity(tx: Parameters<NonNullable<Parameters<ReturnType<typeof db.version>['upgrade']>[0]>>[0]) {
@@ -341,6 +349,48 @@ export async function repairBackupIntegrity(tx: Parameters<NonNullable<Parameter
       repair(message.agentCycleSummary, 'costUSD');
       if (object(message.agentCycleSummary)) repair(message.agentCycleSummary.tokens, 'input', 'output');
     }
+  });
+  // An off-enum value becomes what the fixed write tools store ('High' -> 'high',
+  // a local ticket's 'critical' -> 'high'), else the sync sanitizer's default.
+  const offEnum = (value: unknown, allowed: readonly string[]) => !allowed.includes(value as string);
+  const coerce = (holder: Record<string, unknown>, key: string, allowed: readonly string[], fallback: string) => {
+    if (offEnum(holder[key], allowed)) holder[key] = normalizeEnum(holder[key], allowed) ?? fallback;
+  };
+  const extracted = (row: Record<string, unknown>) => object(row.iocAnalysis) && Array.isArray(row.iocAnalysis.iocs) ? row.iocAnalysis.iocs.filter(object) : [];
+  const offEnumExtraction = (row: Record<string, unknown>) => extracted(row).some(ioc => offEnum(ioc.confidence, CONFIDENCE_VALUES));
+  const repairExtraction = (row: Record<string, unknown>) => { for (const ioc of extracted(row)) coerce(ioc, 'confidence', CONFIDENCE_VALUES, 'low'); };
+  await tx.table('notes').filter(offEnumExtraction).modify(repairExtraction);
+  await tx.table('tasks').filter(row => offEnum(row.priority, TASK_PRIORITIES) || offEnum(row.status, TASK_STATUSES) || offEnumExtraction(row)).modify(row => {
+    coerce(row, 'priority', TASK_PRIORITIES, /^critical$/i.test(String(row.priority)) ? 'high' : 'none');
+    if (offEnum(row.status, TASK_STATUSES)) {
+      coerce(row, 'status', TASK_STATUSES, row.completed === true ? 'done' : 'todo');
+      row.completed = row.status === 'done';
+    }
+    repairExtraction(row);
+  });
+  // enrich_ioc stored one object per provider where every reader expects a snapshot list.
+  const offShapeEnrichment = (value: unknown) => value !== undefined
+    && (!object(value) || Object.values(value).some(snapshots => !Array.isArray(snapshots) || !snapshots.every(object)));
+  await tx.table('standaloneIOCs').filter(row => offEnum(row.confidence, CONFIDENCE_VALUES) || offShapeEnrichment(row.enrichment)).modify(row => {
+    coerce(row, 'confidence', CONFIDENCE_VALUES, 'low');
+    if (!offShapeEnrichment(row.enrichment)) return;
+    if (!object(row.enrichment)) { delete row.enrichment; return; }
+    for (const [provider, snapshots] of Object.entries(row.enrichment)) {
+      const kept = (Array.isArray(snapshots) ? snapshots : [snapshots]).filter(object);
+      if (kept.length) row.enrichment[provider] = kept;
+      else delete row.enrichment[provider];
+    }
+  });
+  await tx.table('timelineEvents').filter(row => offEnum(row.eventType, TIMELINE_EVENT_TYPES) || offEnum(row.confidence, CONFIDENCE_VALUES) || offEnumExtraction(row)).modify(row => {
+    coerce(row, 'eventType', TIMELINE_EVENT_TYPES, 'other');
+    coerce(row, 'confidence', CONFIDENCE_VALUES, 'low');
+    repairExtraction(row);
+  });
+  // Like the import sanitizer, an unknown agent mode is dropped; agents read a missing one as cooperative.
+  await tx.table('agentDeployments').filter(row => row.competitiveness !== undefined && offEnum(row.competitiveness, AGENT_COMPETITIVENESS)).modify(row => {
+    const competitiveness = normalizeEnum(row.competitiveness, AGENT_COMPETITIVENESS);
+    if (competitiveness) row.competitiveness = competitiveness;
+    else delete row.competitiveness;
   });
 }
 

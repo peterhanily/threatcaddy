@@ -70,6 +70,7 @@
     "createdFromPlaybook": "Playbook'tan \"{{name}}\" oluşturuldu",
     "exported": "\"{{name}}\" soruşturması dışa aktarıldı",
     "exportFailed": "Soruşturma dışa aktarılamadı",
+    "exportFailedDetail": "Soruşturma dışa aktarılamadı: {{error}}",
     "reportGenerated": "\"{{name}}\" için rapor oluşturuldu"
   },
   "encryption": {

@@ -70,6 +70,7 @@
     "createdFromPlaybook": "플레이북에서 \"{{name}}\" 만들어짐",
     "exported": "조사 \"{{name}}\" 내보내기됨",
     "exportFailed": "조사 내보내기 실패",
+    "exportFailedDetail": "조사 내보내기 실패: {{error}}",
     "reportGenerated": "\"{{name}}\"에 대한 보고서 생성됨"
   },
   "encryption": {

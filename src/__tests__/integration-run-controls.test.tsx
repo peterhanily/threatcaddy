@@ -6,6 +6,7 @@ import { StandaloneIOCList } from '../components/Analysis/StandaloneIOCList';
 import { IOCStatsView } from '../components/Analysis/IOCStatsView';
 import { useIntegrationResult } from '../hooks/useIntegrationResult';
 import { db } from '../db';
+import { buildFullBackupPayload } from '../lib/backup-data';
 import { DEFAULT_SETTINGS, type StandaloneIOC } from '../types';
 import type { IntegrationRun, IntegrationStep, IntegrationTemplate, InstalledIntegration } from '../types/integration-types';
 
@@ -94,6 +95,29 @@ describe('integration control acknowledgements', () => {
     expect(await db.standaloneIOCs.get(indicator.id)).toMatchObject({ confidence: 'high' });
     expect(await db.tasks.toArray()).toEqual([expect.objectContaining({ title: 'Persisted task' })]);
     expect(await db.timelineEvents.count()).toBe(0);
+  });
+  it.each([['High', 'high', 'high'], ['score-7', 'low', 'medium']])('stores an integration confidence of %s as a value every backup accepts (updated %s, created %s)', async (value, updated, created) => {
+    // Stored as 'low' so an unsupported value visibly keeps it instead of taking the create default.
+    await db.standaloneIOCs.add({ ...indicator, confidence: 'low' });
+    const run = await runControl([
+      { id: 'update', label: '', type: 'update-entity', entityType: 'ioc', entityId: indicator.id, fields: { confidence: value } },
+      { id: 'create', label: '', type: 'create-entity', entityType: 'ioc', fields: { type: 'domain', value: 'created.example', confidence: value } },
+    ]);
+    expect(run).toMatchObject({ status: 'success', entitiesUpdated: 1, entitiesCreated: 1 });
+    expect((await db.standaloneIOCs.get(indicator.id))?.confidence).toBe(updated);
+    expect((await db.standaloneIOCs.toArray()).find(ioc => ioc.value === 'created.example')?.confidence).toBe(created);
+  });
+  it('stores task priorities and IOC statuses every backup accepts', async () => {
+    await db.standaloneIOCs.add(indicator);
+    const run = await runControl([
+      { id: 'update', label: '', type: 'update-entity', entityType: 'ioc', entityId: indicator.id, fields: { iocStatus: 7 } },
+      { id: 'spelled', label: '', type: 'create-entity', entityType: 'task', fields: { title: 'Spelled', priority: 'High' } },
+      { id: 'unsupported', label: '', type: 'create-entity', entityType: 'task', fields: { title: 'Unsupported', priority: 'urgent' } },
+    ]);
+    expect(run).toMatchObject({ status: 'success', entitiesUpdated: 1, entitiesCreated: 2 });
+    expect((await db.standaloneIOCs.get(indicator.id))?.iocStatus).toBe('7');
+    expect(Object.fromEntries((await db.tasks.toArray()).map(task => [task.title, task.priority]))).toEqual({ Spelled: 'high', Unsupported: 'medium' });
+    await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
   });
 });
 

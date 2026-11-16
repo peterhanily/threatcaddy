@@ -71,6 +71,7 @@
     "createdFromPlaybook": "\"{{name}}\" נוצר מפלייבוק",
     "exported": "חקירה \"{{name}}\" יוצאה",
     "exportFailed": "ייצוא חקירה נכשל",
+    "exportFailedDetail": "ייצוא חקירה נכשל: {{error}}",
     "reportGenerated": "דוח נוצר עבור \"{{name}}\""
   },
   "encryption": {

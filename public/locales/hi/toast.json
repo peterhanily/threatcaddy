@@ -70,6 +70,7 @@
     "createdFromPlaybook": "«{{name}}» playbook से बनाया गया",
     "exported": "जाँच «{{name}}» निर्यात हुई",
     "exportFailed": "जाँच निर्यात विफल",
+    "exportFailedDetail": "जाँच निर्यात विफल: {{error}}",
     "reportGenerated": "«{{name}}» के लिए रिपोर्ट तैयार हुई"
   },
   "encryption": {

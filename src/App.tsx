@@ -2383,8 +2383,8 @@ const AppInner = memo(function AppInner({
               downloadFile(json, `threatcaddy-${slug}-${date}.json`, 'application/json');
               activityLog.log('data', 'export', `Exported investigation "${folder?.name}"`, folderId, folder?.name);
               addToast('success', tt('investigation.exported', { name: folder?.name }));
-            } catch {
-              addToast('error', tt('investigation.exportFailed'));
+            } catch (error) {
+              addToast('error', error instanceof Error ? tt('investigation.exportFailedDetail', { error: error.message }) : tt('investigation.exportFailed'));
             }
           }}
           onGenerateReport={(folderId) => {

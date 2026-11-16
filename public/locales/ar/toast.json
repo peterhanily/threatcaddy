@@ -74,6 +74,7 @@
     "createdFromPlaybook": "تم إنشاء \"{{name}}\" من دليل التشغيل",
     "exported": "تم تصدير التحقيق \"{{name}}\"",
     "exportFailed": "فشل تصدير التحقيق",
+    "exportFailedDetail": "فشل تصدير التحقيق: {{error}}",
     "reportGenerated": "تم إنشاء تقرير لـ \"{{name}}\""
   },
   "encryption": {
