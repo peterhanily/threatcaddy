@@ -41,6 +41,12 @@ async function seedOffEnumRows() {
   await db.table('notes').add({ ...entity, id: 'note', title: 'Note', content: 'Body', pinned: false, iocAnalysis: extracted('low', 'Medium', 7) });
 }
 
+/** enrich_ioc stored one object per provider before 2.0.2, where every reader expects a snapshot list. */
+async function seedEnrichedIOC() {
+  await db.table('standaloneIOCs').add({ ...entity, id: 'enriched', type: 'domain', value: 'c.example', confidence: 'high',
+    enrichment: { virusTotal: { malicious: '3' }, shodan: [{ org: 'Example', ts: 1 }, 'stray'], urlhaus: 'none' } });
+}
+
 /** Rows already written by 2.0.0/2.0.1 before the writers were fixed. */
 async function seedAffectedRows() {
   await db.chatThreads.add({ id: 't', title: 'Audit', messages: [
@@ -115,15 +121,29 @@ describe('one-time backup integrity repair', () => {
     await expect(exportJSON()).resolves.toContain('threatcaddy-backup');
   });
 
+  it('turns enrichment stored as one object per provider into a snapshot list, keeping earlier snapshots', async () => {
+    await seedEnrichedIOC();
+    await expect(buildFullBackupPayload('all')).rejects.toThrow('standaloneIOCs.enrichment');
+    await runWorkspaceContentMigrations();
+
+    const ioc = await db.standaloneIOCs.get('enriched');
+    expect(ioc?.enrichment).toEqual({ virusTotal: [{ malicious: '3' }], shodan: [{ org: 'Example', ts: 1 }] });
+    expect(ioc).toMatchObject({ confidence: 'high', updatedAt: 5 });
+    await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
+    await expect(exportJSON()).resolves.toContain('threatcaddy-backup');
+  });
+
   it('repairs encrypted fields such as extracted IOC confidence once the workspace is unlocked', async () => {
     setEncryptionMeta({ version: 1, salt: '', wrappedKey: '', recoverySalt: '', recoveryWrappedKey: '', enabledAt: 1 });
     setSessionKey(await generateMasterKey());
     try {
       await seedOffEnumRows();
+      await seedEnrichedIOC();
       await runWorkspaceContentMigrations();
       expect((await db.notes.get('note'))?.iocAnalysis?.iocs.map(ioc => ioc.confidence)).toEqual(['low', 'medium', 'low']);
       expect((await db.tasks.get('closed'))?.iocAnalysis?.iocs.map(ioc => ioc.confidence)).toEqual(['high', 'low']);
       expect((await db.tasks.get('closed'))?.title).toBe('Closed');
+      expect((await db.standaloneIOCs.get('enriched'))?.enrichment).toEqual({ virusTotal: [{ malicious: '3' }], shodan: [{ org: 'Example', ts: 1 }] });
     } finally {
       setSessionKey(null);
       clearEncryptionMeta();
@@ -163,6 +183,7 @@ describe('one-time backup integrity repair', () => {
     await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://team.example', userId: 'alice' } });
     await seedAffectedRows();
     await seedOffEnumRows();
+    await seedEnrichedIOC();
     await db.table('_syncQueue').clear();
     await runWorkspaceContentMigrations();
     expect(await db.table('_syncQueue').count()).toBe(0);

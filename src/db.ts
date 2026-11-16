@@ -314,8 +314,9 @@ export async function runWorkspaceContentMigrations(): Promise<void> {
 
 /** Rows written before the 2.0.2 writer fixes made every backup fail: NaN token
  * usage from the team-server proxy, agent history stamped with updatedAt or
- * stripped of its required thread, recovery restores that wrote `result`, and
- * AI tool writes with enum values the backup validator refuses.
+ * stripped of its required thread, recovery restores that wrote `result`,
+ * AI tool writes with enum values the backup validator refuses, and enrich_ioc
+ * enrichment stored as one object per provider.
  * Repaired in place; modification times and sync capture are left alone.
  * Recovery archive restores rerun it: their rows can predate the marker. */
 export async function repairBackupIntegrity(tx: Parameters<NonNullable<Parameters<ReturnType<typeof db.version>['upgrade']>[0]>>[0]) {
@@ -367,7 +368,19 @@ export async function repairBackupIntegrity(tx: Parameters<NonNullable<Parameter
     }
     repairExtraction(row);
   });
-  await tx.table('standaloneIOCs').filter(row => offEnum(row.confidence, CONFIDENCE_VALUES)).modify(row => coerce(row, 'confidence', CONFIDENCE_VALUES, 'low'));
+  // enrich_ioc stored one object per provider where every reader expects a snapshot list.
+  const offShapeEnrichment = (value: unknown) => value !== undefined
+    && (!object(value) || Object.values(value).some(snapshots => !Array.isArray(snapshots) || !snapshots.every(object)));
+  await tx.table('standaloneIOCs').filter(row => offEnum(row.confidence, CONFIDENCE_VALUES) || offShapeEnrichment(row.enrichment)).modify(row => {
+    coerce(row, 'confidence', CONFIDENCE_VALUES, 'low');
+    if (!offShapeEnrichment(row.enrichment)) return;
+    if (!object(row.enrichment)) { delete row.enrichment; return; }
+    for (const [provider, snapshots] of Object.entries(row.enrichment)) {
+      const kept = (Array.isArray(snapshots) ? snapshots : [snapshots]).filter(object);
+      if (kept.length) row.enrichment[provider] = kept;
+      else delete row.enrichment[provider];
+    }
+  });
   await tx.table('timelineEvents').filter(row => offEnum(row.eventType, TIMELINE_EVENT_TYPES) || offEnum(row.confidence, CONFIDENCE_VALUES) || offEnumExtraction(row)).modify(row => {
     coerce(row, 'eventType', TIMELINE_EVENT_TYPES, 'other');
     coerce(row, 'confidence', CONFIDENCE_VALUES, 'low');
