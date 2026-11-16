@@ -135,6 +135,13 @@ describe.each(['bulk', 'tool'] as const)('%s integration confidence', caller => 
     expect(run).toMatchObject({ status: 'success', entitiesUpdated: 1 });
     expect((await db.standaloneIOCs.get(subject.id))?.confidence).toBe(stored);
   });
+
+  it('stores a non-text IOC status as text, a value every backup accepts', async () => {
+    const run = await invoke(caller, definition([{ id: 'update', label: 'Update', type: 'update-entity',
+      entityType: 'ioc', entityId: subject.id, fields: { iocStatus: 7 } }]));
+    expect(run).toMatchObject({ status: 'success', entitiesUpdated: 1 });
+    expect((await db.standaloneIOCs.get(subject.id))?.iocStatus).toBe('7');
+  });
 });
 
 it('keeps bulk note creation deliberately disabled without claiming a created entity', async () => {
