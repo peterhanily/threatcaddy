@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "एन्क्रिप्टेड बैकअप उपयोग करने के लिए टीम सर्वर से कनेक्ट करें।",
   "encryption.description": "सर्वर पर संग्रहीत पासवर्ड-सुरक्षित बैकअप। व्यवस्थापक भी इन्हें पढ़ नहीं सकते।",
   "encryption.createBackup": "बैकअप बनाएं",
+  "encryption.viewerCannotCreate": "दर्शक भूमिका में आप सर्वर पर बैकअप संग्रहीत नहीं कर सकते। आप अब भी अपने मौजूदा बैकअप पुनर्स्थापित कर सकते हैं या हटा सकते हैं।",
   "encryption.scope": "दायरा",
   "encryption.scopeAll": "सभी डेटा",
   "encryption.scopeInvestigation": "जाँच",

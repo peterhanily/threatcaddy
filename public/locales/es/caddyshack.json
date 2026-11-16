@@ -1,6 +1,7 @@
 {
   "view.title": "Feed del equipo",
   "view.connectToServer": "Conéctese a un servidor de equipo para usar el Feed del equipo.",
+  "view.viewerReadOnly": "Con el rol de Lector puedes leer publicaciones y reaccionar a ellas, pero no publicar, responder, editar ni fijar.",
   "view.loading": "Cargando...",
   "view.noPostsYet": "Sin publicaciones aún. ¡Sea el primero en compartir una actualización!",
   "view.noTeamActivity": "Sin actividad de equipo aún.",

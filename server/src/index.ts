@@ -40,8 +40,9 @@ import { sessions } from './db/schema.js';
 import { rateLimiter, proxyConfiguration } from './middleware/rate-limit.js';
 import { apiBodyLimit } from './middleware/api-body-limit.js';
 import { requestId } from './middleware/request-id.js';
-import { globalErrorHandler } from './middleware/error-handler.js';
+import { errorLogFields, globalErrorHandler } from './middleware/error-handler.js';
 import { logger } from './lib/logger.js';
+import { describeError } from './lib/db-errors.js';
 import { listenerHosts } from './lib/listener-config.js';
 import { acquireRuntimeLease } from './services/runtime-lease.js';
 import { reconcileStorage, storageLimits } from './services/storage-policy.js';
@@ -316,7 +317,7 @@ async function main() {
         logger.info(`Cleaned up ${result.length} expired session(s)`);
       }
     } catch (err) {
-      logger.error('Session cleanup failed', { error: String(err) });
+      logger.error('Session cleanup failed', { error: describeError(err) });
     }
   }, 60 * 60 * 1000);
   sessionCleanup.unref();
@@ -341,19 +342,16 @@ async function main() {
 
 // ─── Process-level error tracking ────────────────────────────────
 process.on('unhandledRejection', (reason) => {
-  logger.error('Unhandled promise rejection', {
-    error: String(reason),
-    stack: reason instanceof Error ? reason.stack : undefined,
-  });
+  logger.error('Unhandled promise rejection', errorLogFields(reason));
 });
 
 process.on('uncaughtException', (err) => {
-  logger.error('Uncaught exception', { error: err.message, stack: err.stack });
+  logger.error('Uncaught exception', errorLogFields(err));
   process.exit(1);
 });
 
 main().catch((err) => {
-  logger.error('Failed to start server', { error: String(err) });
+  logger.error('Failed to start server', { error: describeError(err) });
   process.exit(1);
 });
 

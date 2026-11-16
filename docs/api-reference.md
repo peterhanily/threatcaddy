@@ -510,7 +510,7 @@ Without `folderId`, returns global posts (not scoped to any investigation).
 
 #### `POST /api/caddyshack/posts`
 
-Create a post or reply. Rate limited to 30 req/min.
+Create a post or reply. Requires `admin` or `analyst` role. Rate limited to 30 req/min.
 
 **Request body:**
 ```json
@@ -550,7 +550,7 @@ The current web client opts into paging and summaries. Older servers ignore thes
 
 #### `PATCH /api/caddyshack/posts/:id`
 
-Edit a post. Author or admin only.
+Edit a post. Requires `admin` or `analyst` role. Author or admin only.
 
 **Request body:**
 ```json
@@ -631,7 +631,7 @@ All endpoints require Bearer authentication.
 
 #### `POST /api/backups`
 
-Upload an encrypted backup. Max 50 backups per user. Rate limited to 5 req/min.
+Upload an encrypted backup. Requires `admin` or `analyst` role. Max 50 backups per user. Rate limited to 5 req/min.
 
 **Request:** `multipart/form-data` with fields:
 - `metadata` (string): JSON with `name` (required), `type` (`full`|`differential`), `scope` (`all`|`investigation`|`entity`), `scopeId`, `entityCount`, `parentBackupId`
@@ -1096,6 +1096,12 @@ The admin panel is served on port 3002 (configurable via `ADMIN_PORT`). All `/ad
 **Request body:** `{ "username": "admin", "password": "..." }`
 
 **Response `200`:** Same as bootstrap.
+
+##### `POST /admin/api/logout`
+
+Revokes every admin token issued to the calling administrator. Used by the panel's Sign Out button.
+
+**Response `200`:** `{ "ok": true }`
 
 ---
 

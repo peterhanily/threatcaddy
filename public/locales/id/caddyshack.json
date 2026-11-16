@@ -1,6 +1,7 @@
 {
   "view.title": "Feed Tim",
   "view.connectToServer": "Hubungkan ke server tim untuk menggunakan Feed Tim.",
+  "view.viewerReadOnly": "Dengan peran Penampil, Anda dapat membaca postingan dan memberi reaksi, tetapi tidak dapat memposting, membalas, mengedit, atau menyematkan.",
   "view.loading": "Memuat...",
   "view.noPostsYet": "Belum ada postingan. Jadilah yang pertama berbagi pembaruan!",
   "view.noTeamActivity": "Belum ada aktivitas tim.",

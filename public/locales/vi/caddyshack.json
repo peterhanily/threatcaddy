@@ -1,6 +1,7 @@
 {
   "view.title": "Bảng tin nhóm",
   "view.connectToServer": "Kết nối với máy chủ nhóm để sử dụng Bảng tin nhóm.",
+  "view.viewerReadOnly": "Với vai trò Người xem, bạn có thể đọc bài đăng và thả phản ứng, nhưng không thể đăng bài, phản hồi, chỉnh sửa hoặc ghim.",
   "view.loading": "Đang tải...",
   "view.noPostsYet": "Chưa có bài đăng. Hãy là người đầu tiên chia sẻ cập nhật!",
   "view.noTeamActivity": "Chưa có hoạt động nhóm.",

@@ -1,6 +1,7 @@
 {
   "view.title": "Takım Akışı",
   "view.connectToServer": "Takım Akışını kullanmak için bir ekip sunucusuna bağlanın.",
+  "view.viewerReadOnly": "Görüntüleyici rolüyle gönderileri okuyabilir ve tepki verebilirsiniz, ancak gönderi paylaşamaz, yanıtlayamaz, düzenleyemez veya sabitleyemezsiniz.",
   "view.loading": "Yükleniyor...",
   "view.noPostsYet": "Henüz gönderi yok. İlk güncellemeyi paylaşan siz olun!",
   "view.noTeamActivity": "Henüz ekip etkinliği yok.",

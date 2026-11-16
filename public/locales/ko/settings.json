@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "암호화된 백업을 사용하려면 팀 서버에 연결하세요.",
   "encryption.description": "서버에 저장된 비밀번호 보호 백업. 관리자도 읽을 수 없습니다.",
   "encryption.createBackup": "백업 만들기",
+  "encryption.viewerCannotCreate": "조회자 역할은 서버에 백업을 저장할 수 없습니다. 기존 백업은 계속 복원하거나 삭제할 수 있습니다.",
   "encryption.scope": "범위",
   "encryption.scopeAll": "모든 데이터",
   "encryption.scopeInvestigation": "조사",

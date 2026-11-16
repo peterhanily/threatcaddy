@@ -1,6 +1,7 @@
 {
   "view.title": "Feed del team",
   "view.connectToServer": "Connettiti a un server team per usare il Feed del team.",
+  "view.viewerReadOnly": "Con il ruolo Visualizzatore puoi leggere i post e reagire, ma non pubblicare, rispondere, modificare o fissare.",
   "view.loading": "Caricamento...",
   "view.noPostsYet": "Ancora nessun post. Sii il primo a condividere un aggiornamento!",
   "view.noTeamActivity": "Ancora nessuna attività del team.",

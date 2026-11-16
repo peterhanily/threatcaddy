@@ -35,6 +35,8 @@ function ScopedCaddyShackView({ folderId, folderName, settings }: CaddyShackView
   const { t } = useTranslation('caddyshack');
   const { t: tt } = useTranslation('toast');
   const { user, connected, serverUrl } = useAuth();
+  // The server refuses posts, edits and pins from the read-only viewer role.
+  const readOnly = user?.role === 'viewer';
   const { addToast } = useToast();
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('caddyshack-onboarded'));
   const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([]);
@@ -281,6 +283,7 @@ function ScopedCaddyShackView({ folderId, folderName, settings }: CaddyShackView
         onBack={() => setSelectedPostId(null)}
         onUserClick={setProfileUserId}
         settings={settings}
+        readOnly={readOnly}
       />
     );
   }
@@ -346,13 +349,15 @@ function ScopedCaddyShackView({ folderId, folderName, settings }: CaddyShackView
       </div>
 
       {/* Composer — show for All and Posts tabs */}
-      {feedTab !== 'activity' && (
+      {feedTab !== 'activity' && (readOnly ? (
+        <p className="text-sm text-[var(--text-tertiary)]">{t('view.viewerReadOnly')}</p>
+      ) : (
         <PostComposer
           folderId={feedScope === 'investigation' ? folderId : null}
           onPostCreated={handleRefresh}
           settings={settings}
         />
-      )}
+      ))}
 
       {/* Feed content */}
       {isLoading ? (
@@ -374,8 +379,8 @@ function ScopedCaddyShackView({ folderId, folderName, settings }: CaddyShackView
                 onReact={handleReact}
                 onRemoveReaction={handleRemoveReaction}
                 onDelete={handleDelete}
-                onEdit={handleEdit}
-                onPin={handlePin}
+                onEdit={readOnly ? undefined : handleEdit}
+                onPin={readOnly ? undefined : handlePin}
                 onUserClick={setProfileUserId}
                 onClick={setSelectedPostId}
               />
@@ -417,8 +422,8 @@ function ScopedCaddyShackView({ folderId, folderName, settings }: CaddyShackView
                   onReact={handleReact}
                   onRemoveReaction={handleRemoveReaction}
                   onDelete={handleDelete}
-                  onEdit={handleEdit}
-                  onPin={handlePin}
+                  onEdit={readOnly ? undefined : handleEdit}
+                  onPin={readOnly ? undefined : handlePin}
                   onUserClick={setProfileUserId}
                   onClick={setSelectedPostId}
                 />

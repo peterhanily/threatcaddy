@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "התחבר לשרת צוות לשימוש בגיבויים מוצפנים.",
   "encryption.description": "גיבויים מוגנים בסיסמה המאוחסנים בשרת. אפילו מנהלים לא יכולים לקרוא אותם.",
   "encryption.createBackup": "צור גיבוי",
+  "encryption.viewerCannotCreate": "בתפקיד צופה אי אפשר לשמור גיבויים בשרת. עדיין אפשר לשחזר או למחוק את הגיבויים הקיימים שלך.",
   "encryption.scope": "היקף",
   "encryption.scopeAll": "כל הנתונים",
   "encryption.scopeInvestigation": "חקירה",

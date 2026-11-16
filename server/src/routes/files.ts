@@ -36,6 +36,14 @@ function sanitizeFilename(name: string): string {
   return name.replace(/["\\\r\n\x00-\x1f;/]/g, '_');
 }
 
+/** Header values must be bytes: an ASCII fallback plus the UTF-8 name as RFC 5987 filename*. */
+function contentDisposition(disposition: string, name: string): string {
+  const safeName = sanitizeFilename(name);
+  const asciiFallback = safeName.replace(/[^\x20-\x7e]/gu, '_');
+  const encoded = encodeURIComponent(safeName).replace(/['()*]/g, ch => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`);
+  return `${disposition}; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`;
+}
+
 function detectMimeFromMagicBytes(buffer: Buffer): string | null {
   if (buffer.length < 12) return null;
   const b = buffer;
@@ -243,7 +251,6 @@ app.get('/:id', async (c) => {
 
   try {
     const fileStat = await stat(resolvedFilePath);
-    const safeName = sanitizeFilename(file.filename);
     const disposition = SAFE_INLINE_MIME.test(file.mimeType) ? 'inline' : 'attachment';
 
     logger.info('File download', { fileId, userId: user.id, filename: file.filename, folderId: file.folderId });
@@ -255,7 +262,7 @@ app.get('/:id', async (c) => {
       headers: {
         'Content-Type': file.mimeType,
         'Content-Length': fileStat.size.toString(),
-        'Content-Disposition': `${disposition}; filename="${safeName}"`,
+        'Content-Disposition': contentDisposition(disposition, file.filename),
         'Cache-Control': 'private, no-store',
         'X-Content-Type-Options': 'nosniff',
       },

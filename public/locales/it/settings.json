@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "Connettiti al server team per usare i backup crittografati.",
   "encryption.description": "Backup protetti da password archiviati sul server. Nemmeno gli amministratori possono leggerli.",
   "encryption.createBackup": "Crea backup",
+  "encryption.viewerCannotCreate": "Con il ruolo Visualizzatore non puoi archiviare backup sul server. Puoi comunque ripristinare o eliminare i backup esistenti.",
   "encryption.scope": "Ambito",
   "encryption.scopeAll": "Tutti i dati",
   "encryption.scopeInvestigation": "Indagine",

@@ -149,9 +149,9 @@ Committed writes wake the sync engine, with periodic retries as a safety net. Pu
 
 **Refresh tokens** are session-based, generated with nanoid(32), and stored in PostgreSQL. The server tracks token families to detect reuse (a signal of token theft). Both TTL (default 24 hours) and maximum sessions per user are configurable. On refresh, the old session is deleted and a new one is created.
 
-**Admin tokens** use a separate HMAC-SHA256 JWT issued on a dedicated admin port (default 3002). They have a 1-hour TTL with an audience claim of `admin-panel`, signed with a random 32-byte key regenerated on each server startup. This intentionally invalidates all admin sessions on restart.
+**Admin tokens** use a separate HMAC-SHA256 JWT issued on a dedicated admin port (default 3002). They have a 1-hour TTL with an audience claim of `admin-panel`, signed with a random 32-byte key regenerated on each server startup. This intentionally invalidates all admin sessions on restart. Signing out of the admin panel revokes all of that administrator's tokens on the server.
 
-**Passwords** are hashed with Argon2id. Login rate limiting uses progressive lockout after failed attempts (in-memory, per email).
+**Passwords** are hashed with Argon2id. Failed logins are counted in memory per scope (user or admin login), account and client address; all IPv6 addresses in one /64 count as one address. Five failures within 15 minutes lock that address out of that account for 15 minutes; an address without failures is not locked out. After 5 failed sign-ins for one account from any addresses, counted until 15 minutes pass without one, the server checks at most one password every 3 minutes for that account from addresses that have not signed in to it, and answers their other attempts with 429 and a `Retry-After` of at most 180 seconds; each further failing address of that kind is locked after its first failure. This holds an attacker with many addresses to about the five checks per account every 15 minutes that 2.0.0 allowed. The server remembers in memory the last 10 addresses (IPv6 by /64) that signed in to each account, for 30 days after their last sign-in or until it restarts; they are exempt from this per-account limit and keep the five-failure limit. The admin login rejects usernames no administrator can have without counting them. The client address is the socket peer, or the forwarded address when the peer is a trusted proxy (`TRUST_PROXY`, `TRUSTED_PROXY_IPS`); if all clients arrive from one untrusted proxy address, the lock applies to the account as a whole.
 
 **Registration modes**: Invite-only (default, requiring an email in the `allowed_emails` table) or open registration.
 
@@ -162,7 +162,7 @@ Two separate RBAC systems enforce access control:
 **Server roles** (on the users table):
 - admin -- Full server access, can create bots.
 - analyst -- Standard access, can read bots.
-- viewer -- Read-only server access.
+- viewer -- Read-only server access. Viewers cannot post to the feed, edit or pin posts, or store server backups; they can react to posts and remove their own posts and backups.
 
 **Investigation roles** (on the investigation_members table):
 - owner -- Full control, can manage members.

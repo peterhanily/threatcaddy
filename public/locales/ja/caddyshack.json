@@ -1,6 +1,7 @@
 {
   "view.title": "チームフィード",
   "view.connectToServer": "チームフィードを使用するにはチームサーバーに接続してください。",
+  "view.viewerReadOnly": "閲覧者ロールでは投稿の閲覧とリアクションはできますが、投稿、返信、編集、ピン留めはできません。",
   "view.loading": "読み込み中...",
   "view.noPostsYet": "まだ投稿がありません。最初の更新を共有しましょう！",
   "view.noTeamActivity": "チームのアクティビティはまだありません。",

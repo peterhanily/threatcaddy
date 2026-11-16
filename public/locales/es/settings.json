@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "Conéctese a un servidor de equipo para usar respaldos cifrados.",
   "encryption.description": "Respaldos protegidos por contraseña almacenados en el servidor. Ni siquiera los administradores pueden leerlos.",
   "encryption.createBackup": "Crear respaldo",
+  "encryption.viewerCannotCreate": "Con el rol de Lector no puedes guardar respaldos en el servidor. Aún puedes restaurar o eliminar tus respaldos existentes.",
   "encryption.scope": "Alcance",
   "encryption.scopeAll": "Todos los datos",
   "encryption.scopeInvestigation": "Investigación",

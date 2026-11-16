@@ -13,6 +13,8 @@ interface ReplyThreadProps {
   onBack: () => void;
   onUserClick?: (userId: string) => void;
   settings?: Settings;
+  /** The viewer role cannot reply, edit or pin. */
+  readOnly?: boolean;
 }
 
 export function ReplyThread(props: ReplyThreadProps) {
@@ -21,7 +23,7 @@ export function ReplyThread(props: ReplyThreadProps) {
   return <ReplyThreadContent key={props.postId} {...props} />;
 }
 
-function ReplyThreadContent({ postId, currentUserId, onBack, onUserClick, settings }: ReplyThreadProps) {
+function ReplyThreadContent({ postId, currentUserId, onBack, onUserClick, settings, readOnly }: ReplyThreadProps) {
   const { t } = useTranslation('caddyshack');
   const { t: tt } = useTranslation('toast');
   const { t: tc } = useTranslation('common');
@@ -185,23 +187,27 @@ function ReplyThreadContent({ postId, currentUserId, onBack, onUserClick, settin
           onReact={handleReact}
           onRemoveReaction={handleRemoveReaction}
           onDelete={handleDelete}
-          onEdit={handleEdit}
-          onPin={handlePin}
+          onEdit={readOnly ? undefined : handleEdit}
+          onPin={readOnly ? undefined : handlePin}
           onUserClick={onUserClick}
         />
       </div>
 
       {/* Reply composer */}
-      <PostComposer
-        key={composerReplyToId}
-        parentId={composerParentId}
-        replyToId={composerReplyToId}
-        folderId={post.folderId}
-        placeholder={composerPlaceholder}
-        initialContent={composerInitialContent}
-        onPostCreated={() => { setReplyTo(null); loadPost(); }}
-        settings={settings}
-      />
+      {readOnly ? (
+        <p className="text-sm text-[var(--text-tertiary)]">{t('view.viewerReadOnly')}</p>
+      ) : (
+        <PostComposer
+          key={composerReplyToId}
+          parentId={composerParentId}
+          replyToId={composerReplyToId}
+          folderId={post.folderId}
+          placeholder={composerPlaceholder}
+          initialContent={composerInitialContent}
+          onPostCreated={() => { setReplyTo(null); loadPost(); }}
+          settings={settings}
+        />
+      )}
 
       {/* Replies — flat list */}
       {post.replies && post.replies.length > 0 && (
@@ -216,12 +222,12 @@ function ReplyThreadContent({ postId, currentUserId, onBack, onUserClick, settin
               key={reply.id}
               post={reply}
               currentUserId={currentUserId}
-              onReply={handleReplyToReply}
+              onReply={readOnly ? undefined : handleReplyToReply}
               onReact={handleReact}
               onRemoveReaction={handleRemoveReaction}
               onDelete={handleDelete}
-              onEdit={handleEdit}
-              onPin={handlePin}
+              onEdit={readOnly ? undefined : handleEdit}
+              onPin={readOnly ? undefined : handlePin}
               onUserClick={onUserClick}
               compact
             />

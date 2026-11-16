@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "Połącz z serwerem zespołu, aby używać zaszyfrowanych kopii zapasowych.",
   "encryption.description": "Kopie zapasowe chronione hasłem przechowywane na serwerze. Nawet administratorzy nie mogą ich odczytać.",
   "encryption.createBackup": "Utwórz kopię zapasową",
+  "encryption.viewerCannotCreate": "Rola Czytelnik nie pozwala przechowywać kopii zapasowych na serwerze. Nadal możesz przywracać lub usuwać istniejące kopie zapasowe.",
   "encryption.scope": "Zakres",
   "encryption.scopeAll": "Wszystkie dane",
   "encryption.scopeInvestigation": "Dochodzenie",

@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "اتصل بخادم فريق لاستخدام النسخ الاحتياطية المشفرة.",
   "encryption.description": "نسخ احتياطية محمية بكلمة مرور مخزنة على الخادم. حتى المسؤولون لا يستطيعون قراءتها.",
   "encryption.createBackup": "إنشاء نسخة احتياطية",
+  "encryption.viewerCannotCreate": "لا يمكنك بدور العارض تخزين نسخ احتياطية على الخادم. لا يزال بإمكانك استعادة نسخك الاحتياطية الحالية أو حذفها.",
   "encryption.scope": "النطاق",
   "encryption.scopeAll": "جميع البيانات",
   "encryption.scopeInvestigation": "تحقيق",

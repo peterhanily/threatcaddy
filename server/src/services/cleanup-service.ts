@@ -3,6 +3,7 @@ import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import { serverSettings, notifications, activityLog, investigationMembers, folders, botRuns } from '../db/schema.js';
 import { logger } from '../lib/logger.js';
+import { describeError } from '../lib/db-errors.js';
 import { purgeExpiredInvestigation } from './investigation-lifecycle.js';
 import { lockInvestigationPolicy } from './investigation-policy.js';
 import { removeCommittedBlobs } from './storage-policy.js';
@@ -84,7 +85,7 @@ export async function pruneOldData(): Promise<void> {
         totalTombstones += 1 + Object.values(purged.deleted).reduce((sum, count) => sum + count, 0);
         revokeFolderAccess(folder.id);
         await removeCommittedBlobs(process.env.FILE_STORAGE_PATH || '/data/files', purged.folderFiles);
-      } catch (err) { logger.error('Investigation retention purge failed', { folderId: folder.id, error: String(err) }); }
+      } catch (err) { logger.error('Investigation retention purge failed', { folderId: folder.id, error: describeError(err) }); }
     }
     for (const { name, table } of TOMBSTONE_TABLES) {
       try {
@@ -101,7 +102,7 @@ export async function pruneOldData(): Promise<void> {
           logger.info(`Tombstone cleanup: hard-deleted ${deleted.length} ${name} record(s)`);
         }
       } catch (err) {
-        logger.error(`Tombstone cleanup failed for ${name}`, { error: String(err) });
+        logger.error(`Tombstone cleanup failed for ${name}`, { error: describeError(err) });
       }
     }
 
@@ -121,7 +122,7 @@ export async function pruneOldData(): Promise<void> {
         logger.info(`Orphan cleanup: removed ${orphanedMembers} orphaned investigation member(s)`);
       }
     } catch (err) {
-      logger.error('Orphaned membership cleanup failed', { error: String(err) });
+      logger.error('Orphaned membership cleanup failed', { error: describeError(err) });
     }
 
     // Delete bot_runs older than 90 days
@@ -137,13 +138,13 @@ export async function pruneOldData(): Promise<void> {
         logger.info(`Bot runs cleanup: deleted ${deletedBotRuns} bot run(s) older than 90 days`);
       }
     } catch (err) {
-      logger.error('Bot runs cleanup failed', { error: String(err) });
+      logger.error('Bot runs cleanup failed', { error: describeError(err) });
     }
 
     if (deletedNotifs.length > 0 || deletedAudit.length > 0 || totalTombstones > 0 || orphanedMembers > 0 || deletedBotRuns > 0) {
       logger.info(`Data pruning: deleted ${deletedNotifs.length} notification(s), ${deletedAudit.length} audit log entry(ies), ${totalTombstones} tombstone(s), ${orphanedMembers} orphaned member(s), ${deletedBotRuns} bot run(s)`);
     }
   } catch (err) {
-    logger.error('Data pruning failed', { error: String(err) });
+    logger.error('Data pruning failed', { error: describeError(err) });
   }
 }

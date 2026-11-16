@@ -108,18 +108,22 @@ export function PostCard({
                 </button>
                 {showMenu && (
                   <div className="absolute right-0 top-7 z-50 bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl shadow-lg py-1.5 min-w-[150px]">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setEditing(true); setShowMenu(false); }}
-                      className="w-full px-3 py-2 text-start text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 text-[var(--text-secondary)]"
-                    >
-                      <Edit3 size={14} /> {t('post.edit')}
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onPin?.(post.id, !post.pinned); setShowMenu(false); }}
-                      className="w-full px-3 py-2 text-start text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 text-[var(--text-secondary)]"
-                    >
-                      <Pin size={14} /> {post.pinned ? t('post.unpin') : t('post.pin')}
-                    </button>
+                    {onEdit && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setEditing(true); setShowMenu(false); }}
+                        className="w-full px-3 py-2 text-start text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 text-[var(--text-secondary)]"
+                      >
+                        <Edit3 size={14} /> {t('post.edit')}
+                      </button>
+                    )}
+                    {onPin && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onPin(post.id, !post.pinned); setShowMenu(false); }}
+                        className="w-full px-3 py-2 text-start text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 text-[var(--text-secondary)]"
+                      >
+                        <Pin size={14} /> {post.pinned ? t('post.unpin') : t('post.pin')}
+                      </button>
+                    )}
                     <button
                       onClick={(e) => { e.stopPropagation(); onDelete?.(post.id); setShowMenu(false); }}
                       className="w-full px-3 py-2 text-start text-sm hover:bg-[var(--bg-secondary)] text-red-400 flex items-center gap-2.5"

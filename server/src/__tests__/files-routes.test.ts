@@ -503,6 +503,26 @@ describe('GET /api/files/:id', () => {
     expect(disposition).not.toContain('"with');
     expect(disposition).not.toContain('\n');
   });
+
+  it.each([
+    ['отчёт.pdf', '_____.pdf', '%D0%BE%D1%82%D1%87%D1%91%D1%82.pdf'],
+    ['報告書.pdf', '___.pdf', '%E5%A0%B1%E5%91%8A%E6%9B%B8.pdf'],
+    ['evidence-🔥.pdf', 'evidence-_.pdf', 'evidence-%F0%9F%94%A5.pdf'],
+    ['résumé.pdf', 'r_sum_.pdf', 'r%C3%A9sum%C3%A9.pdf'],
+    ["it's (1).pdf", "it's (1).pdf", 'it%27s%20%281%29.pdf'],
+  ])('serves %s with an ASCII fallback and an RFC 5987 UTF-8 filename', async (filename, fallback, encoded) => {
+    mockLimit.mockResolvedValueOnce([{
+      id: 'file-intl', uploadedBy: 'user-1', filename,
+      mimeType: 'application/pdf', storagePath: 'file-intl.pdf',
+      folderId: null, thumbnailPath: null,
+    }]);
+    mockStat.mockResolvedValueOnce({ size: 3 });
+
+    const res = await app.request('/api/files/file-intl', { headers: authHeader() });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Disposition')).toBe(`inline; filename="${fallback}"; filename*=UTF-8''${encoded}`);
+    expect(res.headers.get('Content-Disposition')).toMatch(/^[\x20-\x7e]+$/);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════

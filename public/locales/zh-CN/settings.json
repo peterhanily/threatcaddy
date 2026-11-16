@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "连接到团队服务器以使用加密备份。",
   "encryption.description": "存储在服务器上的密码保护备份。即使管理员也无法读取。",
   "encryption.createBackup": "创建备份",
+  "encryption.viewerCannotCreate": "查看者角色无法在服务器上存储备份。你仍可以恢复或删除现有备份。",
   "encryption.scope": "范围",
   "encryption.scopeAll": "所有数据",
   "encryption.scopeInvestigation": "调查",
