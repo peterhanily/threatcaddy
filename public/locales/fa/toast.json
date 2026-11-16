@@ -61,6 +61,9 @@
   "investigation": {
     "sampleLoaded": "تحقیق نمونه بارگذاری شد",
     "sampleRemoved": "تحقیق نمونه حذف شد",
+    "sampleKept": "تحقیق نمونه حذف شد. موارد شما در «{{name}}» هستند",
+    "sampleLocked": "پیش از تغییر داده‌های نمونه، قفل فضای کاری را باز کنید.",
+    "sampleSessionChanged": "نشست فضای کاری تغییر کرد. پس از باز کردن قفل، عملیات نمونه را دوباره امتحان کنید.",
     "trashEmptied": "سطل زباله خالی شد",
     "savedAsTemplate": "«{{name}}» به عنوان قالب ذخیره شد",
     "playbookRan": "playbook «{{playbook}}» روی «{{investigation}}» اجرا شد",

@@ -61,6 +61,9 @@
   "investigation": {
     "sampleLoaded": "サンプル調査を読み込みました",
     "sampleRemoved": "サンプル調査を削除しました",
+    "sampleKept": "サンプル調査を削除しました。あなたの項目は「{{name}}」にあります",
+    "sampleLocked": "サンプルデータを変更する前にワークスペースのロックを解除してください。",
+    "sampleSessionChanged": "ワークスペースのセッションが変更されました。ロック解除後にサンプル操作を再試行してください。",
     "trashEmptied": "ゴミ箱を空にしました",
     "savedAsTemplate": "「{{name}}」をテンプレートとして保存しました",
     "playbookRan": "「{{investigation}}」で「{{playbook}}」プレイブックを実行しました",

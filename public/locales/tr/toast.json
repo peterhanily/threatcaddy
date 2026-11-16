@@ -61,6 +61,9 @@
   "investigation": {
     "sampleLoaded": "Örnek soruşturma yüklendi",
     "sampleRemoved": "Örnek soruşturma kaldırıldı",
+    "sampleKept": "Örnek soruşturma kaldırıldı. Öğeleriniz \"{{name}}\" içinde",
+    "sampleLocked": "Örnek verileri değiştirmeden önce çalışma alanının kilidini açın.",
+    "sampleSessionChanged": "Çalışma alanı oturumu değişti. Kilidi açtıktan sonra örnek işlemini yeniden deneyin.",
     "trashEmptied": "Çöp kutusu boşaltıldı",
     "savedAsTemplate": "\"{{name}}\" şablon olarak kaydedildi",
     "playbookRan": "\"{{investigation}}\" üzerinde \"{{playbook}}\" playbook'u çalıştırıldı",

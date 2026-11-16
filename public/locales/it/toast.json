@@ -62,6 +62,9 @@
   "investigation": {
     "sampleLoaded": "Indagine di esempio caricata",
     "sampleRemoved": "Indagine di esempio rimossa",
+    "sampleKept": "Indagine di esempio rimossa. I tuoi elementi sono in \"{{name}}\"",
+    "sampleLocked": "Sblocca lo spazio di lavoro prima di modificare i dati di esempio.",
+    "sampleSessionChanged": "La sessione dello spazio di lavoro è cambiata. Riprova l'azione sull'esempio dopo lo sblocco.",
     "trashEmptied": "Cestino svuotato",
     "savedAsTemplate": "Salvato \"{{name}}\" come template",
     "playbookRan": "Esecuzione playbook \"{{playbook}}\" su \"{{investigation}}\"",

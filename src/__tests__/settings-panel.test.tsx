@@ -164,6 +164,15 @@ describe('SettingsPanel', () => {
     expect(screen.getByText('Display Preferences')).toBeInTheDocument();
   });
 
+  it('describes both samples above their buttons and shows no stale version number', () => {
+    render(<SettingsPanel {...defaultProps} onLoadSample={vi.fn()} onLoadParody={vi.fn()} />);
+    const description = screen.getByText(/fictional training investigation/);
+    expect(description).toHaveTextContent('realistic mailbox-compromise exercise');
+    expect(description).toHaveTextContent('FERMENTED PERSISTENCE parody');
+    expect(description).not.toHaveTextContent('VirusTotal');
+    expect(screen.getByText(/Threat Investigation Workspace/)).not.toHaveTextContent(/v\d+\.\d+/);
+  });
+
   it('renders Anthropic API Key input on AI tab', () => {
     render(<SettingsPanel {...defaultProps} />);
     clickTab('AI');

@@ -61,6 +61,9 @@
   "investigation": {
     "sampleLoaded": "Investigasi sampel dimuat",
     "sampleRemoved": "Investigasi sampel dihapus",
+    "sampleKept": "Investigasi sampel dihapus. Item Anda ada di \"{{name}}\"",
+    "sampleLocked": "Buka kunci ruang kerja sebelum mengubah data sampel.",
+    "sampleSessionChanged": "Sesi ruang kerja berubah. Coba lagi tindakan sampel setelah membuka kunci.",
     "trashEmptied": "Sampah dikosongkan",
     "savedAsTemplate": "Disimpan \"{{name}}\" sebagai template",
     "playbookRan": "Menjalankan playbook \"{{playbook}}\" pada \"{{investigation}}\"",

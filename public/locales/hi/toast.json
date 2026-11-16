@@ -61,6 +61,9 @@
   "investigation": {
     "sampleLoaded": "नमूना जाँच लोड हुई",
     "sampleRemoved": "नमूना जाँच हटाई गई",
+    "sampleKept": "नमूना जाँच हटाई गई। आपके आइटम «{{name}}» में हैं",
+    "sampleLocked": "नमूना डेटा बदलने से पहले वर्कस्पेस अनलॉक करें।",
+    "sampleSessionChanged": "वर्कस्पेस सत्र बदल गया। अनलॉक करने के बाद नमूना क्रिया फिर से आज़माएँ।",
     "trashEmptied": "ट्रैश खाली हुआ",
     "savedAsTemplate": "«{{name}}» टेम्पलेट के रूप में सहेजा गया",
     "playbookRan": "playbook «{{playbook}}» «{{investigation}}» पर चला",

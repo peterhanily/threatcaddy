@@ -6,6 +6,19 @@ export const SYNC_RECOVERY_KEY = 'syncRecoveryRequiredV2';
 export const SYNC_CAPTURE_MESSAGE = 'Sync paused: older sync history may be missing edits made while signed out. Your local data is retained. Use Settings → General → Sync history recovery to download a verified archive and reconcile before resuming.';
 export const SYNC_HISTORY_MESSAGE = 'Sync paused because the server history changed or recovery was requested. Your local edits are retained. Use Settings → General → Sync history recovery to download a verified archive and review conflicts before resuming.';
 
+/** Demo tags and timelines are global rows, but like the local-only demo case
+ * they stay on this device unless the server already holds them (an older build
+ * pushed them). User-created ids are random and never `sample-`. */
+export function isSampleGlobalRecord(table: string, id: unknown): boolean {
+  return (table === 'tags' || table === 'timelines') && typeof id === 'string' && id.startsWith('sample-');
+}
+
+/** A demo timeline is never the default for real events, and never raises the
+ * order of a new timeline. Older builds stored the realistic one at order 0. */
+export const isUserTimeline = (timeline: { id: string }) => !isSampleGlobalRecord('timelines', timeline.id);
+export const nextTimelineOrder = (timelines: Array<{ id: string; order: number }>) =>
+  timelines.filter(isUserTimeline).reduce((max, timeline) => Math.max(max, timeline.order), 0) + 1;
+
 export interface SyncWorkspaceIdentity { version: 1; serverUrl: string; userId: string }
 export interface SyncCaptureCoverage {
   key: typeof SYNC_CAPTURE_KEY;

@@ -69,8 +69,9 @@ export function mapEntityReferences(table: string, row: EntityRecord, mapper: (t
   return copy;
 }
 
-/** Permanent delete + every known reverse edge is one transaction; trash retains restorable links. */
-export async function deleteEntitiesWithReferences(deletions: Record<string, string[]>, investigationWithContents?: string, onlyExpiredTrashBefore?: number, signal?: AbortSignal, assertCurrent: () => void = () => {}): Promise<void> {
+/** Permanent delete + every known reverse edge is one transaction; trash retains restorable links.
+ * `prepare` runs first in that transaction, behind the same draft barrier. */
+export async function deleteEntitiesWithReferences(deletions: Record<string, string[]>, investigationWithContents?: string, onlyExpiredTrashBefore?: number, signal?: AbortSignal, assertCurrent: () => void = () => {}, prepare?: () => Promise<void>): Promise<void> {
   if (!Object.values(deletions).some(ids => ids.length)) return;
   signal?.throwIfAborted();
   await lifecycle(async () => {
@@ -82,6 +83,7 @@ export async function deleteEntitiesWithReferences(deletions: Record<string, str
     try {
       await integrationWrite(Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), signal, async () => {
         assertCurrent();
+        await prepare?.();
         if (onlyExpiredTrashBefore !== undefined) {
           for (const [name, ids] of Object.entries(deletions)) {
             const rows = await db.table<EntityRecord>(name).bulkGet(ids);

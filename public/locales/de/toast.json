@@ -61,6 +61,9 @@
   "investigation": {
     "sampleLoaded": "Beispieluntersuchung geladen",
     "sampleRemoved": "Beispieluntersuchung entfernt",
+    "sampleKept": "Beispieluntersuchung entfernt. Ihre Elemente befinden sich in \"{{name}}\"",
+    "sampleLocked": "Entsperren Sie den Arbeitsbereich, bevor Sie Beispieldaten ändern.",
+    "sampleSessionChanged": "Die Sitzung des Arbeitsbereichs hat sich geändert. Wiederholen Sie die Beispielaktion nach dem Entsperren.",
     "trashEmptied": "Papierkorb geleert",
     "savedAsTemplate": "\"{{name}}\" als Vorlage gespeichert",
     "playbookRan": "Playbook \"{{playbook}}\" auf \"{{investigation}}\" ausgeführt",

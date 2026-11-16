@@ -61,6 +61,9 @@
   "investigation": {
     "sampleLoaded": "Voorbeeldonderzoek geladen",
     "sampleRemoved": "Voorbeeldonderzoek verwijderd",
+    "sampleKept": "Voorbeeldonderzoek verwijderd. Uw items staan in \"{{name}}\"",
+    "sampleLocked": "Ontgrendel de werkruimte voordat u voorbeeldgegevens wijzigt.",
+    "sampleSessionChanged": "De werkruimtesessie is gewijzigd. Probeer de voorbeeldactie opnieuw na het ontgrendelen.",
     "trashEmptied": "Prullenbak geleegd",
     "savedAsTemplate": "'{{name}}' opgeslagen als sjabloon",
     "playbookRan": "Playbook '{{playbook}}' uitgevoerd voor '{{investigation}}'",

@@ -61,6 +61,9 @@
   "investigation": {
     "sampleLoaded": "Sample investigation loaded",
     "sampleRemoved": "Sample investigation removed",
+    "sampleKept": "Sample investigation removed. Your items are in \"{{name}}\"",
+    "sampleLocked": "Unlock the workspace before changing sample data.",
+    "sampleSessionChanged": "The workspace session changed. Retry the sample action after unlocking.",
     "trashEmptied": "Trash emptied",
     "savedAsTemplate": "Saved \"{{name}}\" as a template",
     "playbookRan": "Ran \"{{playbook}}\" playbook on \"{{investigation}}\"",

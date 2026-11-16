@@ -327,6 +327,20 @@ describe('sync engine persistence contract', () => {
     await vi.waitFor(() => expect(api.pull).toHaveBeenCalled());
     expect(api.push).not.toHaveBeenCalled();
   });
+
+  it('initial capture keeps demo tags and timelines on this device', async () => {
+    await db.transaction('rw', db.tags, db.timelines, async () => {
+      suppressSyncInCurrentTransaction();
+      await db.tags.bulkAdd([{ id: 'sample-realistic-tag-1', name: 'synthetic-training', color: '#6366f1' }, { id: 'team-tag', name: 'phishing', color: '#ef4444' }]);
+      await db.timelines.add({ id: 'sample-realistic-timeline-1', name: 'Mailbox Exercise — UTC', order: 998, createdAt: 1, updatedAt: 1 });
+    });
+    engine.start();
+    await vi.waitFor(() => expect(api.push).toHaveBeenCalled());
+    const pushed = api.push.mock.calls.flatMap(([changes]) => (changes as Array<{ entityId: string }>).map(change => change.entityId));
+    expect(pushed).toContain('team-tag');
+    expect(pushed).not.toContain('sample-realistic-tag-1');
+    expect(pushed).not.toContain('sample-realistic-timeline-1');
+  });
 });
 
 describe('round trips keep fields the server cannot store', () => {

@@ -6,6 +6,7 @@ import type {
   IOCType, ConfidenceLevel, TimelineEventType, Priority, TaskStatus,
   Note, Task, StandaloneIOC, TimelineEvent,
 } from '../types';
+import { isUserTimeline } from './sync-capture-policy';
 
 const MAX_SNIPPET = 200;
 /** Max stored length for LLM-supplied free-text fields (prevents memory abuse from runaway agents) */
@@ -218,7 +219,7 @@ export async function executeCreateTimelineEvent(input: Record<string, unknown>,
     }
   }
   if (!timelineId) {
-    const first = await db.timelines.orderBy('order').first();
+    const first = await db.timelines.orderBy('order').filter(isUserTimeline).first();
     if (first) timelineId = first.id;
   }
 
