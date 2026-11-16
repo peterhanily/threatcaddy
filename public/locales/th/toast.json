@@ -70,6 +70,7 @@
     "createdFromPlaybook": "สร้าง \"{{name}}\" จาก Playbook แล้ว",
     "exported": "ส่งออกการสืบสวน \"{{name}}\" แล้ว",
     "exportFailed": "การส่งออกการสืบสวนล้มเหลว",
+    "exportFailedDetail": "การส่งออกการสืบสวนล้มเหลว: {{error}}",
     "reportGenerated": "สร้างรายงานสำหรับ \"{{name}}\" แล้ว"
   },
   "encryption": {

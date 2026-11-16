@@ -70,6 +70,7 @@
     "createdFromPlaybook": "«{{name}}» از playbook ایجاد شد",
     "exported": "تحقیق «{{name}}» صادر شد",
     "exportFailed": "صدور تحقیق ناموفق بود",
+    "exportFailedDetail": "صدور تحقیق ناموفق بود: {{error}}",
     "reportGenerated": "گزارش برای «{{name}}» تولید شد"
   },
   "encryption": {

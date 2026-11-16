@@ -70,6 +70,7 @@
     "createdFromPlaybook": "Created \"{{name}}\" from playbook",
     "exported": "Exported investigation \"{{name}}\"",
     "exportFailed": "Failed to export investigation",
+    "exportFailedDetail": "Failed to export investigation: {{error}}",
     "reportGenerated": "Report generated for \"{{name}}\""
   },
   "encryption": {

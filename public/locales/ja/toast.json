@@ -70,6 +70,7 @@
     "createdFromPlaybook": "プレイブックから「{{name}}」を作成しました",
     "exported": "調査「{{name}}」をエクスポートしました",
     "exportFailed": "調査のエクスポートに失敗しました",
+    "exportFailedDetail": "調査のエクスポートに失敗しました: {{error}}",
     "reportGenerated": "「{{name}}」のレポートを生成しました"
   },
   "encryption": {

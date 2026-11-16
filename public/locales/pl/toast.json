@@ -72,6 +72,7 @@
     "createdFromPlaybook": "„{{name}}\" utworzone z playbooka",
     "exported": "Dochodzenie „{{name}}\" wyeksportowane",
     "exportFailed": "Nie udało się wyeksportować dochodzenia",
+    "exportFailedDetail": "Nie udało się wyeksportować dochodzenia: {{error}}",
     "reportGenerated": "Raport wygenerowany dla „{{name}}\""
   },
   "encryption": {

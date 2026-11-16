@@ -70,6 +70,7 @@
     "createdFromPlaybook": "Đã tạo \"{{name}}\" từ playbook",
     "exported": "Đã xuất điều tra \"{{name}}\"",
     "exportFailed": "Xuất điều tra thất bại",
+    "exportFailedDetail": "Xuất điều tra thất bại: {{error}}",
     "reportGenerated": "Đã tạo báo cáo cho \"{{name}}\""
   },
   "encryption": {

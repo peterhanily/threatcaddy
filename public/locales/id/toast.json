@@ -70,6 +70,7 @@
     "createdFromPlaybook": "Dibuat \"{{name}}\" dari playbook",
     "exported": "Investigasi \"{{name}}\" diekspor",
     "exportFailed": "Gagal mengekspor investigasi",
+    "exportFailedDetail": "Gagal mengekspor investigasi: {{error}}",
     "reportGenerated": "Laporan dibuat untuk \"{{name}}\""
   },
   "encryption": {

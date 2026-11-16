@@ -70,6 +70,7 @@
     "createdFromPlaybook": "'{{name}}' aangemaakt vanuit playbook",
     "exported": "Onderzoek '{{name}}' geëxporteerd",
     "exportFailed": "Onderzoek exporteren mislukt",
+    "exportFailedDetail": "Onderzoek exporteren mislukt: {{error}}",
     "reportGenerated": "Rapport gegenereerd voor '{{name}}'"
   },
   "encryption": {

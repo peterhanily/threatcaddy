@@ -72,6 +72,7 @@
     "createdFromPlaybook": "«{{name}}» створено з плейбука",
     "exported": "Розслідування «{{name}}» експортовано",
     "exportFailed": "Не вдалося експортувати розслідування",
+    "exportFailedDetail": "Не вдалося експортувати розслідування: {{error}}",
     "reportGenerated": "Звіт згенеровано для «{{name}}»"
   },
   "encryption": {
