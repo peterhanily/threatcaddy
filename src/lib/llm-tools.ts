@@ -35,8 +35,9 @@ import {
   executeCreateNote, executeUpdateNote, executeCreateTask, executeUpdateTask,
   executeCreateIOC, executeUpdateIOC, executeBulkCreateIOCs,
   executeCreateTimelineEvent, executeUpdateTimelineEvent,
-  executeLinkEntities, executeGenerateReport, executeCreateInInvestigation, isIOCType,
+  executeLinkEntities, executeGenerateReport, executeCreateInInvestigation, isIOCType, enumInput,
 } from './llm-tools-write';
+import { TASK_PRIORITIES } from './entity-enums';
 
 // Analysis tools
 import {
@@ -578,11 +579,12 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
   const title = String(inp.title || '');
   const description = String(inp.description || '');
   const assignToProfile = String(inp.assignToProfile || '');
-  const priority = String(inp.priority || 'medium');
+  const priority = enumInput(inp.priority, 'priority', TASK_PRIORITIES);
 
   if (!title || !description || !assignToProfile) {
     return JSON.stringify({ error: 'title, description, and assignToProfile are required' });
   }
+  if (priority.error) return priority.error;
 
   // Prevent infinite delegation chains by checking depth
   const delegatedTasks = await db.tasks
@@ -629,7 +631,7 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
     description: `[Delegated by Lead Analyst]\n\n${description}`,
     folderId,
     status: 'todo' as const,
-    priority: priority as 'low' | 'medium' | 'high',
+    priority: priority.value ?? 'medium',
     completed: false,
     tags: ['agent-delegated'],
     assignedDeploymentId: targetDeploymentId,
@@ -1136,11 +1138,13 @@ async function executeCreateTicket(inp: Record<string, unknown>, folderId?: stri
     request.signal.throwIfAborted();
     const s = (settings || JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}')) as Record<string, unknown>;
     if (!s.ticketEndpoint) {
-      // Fallback: create local task
+      // Fallback: create local task. Tasks have no 'critical'; a configured system still receives it.
+      const local = enumInput(/^critical$/i.test(priority) ? 'high' : priority, 'priority', TASK_PRIORITIES);
+      if (local.error) return local.error;
       const taskId = nanoid();
       await db.tasks.add({
         id: taskId, title: `[TICKET] ${title}`, description,
-        folderId, status: 'todo' as const, priority: priority as 'low' | 'medium' | 'high',
+        folderId, status: 'todo' as const, priority: local.value ?? 'medium',
         completed: false, tags: ['external-ticket'], order: 0, trashed: false, archived: false,
         createdBy: 'agent:ticket', createdAt: Date.now(), updatedAt: Date.now(),
       });
