@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
+import { createInstance } from 'i18next';
+import { I18nextProvider } from 'react-i18next';
+import commonEn from '../../public/locales/en/common.json';
+import commonDe from '../../public/locales/de/common.json';
 
 // ── Mocks ────────────────────────────────────────────────────────────
 
@@ -53,7 +58,8 @@ vi.mock('../lib/sync-engine', () => ({
 }));
 
 const mockConfigureServerApi = vi.fn();
-vi.mock('../lib/sync-capture-policy', () => ({ getSyncPauseReason: async () => null }));
+const mockPauseReason = vi.hoisted(() => vi.fn(async (): Promise<string | null> => null));
+vi.mock('../lib/sync-capture-policy', () => ({ getSyncPauseReason: () => mockPauseReason() }));
 vi.mock('../lib/server-api', () => ({
   configureServerApi: (...args: unknown[]) => mockConfigureServerApi(...args),
 }));
@@ -306,5 +312,17 @@ describe('useServerSync', () => {
 
     const { result } = renderHook(() => useServerSync(auth, reloadFns));
     expect(result.current.presenceUsers).toEqual([]);
+  });
+
+  it('keeps sync paused with a translated notice when its safety state cannot be read', async () => {
+    const locale = createInstance();
+    await locale.init({ lng: 'de', fallbackLng: 'en', defaultNS: 'common', interpolation: { escapeValue: false },
+      resources: { en: { common: commonEn }, de: { common: commonDe } } });
+    mockPauseReason.mockRejectedValueOnce(new Error('Synthetic unreadable sync metadata'));
+    const wrapper = ({ children }: { children: ReactNode }) => createElement(I18nextProvider, { i18n: locale }, children);
+    const { result } = renderHook(() => useServerSync(makeAuth({ serverUrl: null, connected: false }), makeReloadFns()), { wrapper });
+    await flushPromises();
+    expect(commonDe['syncStatus.pausedUnreadable']).not.toBe(commonEn['syncStatus.pausedUnreadable']);
+    expect(result.current.syncError).toBe(commonDe['syncStatus.pausedUnreadable']);
   });
 });

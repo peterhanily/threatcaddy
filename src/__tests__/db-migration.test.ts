@@ -89,7 +89,7 @@ describe('resumable verified legacy database transfer', () => {
     await migrateIndexedDB();
     expect(await db.table('_localMigrations').get(SYNC_CAPTURE_KEY)).toMatchObject({ state: 'reconciliation-required' });
     await ensureSyncCaptureCoverage(db);
-    expect(await getSyncPauseReason(db)).toContain('signed out');
+    expect(await getSyncPauseReason(db)).toBe('capture');
     expect(await db.notes.get('n')).toEqual(note);
   });
 
@@ -104,11 +104,11 @@ describe('resumable verified legacy database transfer', () => {
     const peer = new Dexie(db.name);
     try {
       await peer.open(); await ensureSyncCaptureCoverage(peer);
-      expect(await getSyncPauseReason(peer)).toContain('signed out');
+      expect(await getSyncPauseReason(peer)).toBe('capture');
       expect(await peer.table('_localMigrations').get(SYNC_CAPTURE_KEY)).toMatchObject({ state: 'reconciliation-required' });
     } finally { peer.close(); }
     await migrateIndexedDB();
-    expect(await getSyncPauseReason(db)).toContain('signed out');
+    expect(await getSyncPauseReason(db)).toBe('capture');
   });
 
   it('refuses identity collisions without overwriting either copy', async () => {

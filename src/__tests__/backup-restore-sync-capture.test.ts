@@ -5,7 +5,7 @@ import { previewRestore, restoreFullReplace, restoreMerge } from '../lib/backup-
 import { exportInvestigationJSON, exportJSON, importJSON, mergeImportJSON } from '../lib/export';
 import { disableSync, revisionKey, suppressSyncInCurrentTransaction } from '../lib/sync-state';
 import { ensureSyncWorkspace } from '../lib/sync-workspace';
-import { getSyncPauseReason, SYNC_CAPTURE_KEY, SYNC_HISTORY_MESSAGE, SYNC_RECOVERY_KEY } from '../lib/sync-capture-policy';
+import { assertSyncCaptureReady, getSyncPauseReason, SYNC_CAPTURE_KEY, SYNC_HISTORY_MESSAGE, SYNC_RECOVERY_KEY } from '../lib/sync-capture-policy';
 import { SyncEngine } from '../lib/sync-engine';
 import { prepareSyncRecovery, reconcileSyncWorkspace } from '../lib/sync-recovery';
 import i18n from '../i18n';
@@ -53,7 +53,8 @@ async function expectPausedWithoutQueuedChanges() {
   expect(await db.table('_syncMeta').get(SYNC_RECOVERY_KEY)).toMatchObject({ value: true });
   expect(await db.table('_localMigrations').get(SYNC_CAPTURE_KEY)).toMatchObject({ state: 'reconciliation-required', reason: 'restored-history' });
   // The banner names the restore cause, not the legacy signed-out capture gap.
-  expect(await getSyncPauseReason(db)).toBe(SYNC_HISTORY_MESSAGE);
+  expect(await getSyncPauseReason(db)).toBe('history');
+  await expect(assertSyncCaptureReady(db)).rejects.toThrow(SYNC_HISTORY_MESSAGE);
 }
 
 beforeEach(async () => {

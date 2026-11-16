@@ -1,5 +1,10 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { createInstance } from 'i18next';
+import { I18nextProvider } from 'react-i18next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import commonEn from '../../public/locales/en/common.json';
+import commonDe from '../../public/locales/de/common.json';
 import { db } from '../db';
 import { useServerSync } from '../hooks/useServerSync';
 import { ensureSyncWorkspace } from '../lib/sync-workspace';
@@ -52,5 +57,22 @@ describe('transport lifecycle never owns signed-out capture', () => {
     await act(async () => { await db.table('_localMigrations').put({ key: SYNC_CAPTURE_KEY, version: 1, state: 'reconciliation-required', reason: 'legacy-capture-gap' }); });
     await waitFor(() => expect(result.current.syncError).toContain('signed out'));
     expect(mocks.start).not.toHaveBeenCalled();
+  });
+
+  it('explains the durable pause in the interface language and follows a language change', async () => {
+    const locale = createInstance();
+    await locale.init({ lng: 'de', fallbackLng: 'en', defaultNS: 'common', interpolation: { escapeValue: false },
+      resources: { en: { common: commonEn }, de: { common: commonDe } } });
+    const wrapper = ({ children }: { children: ReactNode }) => <I18nextProvider i18n={locale}>{children}</I18nextProvider>;
+    const signedOut = { ...auth, user: null, serverUrl: null, connected: false };
+    const { result } = renderHook(() => useServerSync(signedOut, reloads), { wrapper });
+    await act(async () => { await db.table('_syncMeta').put({ key: SYNC_RECOVERY_KEY, value: true }); });
+    await waitFor(() => expect(result.current.syncError).toBe(commonDe['syncStatus.pausedHistory']));
+    expect(commonDe['syncStatus.pausedHistory']).not.toBe(commonEn['syncStatus.pausedHistory']);
+    await act(async () => { await locale.changeLanguage('en'); });
+    expect(result.current.syncError).toBe(commonEn['syncStatus.pausedHistory']);
+    await act(async () => { await locale.changeLanguage('de'); });
+    await act(async () => { await db.table('_localMigrations').put({ key: SYNC_CAPTURE_KEY, version: 1, state: 'reconciliation-required', reason: 'legacy-capture-gap' }); });
+    await waitFor(() => expect(result.current.syncError).toBe(commonDe['syncStatus.pausedCapture']));
   });
 });
