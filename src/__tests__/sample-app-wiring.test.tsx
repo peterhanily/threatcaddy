@@ -22,11 +22,13 @@ async function openSettings() {
 }
 
 // Each test cold-renders the whole App and its lazy chunks. Under a loaded
-// parallel suite that can exceed testing-library's 1 s default for a query.
+// parallel suite or a slower CI runner that can exceed testing-library's 1 s
+// default for a query and Vitest's 5 s test timeout. The test timeout is read
+// when tests are collected, so it must be set at module level, not in a hook.
+vi.setConfig({ testTimeout: 30_000 });
 const defaultAsyncTimeout = getConfig().asyncUtilTimeout;
 beforeAll(() => {
   configure({ asyncUtilTimeout: 5_000 });
-  vi.setConfig({ testTimeout: 30_000 });
 });
 afterAll(() => {
   configure({ asyncUtilTimeout: defaultAsyncTimeout });
