@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { goToApp, navigateToView } from './fixtures';
+import { goToApp, navigateToView, waitForAppReady } from './fixtures';
 import { enableEncryption, exportBackup, installLaunchQueue, pngFixture, readRows, seedRows, workspacePassword, type LaunchWindow } from './client-lifecycle-fixtures';
 
 // The OS launch API is simulated, not a service worker. The dedicated offline
@@ -50,7 +50,8 @@ test('files queued before the React app mounts become exactly one durable note e
   expect(await page.evaluate(() => (window as LaunchWindow).__lifecycleLaunch.reads)).toEqual(Object.fromEntries(files.map(file => [file.name, 1])));
   await navigateToView(page, 'Dashboard');
   await page.reload();
-  await expect(page.locator('[data-tour="header"]')).toBeVisible();
+  // This document reloads again below; let its lazy startup requests finish.
+  await waitForAppReady(page);
   expect((await readRows(page, ['notes'])).notes).toEqual(initial);
   const now = Date.now();
   await seedRows(page, { folders: [{ id: 'fictional-classified-file-case', name: 'Fictional classified file case',

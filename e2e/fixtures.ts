@@ -16,12 +16,26 @@ export async function dismissInitialOverlays(page: Page) {
 }
 
 /**
+ * Wait until the analyst shell has finished loading its main view. The header
+ * can render while the main view's Suspense fallback ("Loading…") still waits
+ * for lazy views, including the always-mounted CaddyAI chat view and its
+ * separately fetched chat locale. WebKit reports an intercepted request that a
+ * reload or navigation cancels as a page error, so settle startup before either.
+ * This waits on rendered state, not on a request the page may never make.
+ */
+export async function waitForAppReady(page: Page) {
+  await expect(page.locator('[data-tour="header"]')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText('Loading…', { exact: true })).toHaveCount(0, { timeout: 15_000 });
+}
+
+/**
  * Navigate to the app and wait for it to be ready.
  * Each Playwright test gets a fresh browser context, so no need to clear storage.
  */
 export async function goToApp(page: Page) {
   await page.goto('/');
   await dismissInitialOverlays(page);
+  await waitForAppReady(page);
 }
 
 /**

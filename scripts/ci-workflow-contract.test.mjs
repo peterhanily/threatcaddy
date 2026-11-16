@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { load } from 'js-yaml';
@@ -27,14 +27,113 @@ const pagesPermission = { contents: 'read', pages: 'write', 'id-token': 'write' 
 const pagesCallerPermission = { contents: 'read', actions: 'read', pages: 'write', 'id-token': 'write' };
 const serverPermission = { contents: 'read', packages: 'write' };
 
+const playwrightConfig = ci => {
+  const env = { ...process.env };
+  delete env.CI;
+  if (ci) env.CI = 'true';
+  return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e',
+    "import c from './playwright.config.ts'; import s from './playwright.standalone.config.ts'; console.log(JSON.stringify({ flaky: c.failOnFlakyTests, retries: c.retries, workers: c.workers ?? null, maxFailures: c.maxFailures, globalTimeout: c.globalTimeout, timeout: c.timeout, projects: c.projects.map(project => project.name), trace: c.use.trace, standaloneTrace: s.use.trace, standaloneRetries: s.retries }));"],
+  { cwd: new URL('../', import.meta.url), env, encoding: 'utf8' }));
+};
+
 test('CI browser failures retain the original trace and cannot pass only through a retry', () => {
-  const config = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e',
-    "import c from './playwright.config.ts'; import s from './playwright.standalone.config.ts'; console.log(JSON.stringify({ flaky: c.failOnFlakyTests, trace: c.use.trace, standaloneTrace: s.use.trace, standaloneRetries: s.retries }));"],
-  { cwd: new URL('../', import.meta.url), env: { ...process.env, CI: 'true' }, encoding: 'utf8' }));
+  const config = playwrightConfig(true);
   assert.equal(config.flaky, true);
+  assert.equal(config.retries, 1);
+  assert.equal(config.workers, 1);
   assert.equal(config.trace, 'retain-on-failure');
   assert.equal(config.standaloneTrace, 'retain-on-failure');
   assert.equal(config.standaloneRetries, 0);
+});
+
+test('a broad CI browser regression stops early with its report; local runs fail on the first attempt', () => {
+  const ci = playwrightConfig(true);
+  assert.equal(ci.maxFailures, 10);
+  assert.equal(ci.globalTimeout, 20 * 60_000);
+  assert.equal(ci.timeout, 30_000);
+  const local = playwrightConfig(false);
+  assert.equal(local.retries, 0);
+  assert.equal(local.flaky, false);
+  assert.equal(local.maxFailures, 0);
+  assert.equal(local.globalTimeout, 0);
+  assert.equal(local.workers, null);
+});
+
+test('hosted browser acceptance runs each Playwright project in its own job against the packaged client', () => {
+  const build = verify.jobs['client-artifact'];
+  const job = verify.jobs.browser;
+  const config = playwrightConfig(true);
+  assert.deepEqual(config.projects, ['chromium', 'firefox', 'webkit']);
+  assert.equal(job.needs, 'client-artifact');
+  assert.equal(job.if, undefined);
+  assert.deepEqual(job.strategy, { 'fail-fast': false, matrix: { project: config.projects } });
+  // Observed before the split (Nov 2026): 3-5 minutes of build and standalone
+  // work, and at most 10 minutes of tests for the slowest single project.
+  // Playwright must stop and write its report before GitHub cancels the job.
+  assert.equal(build['timeout-minutes'], 20);
+  assert.equal(job['timeout-minutes'], 30);
+  assert.ok(config.globalTimeout <= (job['timeout-minutes'] - 5) * 60_000);
+
+  const steps = stepsOf(job);
+  const find = predicate => steps.findIndex(predicate);
+  const install = find(step => step.run === 'pnpm install --frozen-lockfile');
+  const browser = find(step => step.run === 'pnpm exec playwright install --with-deps "$PROJECT"');
+  const client = find(step => step.uses?.startsWith('actions/download-artifact@') && step.with.path === 'verified-client');
+  const reports = find(step => step.uses?.startsWith('actions/download-artifact@') && step.with.path === 'node_modules/.cache/threatcaddy');
+  const serve = find(step => step.name === 'Serve exactly the packaged client bytes');
+  const hosted = find(step => step.run === 'pnpm test:e2e --project="$PROJECT"');
+  const evidence = find(step => step.name === 'Preserve browser evidence');
+  assert.ok(install >= 0 && browser > install && client > install && reports > install);
+  assert.ok(serve > client && hosted > serve && hosted > browser && hosted > reports && evidence > hosted);
+  assert.equal(downloads(job).length, 2);
+  assert.deepEqual(steps[browser].env, { PROJECT: expression('matrix.project') });
+  assert.deepEqual(steps[client].with, {
+    'artifact-ids': expression('needs.client-artifact.outputs.artifact-id'),
+    path: 'verified-client', 'merge-multiple': true, 'digest-mismatch': 'error',
+  });
+  assert.deepEqual(steps[reports].with, {
+    'artifact-ids': expression('needs.client-artifact.outputs.reports-artifact-id'),
+    path: 'node_modules/.cache/threatcaddy', 'merge-multiple': true, 'digest-mismatch': 'error',
+  });
+  assert.deepEqual(steps[hosted].env, { PLAYWRIGHT_SKIP_BUILD: '1', PROJECT: expression('matrix.project') });
+  for (const index of [install, browser, client, reports, serve, hosted]) {
+    assert.equal(steps[index].if, undefined);
+    assert.equal(steps[index]['continue-on-error'], undefined);
+  }
+  assert.equal(steps[evidence].if, 'always()');
+  assert.equal(steps[evidence].with.name, `browser-results-${expression('matrix.project')}-${expression('github.sha')}`);
+  assert.equal(steps[evidence].with['retention-days'], 14);
+  assert.doesNotMatch(commands(job), /pnpm build|vite build/);
+
+  // The browser jobs test the same immutable artifact that the gate promotes.
+  assert.equal(build.outputs['artifact-id'], expression('steps.upload.outputs.artifact-id'));
+  assert.equal(verify.jobs.gate.steps[0].env.CLIENT_ARTIFACT_ID, expression('needs.client-artifact.outputs.artifact-id'));
+  assert.ok(verify.jobs.gate.needs.includes('client-artifact') && verify.jobs.gate.needs.includes('browser'));
+  assert.doesNotMatch(commands(build), /pnpm test:e2e/);
+  // Every hosted build report that a browser spec reads travels with the job.
+  const buildSteps = stepsOf(build);
+  const copied = buildSteps.findIndex(step => step.name === 'Keep the hosted build reports for browser acceptance');
+  const kept = buildSteps.findIndex(step => step.id === 'reports');
+  assert.ok(copied > buildSteps.findIndex(step => step.run === 'pnpm build') && kept > copied);
+  const specs = readdirSync(new URL('e2e/', root)).filter(name => name.endsWith('.ts')).map(name => read(`e2e/${name}`)).join('\n');
+  const reportNames = new Set([...specs.matchAll(/node_modules\/\.cache\/threatcaddy\/([\w.-]+\.json)/g)].map(match => match[1]));
+  assert.deepEqual([...reportNames].sort(), ['dependency-provenance-hosted.json', 'startup-budget.json']);
+  for (const name of reportNames) assert.match(buildSteps[copied].run, new RegExp(`node_modules/\\.cache/threatcaddy/${name.replaceAll('.', '\\.')}\\b`));
+  assert.match(buildSteps[copied].run, /client-build-reports\/$/m);
+  assert.equal(build.outputs['reports-artifact-id'], expression('steps.reports.outputs.artifact-id'));
+  assert.deepEqual(buildSteps[kept].with, {
+    name: `client-build-reports-${expression('github.sha')}`, path: 'client-build-reports/', 'if-no-files-found': 'error', 'retention-days': 90,
+  });
+});
+
+test('promoted client and server artifacts outlive release preparation and later re-verification', () => {
+  for (const [job, name] of [['client-artifact', 'verified-client-'], ['server-artifact', 'verified-server-']]) {
+    const upload = stepsOf(verify.jobs[job]).find(step => step.id === 'upload');
+    assert.equal(upload.with.name, name + expression('github.sha'));
+    assert.equal(upload.with['if-no-files-found'], 'error');
+    // GitHub's maximum retention for this public repository.
+    assert.equal(upload.with['retention-days'], 90);
+  }
 });
 
 test('required client checks validate every locale without report-only or narrowed coverage', () => {
@@ -356,10 +455,10 @@ test('Pages smoke preserves exact source, same artifact, production URL and synt
 
 test('verification keeps every required check and tests both Node-owned contracts in the gated client job', () => {
   assert.deepEqual(Object.keys(verify.jobs).sort(), [
-    'audit', 'client-checks', 'client-artifact', 'server-checks', 'database', 'server-artifact', 'extension', 'gate',
+    'audit', 'client-checks', 'client-artifact', 'browser', 'server-checks', 'database', 'server-artifact', 'extension', 'gate',
   ].sort());
   assert.deepEqual(verify.jobs.gate.needs, [
-    'audit', 'client-checks', 'client-artifact', 'server-checks', 'database', 'server-artifact', 'extension',
+    'audit', 'client-checks', 'client-artifact', 'browser', 'server-checks', 'database', 'server-artifact', 'extension',
   ]);
   assert.equal(verify.jobs.gate.name, 'Publication gate');
   assert.equal(verify.jobs.gate.if, 'always()');
@@ -410,6 +509,35 @@ function temporaryDirectory(t) {
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   return directory;
 }
+
+test('actual browser jobs serve only a packaged client whose source and checksum match', t => {
+  const step = stepsOf(verify.jobs.browser).find(candidate => candidate.name === 'Serve exactly the packaged client bytes');
+  assert.ok(step);
+  const source = 'a'.repeat(40);
+  const prepare = ({ sha = source, tamper = false } = {}) => {
+    const folder = temporaryDirectory(t);
+    mkdirSync(join(folder, 'packaged'));
+    writeFileSync(join(folder, 'packaged/index.html'), '<!doctype html><title>tested bytes</title>');
+    mkdirSync(join(folder, 'verified-client'));
+    execFileSync('tar', ['-cf', 'verified-client/client.tar', '-C', 'packaged', '.'], { cwd: folder });
+    writeFileSync(join(folder, 'verified-client/client.tar.sha256'),
+      execFileSync('sha256sum', ['client.tar'], { cwd: join(folder, 'verified-client'), encoding: 'utf8' }));
+    writeFileSync(join(folder, 'verified-client/source-sha.txt'), `${sha}\n`);
+    if (tamper) appendFileSync(join(folder, 'verified-client/client.tar'), 'substituted');
+    return folder;
+  };
+  const run = folder => execFileSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', step.run], {
+    cwd: folder, env: { PATH: process.env.PATH, GITHUB_SHA: source }, stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  const verified = prepare();
+  run(verified);
+  assert.equal(readFileSync(join(verified, 'dist/index.html'), 'utf8'), '<!doctype html><title>tested bytes</title>');
+  for (const options of [{ tamper: true }, { sha: 'b'.repeat(40) }]) {
+    const folder = prepare(options);
+    assert.throws(() => run(folder));
+    assert.equal(existsSync(join(folder, 'dist')), false);
+  }
+});
 
 test('actual publisher input guards reject missing, malformed and mismatched identities before downloading', () => {
   const source = 'a'.repeat(40);

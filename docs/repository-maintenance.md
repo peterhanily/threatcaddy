@@ -100,7 +100,7 @@ See GitHub's [immutable release documentation](https://docs.github.com/en/reposi
 
 Follow [Development and verification](development-verification.md#publication) for the required workflow. Publication promotes the same immutable artifact IDs from the successful verification run, checks source identity and SHA-256 digests, and rejects a superseded main revision. Do not rebuild in a privileged publication job or substitute files after verification.
 
-Retain the verified client archive, source SHA and checksum, and the server image ID/digest and source identity as approved release records before short-lived CI artifacts expire. A checksum confirms byte identity, not publisher trust or an independent security audit. Verify it against a trusted release record.
+CI keeps the verified client and server artifacts for 90 days. Retain the verified client archive, source SHA and checksum, and the server image ID/digest and source identity as approved release records before they expire. A checksum confirms byte identity, not publisher trust or an independent security audit. Verify it against a trusted release record.
 
 The Pages post-deployment smoke check verifies live bytes and synthetic offline save/reopen behavior against the same artifact. A failed smoke check means the release was published but not qualified; investigate before further publication. There is no automatic rollback.
 
