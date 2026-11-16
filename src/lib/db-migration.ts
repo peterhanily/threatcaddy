@@ -1,5 +1,5 @@
 /** Verified, resumable legacy transfer; deletion requires a separate saved backup and confirmation. */
-import { db } from '../db';
+import { db, repairBackupIntegrity } from '../db';
 import { decryptField, isEncryptedEnvelope } from './crypto';
 import { ENCRYPTED_FIELDS, getSessionKey } from './encryptionMiddleware';
 import { isEncryptionEnabled } from './encryptionStore';
@@ -225,7 +225,7 @@ export async function restoreLegacyRecoveryArchive(password: string, blob: Encry
     }
   }
   if (await fingerprint({ version: archive.databaseVersion, stores: archive.stores }) !== archive.fingerprint) throw new Error('Legacy recovery archive content verification failed.');
-  return withEntityDraftBarrier(() => db.transaction('rw', db.tables, async () => {
+  return withEntityDraftBarrier(() => db.transaction('rw', db.tables, async tx => {
     suppressSyncInCurrentTransaction();
     for (const table of db.tables) if (table.name !== '_localMigrations' && await table.count()) {
       throw new Error('Legacy recovery requires an empty workspace. Existing records and sync history were not changed. Use a fresh browser profile.');
@@ -237,6 +237,7 @@ export async function restoreLegacyRecoveryArchive(password: string, blob: Encry
       if (canonicalBackupJSON(await target.bulkGet(store.keys)) !== canonicalBackupJSON(store.rows)) throw new Error('Legacy recovery verification failed; all writes were rolled back.');
       count += store.rows.length;
     }
+    await repairBackupIntegrity(tx);
     await db.table('_localMigrations').delete('content-v1');
     await markRestoredSyncHistory(db);
     return count;

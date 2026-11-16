@@ -114,6 +114,19 @@ describe('encryption session deadlines', () => {
     } finally { remove(); }
   });
 
+  it('keeps the lock explanation when a recovered draft is edited again', async () => {
+    setEncryptionMeta(metadata()); setSessionKey(key, raw);
+    const draft = getEntityDraft('edited-after-lock');
+    draft.queue({ title: 'Edit before the deadline' }, HOUR);
+    lockEncryptionSession();
+    setSessionKey(key, raw); await restoreWorkspaceRecovery(key, () => getSessionKey() === key);
+    const lockMessage = draft.getSnapshot().error;
+    expect(lockMessage).toMatch(/workspace locked before this draft was confirmed saved/);
+    draft.queue({ title: 'Edit after unlock' });
+    expect(draft.getSnapshot()).toMatchObject({ status: 'error', error: lockMessage, patch: { title: 'Edit after unlock' } });
+    draft.discard(true);
+  });
+
   it('unmounts sensitive UI at the deadline even without activity, and clears cached/raw keys', async () => {
     setEncryptionMeta(metadata()); cacheSessionKey(raw, '1h');
     render(<AppShell />);

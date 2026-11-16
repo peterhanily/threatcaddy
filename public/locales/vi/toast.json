@@ -42,6 +42,7 @@
   "backup": {
     "exported": "Đã xuất bản sao lưu",
     "exportFailed": "Xuất bản sao lưu thất bại",
+    "exportFailedDetail": "Xuất bản sao lưu thất bại: {{error}}",
     "restored": "Đã khôi phục bản sao lưu",
     "restoreFailed": "Khôi phục bản sao lưu thất bại",
     "mergeComplete": "Gộp hoàn tất: {{added}} đã thêm, {{updated}} đã cập nhật, {{skipped}} bỏ qua",
@@ -60,12 +61,16 @@
   "investigation": {
     "sampleLoaded": "Đã tải điều tra mẫu",
     "sampleRemoved": "Đã xóa điều tra mẫu",
+    "sampleKept": "Đã xóa điều tra mẫu. Các mục của bạn nằm trong \"{{name}}\"",
+    "sampleLocked": "Mở khóa không gian làm việc trước khi thay đổi dữ liệu mẫu.",
+    "sampleSessionChanged": "Phiên không gian làm việc đã thay đổi. Hãy thử lại thao tác mẫu sau khi mở khóa.",
     "trashEmptied": "Đã làm sạch thùng rác",
     "savedAsTemplate": "Đã lưu \"{{name}}\" dưới dạng mẫu",
     "playbookRan": "Đang chạy playbook \"{{playbook}}\" trên \"{{investigation}}\"",
     "createdFromPlaybook": "Đã tạo \"{{name}}\" từ playbook",
     "exported": "Đã xuất điều tra \"{{name}}\"",
     "exportFailed": "Xuất điều tra thất bại",
+    "exportFailedDetail": "Xuất điều tra thất bại: {{error}}",
     "reportGenerated": "Đã tạo báo cáo cho \"{{name}}\""
   },
   "encryption": {

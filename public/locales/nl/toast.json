@@ -42,6 +42,7 @@
   "backup": {
     "exported": "Back-up geëxporteerd",
     "exportFailed": "Back-up exporteren mislukt",
+    "exportFailedDetail": "Back-up exporteren mislukt: {{error}}",
     "restored": "Back-up hersteld",
     "restoreFailed": "Back-up herstellen mislukt",
     "mergeComplete": "Samenvoegen voltooid: {{added}} toegevoegd, {{updated}} bijgewerkt, {{skipped}} overgeslagen",
@@ -60,12 +61,16 @@
   "investigation": {
     "sampleLoaded": "Voorbeeldonderzoek geladen",
     "sampleRemoved": "Voorbeeldonderzoek verwijderd",
+    "sampleKept": "Voorbeeldonderzoek verwijderd. Uw items staan in \"{{name}}\"",
+    "sampleLocked": "Ontgrendel de werkruimte voordat u voorbeeldgegevens wijzigt.",
+    "sampleSessionChanged": "De werkruimtesessie is gewijzigd. Probeer de voorbeeldactie opnieuw na het ontgrendelen.",
     "trashEmptied": "Prullenbak geleegd",
     "savedAsTemplate": "'{{name}}' opgeslagen als sjabloon",
     "playbookRan": "Playbook '{{playbook}}' uitgevoerd voor '{{investigation}}'",
     "createdFromPlaybook": "'{{name}}' aangemaakt vanuit playbook",
     "exported": "Onderzoek '{{name}}' geëxporteerd",
     "exportFailed": "Onderzoek exporteren mislukt",
+    "exportFailedDetail": "Onderzoek exporteren mislukt: {{error}}",
     "reportGenerated": "Rapport gegenereerd voor '{{name}}'"
   },
   "encryption": {

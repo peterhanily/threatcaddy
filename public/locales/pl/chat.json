@@ -12,6 +12,7 @@
     "backToThreads": "Powrót do wątków",
     "clickToRename": "Kliknij, aby zmienić nazwę",
     "threadTitleAria": "Tytuł wątku czatu",
+    "recoveredThreadTitle": "Odzyskana przerwana odpowiedź",
     "filterThreadsAria": "Filtruj wątki wg źródła",
     "filterAll": "wszystkie",
     "filterHuman": "człowiek",
@@ -124,6 +125,7 @@
     "branchTitle": "Rozgałęź rozmowę od tego miejsca",
     "rewindTitle": "Przewiń do tej wiadomości",
     "undoTitle": "Cofnij: przywróć obiekty do stanu przed tą akcją",
+    "lockInterrupted": "[Odpowiedź przerwana po zablokowaniu obszaru roboczego.]",
     "attachmentAlt": "Załącznik {{index}}",
     "tokenCount": "{{count}} tokenów",
     "tokenCountTitle": "Wejście: {{input}} tokenów, Wyjście: {{output}} tokenów"
@@ -131,6 +133,7 @@
   "tool": {
     "noInput": "(brak danych wejściowych)",
     "errorPrefix": "Błąd: {{message}}",
+    "lockInterrupted": "Przerwano z powodu zablokowania obszaru roboczego. Przed ponowną próbą użycia tego narzędzia sprawdź zapisany element lub punkt kontrolny.",
     "resultCount_one": "{{count}} wynik",
     "resultCount_other": "{{count}} wyników",
     "doneWithLabel": "Gotowe: {{label}}",

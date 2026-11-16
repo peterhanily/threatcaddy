@@ -1,6 +1,7 @@
 {
   "view.title": "Team Feed",
   "view.connectToServer": "Connect to a team server to use Team Feed.",
+  "view.viewerReadOnly": "Your viewer role can read and react to posts, but cannot post, reply, edit or pin.",
   "view.loading": "Loading...",
   "view.noPostsYet": "No posts yet. Be the first to share an update!",
   "view.noTeamActivity": "No team activity yet.",

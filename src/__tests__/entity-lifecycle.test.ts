@@ -7,9 +7,12 @@ beforeEach(async () => {
   vi.restoreAllMocks();
   await Promise.all(db.tables.map(table => table.clear()));
 });
-const base = { tags: ['shared'], createdAt: 1, updatedAt: 1, trashed: false, archived: false, createdBy: 'Original analyst', updatedBy: 'Reviewer' };
+// Folders have no trashed/archived fields; Export Investigation validates every row as a backup does.
+const provenance = { tags: ['shared'], createdAt: 1, updatedAt: 1, createdBy: 'Original analyst', updatedBy: 'Reviewer' };
+const base = { ...provenance, trashed: false, archived: false };
+const policy = { autoApproveReads: true, autoApproveEnrich: true, autoApproveFetch: false, autoApproveCreate: false, autoApproveModify: false, intervalMinutes: 5 };
 async function graph() {
-  await db.table('folders').add({ ...base, id: 'f', name: 'Case', order: 0, localOnly: true, agentEnabled: true, agentThreadId: 'chat', timelineId: 'tl', agentPolicy: { autoApproveCreate: false } });
+  await db.table('folders').add({ ...provenance, id: 'f', name: 'Case', order: 0, localOnly: true, agentEnabled: true, agentThreadId: 'chat', timelineId: 'tl', agentPolicy: policy });
   await db.table('notes').bulkAdd([
     { ...base, id: 'parent', title: 'Parent', content: 'Nested notes', folderId: 'f', pinned: false },
     { ...base, id: 'child', title: 'Child', content: 'Analysis', folderId: 'f', pinned: false, parentNoteId: 'parent', linkedTaskIds: ['task'], linkedNoteIds: ['external-note'],
@@ -17,15 +20,15 @@ async function graph() {
   ]);
   await db.table('tasks').add({ ...base, id: 'task', title: 'Review', folderId: 'f', status: 'todo', completed: false, priority: 'none', order: 0, linkedNoteIds: ['child'] });
   await db.table('timelines').add({ id: 'tl', name: 'Timeline', order: 0, createdAt: 1, updatedAt: 1 });
-  await db.table('timelineEvents').add({ ...base, id: 'event', title: 'Observation', folderId: 'f', timelineId: 'tl', timestamp: 1, eventType: 'other', source: '', confidence: 'high', linkedNoteIds: ['child'], linkedTaskIds: ['task'], linkedIOCIds: ['ioc', 'embedded'] });
+  await db.table('timelineEvents').add({ ...base, id: 'event', title: 'Observation', folderId: 'f', timelineId: 'tl', timestamp: 1, eventType: 'other', source: '', confidence: 'high', linkedNoteIds: ['child'], linkedTaskIds: ['task'], linkedIOCIds: ['ioc', 'embedded'], mitreAttackIds: [], assets: [], starred: false });
   await db.table('standaloneIOCs').add({ ...base, id: 'ioc', type: 'domain', value: 'example.test', confidence: 'high', folderId: 'f', linkedNoteIds: ['child'], linkedEvidenceIds: ['evidence'], relationships: [{ targetIOCId: 'embedded', relationshipType: 'related-to' }] });
   await db.table('evidenceItems').add({ ...base, id: 'evidence', title: 'Source', fileName: 'source.txt', fileType: 'text', content: 'Source text', size: 11, importedAt: 1, chunkIndex: 1, chunkCount: 1, extractionStatus: 'extracted', folderId: 'f', linkedIOCIds: ['ioc'] });
-  await db.table('whiteboards').add({ ...base, id: 'board', name: 'Board', elements: '[]', files: '{"file":{"dataURL":"data:image/png;base64,aA=="}}', folderId: 'f', order: 0 });
+  await db.table('whiteboards').add({ ...base, id: 'board', name: 'Board', elements: '[]', files: '{"file":{"id":"file","mimeType":"image/png","dataURL":"data:image/png;base64,aA=="}}', folderId: 'f', order: 0 });
   await db.table('chatThreads').bulkAdd([
     { ...base, id: 'chat', title: 'Chat folder', isFolder: true, messages: [], provider: 'anthropic', model: 'model', folderId: 'f' },
     { ...base, id: 'child-chat', title: 'Agent thread', parentThreadId: 'chat', messages: [], provider: 'anthropic', model: 'model', folderId: 'f' },
   ]);
-  await db.table('agentProfiles').add({ id: 'profile', name: 'Analyst profile', role: 'specialist', systemPrompt: 'Review evidence', policy: { autoApproveCreate: false }, source: 'user', createdAt: 1, updatedAt: 1 });
+  await db.table('agentProfiles').add({ id: 'profile', name: 'Analyst profile', role: 'specialist', systemPrompt: 'Review evidence', policy, source: 'user', createdAt: 1, updatedAt: 1 });
   await db.table('agentDeployments').bulkAdd([
     { id: 'deployment', investigationId: 'f', profileId: 'profile', threadId: 'child-chat', status: 'running', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 },
     { id: 'subordinate', investigationId: 'f', profileId: 'profile', supervisorDeploymentId: 'deployment', threadId: 'child-chat', status: 'running', shift: 'active', order: 1, createdAt: 1, updatedAt: 1 },
@@ -73,6 +76,17 @@ describe('portable investigation graph', () => {
     expect(chat?.parentThreadId).toBe(folder?.agentThreadId);
     expect((await db.whiteboards.where('folderId').equals(imported.folderId).first())?.files).toContain('data:image/png');
     expect(await db.notes.get('child')).toBeDefined();
+  });
+  it('points an imported delegated task at the imported agent, and clears it when that agent is deleted', async () => {
+    await graph();
+    await db.tasks.update('task', { assignedDeploymentId: 'subordinate' });
+    const imported = await importInvestigationJSON(await exportInvestigationJSON('f'));
+    const subordinate = await db.agentDeployments.where('investigationId').equals(imported.folderId).filter(row => row.order === 1).first();
+    const task = await db.tasks.where('folderId').equals(imported.folderId).first();
+    expect(subordinate?.id).not.toBe('subordinate');
+    expect(task?.assignedDeploymentId).toBe(subordinate?.id);
+    await deleteEntitiesWithReferences({ agentDeployments: ['subordinate'] });
+    expect((await db.tasks.get('task'))?.assignedDeploymentId).toBeUndefined();
   });
   it('rolls back the entire graph if any imported collection fails', async () => {
     await graph();

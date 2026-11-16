@@ -274,6 +274,19 @@ describe('sync-sanitize', () => {
       ]);
     });
 
+    it('restores message details only for message ids that are present and unique on both sides', () => {
+      const image = [{ type: 'image', data: 'iVBORw0KGgo=', mimeType: 'image/png' }];
+      const plain = (id: string, content: string) => ({ id, role: 'user', content, createdAt: 1 });
+      // Legacy or imported threads can carry empty or repeated message ids.
+      const local = { id: 'c', messages: [plain('', 'first'), { ...plain('', 'second'), attachments: image }, plain('d', 'third'), { ...plain('d', 'fourth'), attachments: image },
+        { ...plain('u', 'fifth'), attachments: image }] };
+      const incoming = { id: 'c', messages: [plain('', 'first'), plain('', 'second'), plain('d', 'third'), plain('d', 'fourth'), plain('u', 'fifth'), plain('u', 'sixth')] };
+      const merged = preserveUnsyncedFields('chatThreads', incoming, sanitized('chatThreads', incoming), local);
+      expect((merged.messages as Array<{ attachments?: unknown[] }>).map(message => message.attachments?.length ?? 0)).toEqual([0, 0, 0, 0, 0, 0]);
+      const unique = { id: 'c', messages: [plain('u', 'fifth')] };
+      expect((preserveUnsyncedFields('chatThreads', unique, sanitized('chatThreads', unique), local).messages as Record<string, unknown>[])[0].attachments).toEqual(image);
+    });
+
     it('does not carry a parent pointer into another investigation', () => {
       const local = { id: 'n', folderId: 'f1', parentNoteId: 'p', isFolder: true };
       expect(preserveUnsyncedFields('notes', { id: 'n', folderId: 'f1' }, sanitized('notes', { id: 'n', folderId: 'f1' }), local))

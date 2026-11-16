@@ -253,7 +253,7 @@ The plaintext payload (before encryption) has this structure:
 
 ### Creating a Client-Side Backup
 
-With a team server connected, use **Settings → Server Encrypted Backups** with
+With a team server connected, use **Settings → Data → Server Encrypted Backups** with
 a password to create and upload an encrypted blob.
 The header's **Save Backup** and Settings' **Export JSON** instead produce the
 plain JSON format described above; they do not prompt for an encryption password.
@@ -266,6 +266,22 @@ Two restore modes are available:
 |------|----------|
 | **Full Replace** | Replaces records within the full backup's declared scope and included tables. Omitted tables and out-of-scope records are retained; shared references are protected. Replacement can delete existing records, so back up the destination first. |
 | **Merge** | For a full backup, adds missing records and updates existing records when the backup version is newer (`updatedAt` comparison). A verified differential backup applies its recorded changes, including tombstone deletions, to the matching parent state; this is not a non-destructive operation. |
+
+**Team-connected workspaces.** A restore or import in a workspace bound to a team
+server never sends deletions or rollbacks to teammates. Team sync pauses after
+the restore until you reconcile in **Settings → General → Sync history
+recovery**, where records shared with the team come back as conflicts to
+review. A restore that would delete records with unsent sync changes is refused
+and changes nothing; sign in and let sync upload them first. A restore that
+would delete items sync keeps on this device because the team server cannot
+accept them (for example evidence with a BMP or AVIF preview, or very long
+text) is refused too and names them: delete them permanently, edit them so they
+can upload, or restore with Merge from the header **Load Backup** instead.
+Sync history recovery does not upload held items. **Export Investigation** files, and older single-investigation
+files, are always merged: they never delete other investigations or records.
+Files exported by 2.0.2 carry a `threatcaddy-investigation` format marker that
+2.0.0 rejects; they are not a full workspace backup. 2.0.0 also rejects 2.0.2
+backups that contain AI-delegated tasks.
 
 **Important:** An unlocked workspace's encryption middleware returns decrypted
 application values to backup creation. The separate encrypted-backup flow
@@ -409,23 +425,29 @@ docker compose cp server:/data/files ./files-backup-$(date +%Y%m%d)/
 
 **Recovery from server-side backup:**
 1. Open ThreatCaddy in the browser
-2. Go to Settings > Backup & Restore
+2. Go to **Settings → Data → Server Encrypted Backups**
 3. Connect to the team server (if not already)
-4. Download a backup from the server backup list
+4. Choose a backup from the server backup list
 5. Enter the backup password
-6. Choose restore mode (Full Replace recommended for empty database)
+6. Choose restore mode (Full Replace recommended for an empty workspace). In a
+   team-connected workspace sync then pauses; reconcile in **Settings → General →
+   Sync history recovery**
 
 **Recovery from local file:**
 1. Open ThreatCaddy
-2. Go to Settings > Backup & Restore
-3. Import the `.enc` backup file
-4. Enter the backup password
-5. Choose restore mode
+2. Use the header **Load Backup**, or **Settings → Data → Import JSON Backup**
+3. Select the saved `threatcaddy-backup-*.json` file, or a downloaded encrypted
+   cloud backup (it asks for its password)
+4. With **Load Backup**, choose Full Replace or Merge. **Import JSON Backup**
+   always performs Full Replace (Export Investigation files are always merged)
 
 **Recovery via server sync (if connected to team server):**
 1. Open ThreatCaddy and connect to the team server
-2. The sync engine will automatically pull all data the user has access to
-3. No manual intervention needed -- the initial sync pushes nothing (empty local DB) and pulls everything
+2. The sync engine pulls the shared investigations the user has access to
+3. Sync restores only shared, supported fields. Device-only details (see
+   [Team sync and backup cover different data](#team-sync-and-backup-cover-different-data)),
+   local-only investigations and local tables such as agent records and
+   templates are not on the server; restore them from a client backup
 
 ### Scenario 2: Server Data Corruption
 
@@ -522,7 +544,7 @@ second directory on the same disk, and sync alone do not complete this drill.
 | What | How Often | Method |
 |------|-----------|--------|
 | Application JSON backup | Weekly and before major changes | Save Backup / Export JSON; protect the downloaded plaintext file in secure storage |
-| Investigation-scoped backup | After major updates | Export specific investigation |
+| Investigation-scoped backup | After major updates | Export Investigation (imports merge-only; not a full backup) |
 
 ### For Team Deployments
 

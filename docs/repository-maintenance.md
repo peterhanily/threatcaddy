@@ -27,8 +27,14 @@ Enable [private vulnerability reporting](https://docs.github.com/en/code-securit
 Review Dependabot alerts and security updates, and [CodeQL default setup](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/configure-code-scanning/configure-code-scanning) for JavaScript/TypeScript. Enabling these services and their notifications or automatic update pull requests is an administrative choice. Do not enable automatic merging of dependency updates. Independently of those settings, CI audits all three complete lockfiles on pull requests, main pushes and its weekly schedule; high/critical advisories and audit-service failures block publication.
 
 The checked-in `.github/dependabot.yml` proposes weekly updates separately for
-root pnpm, server npm, extension npm and GitHub Actions once merged to the
-default branch. Keep action references pinned to full commit SHAs. Root Vitest
+root pnpm, server npm, extension npm and GitHub Actions, and daily updates for
+the server image's Node 24 Alpine base, once merged to the default branch. A
+Node base proposal must also
+update `.node-version`, `.nvmrc` and `README.md`; the CI contract tests fail
+until it does. Update the other guides that state the runtime version
+(`server/README.md`, `docs/deployment.md`, `docs/development-verification.md`)
+in the same change.
+Keep action references pinned to full commit SHAs. Root Vitest
 and its coverage packages update together; review resolved dependency versions
 and full audits rather than assuming a tooling version bump removes every
 vulnerable transitive package. Proposals do not bypass verification or authorize
@@ -36,7 +42,9 @@ publication.
 
 Routine minor/patch proposals are grouped per manifest, with a seven-day
 version-update cooldown and smaller open-PR limits. Security proposals have
-separate groups and bypass that cooldown; major upgrades remain individually
+separate groups and bypass that cooldown. Docker receives no Dependabot
+security updates, so the Node base image check uses a two-day cooldown instead.
+Major upgrades remain individually
 reviewable (the root Vitest/coverage pair stays aligned). The weekly full audit
 is unchanged. Dependabot alerts, security updates and weekly CodeQL analysis
 for JavaScript/TypeScript and Actions were enabled on 2 November 2026.
@@ -55,9 +63,10 @@ The four checked-in extension downloads are release artifacts: `chrome.zip` and 
 
 ### Versioned downloads
 
-Every release correction needs a new version and tag. The README names the
-supported stable download explicitly; update its badge, download link and release
-notes with the coordinated client/server version. Preserve historical tags and
+Every release correction needs a new version and tag. The README links to the
+latest stable release; update its version badge and release-notes link with the
+coordinated client/server version, and publish the release promptly after the
+merge so that link does not keep pointing at the previous release. Preserve historical tags and
 asset bytes. Browser stores and retained team servers remain separate rollouts.
 
 After the exact main revision passes CI and hosted smoke, download its immutable
@@ -100,7 +109,7 @@ See GitHub's [immutable release documentation](https://docs.github.com/en/reposi
 
 Follow [Development and verification](development-verification.md#publication) for the required workflow. Publication promotes the same immutable artifact IDs from the successful verification run, checks source identity and SHA-256 digests, and rejects a superseded main revision. Do not rebuild in a privileged publication job or substitute files after verification.
 
-Retain the verified client archive, source SHA and checksum, and the server image ID/digest and source identity as approved release records before short-lived CI artifacts expire. A checksum confirms byte identity, not publisher trust or an independent security audit. Verify it against a trusted release record.
+CI keeps the verified client and server artifacts for 90 days. Retain the verified client archive, source SHA and checksum, and the server image ID/digest and source identity as approved release records before they expire. A checksum confirms byte identity, not publisher trust or an independent security audit. Verify it against a trusted release record.
 
 The Pages post-deployment smoke check verifies live bytes and synthetic offline save/reopen behavior against the same artifact. A failed smoke check means the release was published but not qualified; investigate before further publication. There is no automatic rollback.
 

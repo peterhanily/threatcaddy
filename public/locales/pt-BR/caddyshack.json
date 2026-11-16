@@ -1,6 +1,7 @@
 {
   "view.title": "Feed da equipe",
   "view.connectToServer": "Conecte-se a um servidor de equipe para usar o Feed da equipe.",
+  "view.viewerReadOnly": "Com a função Leitor, você pode ler publicações e reagir a elas, mas não pode publicar, responder, editar nem fixar.",
   "view.loading": "Carregando...",
   "view.noPostsYet": "Sem publicações ainda. Seja o primeiro a compartilhar uma atualização!",
   "view.noTeamActivity": "Sem atividade de equipe ainda.",

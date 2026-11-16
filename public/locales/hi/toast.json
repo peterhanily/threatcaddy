@@ -42,6 +42,7 @@
   "backup": {
     "exported": "बैकअप निर्यात हुआ",
     "exportFailed": "बैकअप निर्यात विफल",
+    "exportFailedDetail": "बैकअप निर्यात विफल: {{error}}",
     "restored": "बैकअप पुनर्स्थापित हुआ",
     "restoreFailed": "बैकअप पुनर्स्थापना विफल",
     "mergeComplete": "मर्ज पूर्ण: {{added}} जोड़े गए, {{updated}} अपडेट हुए, {{skipped}} छोड़े गए",
@@ -60,12 +61,16 @@
   "investigation": {
     "sampleLoaded": "नमूना जाँच लोड हुई",
     "sampleRemoved": "नमूना जाँच हटाई गई",
+    "sampleKept": "नमूना जाँच हटाई गई। आपके आइटम «{{name}}» में हैं",
+    "sampleLocked": "नमूना डेटा बदलने से पहले वर्कस्पेस अनलॉक करें।",
+    "sampleSessionChanged": "वर्कस्पेस सत्र बदल गया। अनलॉक करने के बाद नमूना क्रिया फिर से आज़माएँ।",
     "trashEmptied": "ट्रैश खाली हुआ",
     "savedAsTemplate": "«{{name}}» टेम्पलेट के रूप में सहेजा गया",
     "playbookRan": "playbook «{{playbook}}» «{{investigation}}» पर चला",
     "createdFromPlaybook": "«{{name}}» playbook से बनाया गया",
     "exported": "जाँच «{{name}}» निर्यात हुई",
     "exportFailed": "जाँच निर्यात विफल",
+    "exportFailedDetail": "जाँच निर्यात विफल: {{error}}",
     "reportGenerated": "«{{name}}» के लिए रिपोर्ट तैयार हुई"
   },
   "encryption": {

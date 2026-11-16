@@ -3,6 +3,7 @@ import { db } from '../db';
 import type { PlaybookTemplate, NoteTemplate, Note, Task, Folder, Timeline, PlaybookExecution } from '../types';
 import { BUILTIN_PLAYBOOKS } from '../lib/builtin-playbooks';
 import { BUILTIN_NOTE_TEMPLATES } from '../lib/builtin-templates';
+import { nextTimelineOrder } from '../lib/sync-capture-policy';
 import { nanoid } from 'nanoid';
 
 export function usePlaybooks() {
@@ -80,11 +81,10 @@ export function usePlaybooks() {
     let timeline: Timeline | undefined;
     if (!timelineId) {
       timelineId = nanoid();
-      const maxTimelineOrder = (await db.timelines.toArray()).reduce((max, t) => Math.max(max, t.order), 0);
       timeline = {
         id: timelineId,
         name: folder.name,
-        order: maxTimelineOrder + 1,
+        order: nextTimelineOrder(await db.timelines.toArray()),
         createdAt: now,
         updatedAt: now,
       };

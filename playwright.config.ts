@@ -4,9 +4,14 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: 1,
+  // Local runs report a first-attempt failure directly, as the CI gate does.
+  retries: process.env.CI ? 1 : 0,
   // A retry is diagnostic evidence, never a substitute for a clean release gate.
   failOnFlakyTests: !!process.env.CI,
+  // A broad regression stops early, and a stuck run ends with its report
+  // before the per-browser CI job limit in verify.yml cancels it.
+  maxFailures: process.env.CI ? 10 : 0,
+  globalTimeout: process.env.CI ? 20 * 60_000 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   timeout: 30_000,

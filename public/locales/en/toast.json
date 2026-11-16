@@ -42,6 +42,7 @@
   "backup": {
     "exported": "Backup exported",
     "exportFailed": "Failed to export backup",
+    "exportFailedDetail": "Failed to export backup: {{error}}",
     "restored": "Backup restored",
     "restoreFailed": "Failed to restore backup",
     "mergeComplete": "Merge complete: {{added}} added, {{updated}} updated, {{skipped}} skipped",
@@ -60,12 +61,16 @@
   "investigation": {
     "sampleLoaded": "Sample investigation loaded",
     "sampleRemoved": "Sample investigation removed",
+    "sampleKept": "Sample investigation removed. Your items are in \"{{name}}\"",
+    "sampleLocked": "Unlock the workspace before changing sample data.",
+    "sampleSessionChanged": "The workspace session changed. Retry the sample action after unlocking.",
     "trashEmptied": "Trash emptied",
     "savedAsTemplate": "Saved \"{{name}}\" as a template",
     "playbookRan": "Ran \"{{playbook}}\" playbook on \"{{investigation}}\"",
     "createdFromPlaybook": "Created \"{{name}}\" from playbook",
     "exported": "Exported investigation \"{{name}}\"",
     "exportFailed": "Failed to export investigation",
+    "exportFailedDetail": "Failed to export investigation: {{error}}",
     "reportGenerated": "Report generated for \"{{name}}\""
   },
   "encryption": {

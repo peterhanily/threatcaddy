@@ -3,6 +3,7 @@ import { and, eq, gt, gte, sql } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { sessions, users } from '../db/schema.js';
 import { logger } from '../lib/logger.js';
+import { describeError } from '../lib/db-errors.js';
 import type { AuthUser } from '../types.js';
 
 export type FeedTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -53,6 +54,6 @@ export const withCurrentFeedAccess = createMiddleware<{ Variables: FeedVariables
   });
   for (const effect of effects) {
     try { await effect(); }
-    catch (error) { logger.warn('Committed feed notification failed', { error: error instanceof Error ? error.message : String(error) }); }
+    catch (error) { logger.warn('Committed feed notification failed', { error: describeError(error) }); }
   }
 });

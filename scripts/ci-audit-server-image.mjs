@@ -1,18 +1,24 @@
 // Validate the complete Trivy report for the same image that acceptance tested.
 // Registry/download/scanner failures are fatal in the workflow before this runs.
-import { readFileSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { readFileSync, realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 export const TRIVY_VERSION = '0.76.2';
 const severities = new Set(['UNKNOWN', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const nonempty = value => typeof value === 'string' && value.length > 0;
+const DATABASE_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+const CLOCK_SKEW_MS = 60 * 60 * 1000;
 function requireEvidence(condition, message) {
   if (!condition) throw new Error(`Image audit rejected: ${message}`);
 }
 
-export function auditServerImage(report, { imageId, revision, dependencies, diagnostics = '' }) {
+export function auditServerImage(report, { imageId, revision, dependencies, diagnostics = '', database, now = Date.now() }) {
   requireEvidence(/^sha256:[a-f0-9]{64}$/.test(imageId), 'invalid expected image identity');
+  // Trivy rebuilds its database every few hours; a stale copy scans against old advisories.
+  const databaseUpdatedAt = nonempty(database?.UpdatedAt) ? Date.parse(database.UpdatedAt) : NaN;
+  requireEvidence(Number.isFinite(databaseUpdatedAt) && databaseUpdatedAt <= now + CLOCK_SKEW_MS
+    && now - databaseUpdatedAt <= DATABASE_MAX_AGE_MS, 'vulnerability database is missing, invalid or older than 48 hours');
   requireEvidence(/^[a-f0-9]{40}$/.test(revision), 'invalid expected source revision');
   requireEvidence(Array.isArray(dependencies) && dependencies.length > 0 && dependencies.every(nonempty), 'missing application dependency inventory');
   requireEvidence(object(report) && report.SchemaVersion === 2 && report.Trivy?.Version === TRIVY_VERSION, 'unexpected scanner or report schema');
@@ -37,6 +43,7 @@ export function auditServerImage(report, { imageId, revision, dependencies, diag
   let osPackages = 0;
   const applicationPackages = new Set();
   const counts = Object.fromEntries([...severities].map(severity => [severity, 0]));
+  let unknownFixed = 0;
   for (const result of report.Results) {
     requireEvidence(object(result) && nonempty(result.Target) && nonempty(result.Class) && nonempty(result.Type), 'malformed package result');
     requireEvidence(!result.Error && !result.Errors, 'package analysis reported an error');
@@ -54,24 +61,29 @@ export function auditServerImage(report, { imageId, revision, dependencies, diag
         && nonempty(vulnerability.PkgName) && nonempty(vulnerability.InstalledVersion)
         && severities.has(vulnerability.Severity), 'malformed or unclassified vulnerability');
       counts[vulnerability.Severity]++;
+      // Not yet scored, but a fixed package exists: update rather than publish.
+      if (vulnerability.Severity === 'UNKNOWN' && nonempty(vulnerability.FixedVersion)) unknownFixed++;
     }
   }
   requireEvidence(osPackages > 0, 'operating-system package analysis is empty');
   const missing = dependencies.filter(name => !applicationPackages.has(name));
   requireEvidence(missing.length === 0, `application package analysis is incomplete: ${missing.join(', ')}`);
   requireEvidence(counts.HIGH + counts.CRITICAL === 0, `${counts.HIGH} HIGH and ${counts.CRITICAL} CRITICAL vulnerabilities remain`);
-  return { imageId, revision, scanner: TRIVY_VERSION, os: `${os.Family} ${os.Name}`, osPackages,
-    applicationPackages: applicationPackages.size, vulnerabilities: counts };
+  requireEvidence(unknownFixed === 0, `${unknownFixed} UNKNOWN-severity vulnerabilities with an available fix remain`);
+  return { imageId, revision, scanner: TRIVY_VERSION, databaseUpdatedAt: new Date(databaseUpdatedAt).toISOString(),
+    os: `${os.Family} ${os.Name}`, osPackages, applicationPackages: applicationPackages.size, vulnerabilities: counts };
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Compare real paths: a symlinked checkout must not turn the CLI into a silent no-op.
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
   try {
-    const [reportPath, imageIdPath, revision, diagnosticsPath, manifestPath] = process.argv.slice(2);
-    if (process.argv.length !== 7) throw new Error('Usage: node scripts/ci-audit-server-image.mjs REPORT IMAGE_ID REVISION DIAGNOSTICS MANIFEST');
+    const [reportPath, imageIdPath, revision, diagnosticsPath, manifestPath, databasePath] = process.argv.slice(2);
+    if (process.argv.length !== 8) throw new Error('Usage: node scripts/ci-audit-server-image.mjs REPORT IMAGE_ID REVISION DIAGNOSTICS MANIFEST DATABASE_METADATA');
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
     const result = auditServerImage(JSON.parse(readFileSync(reportPath, 'utf8')), {
       imageId: readFileSync(imageIdPath, 'utf8').trim(), revision,
       dependencies: Object.keys(manifest.dependencies ?? {}), diagnostics: readFileSync(diagnosticsPath, 'utf8'),
+      database: JSON.parse(readFileSync(databasePath, 'utf8')),
     });
     console.log(JSON.stringify({ passed: true, ...result }, null, 2));
   } catch (error) {

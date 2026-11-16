@@ -12,6 +12,7 @@
     "backToThreads": "العودة إلى المحادثات",
     "clickToRename": "انقر لإعادة التسمية",
     "threadTitleAria": "عنوان المحادثة",
+    "recoveredThreadTitle": "استجابة مُستردّة بعد انقطاعها",
     "filterThreadsAria": "تصفية المحادثات حسب المصدر",
     "filterAll": "الكل",
     "filterHuman": "بشري",
@@ -126,6 +127,7 @@
     "branchTitle": "تفريع المحادثة من هنا",
     "rewindTitle": "إرجاع إلى هذه الرسالة",
     "undoTitle": "تراجع: استعادة الكيانات إلى ما قبل هذا الإجراء",
+    "lockInterrupted": "[انقطعت الاستجابة عند إقفال مساحة العمل.]",
     "attachmentAlt": "مرفق {{index}}",
     "tokenCount": "{{count}} رمز",
     "tokenCountTitle": "الإدخال: {{input}} رمز، الإخراج: {{output}} رمز"
@@ -133,6 +135,7 @@
   "tool": {
     "noInput": "(لا إدخال)",
     "errorPrefix": "خطأ: {{message}}",
+    "lockInterrupted": "انقطع بسبب إقفال مساحة العمل. تحقّق من العنصر المحفوظ أو نقطة التفتيش قبل إعادة محاولة هذه الأداة.",
     "resultCount_one": "{{count}} نتيجة",
     "resultCount_other": "{{count}} نتائج",
     "doneWithLabel": "تم: {{label}}",

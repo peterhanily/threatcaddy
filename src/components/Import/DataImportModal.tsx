@@ -5,6 +5,7 @@ import { Modal } from '../Common/Modal';
 import { db } from '../../db';
 import type { Folder, Timeline } from '../../types';
 import type { ImportResult, ColumnMapping, ParseResult } from '../../lib/data-import';
+import { isUserTimeline } from '../../lib/sync-capture-policy';
 import {
   detectFormat,
   parseInput,
@@ -198,10 +199,11 @@ export function DataImportModal({
           tid = created.id;
         }
 
-        // Fall back to first existing timeline, or auto-create one
+        // Fall back to the first user timeline (never a demo one), or auto-create one
         if (!tid || tid === '__new__') {
-          if (timelines.length > 0) {
-            tid = timelines[0].id;
+          const fallback = timelines.find(isUserTimeline);
+          if (fallback) {
+            tid = fallback.id;
           } else {
             const created = await onCreateTimeline('Data Import');
             tid = created.id;

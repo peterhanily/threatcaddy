@@ -12,6 +12,7 @@
     "backToThreads": "返回会话列表",
     "clickToRename": "点击重命名",
     "threadTitleAria": "聊天会话标题",
+    "recoveredThreadTitle": "已恢复的中断响应",
     "filterThreadsAria": "按来源筛选会话",
     "filterAll": "全部",
     "filterHuman": "人工",
@@ -122,6 +123,7 @@
     "branchTitle": "从此处分支对话",
     "rewindTitle": "回溯到此消息",
     "undoTitle": "撤销：将实体恢复到此操作之前",
+    "lockInterrupted": "[工作区锁定时响应已中断。]",
     "attachmentAlt": "附件 {{index}}",
     "tokenCount": "{{count}} 个令牌",
     "tokenCountTitle": "输入：{{input}} 个令牌，输出：{{output}} 个令牌"
@@ -129,6 +131,7 @@
   "tool": {
     "noInput": "（无输入）",
     "errorPrefix": "错误：{{message}}",
+    "lockInterrupted": "因工作区锁定而中断。重试此工具前，请检查已保存的项目或检查点。",
     "resultCount_one": "{{count}} 个结果",
     "resultCount_other": "{{count}} 个结果",
     "doneWithLabel": "完成：{{label}}",

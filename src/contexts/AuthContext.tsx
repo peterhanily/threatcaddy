@@ -133,31 +133,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const setServerUrl = useCallback((url: string | null) => {
-    if (url) url = normalizedWorkspaceIdentity(url, 'endpoint-validation').serverUrl;
-    const previousIdentity = identityRef.current;
+  /** Signs this provider's identity out locally at once and returns its
+   * remote revocation, which is sent only to that identity's own server. */
+  const endSession = useCallback((): Promise<void> | null => {
+    const stored = readStoredAuth();
+    const identity = identityRef.current;
+    const sameIdentity = stored && stored.serverUrl === identity?.serverUrl && stored.user.id === identity.userId;
+    const credentials = [
+      ...(sameIdentity ? [{ refreshToken: stored.refreshToken, accessToken: stored.accessToken }] : []),
+      ...(refreshTokenRef.current ? [{ refreshToken: refreshTokenRef.current, accessToken: accessTokenRef.current }] : []),
+    ];
+    const logoutUrl = identity?.serverUrl;
     ++generationRef.current;
-    // Choosing another endpoint never reuses the previous endpoint's tokens.
+    syncEngine.stop();
+    setUser(null);
+    setConnected(false);
     accessTokenRef.current = null;
     refreshTokenRef.current = null;
     refreshPromiseRef.current = null;
     identityRef.current = null;
-    setUser(null);
-    setConnected(false);
-    syncEngine.stop();
-    setServerUrlState(url);
-    if (!url) {
-      // Disconnect
-      setUser(null);
-      setConnected(false);
-      accessTokenRef.current = null;
-      refreshTokenRef.current = null;
-      const stored = readStoredAuth();
-      if (!stored || (stored.serverUrl === previousIdentity?.serverUrl && stored.user.id === previousIdentity.userId)) {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    }
+    // Do not remove a different account's credentials written by another tab.
+    if (!stored || sameIdentity) localStorage.removeItem(STORAGE_KEY);
+    return logoutUrl && credentials.length ? revokeRemoteSessions(logoutUrl, credentials) : null;
   }, []);
+
+  const setServerUrl = useCallback((url: string | null) => {
+    if (url) url = normalizedWorkspaceIdentity(url, 'endpoint-validation').serverUrl;
+    // Choosing another endpoint never reuses the previous endpoint's tokens, and
+    // leaves no restorable session behind. Revocation is best effort here and
+    // must not hold up the switch while the previous server is unreachable.
+    void endSession()?.catch(() => {});
+    setServerUrlState(url);
+  }, [endSession]);
 
   const login = useCallback(async (email: string, password: string, overrideServerUrl?: string) => {
     const generation = ++generationRef.current;
@@ -233,26 +240,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [serverUrl, persist, selectAuthenticatedWorkspace]);
 
   const logout = useCallback(async () => {
-    const stored = readStoredAuth();
-    const identity = identityRef.current;
-    const sameIdentity = stored && stored.serverUrl === identity?.serverUrl && stored.user.id === identity.userId;
-    const credentials = [
-      ...(sameIdentity ? [{ refreshToken: stored.refreshToken, accessToken: stored.accessToken }] : []),
-      ...(refreshTokenRef.current ? [{ refreshToken: refreshTokenRef.current, accessToken: accessTokenRef.current }] : []),
-    ];
-    const logoutUrl = identity?.serverUrl;
-    ++generationRef.current;
-    syncEngine.stop();
-    setUser(null);
-    setConnected(false);
-    accessTokenRef.current = null;
-    refreshTokenRef.current = null;
-    refreshPromiseRef.current = null;
-    identityRef.current = null;
-    // Do not remove a different account's credentials written by another tab.
-    if (!stored || sameIdentity) localStorage.removeItem(STORAGE_KEY);
-    if (logoutUrl && credentials.length) await revokeRemoteSessions(logoutUrl, credentials);
-  }, []);
+    await endSession();
+  }, [endSession]);
 
   const invalidateAccessToken = useCallback(() => {
     accessTokenRef.current = null;

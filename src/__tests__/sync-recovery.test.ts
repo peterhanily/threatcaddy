@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { db } from '../db';
+import { db, runWorkspaceContentMigrations } from '../db';
 import { disableSync, revisionKey } from '../lib/sync-state';
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { prepareSyncRecovery, reconcileSyncWorkspace, restoreSyncRecovery } from '../lib/sync-recovery';
-import { decryptBackup } from '../lib/backup-crypto';
+import { decryptBackup, encryptBackup } from '../lib/backup-crypto';
+import { buildFullBackupPayload } from '../lib/backup-data';
+import { exportJSON } from '../lib/export';
+import i18n from '../i18n';
 const api = vi.hoisted(() => ({ pull: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ syncPull: api.pull }));
 const password = 'a separate recovery phrase';
@@ -51,6 +54,23 @@ describe('explicit sync recovery', () => {
     expect(await db.table('_syncMeta').get('syncRecoveryRequiredV2')).toMatchObject({ value: false });
     await expect(reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed)).rejects.toThrow('Download');
   });
+  it('re-queues team tags and timelines but keeps demo ones on this device', async () => {
+    await db.tags.bulkAdd([{ id: 'sample-realistic-tag-1', name: 'synthetic-training', color: '#6366f1' }, { id: 'team-tag', name: 'phishing', color: '#ef4444' }]);
+    await db.timelines.add({ id: 'sample-realistic-timeline-1', name: 'Mailbox Exercise — UTC', order: 998, createdAt: 1, updatedAt: 1 });
+    const receipt = await prepareSyncRecovery(password);
+    await reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed);
+    const queued: string[] = (await db.table('_syncQueue').toArray()).map(entry => entry.entityId);
+    expect(queued).toContain('team-tag');
+    expect(queued).not.toContain('sample-realistic-tag-1');
+    expect(queued).not.toContain('sample-realistic-timeline-1');
+  });
+  it('re-queues a demo tag the server already holds like any other synced row', async () => {
+    await db.tags.add({ id: 'sample-tag-8', name: 'remediation', color: '#22c55e' });
+    await db.table('_syncMeta').put({ key: revisionKey('tags', 'sample-tag-8'), value: 3 });
+    const receipt = await prepareSyncRecovery(password);
+    await reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed);
+    expect(await db.table('_syncQueue').toArray()).toContainEqual(expect.objectContaining({ table: 'tags', entityId: 'sample-tag-8', op: 'put' }));
+  });
   it('requires a verified receipt and both confirmations', async () => {
     const receipt = await prepareSyncRecovery(password);
     await expect(reconcileSyncWorkspace({ ...receipt }, identity.serverUrl, identity.userId, confirmed)).rejects.toThrow('Download');
@@ -86,5 +106,123 @@ describe('explicit sync recovery', () => {
     expect(await db.folders.get('f')).toMatchObject({ agentEnabled: false, agentStatus: 'paused' });
     expect((await db.table('_syncQueue').toArray())[0].clientVersion).toBe(8);
     expect(await db.table('_syncMeta').get('syncRecoveryRequiredV2')).toMatchObject({ value: true });
+  });
+  it('restores pending agent approvals as inert, backup-valid history', async () => {
+    const action = { investigationId: 'f', threadId: 't', toolName: 'create_note', toolInput: { title: 'Draft' }, rationale: 'History', createdAt: 1 };
+    await db.agentActions.bulkAdd([
+      { ...action, id: 'pending', status: 'pending', toolBinding: 'binding', idempotencyKey: 'key-1' },
+      { ...action, id: 'approved', status: 'approved', toolBinding: 'binding', idempotencyKey: 'key-2', resultSummary: 'Earlier note' },
+      { ...action, id: 'executed', status: 'executed', toolBinding: 'binding', idempotencyKey: 'key-3', resultSummary: 'Done' },
+    ]);
+    const receipt = await prepareSyncRecovery(password);
+    await db.transaction('rw', db.tables, async () => { for (const table of db.tables) await table.clear(); });
+    await restoreSyncRecovery(password, receipt.blob, true);
+    for (const id of ['pending', 'approved']) {
+      const restored = await db.agentActions.get(id);
+      expect(restored).toMatchObject({ status: 'rejected', resultSummary: expect.stringContaining('Recovered from archive') });
+      expect(restored).not.toHaveProperty('result');
+      expect(restored).not.toHaveProperty('toolBinding');
+      expect(restored).not.toHaveProperty('idempotencyKey');
+    }
+    expect(await db.agentActions.get('executed')).toMatchObject({ status: 'executed', toolBinding: 'binding', idempotencyKey: 'key-3', resultSummary: 'Done' });
+    await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
+    await expect(buildFullBackupPayload('investigation', 'f')).resolves.toBeDefined();
+    await expect(exportJSON()).resolves.toContain('Recovered from archive');
+  });
+  it('repairs backup-blocking rows from an older archive even after the one-time repair already ran', async () => {
+    // Rows a pre-2.0.1 build wrote: NaN usage, a stamped meeting, a meeting without its thread and an action holding `result`.
+    const action = { investigationId: 'f', threadId: 't', toolName: 'create_note', toolInput: { title: 'Draft' }, rationale: 'History', createdAt: 1 };
+    await db.chatThreads.add({ id: 't', title: 'Audit', messages: [{ id: 'm', role: 'assistant', content: 'Turn', createdAt: 1, tokenCount: { input: NaN, output: 2 } }],
+      model: 'model', provider: 'anthropic', folderId: 'f', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+    await db.agentDeployments.add({ id: 'd', investigationId: 'f', profileId: 'p', status: 'idle', order: 0, createdAt: 1, updatedAt: 1,
+      metrics: { cyclesRun: 1, toolCallsExecuted: 0, toolCallsProposed: 0, tasksCompleted: 0, tasksRejected: 0, tokensUsed: { input: NaN, output: NaN }, lastCycleAt: 1, costUSD: NaN } });
+    await db.table('agentMeetings').bulkAdd([
+      { id: 'stamped', investigationId: 'f', participantDeploymentIds: [], threadId: 't', agenda: 'A', status: 'completed', roundsCompleted: 1, maxRounds: 1, createdAt: 1, updatedAt: 9 },
+      { id: 'threadless', investigationId: 'f', participantDeploymentIds: [], agenda: 'B', status: 'completed', roundsCompleted: 1, maxRounds: 1, createdAt: 1 },
+    ]);
+    await db.table('agentActions').add({ ...action, id: 'old', status: 'rejected', result: 'Recovered from archive' });
+    const receipt = await prepareSyncRecovery(password);
+    // A fresh workspace on this build has already recorded the one-time repair.
+    await db.transaction('rw', db.tables, async () => { for (const table of db.tables) await table.clear(); });
+    await runWorkspaceContentMigrations();
+    expect(await db.table('_localMigrations').get('backup-integrity-v1')).toBeDefined();
+    await restoreSyncRecovery(password, receipt.blob, true);
+    expect((await db.agentDeployments.get('d'))?.metrics).toMatchObject({ tokensUsed: { input: 0, output: 0 }, costUSD: 0 });
+    expect((await db.chatThreads.get('t'))?.messages[0].tokenCount).toEqual({ input: 0, output: 2 });
+    expect(await db.agentMeetings.get('stamped')).not.toHaveProperty('updatedAt');
+    expect(await db.agentMeetings.get('threadless')).toMatchObject({ threadId: '' });
+    expect(await db.agentActions.get('old')).toMatchObject({ resultSummary: 'Recovered from archive' });
+    await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
+    await expect(exportJSON()).resolves.toContain('threatcaddy-backup');
+  });
+});
+
+describe('recovery refusals carry a code the panel translates and keep their English message', () => {
+  const clear = () => db.transaction('rw', db.tables, async () => { for (const table of db.tables) await table.clear(); });
+  it('codes reconciliation refusals', async () => {
+    const receipt = await prepareSyncRecovery(password);
+    await expect(reconcileSyncWorkspace(receipt, identity.serverUrl, 'bob', confirmed))
+      .rejects.toMatchObject({ code: 'accountChanged', message: 'The signed-in account changed; recovery was not applied.' });
+    api.pull.mockResolvedValueOnce({ changes: [], cursor: '1' });
+    await expect(reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed))
+      .rejects.toMatchObject({ code: 'serverUnsupported', message: 'This server does not support safe history recovery.' });
+    await db.notes.update('n', { title: 'A later edit' });
+    await expect(reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed))
+      .rejects.toMatchObject({ code: 'localDataChanged', message: 'Local data changed after backup. Download a new recovery archive before reconciling.' });
+  });
+  it('codes a foreign binding and queued updates without a current record', async () => {
+    await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { ...identity, userId: 'bob' } });
+    await expect(reconcileSyncWorkspace(await prepareSyncRecovery(password), identity.serverUrl, identity.userId, confirmed))
+      .rejects.toMatchObject({ code: 'otherAccount', message: 'This workspace belongs to another account. Switch workspaces instead of rebinding it.' });
+    await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: identity });
+    await db.table('_syncQueue').add({ table: 'notes', entityId: 'gone', folderId: 'f', op: 'put', data: { ...note, id: 'gone' }, clientVersion: 3 });
+    await expect(reconcileSyncWorkspace(await prepareSyncRecovery(password), identity.serverUrl, identity.userId, confirmed)).rejects.toMatchObject({
+      code: 'ambiguousRows', params: { count: 1, records: '["notes","gone"]' },
+      message: expect.stringContaining('Reconciliation is blocked: 1 queued update(s) have no current local record: ["notes","gone"].'),
+    });
+  });
+  it('says when more queued updates without a record are listed only in the archive, in English as before', async () => {
+    const english = i18n.getFixedT('en', 'settings');
+    const ids = Array.from({ length: 11 }, (_, index) => `gone-${index}`);
+    for (const id of ids) await db.table('_syncQueue').add({ table: 'notes', entityId: id, folderId: 'f', op: 'put', data: { ...note, id }, clientVersion: 3 });
+    const listed = ids.slice(0, 10).map(id => JSON.stringify(['notes', id])).join(', ');
+    const error = await reconcileSyncWorkspace(await prepareSyncRecovery(password), identity.serverUrl, identity.userId, confirmed).catch(cause => cause);
+    expect(error).toMatchObject({ code: 'ambiguousRowsMore', params: { count: 11, records: listed },
+      message: expect.stringContaining(`${listed} (additional entries are in the archive). Keep the verified archive`) });
+    expect(english(`syncRecovery.error.${error.code}`, error.params)).toBe(error.message);
+    await db.table('_syncQueue').where('entityId').anyOf(ids.slice(1)).delete();
+    const single = await reconcileSyncWorkspace(await prepareSyncRecovery(password), identity.serverUrl, identity.userId, confirmed).catch(cause => cause);
+    expect(single).toMatchObject({ code: 'ambiguousRows', params: { count: 1, records: '["notes","gone-0"]' } });
+    expect(english(`syncRecovery.error.${single.code}`, single.params)).toBe(single.message);
+  });
+  it('codes a local edit made while the server handshake is in flight', async () => {
+    const receipt = await prepareSyncRecovery(password);
+    api.pull.mockImplementationOnce(async () => {
+      await db.notes.update('n', { title: 'Edited during the handshake' });
+      return { changes: [], cursor: '1', generation };
+    });
+    await expect(reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed))
+      .rejects.toMatchObject({ code: 'localDataChanged', message: 'Local data changed after backup. Download a new recovery archive before reconciling.' });
+    expect(api.pull).toHaveBeenCalledOnce();
+    expect((await db.table('_syncQueue').toArray())[0].clientVersion).toBe(8);
+  });
+  it('codes archive restore refusals', async () => {
+    const receipt = await prepareSyncRecovery(password);
+    await expect(restoreSyncRecovery(password, receipt.blob, true))
+      .rejects.toMatchObject({ code: 'notEmpty', message: 'Recovery requires an empty workspace; existing data was not changed.' });
+    const archive = await decryptBackup<{ data: Record<string, unknown[]> }>(password, receipt.blob);
+    await clear();
+    await expect(restoreSyncRecovery('a different recovery phrase', receipt.blob, true))
+      .rejects.toMatchObject({ code: 'wrongPassword', message: 'Wrong password or corrupted backup' });
+    await expect(restoreSyncRecovery(password, { v: 2 } as never, true))
+      .rejects.toMatchObject({ code: 'wrongPassword', message: 'Unsupported backup format version' });
+    await expect(restoreSyncRecovery(password, await encryptBackup(password, { ...archive, kind: 'threatcaddy-backup' }), true))
+      .rejects.toMatchObject({ code: 'unsupportedArchive', message: 'Unsupported workspace recovery archive.' });
+    await expect(restoreSyncRecovery(password, await encryptBackup(password, { ...archive, data: { ...archive.data, notes: [note, note] } }), true))
+      .rejects.toMatchObject({ code: 'unsupportedArchive', message: 'Invalid or duplicate recovery identity.' });
+    localStorage.setItem('threatcaddy-auth', JSON.stringify({ serverUrl: identity.serverUrl, accessToken: 'synthetic', refreshToken: 'synthetic-refresh', user: { id: 'bob', displayName: 'Bob', email: 'bob@example.invalid', role: 'analyst' } }));
+    await expect(restoreSyncRecovery(password, receipt.blob, true))
+      .rejects.toMatchObject({ code: 'archiveAccount', message: 'Recovery archive belongs to another server or account.' });
+    expect(await db.notes.count()).toBe(0);
   });
 });

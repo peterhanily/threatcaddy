@@ -12,6 +12,7 @@
     "backToThreads": "Terug naar threads",
     "clickToRename": "Klik om te hernoemen",
     "threadTitleAria": "Titel chatthread",
+    "recoveredThreadTitle": "Herstelde onderbroken reactie",
     "filterThreadsAria": "Threads filteren op bron",
     "filterAll": "alle",
     "filterHuman": "mens",
@@ -122,6 +123,7 @@
     "branchTitle": "Gesprek hier vertakken",
     "rewindTitle": "Terugspelen naar dit bericht",
     "undoTitle": "Ongedaan maken: objecten herstellen naar vóór deze actie",
+    "lockInterrupted": "[Reactie onderbroken toen de werkruimte werd vergrendeld.]",
     "attachmentAlt": "Bijlage {{index}}",
     "tokenCount": "{{count}} tokens",
     "tokenCountTitle": "Invoer: {{input}} tokens, Uitvoer: {{output}} tokens"
@@ -129,6 +131,7 @@
   "tool": {
     "noInput": "(geen invoer)",
     "errorPrefix": "Fout: {{message}}",
+    "lockInterrupted": "Onderbroken door vergrendeling van de werkruimte. Controleer het opgeslagen item of controlepunt voordat u deze tool opnieuw probeert.",
     "resultCount_one": "{{count}} resultaat",
     "resultCount_other": "{{count}} resultaten",
     "doneWithLabel": "Klaar: {{label}}",

@@ -64,6 +64,20 @@ describe('share schema and resource contracts', () => {
     expect(data.iocs[0]).not.toHaveProperty('createdBy');
   });
 
+  it('shares task and IOC assignments without assignee or agent identities', () => {
+    const rejection = { at: 1, byAgentId: 'dep-lead', quality: 'needs-redo', reason: 'thin', requestedDelta: 'add sources' };
+    const task = { id: 't', title: 'T', tags: ['phishing'], assigneeId: 'u-ben', assignedDeploymentId: 'dep-enricher', rejectionHistory: [rejection] };
+    const ioc = { id: 'i', type: 'domain', value: 'x.test', tags: [], assigneeId: 'u-cy', assigneeName: 'Cy (IR Lead)' };
+    const data = sanitizeSharePayload(payload('investigation', { folder: { id: 'f', name: 'Case' }, tasks: [task], iocs: [ioc],
+      tags: [{ id: 'g1', name: 'phishing' }, { id: 'g2', name: 'Unrelated customer' }] })).d as InvestigationBundle;
+    for (const row of [data.tasks[0], data.iocs[0], sanitizeSharePayload(payload('task', task)).d, sanitizeSharePayload(payload('ioc', ioc)).d]) {
+      for (const key of ['assigneeId', 'assigneeName', 'assignedDeploymentId']) expect(row).not.toHaveProperty(key);
+    }
+    expect(data.tasks[0].rejectionHistory).toEqual([{ at: 1, quality: 'needs-redo', reason: 'thin', requestedDelta: 'add sources' }]);
+    // Workspace tags that no shared record uses are not part of the share.
+    expect(data.tags.map(tag => tag.name)).toEqual(['phishing']);
+  });
+
   it.each([
     [], payload('note', []), payload('note', { title: 'Missing ID' }),
     payload('investigation', { folder: { id: 'f' }, notes: {} }),

@@ -1,13 +1,23 @@
 /** Non-mutating validation for portable records. Never truncate a successful backup. */
 import { BACKUP_TABLES, type BackupTable } from './backup-tables';
 import { validateBackupMedia, validateBackupURL } from './backup-media-validation';
+import { IOC_TYPES } from './entity-enums';
 
 export const MAX_BACKUP_BYTES = 50 * 1024 * 1024;
 export const MAX_BACKUP_ITEMS = 100_000;
 export type PortableRow = Record<string, unknown> & { id: string };
 type Check = (value: unknown, path: string) => void;
 type Shape = Record<string, Check>;
-const invalid = (path: string): never => { throw new Error(`Invalid backup field ${path}; nothing was imported.`); };
+/** Validation runs before any write or download in both directions. Messages
+ * carry paths and record IDs only, never field values. */
+class BackupFieldError extends Error {
+  readonly path: string;
+  constructor(path: string, record?: string) {
+    super(`Invalid backup field ${path}${record ? ` in record ${record}` : ''}; no data was changed.`);
+    this.path = path;
+  }
+}
+const invalid = (path: string): never => { throw new BackupFieldError(path); };
 const text: Check = (value, path) => { if (typeof value !== 'string') invalid(path); };
 const number: Check = (value, path) => { if (typeof value !== 'number' || !Number.isFinite(value)) invalid(path); };
 const boolean: Check = (value, path) => { if (typeof value !== 'boolean') invalid(path); };
@@ -41,8 +51,19 @@ function fields(s = '', n = '', b = '', a = '', d = ''): Shape {
 }
 
 /** Also bounds nested opaque JSON carried as data, not code or a table selector. */
-export function validateBackupJSON(value: unknown): void {
-  const pending = [{ value, depth: 0 }];
+export function validateBackupJSON(value: unknown, root = ''): void {
+  interface Pending { value: unknown; depth: number; key?: string; parent?: Pending }
+  // Paths are built only on failure; array elements are named by their record ID when present.
+  const where = (entry: Pending): string => {
+    let path = '';
+    for (let node = entry; node.parent; node = node.parent) {
+      const element = Array.isArray(node.parent.value);
+      const id = element && isBackupObject(node.value) && typeof node.value.id === 'string' ? node.value.id : node.key;
+      path = (element ? `[${id}]` : `.${node.key}`) + path;
+    }
+    return (root + path).replace(/^\./, '') || 'value';
+  };
+  const pending: Pending[] = [{ value, depth: 0 }];
   let count = 0;
   while (pending.length) {
     const next = pending.pop();
@@ -50,22 +71,22 @@ export function validateBackupJSON(value: unknown): void {
     if (++count > 2_000_000 || next.depth > 64) throw new Error('Backup exceeds supported structure limits.');
     const item = next.value;
     if (item === null || item === undefined || typeof item === 'string' || typeof item === 'boolean') continue;
-    if (typeof item === 'number') { number(item, 'number'); continue; }
-    if (!Array.isArray(item) && !isBackupObject(item)) invalid('JSON');
+    if (typeof item === 'number') { if (!Number.isFinite(item)) invalid(`${where(next)} (non-finite number)`); continue; }
+    if (!Array.isArray(item) && !isBackupObject(item)) invalid(`${where(next)} (unsupported value)`);
     for (const [key, child] of Object.entries(item as object)) {
-      if (['__proto__', 'prototype', 'constructor'].includes(key)) invalid('reserved property');
-      pending.push({ value: child, depth: next.depth + 1 });
+      if (['__proto__', 'prototype', 'constructor'].includes(key)) invalid(`${where(next)} (reserved property)`);
+      pending.push({ value: child, depth: next.depth + 1, key, parent: next });
     }
   }
 }
-const json: Check = value => validateBackupJSON(value);
-const jsonObject: Check = (value, path) => { if (!isBackupObject(value)) invalid(path); validateBackupJSON(value); };
+const json: Check = (value, path) => validateBackupJSON(value, path);
+const jsonObject: Check = (value, path) => { if (!isBackupObject(value)) invalid(path); validateBackupJSON(value, path); };
 const confidence = oneOf('low', 'medium', 'high', 'confirmed');
 const priority = oneOf('none', 'low', 'medium', 'high');
 const taskStatus = oneOf('todo', 'in-progress', 'done');
 const agentStatus = oneOf('idle', 'running', 'waiting', 'paused', 'error');
 const source = oneOf('builtin', 'user', 'team');
-const iocType = oneOf('ipv4', 'ipv6', 'domain', 'url', 'email', 'md5', 'sha1', 'sha256', 'file-path', 'cve', 'mitre-attack', 'yara-rule', 'sigma-rule');
+const iocType = oneOf(...IOC_TYPES);
 const relationship = object(fields('targetIOCId relationshipType'), 'targetIOCId relationshipType');
 const comment = object(fields('id text authorId authorName', '', '', '', 'createdAt'), 'id text createdAt');
 const entityComment = object(fields('id userId userName content', '', '', '', 'createdAt updatedAt'), 'id content createdAt');
@@ -143,12 +164,12 @@ const serialized = (arrayShape: boolean, byteLimit = MAX_BACKUP_BYTES): Check =>
   let decoded: unknown;
   try { decoded = JSON.parse(value as string); } catch { invalid(path); }
   if (!decoded || typeof decoded !== 'object' || Array.isArray(decoded) !== arrayShape) invalid(path);
-  validateBackupJSON(decoded);
+  validateBackupJSON(decoded, path);
 };
 
 const RECORDS: Record<BackupTable, Shape> = {
   notes: { ...common, ...links, ...analyzed, ...fields('title content sourceUrl sourceTitle color parentNoteId', '', 'pinned isFolder reviewRequired'), annotations: array(comment) },
-  tasks: { ...common, ...links, ...analyzed, ...fields('title description dueDate assigneeId', 'order rejectionCount', 'completed escalated', '', 'completedAt'),
+  tasks: { ...common, ...links, ...analyzed, ...fields('title description dueDate assigneeId assignedDeploymentId', 'order rejectionCount', 'completed escalated', '', 'completedAt'),
     priority, status: taskStatus, comments: array(comment), checklist: array(object(fields('id text', '', 'done'), 'id text done')),
     rejectionHistory: array(object({ ...fields('byAgentId reason requestedDelta', '', '', '', 'at'), quality: oneOf('needs-redo', 'serious-failure') }, 'at quality reason requestedDelta')) },
   folders: { ...fields('id name icon color description clsLevel papLevel timelineId closedReason agentThreadId createdBy updatedBy', 'order', 'localOnly agentEnabled',
@@ -239,8 +260,14 @@ export function validatePortableTables(value: unknown, options: { allowLegacyDef
     if ((rows as unknown[]).length > MAX_BACKUP_ITEMS) throw new Error(`Too many items in ${name} (max ${MAX_BACKUP_ITEMS.toLocaleString()} per type)`);
     const ids = new Set<string>();
     for (const row of rows as unknown[]) {
-      validatePortableRow(name as BackupTable, row, options.allowLegacyDefaults);
-      if (ids.has(row.id)) throw new Error(`Duplicate record ID in ${name}; nothing was imported.`);
+      try {
+        validatePortableRow(name as BackupTable, row, options.allowLegacyDefaults);
+      } catch (error) {
+        const id = isBackupObject(row) && typeof row.id === 'string' && row.id.trim() ? row.id : undefined;
+        if (error instanceof BackupFieldError && id) throw new BackupFieldError(error.path, `${name}:${id}`);
+        throw error;
+      }
+      if (ids.has(row.id)) throw new Error(`Duplicate record ID ${name}:${row.id}; no data was changed.`);
       ids.add(row.id);
     }
   }

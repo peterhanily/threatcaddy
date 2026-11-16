@@ -34,6 +34,8 @@ export interface SyncResult {
   serverData?: Record<string, unknown>;
   serverRecord?: Record<string, unknown>;
   previousFolderId?: string;
+  /** Why a change was rejected by validation; absent for permission and scope rejections. */
+  reason?: string;
 }
 
 // WebSocket message types

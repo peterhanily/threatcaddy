@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import { useAuth } from '../../contexts/AuthContext';
 import { IntegrationExecutor } from '../../lib/integration-executor';
 import { integrationWrite } from '../../lib/integration-cancellation';
+import { CONFIDENCE_VALUES, normalizeEnum } from '../../lib/entity-enums';
 import { cancellableRequest } from '../../lib/request-cancellation';
 import type { ExecutionOptions } from '../../lib/integration-executor';
 import { db } from '../../db';
@@ -299,8 +300,10 @@ export function BulkEnrichModal({
                         const existing = await db.standaloneIOCs.get(id);
                         if (!existing || existing.trashed) throw new Error('The IOC target is missing or deleted.');
                         const updates: Partial<StandaloneIOC> = { updatedAt: Date.now() };
-                        if (fields.iocStatus !== undefined) updates.iocStatus = fields.iocStatus as string;
-                        if (fields.confidence !== undefined) updates.confidence = fields.confidence as StandaloneIOC['confidence'];
+                        if (fields.iocStatus !== undefined && fields.iocStatus !== null) updates.iocStatus = String(fields.iocStatus);
+                        // An unsupported value keeps the stored one: every backup refuses it.
+                        const confidence = normalizeEnum(fields.confidence, CONFIDENCE_VALUES);
+                        if (confidence) updates.confidence = confidence;
                         if (fields.enrichment) {
                           const existingEnrichment = existing.enrichment || {};
                           const newEnrichment = fields.enrichment as Record<string, Record<string, unknown>>;

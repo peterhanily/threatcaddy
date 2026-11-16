@@ -5,13 +5,15 @@ import { nanoid } from 'nanoid';
 import { workspaceStorageKey } from './workspace-profiles';
 import { ENTITY_RELATIONS, mapEntityReferences, type EntityRecord } from './entity-relations';
 import { withEntityDraftBarrier } from './entity-drafts';
-import { buildFullBackupPayload } from './backup-data';
+import { buildFullBackupPayload, portableRows, type BackupRow } from './backup-data';
 import { canonicalBackupJSON, encryptBackup, type BackupPayload } from './backup-crypto';
-import { BACKUP_TABLES, type BackupTable } from './backup-tables';
+import { BACKUP_TABLES, investigationOf, type BackupTable } from './backup-tables';
 import { assertBackupSize, isBackupObject, validateBackupJSON, validateBackupQuickLinks, validatePortableTables, type PortableRow } from './backup-records';
 import { isBase64Data, isChatImageMime } from './backup-media-validation';
-import { decodePortableBackup, PORTABLE_BACKUP_FORMAT, portableTableCounts, suspendRestoredAutomation } from './portable-backup';
+import { decodePortableBackup, INVESTIGATION_EXPORT_FORMAT, PORTABLE_BACKUP_FORMAT, portableTableCounts, suspendRestoredAutomation } from './portable-backup';
+import i18n from '../i18n';
 import { previewRestore, restoreFullReplace, restoreMerge } from './backup-restore';
+import { nextTimelineOrder } from './sync-capture-policy';
 
 export async function exportJSON(): Promise<string> {
   const json = JSON.stringify(await portableSnapshot(false), null, 2);
@@ -272,6 +274,7 @@ export function sanitizeTask(raw: unknown): Task | null {
     archived: bool(r.archived),
     completedAt: r.completedAt != null ? num(r.completedAt) : undefined,
     assigneeId: r.assigneeId != null ? str(r.assigneeId) : undefined,
+    assignedDeploymentId: r.assignedDeploymentId != null ? str(r.assignedDeploymentId) : undefined,
     rejectionCount: r.rejectionCount != null ? num(r.rejectionCount) : undefined,
     rejectionHistory: Array.isArray(r.rejectionHistory)
       ? (r.rejectionHistory as unknown[]).map((rh) => {
@@ -1295,9 +1298,25 @@ function restoreQuickLinks(links: QuickLink[] | undefined, warnings: string[]): 
   }
 }
 
+/** An Export Investigation file (marked, or a legacy unmarked file whose every
+ * record belongs to its one investigation) lacks every other investigation. */
+function holdsSingleInvestigation(decoded: Awaited<ReturnType<typeof prepareJSONImport>>): boolean {
+  if (decoded.sourceFormat === 'investigation') return true;
+  const data = decoded.payload.data;
+  if (decoded.sourceFormat !== 'legacy-json' || decoded.quickLinks !== undefined || data.folders?.length !== 1) return false;
+  const folderId = (data.folders[0] as PortableRow).id;
+  return BACKUP_TABLES.every(name => ['folders', 'tags', 'timelines', 'agentProfiles'].includes(name)
+    || (['noteTemplates', 'playbookTemplates', 'integrationTemplates', 'installedIntegrations', 'customSlashCommands'].includes(name)
+      ? !data[name]?.length : (data[name] ?? []).every(row => investigationOf(name, row as PortableRow) === folderId)));
+}
+
 export async function importJSON(json: string, password?: string): Promise<JSONImportResult> {
   const decoded = await prepareJSONImport(json, password);
-  await restoreFullReplace(decoded.payload);
+  if (holdsSingleInvestigation(decoded)) {
+    // Replacing with one investigation would delete all the others; merging never deletes.
+    await restoreMerge(decoded.payload);
+    decoded.warnings.unshift(i18n.t('data.investigationMergedNotice', { ns: 'settings' }));
+  } else await restoreFullReplace(decoded.payload);
   restoreQuickLinks(decoded.quickLinks, decoded.warnings);
   return { ...portableTableCounts(decoded.payload.data), ...(decoded.warnings.length ? { warnings: decoded.warnings } : {}) };
 }
@@ -1345,6 +1364,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
   const timelines = allTimelines.filter((t) => timelineIds.has(t.id));
 
   const data: ExportData = {
+    format: INVESTIGATION_EXPORT_FORMAT,
     version: 1,
     exportedAt: Date.now(),
     notes,
@@ -1362,8 +1382,15 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     agentMeetings: allAgentMeetings.length > 0 ? allAgentMeetings : undefined,
     agentProfiles: allAgentProfiles.filter(profile => allAgentDeployments.some(deployment => deployment.profileId === profile.id)),
   };
+  // Same transport-revision projection as every workspace backup.
+  const record = data as unknown as Record<string, unknown>;
+  for (const name of BACKUP_TABLES) if (Array.isArray(record[name])) record[name] = portableRows(name, record[name] as BackupRow[]);
+  // Never write a file its own import refuses: the same check as every backup.
+  validatePortableTables(Object.fromEntries(BACKUP_TABLES.filter(name => Array.isArray(record[name])).map(name => [name, record[name]])));
 
-  return JSON.stringify(data, null, 2);
+  const json = JSON.stringify(data, null, 2);
+  assertBackupSize(json);
+  return json;
   });
 }
 
@@ -1444,13 +1471,12 @@ export function parseTimelineImport(json: string): TimelineExportData {
 export async function importTimelineAsNew(parsed: TimelineExportData): Promise<{ timelineId: string; eventCount: number }> {
   const newTimelineId = nanoid();
   const now = Date.now();
-  const maxOrder = (await db.timelines.toArray()).reduce((max, t) => Math.max(max, t.order), 0);
   const timeline: Timeline = {
     id: newTimelineId,
     name: parsed.timeline.name,
     description: parsed.timeline.description,
     color: parsed.timeline.color,
-    order: maxOrder + 1,
+    order: nextTimelineOrder(await db.timelines.toArray()),
     createdAt: now,
     updatedAt: now,
   };

@@ -149,9 +149,9 @@ Committed writes wake the sync engine, with periodic retries as a safety net. Pu
 
 **Refresh tokens** are session-based, generated with nanoid(32), and stored in PostgreSQL. The server tracks token families to detect reuse (a signal of token theft). Both TTL (default 24 hours) and maximum sessions per user are configurable. On refresh, the old session is deleted and a new one is created.
 
-**Admin tokens** use a separate HMAC-SHA256 JWT issued on a dedicated admin port (default 3002). They have a 1-hour TTL with an audience claim of `admin-panel`, signed with a random 32-byte key regenerated on each server startup. This intentionally invalidates all admin sessions on restart.
+**Admin tokens** use a separate HMAC-SHA256 JWT issued on a dedicated admin port (default 3002). They have a 1-hour TTL with an audience claim of `admin-panel`, signed with a random 32-byte key regenerated on each server startup. This intentionally invalidates all admin sessions on restart. Signing out of the admin panel revokes all of that administrator's tokens on the server.
 
-**Passwords** are hashed with Argon2id. Login rate limiting uses progressive lockout after failed attempts (in-memory, per email).
+**Passwords** are hashed with Argon2id. Failed logins are counted in memory per scope (user or admin login), account and client address; all IPv6 addresses in one /64 count as one address. Five failures within 15 minutes lock that address out of that account for 15 minutes; this per-address lock never applies to an address without failures. After 5 failed sign-ins for one account from any addresses, counted until 15 minutes pass without one, the server checks at most one password every 3 minutes for that account from addresses that have not signed in to it, and answers their other attempts with 429 and a `Retry-After` of at most 180 seconds; each further failing address of that kind is locked after its first failure. This holds an attacker with many addresses to about the five checks per account every 15 minutes that 2.0.0 allowed. The server remembers in memory the last 10 addresses (IPv6 by /64) that signed in to each account, for 30 days after their last sign-in or until it restarts; they are exempt from this per-account limit and keep the five-failure limit. The admin login rejects usernames no administrator can have without counting them. The client address is the socket peer, or the forwarded address when the peer is a trusted proxy (`TRUST_PROXY`, `TRUSTED_PROXY_IPS`); if all clients arrive from one untrusted proxy address, the lock applies to the account as a whole. Known limitation: while an attacker keeps the per-account limit engaged from several addresses, a legitimate user signing in from an address that has not signed in to the account before, or from any address after a server restart (which forgets known addresses), can be refused with 429 until the attempts stop. Persisting known devices across restarts is planned.
 
 **Registration modes**: Invite-only (default, requiring an email in the `allowed_emails` table) or open registration.
 
@@ -162,7 +162,7 @@ Two separate RBAC systems enforce access control:
 **Server roles** (on the users table):
 - admin -- Full server access, can create bots.
 - analyst -- Standard access, can read bots.
-- viewer -- Read-only server access.
+- viewer -- Read-only server access. Viewers cannot post to the feed, edit or pin posts, or store server backups; they can react to posts and remove their own posts and backups.
 
 **Investigation roles** (on the investigation_members table):
 - owner -- Full control, can manage members.
@@ -179,7 +179,7 @@ Covered content fields in IndexedDB can be encrypted at rest using AES-256-GCM. 
 
 1. **Master key** -- Random AES-256-GCM key generated once. Passphrase-wrapped and recovery-wrapped copies, with their salts, are stored in workspace-scoped localStorage metadata.
 2. **Wrapping key** -- Derived from user passphrase via PBKDF2 (600,000 iterations, SHA-256).
-3. **Session key** -- Unwrapped master key used in memory. Depending on the chosen session duration, raw key bytes may also be cached in workspace-scoped sessionStorage for refreshes (never for the every-load option; timed cache duration is capped at eight hours). Browser session restoration can preserve sessionStorage; explicit locking clears the cache. This is not protection from scripts running in the unlocked app or from a compromised browser profile.
+3. **Session key** -- Unwrapped master key used in memory. Depending on the chosen session duration, raw key bytes may also be cached in workspace-scoped sessionStorage for refreshes (never for the every-load option; for the timed options it lasts the selected 1, 8 or 24 hours from unlock, and a warning two minutes before the deadline lets the user re-enter the passphrase to extend it). Browser session restoration can preserve sessionStorage; explicit locking clears the cache. This is not protection from scripts running in the unlocked app or from a compromised browser profile.
 4. **Recovery phrase** -- 24-word BIP39-style phrase (192 bits of entropy) for passphrase recovery.
 
 Each encrypted field gets its own random 96-bit IV. The encryption middleware is installed as a Dexie DBCore middleware, transparently encrypting on mutate (add/put) and decrypting on get/getMany/query and cursor reads. It uses `Dexie.waitFor()` to keep IDB transactions alive during async Web Crypto operations.
@@ -346,6 +346,8 @@ Code execution for bots runs in ephemeral Docker containers with strict isolatio
 
 Supported languages: Python 3.12, Node.js 22, Bash (Alpine).
 
+These controls confine the sandboxed code, not the server that starts it. The server needs a Docker API, and Docker API access is root on that Docker host: mounting the host's Docker socket into the API container turns any compromise of the Node process into host root, and a socket proxy that permits container creation does not change that. Prefer a dedicated sandbox daemon reached through `DOCKER_HOST`; see [Docker Socket Security](deployment.md#46-docker-socket-security-bot-sandbox).
+
 ### 9.6 SSRF Protection for Bot HTTP Requests
 
 Bots making outbound HTTP requests are subject to:
@@ -404,6 +406,7 @@ A cleanup service runs on startup and every 6 hours to enforce retention policie
 | Notifications | 90 days | Yes (server setting) |
 | Audit log entries | 365 days | Yes (server setting) |
 | Soft-deleted entities (tombstones) | 90 days | Yes (server setting) |
+| Sync history (`sync_changes`), including purged investigations | Not pruned | No |
 | Orphaned investigation memberships | Immediate | No |
 | Bot run history | 90 days | No |
 | Expired sessions | Immediate (hourly cleanup) | No |

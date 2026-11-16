@@ -90,7 +90,7 @@ export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
                       if (e.key === 'Enter') { e.preventDefault(); handleSaveEdit(); }
                       if (e.key === 'Escape') { setEditingId(null); setEditText(''); }
                     }}
-                    className="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
+                    className="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                     autoFocus
                   />
                   <button

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { BackupImportDialog } from '../components/Common/BackupImportDialog';
+import { db } from '../db';
 
 function fileWithText(text = '{"notes":[]}') {
   const file = new File([text], 'synthetic-backup.json', { type: 'application/json' });
@@ -127,5 +128,18 @@ describe('BackupImportDialog', () => {
     expect(onClose).toHaveBeenCalledOnce();
     expect(file.text).not.toHaveBeenCalled();
     expect(onImport).not.toHaveBeenCalled();
+  });
+
+  it('tells the user that a restore in a team-bound workspace pauses sync instead of reaching teammates', async () => {
+    await db.table('_syncMeta').clear();
+    const { unmount } = render(<BackupImportDialog file={fileWithText()} onImport={vi.fn()} onClose={vi.fn()} />);
+    await act(async () => {});
+    expect(screen.queryByText(/syncs with a team server/)).not.toBeInTheDocument();
+    unmount();
+    await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://team.example', userId: 'alice' } });
+    try {
+      render(<BackupImportDialog file={fileWithText()} onImport={vi.fn()} onClose={vi.fn()} />);
+      expect(await screen.findByText(/syncs with a team server/)).toHaveTextContent('Sync history recovery');
+    } finally { await db.table('_syncMeta').clear(); }
   });
 });

@@ -3,15 +3,18 @@ import type { QuickLink } from '../types';
 import { decryptBackup, type BackupPayload, type EncryptedBackupBlob } from './backup-crypto';
 import { BACKUP_TABLES, type BackupTable } from './backup-tables';
 import { assertBackupSize, isBackupObject, validateBackupJSON, validateBackupQuickLinks, validatePortableTables } from './backup-records';
+import { portableRows, type BackupRow } from './backup-data';
 
 export const PORTABLE_BACKUP_FORMAT = 'threatcaddy-backup';
+/** Export Investigation files hold one investigation; they are never a whole-workspace replacement. */
+export const INVESTIGATION_EXPORT_FORMAT = 'threatcaddy-investigation';
 export class BackupPasswordRequiredError extends Error {
   constructor() { super('This backup is encrypted. Enter its backup password and retry.'); this.name = 'BackupPasswordRequiredError'; }
 }
 export interface DecodedPortableBackup {
   payload: BackupPayload;
   quickLinks?: QuickLink[];
-  sourceFormat: 'portable' | 'legacy-json' | 'legacy-cloud' | 'payload' | 'legacy-encrypted-cloud';
+  sourceFormat: 'portable' | 'legacy-json' | 'investigation' | 'legacy-cloud' | 'payload' | 'legacy-encrypted-cloud';
   encrypted: boolean;
   legacy: boolean;
   warnings: string[];
@@ -30,14 +33,16 @@ function fullPayload(raw: Record<string, unknown>): BackupPayload {
 }
 
 function flat(raw: Record<string, unknown>, encrypted: boolean): DecodedPortableBackup {
-  if (raw.version !== 1 || (raw.format !== undefined && raw.format !== PORTABLE_BACKUP_FORMAT)
+  if (raw.version !== 1 || (raw.format !== undefined && raw.format !== PORTABLE_BACKUP_FORMAT && raw.format !== INVESTIGATION_EXPORT_FORMAT)
     || !['notes', 'tasks'].every(name => Array.isArray(raw[name]))) invalid();
   if (raw.exportedAt !== undefined && (typeof raw.exportedAt !== 'number' || !Number.isFinite(raw.exportedAt)
     || Math.abs(raw.exportedAt) > 8_640_000_000_000_000)) invalid();
   const allowed = new Set<string>([...BACKUP_TABLES, 'version', 'format', 'exportedAt', 'quickLinks', 'redactions']);
   if (Object.keys(raw).some(name => !allowed.has(name))) invalid();
   if (raw.format === PORTABLE_BACKUP_FORMAT && !BACKUP_TABLES.every(name => Array.isArray(raw[name]))) invalid();
-  const data = Object.fromEntries(BACKUP_TABLES.filter(name => Object.hasOwn(raw, name)).map(name => [name, raw[name]]));
+  // Files written while pulled rows still carried the server revision remain importable.
+  const data = Object.fromEntries(BACKUP_TABLES.filter(name => Object.hasOwn(raw, name))
+    .map(name => [name, Array.isArray(raw[name]) ? portableRows(name, raw[name] as BackupRow[]) : raw[name]]));
   validatePortableTables(data, { allowLegacyDefaults: raw.format !== PORTABLE_BACKUP_FORMAT });
   if (raw.quickLinks !== undefined) validateBackupQuickLinks(raw.quickLinks);
   if (raw.redactions !== undefined && (!Array.isArray(raw.redactions)
@@ -45,7 +50,8 @@ function flat(raw: Record<string, unknown>, encrypted: boolean): DecodedPortable
   return {
     payload: { version: 1, type: 'full', scope: 'all', createdAt: typeof raw.exportedAt === 'number' ? raw.exportedAt : 0, data },
     ...(raw.quickLinks !== undefined ? { quickLinks: raw.quickLinks as QuickLink[] } : {}),
-    sourceFormat: raw.format === PORTABLE_BACKUP_FORMAT ? 'portable' : 'legacy-json', encrypted, legacy: raw.format !== PORTABLE_BACKUP_FORMAT,
+    sourceFormat: raw.format === PORTABLE_BACKUP_FORMAT ? 'portable' : raw.format === INVESTIGATION_EXPORT_FORMAT ? 'investigation' : 'legacy-json',
+    encrypted, legacy: raw.format !== PORTABLE_BACKUP_FORMAT,
     warnings: Array.isArray(raw.redactions) && raw.redactions.length ? ['Integration configuration was omitted from this plaintext backup. Reconfigure restored integrations before enabling them.'] : [],
   };
 }
@@ -102,15 +108,18 @@ export function suspendRestoredAutomation(data: BackupPayload['data']): BackupPa
     delete deployment.handoffState;
   }
   for (const row of copy.agentActions ?? []) {
-    const action = row as Record<string, unknown>;
-    if (action.status === 'pending' || action.status === 'approved') {
-      action.status = 'rejected';
-      action.resultSummary = 'Restored from backup; previous approval cannot authorize execution in this workspace. Review and propose a new action.';
-      delete action.toolBinding;
-      delete action.idempotencyKey;
-    }
+    rejectRestoredAction(row as Record<string, unknown>, 'Restored from backup; previous approval cannot authorize execution in this workspace. Review and propose a new action.');
   }
   return copy;
+}
+
+/** A previous approval cannot authorize execution after any restore. Mutates a copied row. */
+export function rejectRestoredAction(action: Record<string, unknown>, resultSummary: string): void {
+  if (action.status !== 'pending' && action.status !== 'approved') return;
+  action.status = 'rejected';
+  action.resultSummary = resultSummary;
+  delete action.toolBinding;
+  delete action.idempotencyKey;
 }
 
 export function portableTableCounts(data: BackupPayload['data']): Record<BackupTable, number> {

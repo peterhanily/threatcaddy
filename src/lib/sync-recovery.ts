@@ -1,18 +1,25 @@
-import { db } from '../db';
+import { db, repairBackupIntegrity } from '../db';
 import { canonicalBackupJSON, encryptBackup, decryptBackup, type EncryptedBackupBlob } from './backup-crypto';
 import { normalizeSyncWorkspaceIdentity, SYNC_WORKSPACE_KEY } from './sync-workspace';
-import { SYNC_TABLES, isSyncTable, suppressSyncInCurrentTransaction } from './sync-state';
+import { SYNC_TABLES, isSyncTable, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
 import { withEntityDraftBarrier } from './entity-drafts';
 import { hasPendingChanges, PendingChangesError } from './pending-changes';
 import { syncPull } from './server-api';
 import { readStoredAuth } from './auth-storage';
-import { ensureSyncCaptureCoverage, markRestoredSyncHistory, SYNC_CAPTURE_KEY, SYNC_RECOVERY_KEY } from './sync-capture-policy';
+import { ensureSyncCaptureCoverage, isSampleGlobalRecord, markRestoredSyncHistory, SYNC_CAPTURE_KEY, SYNC_RECOVERY_KEY } from './sync-capture-policy';
+import { rejectRestoredAction } from './portable-backup';
 
 const RECOVERY_KEY = SYNC_RECOVERY_KEY;
 type Snapshot = Record<string, Record<string, unknown>[]>;
 interface RecoveryArchive { version: 1; kind: 'threatcaddy-workspace-recovery'; databaseVersion: number; data: Snapshot }
 export interface SyncRecoveryReceipt { blob: EncryptedBackupBlob; filename: string; records: number }
 const receipts = new WeakMap<SyncRecoveryReceipt, string>();
+/** Refusals the recovery panel shows in the interface language; the English
+ * messages stay for logs and tests. */
+export const SYNC_RECOVERY_ERROR_CODES = ['accountChanged', 'localDataChanged', 'otherAccount', 'ambiguousRows', 'ambiguousRowsMore', 'serverUnsupported',
+  'archiveExceedsLimit', 'wrongPassword', 'unsupportedArchive', 'archiveAccount', 'notEmpty'] as const;
+export type SyncRecoveryErrorCode = typeof SYNC_RECOVERY_ERROR_CODES[number];
+const coded = (error: Error, code: SyncRecoveryErrorCode, params?: Record<string, string | number>) => Object.assign(error, { code, params });
 
 function assertNoAmbiguousMissingRows(data: Snapshot): void {
   const latest = new Map<string, Record<string, unknown>>();
@@ -23,7 +30,8 @@ function assertNoAmbiguousMissingRows(data: Snapshot): void {
   }
   const present = new Set(SYNC_TABLES.flatMap(table => data[table].map(row => JSON.stringify([table, row.id]))));
   const ambiguous = [...latest].filter(([key, row]) => row.op === 'put' && !present.has(key)).map(([key]) => key);
-  if (ambiguous.length) throw new Error(`Reconciliation is blocked: ${ambiguous.length} queued update(s) have no current local record: ${ambiguous.slice(0, 10).join(', ')}${ambiguous.length > 10 ? ' (additional entries are in the archive)' : ''}. Keep the verified archive and review these records before retrying. Absence may mean an old deletion or cache removal; no deletion or queued content was inferred.`);
+  if (ambiguous.length) throw coded(new Error(`Reconciliation is blocked: ${ambiguous.length} queued update(s) have no current local record: ${ambiguous.slice(0, 10).join(', ')}${ambiguous.length > 10 ? ' (additional entries are in the archive)' : ''}. Keep the verified archive and review these records before retrying. Absence may mean an old deletion or cache removal; no deletion or queued content was inferred.`),
+    ambiguous.length > 10 ? 'ambiguousRowsMore' : 'ambiguousRows', { count: ambiguous.length, records: ambiguous.slice(0, 10).join(', ') });
 }
 
 async function snapshot(): Promise<Snapshot> {
@@ -46,7 +54,7 @@ export async function prepareSyncRecovery(password: string): Promise<SyncRecover
     });
     const archive: RecoveryArchive = { version: 1, kind: 'threatcaddy-workspace-recovery', databaseVersion: db.verno, data };
     const blob = await encryptBackup(password, archive);
-    if (new TextEncoder().encode(JSON.stringify(blob)).byteLength > 512 * 1024 * 1024) throw new Error('Recovery archive exceeds the supported 512 MiB restore limit. Local data was not changed.');
+    if (new TextEncoder().encode(JSON.stringify(blob)).byteLength > 512 * 1024 * 1024) throw coded(new Error('Recovery archive exceeds the supported 512 MiB restore limit. Local data was not changed.'), 'archiveExceedsLimit');
     if (canonicalBackupJSON(await decryptBackup(password, blob)) !== canonicalBackupJSON(archive)) throw new Error('Recovery archive verification failed.');
     const receipt = { blob, filename: `threatcaddy-workspace-recovery-${new Date().toISOString().slice(0, 10)}.enc.json`, records: Object.values(data).reduce((sum, rows) => sum + rows.length, 0) };
     receipts.set(receipt, canonicalBackupJSON(data));
@@ -63,30 +71,30 @@ export async function reconcileSyncWorkspace(receipt: SyncRecoveryReceipt, serve
   const identity = normalizeSyncWorkspaceIdentity(serverUrl, userId);
   const assertIdentity = () => {
     const auth = readStoredAuth();
-    if (!auth || auth.serverUrl !== identity.serverUrl || auth.user.id !== identity.userId) throw new Error('The signed-in account changed; recovery was not applied.');
+    if (!auth || auth.serverUrl !== identity.serverUrl || auth.user.id !== identity.userId) throw coded(new Error('The signed-in account changed; recovery was not applied.'), 'accountChanged');
   };
   assertIdentity();
   // Reject ambiguous archives before any handshake as well as in the final
   // transaction. Do not replay a stale put for an absent (possibly deleted) row.
   await db.transaction('r', db.tables, async () => {
     const data = await snapshot();
-    if (canonicalBackupJSON(data) !== receipts.get(receipt)) throw new Error('Local data changed after backup. Download a new recovery archive before reconciling.');
+    if (canonicalBackupJSON(data) !== receipts.get(receipt)) throw coded(new Error('Local data changed after backup. Download a new recovery archive before reconciling.'), 'localDataChanged');
     const binding = (await db.table('_syncMeta').get(SYNC_WORKSPACE_KEY))?.value;
-    if (binding && (binding.version !== 1 || binding.serverUrl !== identity.serverUrl || binding.userId !== identity.userId)) throw new Error('This workspace belongs to another account. Switch workspaces instead of rebinding it.');
+    if (binding && (binding.version !== 1 || binding.serverUrl !== identity.serverUrl || binding.userId !== identity.userId)) throw coded(new Error('This workspace belongs to another account. Switch workspaces instead of rebinding it.'), 'otherAccount');
     assertNoAmbiguousMissingRows(data);
   });
   assertIdentity();
   const page = await syncPull(new Date(0).toISOString(), undefined, '0');
-  if (!page.generation || !/^[a-f\d-]{36}$/.test(page.generation)) throw new Error('This server does not support safe history recovery.');
+  if (!page.generation || !/^[a-f\d-]{36}$/.test(page.generation)) throw coded(new Error('This server does not support safe history recovery.'), 'serverUnsupported');
   await withEntityDraftBarrier(() => db.transaction('rw', db.tables, async () => {
     assertIdentity();
     if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work before reconciliation.');
     const data = await snapshot();
-    if (canonicalBackupJSON(data) !== receipts.get(receipt)) throw new Error('Local data changed after backup. Download a new recovery archive before reconciling.');
+    if (canonicalBackupJSON(data) !== receipts.get(receipt)) throw coded(new Error('Local data changed after backup. Download a new recovery archive before reconciling.'), 'localDataChanged');
     assertNoAmbiguousMissingRows(data);
     const meta = db.table('_syncMeta');
     const binding = (await meta.get(SYNC_WORKSPACE_KEY))?.value;
-    if (binding && (binding.version !== 1 || binding.serverUrl !== identity.serverUrl || binding.userId !== identity.userId)) throw new Error('This workspace belongs to another account. Switch workspaces instead of rebinding it.');
+    if (binding && (binding.version !== 1 || binding.serverUrl !== identity.serverUrl || binding.userId !== identity.userId)) throw coded(new Error('This workspace belongs to another account. Switch workspaces instead of rebinding it.'), 'otherAccount');
     suppressSyncInCurrentTransaction();
     const queue = db.table('_syncQueue');
     const pending = await queue.toArray();
@@ -94,7 +102,9 @@ export async function reconcileSyncWorkspace(receipt: SyncRecoveryReceipt, serve
     const folders = await db.folders.toArray();
     const shared = new Set(folders.filter(folder => !folder.localOnly).map(folder => folder.id));
     for (const table of SYNC_TABLES) for (const row of await db.table(table).toArray()) {
-      if (row.localOnly || (table === 'folders' ? !shared.has(row.id) : !['tags', 'timelines'].includes(table) && !shared.has(row.folderId))) continue;
+      // A demo row stays on this device unless the server already holds it.
+      if (row.localOnly || (isSampleGlobalRecord(table, row.id) && !(await meta.get(revisionKey(table, row.id)))?.value)
+        || (table === 'folders' ? !shared.has(row.id) : !['tags', 'timelines'].includes(table) && !shared.has(row.folderId))) continue;
       // The verified current row wins over an older queued payload. Old clients
       // could leave their signed-out edits uncaptured even with a pending put.
       await queue.add({ table, entityId: row.id,
@@ -120,34 +130,38 @@ export async function reconcileSyncWorkspace(receipt: SyncRecoveryReceipt, serve
 export async function restoreSyncRecovery(password: string, blob: EncryptedBackupBlob, confirmed: boolean): Promise<number> {
   if (!confirmed) throw new Error('Confirm recovery into an empty workspace first.');
   if (new TextEncoder().encode(JSON.stringify(blob)).byteLength > 512 * 1024 * 1024) throw new Error('Recovery archive exceeds 512 MiB.');
-  const archive = await decryptBackup<RecoveryArchive>(password, blob);
+  const archive = await decryptBackup<RecoveryArchive>(password, blob).catch((cause: Error) => { throw coded(cause, 'wrongPassword'); });
   if (archive?.version !== 1 || archive.kind !== 'threatcaddy-workspace-recovery' || archive.databaseVersion !== db.verno
-    || !archive.data || Array.isArray(archive.data) || Object.keys(archive.data).length !== db.tables.length) throw new Error('Unsupported workspace recovery archive.');
+    || !archive.data || Array.isArray(archive.data) || Object.keys(archive.data).length !== db.tables.length) throw coded(new Error('Unsupported workspace recovery archive.'), 'unsupportedArchive');
   for (const [name, rows] of Object.entries(archive.data)) {
     const table = db.tables.find(table => table.name === name);
-    if (!table || !Array.isArray(rows)) throw new Error('Unsupported recovery store.');
+    if (!table || !Array.isArray(rows)) throw coded(new Error('Unsupported recovery store.'), 'unsupportedArchive');
     const key = table.schema.primKey.keyPath;
     if (typeof key !== 'string' || rows.some(row => !row || typeof row !== 'object' || Array.isArray(row) || !['string', 'number'].includes(typeof row[key]))
-      || new Set(rows.map(row => row[key])).size !== rows.length) throw new Error('Invalid or duplicate recovery identity.');
+      || new Set(rows.map(row => row[key])).size !== rows.length) throw coded(new Error('Invalid or duplicate recovery identity.'), 'unsupportedArchive');
   }
   const binding = archive.data._syncMeta.find(row => row.key === SYNC_WORKSPACE_KEY)?.value as { serverUrl?: string; userId?: string } | undefined;
   const auth = readStoredAuth();
-  if (auth && (binding?.serverUrl !== auth.serverUrl || binding.userId !== auth.user.id)) throw new Error('Recovery archive belongs to another server or account.');
-  return withEntityDraftBarrier(() => db.transaction('rw', db.tables, async () => {
+  if (auth && (binding?.serverUrl !== auth.serverUrl || binding.userId !== auth.user.id)) throw coded(new Error('Recovery archive belongs to another server or account.'), 'archiveAccount');
+  return withEntityDraftBarrier(() => db.transaction('rw', db.tables, async tx => {
     if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work first.');
     suppressSyncInCurrentTransaction();
-    for (const table of db.tables) if (table.name !== '_localMigrations' && await table.count()) throw new Error('Recovery requires an empty workspace; existing data was not changed.');
+    for (const table of db.tables) if (table.name !== '_localMigrations' && await table.count()) throw coded(new Error('Recovery requires an empty workspace; existing data was not changed.'), 'notEmpty');
     let count = 0;
     for (const [name, rows] of Object.entries(archive.data)) {
       const restored = name === 'agentDeployments' ? rows.map(row => ({ ...row, status: 'paused', serverSideEnabled: false, handoffState: 'client', shift: 'resting' }))
         : name === 'folders' ? rows.map(row => ({ ...row, ...(row.agentEnabled ? { agentEnabled: false, agentStatus: 'paused' } : {}) }))
         : name === 'installedIntegrations' ? rows.map(row => ({ ...row, enabled: false }))
-        : name === 'agentActions' ? rows.map(row => ['approved', 'pending'].includes(String(row.status))
-          ? { ...row, status: 'rejected', result: 'Recovered from archive; request and review a new approval before execution.' } : row)
+        : name === 'agentActions' ? rows.map(row => {
+          const action = { ...row };
+          rejectRestoredAction(action, 'Recovered from archive; request and review a new approval before execution.');
+          return action;
+        })
         : rows;
       await db.table(name).bulkPut(restored);
       count += restored.length;
     }
+    await repairBackupIntegrity(tx);
     await markRestoredSyncHistory(db);
     if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work first.');
     return count;

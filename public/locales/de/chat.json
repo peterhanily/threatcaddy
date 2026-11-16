@@ -12,6 +12,7 @@
     "backToThreads": "Zurück zu Threads",
     "clickToRename": "Zum Umbenennen klicken",
     "threadTitleAria": "Titel des Chat-Threads",
+    "recoveredThreadTitle": "Wiederhergestellte unterbrochene Antwort",
     "filterThreadsAria": "Threads nach Quelle filtern",
     "filterAll": "alle",
     "filterHuman": "menschlich",
@@ -122,6 +123,7 @@
     "branchTitle": "Gespräch von hier verzweigen",
     "rewindTitle": "Zu dieser Nachricht zurückspulen",
     "undoTitle": "Rückgängig: Entitäten auf Zustand vor dieser Aktion zurücksetzen",
+    "lockInterrupted": "[Antwort unterbrochen, als der Arbeitsbereich gesperrt wurde.]",
     "attachmentAlt": "Anhang {{index}}",
     "tokenCount": "{{count}} Tokens",
     "tokenCountTitle": "Eingabe: {{input}} Tokens, Ausgabe: {{output}} Tokens"
@@ -129,6 +131,7 @@
   "tool": {
     "noInput": "(keine Eingabe)",
     "errorPrefix": "Fehler: {{message}}",
+    "lockInterrupted": "Durch die Sperre des Arbeitsbereichs unterbrochen. Prüfen Sie das gespeicherte Element oder den Prüfpunkt, bevor Sie dieses Tool erneut ausführen.",
     "resultCount_one": "{{count}} Ergebnis",
     "resultCount_other": "{{count}} Ergebnisse",
     "doneWithLabel": "Fertig: {{label}}",

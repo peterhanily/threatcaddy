@@ -42,13 +42,68 @@ describe('isolated evidence import lifecycle', () => {
 
   it('returns all drafts only after every document succeeds and cleans up workers', async () => {
     const promise = extractEvidenceFiles([file(), file()], { folderName: 'Synthetic' });
-    expect(workers.instances[0].postMessage).toHaveBeenCalledWith({ file: expect.any(File), options: { folderName: 'Synthetic' } });
+    await tick();
+    expect(workers.instances[0].postMessage).toHaveBeenCalledWith(
+      { source: expect.objectContaining({ name: 'report.txt' }), options: { folderName: 'Synthetic' } }, [expect.any(ArrayBuffer)]);
     respond(0, { ok: true, drafts: [{ title: 'one' }] });
     await tick();
     respond(1, { ok: true, drafts: [{ title: 'two' }] });
     await expect(promise).resolves.toEqual([{ title: 'one' }, { title: 'two' }]);
     expect(workers.instances.every(worker => worker.terminate.mock.calls.length === 1)).toBe(true);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('names the file that stopped a batch and keeps the worker error code', async () => {
+    const files = [new File(['one'], 'first.txt'), new File(['two'], 'second.docx')];
+    const promise = extractEvidenceFiles(files);
+    const rejection = expect(promise).rejects.toMatchObject({ code: 'archiveSizeMismatch', fileName: 'second.docx' });
+    respond(0, { ok: true, drafts: [{ title: 'first' }] });
+    await tick();
+    respond(1, { ok: false, code: 'archiveSizeMismatch', error: 'Evidence import stopped: a compressed part does not match its declared size.' });
+    await rejection;
+    // Unknown codes from the worker never reach the translation table.
+    const unknown = extractEvidenceFiles([new File(['x'], 'odd.pdf')]);
+    const unknownRejection = expect(unknown).rejects.toMatchObject({ code: 'extractionFailed', fileName: 'odd.pdf' });
+    respond(2, { ok: false, code: 'constructor', error: 'odd' });
+    await unknownRejection;
+  });
+
+  it('names the file for timeouts, worker failures and oversized input', async () => {
+    const timeout = extractEvidenceFiles([new File(['x'], 'slow.pdf')]);
+    const timeoutRejection = expect(timeout).rejects.toMatchObject({ code: 'documentTimeout', fileName: 'slow.pdf' });
+    await vi.advanceTimersByTimeAsync(EVIDENCE_LIMITS.documentTimeoutMs);
+    await timeoutRejection;
+    const crashed = extractEvidenceFiles([new File(['x'], 'crash.docx')]);
+    const crashRejection = expect(crashed).rejects.toMatchObject({ code: 'workerFailed', fileName: 'crash.docx' });
+    workers.instances[1].onerror?.({ preventDefault: vi.fn() } as unknown as ErrorEvent);
+    await crashRejection;
+    await expect(extractEvidenceFiles([{ name: 'huge.log', size: EVIDENCE_LIMITS.inputBytes + 1 } as File])).rejects.toMatchObject({ code: 'inputBytes', fileName: 'huge.log' });
+    await expect(extractEvidenceFiles(Array.from({ length: 3 }, (_, i) => ({ name: `part${i}.log`, size: EVIDENCE_LIMITS.inputBytes } as File)))).rejects.toMatchObject({ code: 'batchBytes', fileName: undefined });
+  });
+
+  it('transfers the bytes read on the main thread instead of posting the File', async () => {
+    // WebKit workers at a file:// origin cannot read a posted File or Blob.
+    const selected = new File(['Synthetic evidence'], 'report.txt', { type: 'text/plain', lastModified: 1234 });
+    const promise = extractEvidenceFiles([selected]);
+    await tick();
+    const [message, transfer] = workers.instances[0].postMessage.mock.calls[0] as unknown as [{ source: Record<string, unknown> }, ArrayBuffer[]];
+    expect(Object.values(message.source).some(value => value instanceof Blob)).toBe(false);
+    expect(message.source).toMatchObject({ name: 'report.txt', type: 'text/plain', size: 18, lastModified: 1234 });
+    expect(new TextDecoder().decode(message.source.bytes as Uint8Array)).toBe('Synthetic evidence');
+    expect(transfer).toEqual([(message.source.bytes as Uint8Array).buffer]);
+    respond(0, { ok: true, drafts: [] });
+    await expect(promise).resolves.toEqual([]);
+  });
+
+  it('does not post bytes to a worker that was cancelled while the file was being read', async () => {
+    const controller = new AbortController();
+    const promise = extractEvidenceFiles([file()], {}, controller.signal);
+    const rejection = expect(promise).rejects.toMatchObject({ name: 'AbortError' });
+    controller.abort();
+    await rejection;
+    await tick();
+    expect(workers.instances[0].postMessage).not.toHaveBeenCalled();
+    expect(workers.instances[0].terminate).toHaveBeenCalledOnce();
   });
 
   it('cancels an active worker and ignores its late result without starting another document', async () => {

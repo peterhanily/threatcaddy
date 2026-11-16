@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { DrizzleQueryError } from 'drizzle-orm';
 
 // ─── Mocks ───────────────────────────────────────────────────────
 
@@ -206,6 +207,25 @@ describe('BotManager', () => {
 
       const { db } = await import('../db/index.js');
       expect(db.insert).toHaveBeenCalled(); // run record
+    });
+
+    it('stores and logs a failed query by SQLSTATE and driver message, never its parameters', async () => {
+      const manager = new BotManager();
+      await manager.loadBot(makeBotConfig({ id: 'b1' }));
+      const secret = 'note-content-that-must-not-reach-logs';
+      const bot = (manager as any).bots.get('b1'); // eslint-disable-line @typescript-eslint/no-explicit-any
+      bot.onEvent = vi.fn().mockRejectedValue(new DrizzleQueryError('insert into "notes" ("id", "content") values ($1, $2)', ['n1', secret],
+        Object.assign(new Error('value too long for type character varying(255)'), { name: 'PostgresError', code: '22001' })));
+
+      await manager.executeBot('b1', 'event', { type: 'entity.created', table: 'notes', entityId: 'n1', folderId: 'f1', userId: 'human-user', timestamp: new Date() });
+
+      const { db } = await import('../db/index.js');
+      const { logger } = await import('../lib/logger.js');
+      const written = vi.mocked(db.update).mock.results.map(result => (result.value as ReturnType<typeof makeUpdateChain>).set.mock.calls);
+      const recorded = JSON.stringify([written, vi.mocked(logger.error).mock.calls]);
+      expect(recorded).toContain('DrizzleQueryError 22001: value too long for type character varying(255)');
+      expect(recorded).not.toContain(secret);
+      expect(recorded).not.toContain('insert into');
     });
   });
 

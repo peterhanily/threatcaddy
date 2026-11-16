@@ -12,6 +12,7 @@
     "backToThreads": "Torna ai thread",
     "clickToRename": "Clicca per rinominare",
     "threadTitleAria": "Titolo thread di chat",
+    "recoveredThreadTitle": "Risposta interrotta recuperata",
     "filterThreadsAria": "Filtra thread per fonte",
     "filterAll": "tutto",
     "filterHuman": "umano",
@@ -123,6 +124,7 @@
     "branchTitle": "Dirama la conversazione da qui",
     "rewindTitle": "Riavvolgi a questo messaggio",
     "undoTitle": "Annulla: ripristina entità prima di questa azione",
+    "lockInterrupted": "[Risposta interrotta al blocco dell'area di lavoro.]",
     "attachmentAlt": "Allegato {{index}}",
     "tokenCount": "{{count}} token",
     "tokenCountTitle": "Input: {{input}} token, Output: {{output}} token"
@@ -130,6 +132,7 @@
   "tool": {
     "noInput": "(nessun input)",
     "errorPrefix": "Errore: {{message}}",
+    "lockInterrupted": "Interrotto dal blocco dell'area di lavoro. Controlla l'elemento salvato o il checkpoint prima di riprovare questo strumento.",
     "resultCount_one": "{{count}} risultato",
     "resultCount_other": "{{count}} risultati",
     "doneWithLabel": "Completato: {{label}}",

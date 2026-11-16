@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { ServerProfiles } from './ServerProfiles';
 import { upsertServerProfile, type ServerProfile } from '../../lib/server-profiles';
+import { REMOTE_LOGOUT_FAILED } from '../../lib/session-logout';
 
 const LAST_SESSION_KEY = workspaceStorageKey('threatcaddy-last-session');
 
@@ -143,9 +144,10 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
   const handleDisconnect = async () => {
     // Session details already saved via the useEffect above
     setError('');
-    setLoading(true);
     // logout clears local auth synchronously. Finish the local UI transition
     // before awaiting the remote receipt so a later response cannot clear a new login.
+    // The receipt can take 15 s from an unreachable server, so it does not
+    // hold the reconnect form in its loading state.
     const revocation = logout();
     setServerUrl(null);
     onUpdateSettings({ serverUrl: undefined, serverDisplayName: undefined });
@@ -165,14 +167,17 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
       await revocation;
       addToast('info', t('server.disconnectedToast'));
     } catch (err) {
-      const message = (err as Error).message;
+      // The unconfirmed-revocation warning is translated; other server errors pass through.
+      const reported = (err as Error).message;
+      const message = reported === REMOTE_LOGOUT_FAILED ? t('server.remoteLogoutFailed') : reported;
       setError(message);
       addToast('warning', message, 12_000);
-    } finally { setLoading(false); }
+    }
   };
 
-  // Connected state
-  if (connected && user) {
+  // Signed-in state. While the server is unreachable the session is still
+  // stored, so Disconnect must remain available.
+  if (user) {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
@@ -182,8 +187,13 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
 
         <div className="border border-[var(--border)] rounded-lg p-4 bg-[var(--bg-secondary)]">
           <div className="flex items-center gap-2 mb-3">
-            <CheckCircle size={16} className="text-green-500" />
-            <span className="text-sm text-green-500 font-medium">{t('server.connected')}</span>
+            {connected ? <>
+              <CheckCircle size={16} className="text-green-500" />
+              <span className="text-sm text-green-500 font-medium">{t('server.connected')}</span>
+            </> : <>
+              <WifiOff size={16} className="text-amber-500" />
+              <span className="text-sm text-amber-500 font-medium">{t('server.unreachableSignedIn')}</span>
+            </>}
           </div>
 
           <div className="space-y-1.5 text-sm">

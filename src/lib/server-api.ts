@@ -3,6 +3,7 @@ import type { ActivityEntry } from '../components/CaddyShack/ActivityCard';
 import i18n from '../i18n';
 import { cancelServerRequests, fetchServerResponse } from './server-response';
 import { compileIntegrationPlan, isSafeTeamTemplateId } from './integration-plan';
+import { tokenCount } from './model-pricing';
 import type { IntegrationTemplate } from '../types/integration-types';
 
 type GetTokenFn = () => Promise<string | null>;
@@ -211,6 +212,8 @@ export interface SyncResult {
   serverVersion?: number;
   serverData?: Record<string, unknown>;
   localData?: Record<string, unknown>;
+  /** Why the server refused the change in validation; absent for permission and scope rejections. */
+  reason?: string;
 }
 
 export async function syncPush(changes: SyncChange[], generation: string): Promise<{ results: SyncResult[] }> {
@@ -404,6 +407,13 @@ export async function fetchLLMConfig(): Promise<LLMConfig> {
   return resp.json();
 }
 
+/** Servers up to 2.0.0 send {inputTokens, outputTokens}; stored counters must stay finite. */
+function normalizeLLMUsage(raw: unknown): { input: number; output: number } | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const usage = raw as Record<string, unknown>;
+  return { input: tokenCount(usage.input ?? usage.inputTokens), output: tokenCount(usage.output ?? usage.outputTokens) };
+}
+
 export async function streamLLMChat(
   data: { provider: string; model: string; messages: unknown[]; systemPrompt?: string; tools?: unknown[] },
   onChunk: (text: string) => void,
@@ -457,7 +467,7 @@ export async function streamLLMChat(
         const event = JSON.parse(data);
         if (typeof event !== 'object' || event === null || typeof event.type !== 'string') continue;
         if (event.type === 'chunk' && typeof event.content === 'string') onChunk(event.content);
-        else if (event.type === 'done') onDone(event.stopReason ?? 'end_turn', event.contentBlocks ?? [], event.usage);
+        else if (event.type === 'done') onDone(event.stopReason ?? 'end_turn', event.contentBlocks ?? [], normalizeLLMUsage(event.usage));
         else if (event.type === 'error' && event.error) onError(String(event.error));
       } catch (e) { console.warn('Failed to parse SSE event:', e); }
     }

@@ -37,13 +37,18 @@ for (const scenario of [
     await expect(dialog).toBeVisible();
     const close = dialog.getByRole('button', { name: scenario.language === 'ar' ? 'إغلاق' : 'Close', exact: true });
     const submit = dialog.locator('button[type="submit"]');
-    await expect(close).toBeFocused();
+    const titleField = dialog.locator('#task-title');
+    // The form's autoFocus field receives focus, not the header Close button.
+    await expect(titleField).toBeFocused();
+    // Both edges of the focus trap wrap. Start from the first control: macOS
+    // WebKit's native Tab skips buttons between the edges.
+    await close.focus();
     await page.keyboard.press('Shift+Tab');
     await expect(submit).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(close).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(dialog.locator('#task-title')).toBeFocused();
+    await expect(titleField).toBeFocused();
     await expect(dialog.locator('label[for="task-title"]')).toHaveText(scenario.language === 'ar' ? 'العنوان' : 'Title');
     const panel = await dialog.locator(':scope > div').boundingBox();
     expect(panel).not.toBeNull();

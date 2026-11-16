@@ -65,6 +65,23 @@ describe('committed sync revisions and cursors in PostgreSQL', () => {
     expect(state.events).not.toHaveBeenCalled();
   });
 
+  it('stores an assignee that is not a user, such as an agent deployment id, as unassigned instead of failing the batch', async () => {
+    await database.sql`INSERT INTO tasks (id,title,folder_id,created_at,updated_at) VALUES ('legacy-task','Legacy delegation','shared',now(),now())`;
+    const results = await processPush([
+      { table: 'notes', entityId: 'note-a', op: 'put', clientVersion: 1, data: { title: 'Saved beside the tasks' } },
+      { table: 'tasks', entityId: 'delegated', op: 'put', clientVersion: 0, data: { title: 'Delegated', folderId: 'shared', assigneeId: 'agent-deployment' } },
+      { table: 'tasks', entityId: 'legacy-task', op: 'put', clientVersion: 1, data: { title: 'Legacy delegation', folderId: 'shared', assigneeId: 'agent-deployment' } },
+      { table: 'tasks', entityId: 'assigned', op: 'put', clientVersion: 0, data: { title: 'Assigned', folderId: 'shared', assigneeId: 'reader' } },
+      { table: 'standaloneIOCs', entityId: 'assigned-ioc', op: 'put', clientVersion: 0,
+        data: { type: 'domain', value: 'example.invalid', folderId: 'shared', assigneeId: 'agent-deployment', assigneeName: 'IOC Enricher' } },
+    ], 'owner', { authorize: true, rejectInvalidChanges: true });
+    expect(results.map(result => result.status)).toEqual(['accepted', 'accepted', 'accepted', 'accepted', 'accepted']);
+    expect([...await database.sql`SELECT id,assignee_id FROM tasks ORDER BY id`]).toEqual([
+      { id: 'assigned', assignee_id: 'reader' }, { id: 'delegated', assignee_id: null }, { id: 'legacy-task', assignee_id: null }]);
+    expect((await database.sql`SELECT assignee_id,assignee_name FROM standalone_iocs WHERE id = 'assigned-ioc'`)[0]).toEqual({ assignee_id: null, assignee_name: null });
+    expect((await database.sql`SELECT title FROM notes WHERE id = 'note-a'`)[0].title).toBe('Saved beside the tasks');
+  });
+
   it('acknowledges an already-absent delete with a zero revision and no side effects', async () => {
     const before = (await database.sql`SELECT cursor FROM sync_clock WHERE id = 1`)[0].cursor;
     expect(await processPush([{ table: 'notes', entityId: 'already-absent', op: 'delete', clientVersion: 3 }], 'owner', { authorize: true }))

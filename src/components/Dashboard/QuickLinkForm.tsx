@@ -61,7 +61,7 @@ export function QuickLinkForm({ link, onSave, onCancel }: QuickLinkFormProps) {
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSave(); } }}
             placeholder="e.g. VirusTotal"
             className={inputClass}
             autoFocus
@@ -73,7 +73,7 @@ export function QuickLinkForm({ link, onSave, onCancel }: QuickLinkFormProps) {
           <input
             value={url}
             onChange={(e) => { setUrl(e.target.value); setUrlError(''); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSave(); } }}
             placeholder="e.g. virustotal.com"
             className={inputClass}
           />
@@ -85,7 +85,7 @@ export function QuickLinkForm({ link, onSave, onCancel }: QuickLinkFormProps) {
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSave(); } }}
             placeholder="Short description"
             className={inputClass}
           />

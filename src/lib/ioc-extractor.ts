@@ -29,6 +29,9 @@ function isUniformHex(s: string): boolean {
   return lower.split('').every((c) => c === lower[0]);
 }
 
+// One DNS label: 1-63 letters, digits or hyphens, not starting or ending with a hyphen.
+const DOMAIN_LABEL = '[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?';
+
 // Regex patterns for each IOC type, ordered for correct disambiguation
 const IOC_PATTERNS: { type: IOCType; pattern: RegExp; validate?: (match: string) => boolean }[] = [
   // Hashes: longest first to disambiguate
@@ -62,10 +65,11 @@ const IOC_PATTERNS: { type: IOCType; pattern: RegExp; validate?: (match: string)
     type: 'url',
     pattern: /https?:\/\/[^\s"'<>)\]]+/gi,
   },
-  // Emails
+  // Emails. Start only at the beginning of a local-part run and bound each part
+  // (RFC 5321 limits), or long hex/base64url runs make the scan quadratic.
   {
     type: 'email',
-    pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+    pattern: /(?<![\w.%+-])[\w.%+-]{1,64}@[a-zA-Z0-9.-]{1,253}\.[a-zA-Z]{2,63}/g,
   },
   // IPv6 (simplified — common compressed/full forms)
   {
@@ -82,10 +86,19 @@ const IOC_PATTERNS: { type: IOCType; pattern: RegExp; validate?: (match: string)
       return !ignore.includes(m);
     },
   },
-  // Domain names (after URLs/emails so we can dedup)
+  // Domain names (after URLs/emails so we can dedup). Start at a word boundary,
+  // as the unbounded pattern did, but skip a start that an earlier start in the
+  // same name already covers: right after a valid label and its dot, or after a
+  // hyphen inside a valid label. Those retries made dotted runs quadratic. A start
+  // after a label holding '_' (_dmarc.example.com) or after a leading hyphen
+  // (-evil.com) is still tried, so the registered domain is still found.
   {
     type: 'domain',
-    pattern: /\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+(?:com|net|org|io|gov|edu|mil|info|biz|co|us|uk|de|ru|cn|br|in|au|xyz|online|site|top|onion|tk|pw)\b/gi,
+    pattern: new RegExp(
+      `(?<!\\w)(?<!(?<![\\w-])${DOMAIN_LABEL}\\.)(?!(?<=-)[a-zA-Z0-9-]{0,61}\\.(?<=(?<![\\w-])${DOMAIN_LABEL}\\.))`
+      + `(?:${DOMAIN_LABEL}\\.){1,127}(?:com|net|org|io|gov|edu|mil|info|biz|co|us|uk|de|ru|cn|br|in|au|xyz|online|site|top|onion|tk|pw)\\b`,
+      'gi',
+    ),
   },
   // File paths (Unix, Windows with backslash or forward slash, UNC)
   {

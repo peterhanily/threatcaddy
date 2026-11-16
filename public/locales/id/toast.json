@@ -42,6 +42,7 @@
   "backup": {
     "exported": "Cadangan diekspor",
     "exportFailed": "Gagal mengekspor cadangan",
+    "exportFailedDetail": "Gagal mengekspor cadangan: {{error}}",
     "restored": "Cadangan dipulihkan",
     "restoreFailed": "Gagal memulihkan cadangan",
     "mergeComplete": "Penggabungan selesai: {{added}} ditambahkan, {{updated}} diperbarui, {{skipped}} dilewati",
@@ -60,12 +61,16 @@
   "investigation": {
     "sampleLoaded": "Investigasi sampel dimuat",
     "sampleRemoved": "Investigasi sampel dihapus",
+    "sampleKept": "Investigasi sampel dihapus. Item Anda ada di \"{{name}}\"",
+    "sampleLocked": "Buka kunci ruang kerja sebelum mengubah data sampel.",
+    "sampleSessionChanged": "Sesi ruang kerja berubah. Coba lagi tindakan sampel setelah membuka kunci.",
     "trashEmptied": "Sampah dikosongkan",
     "savedAsTemplate": "Disimpan \"{{name}}\" sebagai template",
     "playbookRan": "Menjalankan playbook \"{{playbook}}\" pada \"{{investigation}}\"",
     "createdFromPlaybook": "Dibuat \"{{name}}\" dari playbook",
     "exported": "Investigasi \"{{name}}\" diekspor",
     "exportFailed": "Gagal mengekspor investigasi",
+    "exportFailedDetail": "Gagal mengekspor investigasi: {{error}}",
     "reportGenerated": "Laporan dibuat untuk \"{{name}}\""
   },
   "encryption": {

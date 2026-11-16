@@ -166,7 +166,7 @@ const createIOCTool: BotTool = {
     type: 'object',
     properties: {
       folderId: { type: 'string', description: 'Investigation folder ID' },
-      type: { type: 'string', description: 'IOC type: ip, domain, hash, url, email, etc.' },
+      type: { type: 'string', enum: ['ipv4', 'ipv6', 'domain', 'url', 'email', 'md5', 'sha1', 'sha256', 'cve', 'mitre-attack', 'yara-rule', 'sigma-rule', 'file-path'], description: 'IOC type' },
       value: { type: 'string', description: 'The IOC value' },
       confidence: { type: 'string', description: 'Confidence level: low, medium, high (default medium)' },
       analystNotes: { type: 'string', description: 'Optional analyst notes' },

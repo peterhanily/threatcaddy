@@ -42,6 +42,7 @@
   "backup": {
     "exported": "Yedek dışa aktarıldı",
     "exportFailed": "Yedek dışa aktarılamadı",
+    "exportFailedDetail": "Yedek dışa aktarılamadı: {{error}}",
     "restored": "Yedek geri yüklendi",
     "restoreFailed": "Yedek geri yüklenemedi",
     "mergeComplete": "Birleştirme tamamlandı: {{added}} eklendi, {{updated}} güncellendi, {{skipped}} atlandı",
@@ -60,12 +61,16 @@
   "investigation": {
     "sampleLoaded": "Örnek soruşturma yüklendi",
     "sampleRemoved": "Örnek soruşturma kaldırıldı",
+    "sampleKept": "Örnek soruşturma kaldırıldı. Öğeleriniz \"{{name}}\" içinde",
+    "sampleLocked": "Örnek verileri değiştirmeden önce çalışma alanının kilidini açın.",
+    "sampleSessionChanged": "Çalışma alanı oturumu değişti. Kilidi açtıktan sonra örnek işlemini yeniden deneyin.",
     "trashEmptied": "Çöp kutusu boşaltıldı",
     "savedAsTemplate": "\"{{name}}\" şablon olarak kaydedildi",
     "playbookRan": "\"{{investigation}}\" üzerinde \"{{playbook}}\" playbook'u çalıştırıldı",
     "createdFromPlaybook": "Playbook'tan \"{{name}}\" oluşturuldu",
     "exported": "\"{{name}}\" soruşturması dışa aktarıldı",
     "exportFailed": "Soruşturma dışa aktarılamadı",
+    "exportFailedDetail": "Soruşturma dışa aktarılamadı: {{error}}",
     "reportGenerated": "\"{{name}}\" için rapor oluşturuldu"
   },
   "encryption": {

@@ -1,6 +1,7 @@
 {
   "view.title": "Team-Feed",
   "view.connectToServer": "Verbinden Sie sich mit einem Team-Server, um den Team-Feed zu nutzen.",
+  "view.viewerReadOnly": "Mit der Rolle Betrachter können Sie Beiträge lesen und darauf reagieren, aber nicht posten, antworten, bearbeiten oder anheften.",
   "view.loading": "Wird geladen...",
   "view.noPostsYet": "Noch keine Beiträge. Teilen Sie als Erster ein Update!",
   "view.noTeamActivity": "Noch keine Teamaktivität.",

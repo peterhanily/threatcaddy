@@ -54,6 +54,7 @@
 
   "view.title": "팀 피드",
   "view.connectToServer": "팀 피드를 사용하려면 팀 서버에 연결하세요.",
+  "view.viewerReadOnly": "조회자 역할은 게시물을 읽고 반응을 남길 수 있지만 게시, 답장, 편집, 고정은 할 수 없습니다.",
   "view.loading": "로드 중...",
   "view.noPostsYet": "아직 게시물이 없습니다. 가장 먼저 업데이트를 공유해 보세요!",
   "view.noTeamActivity": "아직 팀 활동이 없습니다.",

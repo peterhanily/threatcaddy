@@ -43,6 +43,7 @@
   "backup": {
     "exported": "גיבוי יוצא",
     "exportFailed": "ייצוא גיבוי נכשל",
+    "exportFailedDetail": "ייצוא גיבוי נכשל: {{error}}",
     "restored": "גיבוי שוחזר",
     "restoreFailed": "שחזור גיבוי נכשל",
     "mergeComplete": "מיזוג הושלם: {{added}} נוספו, {{updated}} עודכנו, {{skipped}} דולגו",
@@ -61,12 +62,16 @@
   "investigation": {
     "sampleLoaded": "חקירת דוגמה נטענה",
     "sampleRemoved": "חקירת דוגמה הוסרה",
+    "sampleKept": "חקירת הדוגמה הוסרה. הפריטים שלך נמצאים ב-\"{{name}}\"",
+    "sampleLocked": "בטל את נעילת סביבת העבודה לפני שינוי נתוני הדוגמה.",
+    "sampleSessionChanged": "ההפעלה של סביבת העבודה השתנתה. נסה שוב את פעולת הדוגמה לאחר ביטול הנעילה.",
     "trashEmptied": "האשפה רוקנה",
     "savedAsTemplate": "\"{{name}}\" נשמר כתבנית",
     "playbookRan": "פלייבוק \"{{playbook}}\" הורץ על \"{{investigation}}\"",
     "createdFromPlaybook": "\"{{name}}\" נוצר מפלייבוק",
     "exported": "חקירה \"{{name}}\" יוצאה",
     "exportFailed": "ייצוא חקירה נכשל",
+    "exportFailedDetail": "ייצוא חקירה נכשל: {{error}}",
     "reportGenerated": "דוח נוצר עבור \"{{name}}\""
   },
   "encryption": {

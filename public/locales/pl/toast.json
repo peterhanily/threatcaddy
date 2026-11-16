@@ -44,6 +44,7 @@
   "backup": {
     "exported": "Kopia zapasowa wyeksportowana",
     "exportFailed": "Nie udało się wyeksportować kopii zapasowej",
+    "exportFailedDetail": "Nie udało się wyeksportować kopii zapasowej: {{error}}",
     "restored": "Kopia zapasowa przywrócona",
     "restoreFailed": "Nie udało się przywrócić kopii zapasowej",
     "mergeComplete": "Scalanie zakończone: {{added}} dodano, {{updated}} zaktualizowano, {{skipped}} pominięto",
@@ -62,12 +63,16 @@
   "investigation": {
     "sampleLoaded": "Przykładowe dochodzenie załadowane",
     "sampleRemoved": "Przykładowe dochodzenie usunięte",
+    "sampleKept": "Przykładowe dochodzenie usunięte. Twoje elementy są w „{{name}}”",
+    "sampleLocked": "Odblokuj obszar roboczy przed zmianą danych przykładowych.",
+    "sampleSessionChanged": "Sesja obszaru roboczego uległa zmianie. Po odblokowaniu ponów działanie na przykładzie.",
     "trashEmptied": "Kosz opróżniony",
     "savedAsTemplate": "„{{name}}\" zapisane jako szablon",
     "playbookRan": "Playbooek „{{playbook}}\" uruchomiony dla „{{investigation}}\"",
     "createdFromPlaybook": "„{{name}}\" utworzone z playbooka",
     "exported": "Dochodzenie „{{name}}\" wyeksportowane",
     "exportFailed": "Nie udało się wyeksportować dochodzenia",
+    "exportFailedDetail": "Nie udało się wyeksportować dochodzenia: {{error}}",
     "reportGenerated": "Raport wygenerowany dla „{{name}}\""
   },
   "encryption": {

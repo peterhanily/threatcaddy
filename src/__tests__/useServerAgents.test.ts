@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { db } from '../db';
 import type { AgentDeployment } from '../types';
+import { validatePortableRow } from '../lib/backup-records';
 
 const mocks = vi.hoisted(() => ({ token: vi.fn(), recover: vi.fn(), handoff: vi.fn(), reclaim: vi.fn(), reconcile: vi.fn() }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ serverUrl: 'https://team.example.invalid', getAccessToken: mocks.token }) }));
@@ -80,5 +81,25 @@ describe('unavailable server agent execution', () => {
     expect(mocks.handoff).not.toHaveBeenCalled();
     expect(mocks.recover).not.toHaveBeenCalled();
     expect(mocks.reclaim).not.toHaveBeenCalled();
+  });
+});
+
+describe('server action reconciliation (compatible servers)', () => {
+  it('stores nullable server action columns as absent fields so backups stay valid', async () => {
+    await db.agentActions.clear();
+    const deployments = [deployment('server-owned')];
+    await db.agentDeployments.bulkAdd(deployments);
+    const json = (body: unknown) => new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } });
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => url.includes('/status/') ? json({ registered: true, serverRunning: false })
+      : url.includes('/heartbeat') ? json({ serverWasRunning: true })
+      : url.includes('/actions/') ? json({ actions: [{ id: 'server-action', investigationId: 'case-one', threadId: null, botConfigId: null, toolName: 'create_note',
+        toolInput: { title: 'Draft' }, rationale: 'Server cycle', status: 'executed', resultSummary: null, severity: null,
+        createdAt: '2026-11-01T00:00:00.000Z', executedAt: null, reviewedAt: null }] })
+      : json({})));
+    renderHook(() => useServerAgents({ investigationId: 'case-one', deployments, profiles: [], enabled: true }));
+    await waitFor(async () => expect(await db.agentActions.get('server-action')).toBeDefined());
+    const stored = await db.agentActions.get('server-action');
+    expect(() => validatePortableRow('agentActions', stored)).not.toThrow();
+    expect(stored).toMatchObject({ threadId: '', status: 'executed' });
   });
 });

@@ -119,6 +119,8 @@ export interface Task {
   trashedAt?: number;
   archived: boolean;
   assigneeId?: string;
+  /** Agent deployment the task was delegated to. Device-only: the team server's assigneeId refers to users. */
+  assignedDeploymentId?: string;
   createdBy?: string;
   updatedBy?: string;
   /** Lead-agent rejection count — incremented each time review_completed_task sends it back. */
@@ -1051,8 +1053,8 @@ export interface PlaybookTemplate {
 }
 
 export interface ExportData {
-  /** Marker for complete portable files; unmarked v1 files remain readable. */
-  format?: 'threatcaddy-backup';
+  /** Marker for complete portable files or single-investigation exports; unmarked v1 files remain readable. */
+  format?: 'threatcaddy-backup' | 'threatcaddy-investigation';
   version: 1;
   exportedAt: number;
   notes: Note[];

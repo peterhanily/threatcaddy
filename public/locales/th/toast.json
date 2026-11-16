@@ -42,6 +42,7 @@
   "backup": {
     "exported": "ส่งออกการสำรองข้อมูลแล้ว",
     "exportFailed": "การส่งออกการสำรองข้อมูลล้มเหลว",
+    "exportFailedDetail": "การส่งออกการสำรองข้อมูลล้มเหลว: {{error}}",
     "restored": "กู้คืนการสำรองข้อมูลแล้ว",
     "restoreFailed": "การกู้คืนการสำรองข้อมูลล้มเหลว",
     "mergeComplete": "การรวมเสร็จสมบูรณ์: เพิ่ม {{added}}, อัปเดต {{updated}}, ข้าม {{skipped}}",
@@ -60,12 +61,16 @@
   "investigation": {
     "sampleLoaded": "โหลดการสืบสวนตัวอย่างแล้ว",
     "sampleRemoved": "ลบการสืบสวนตัวอย่างแล้ว",
+    "sampleKept": "ลบการสืบสวนตัวอย่างแล้ว รายการของคุณอยู่ใน \"{{name}}\"",
+    "sampleLocked": "ปลดล็อกพื้นที่ทำงานก่อนเปลี่ยนข้อมูลตัวอย่าง",
+    "sampleSessionChanged": "เซสชันพื้นที่ทำงานเปลี่ยนไป ลองดำเนินการกับตัวอย่างอีกครั้งหลังปลดล็อก",
     "trashEmptied": "เปิดถังขยะแล้ว",
     "savedAsTemplate": "บันทึก \"{{name}}\" เป็นเทมเพลตแล้ว",
     "playbookRan": "เรียกใช้ Playbook \"{{playbook}}\" บน \"{{investigation}}\" แล้ว",
     "createdFromPlaybook": "สร้าง \"{{name}}\" จาก Playbook แล้ว",
     "exported": "ส่งออกการสืบสวน \"{{name}}\" แล้ว",
     "exportFailed": "การส่งออกการสืบสวนล้มเหลว",
+    "exportFailedDetail": "การส่งออกการสืบสวนล้มเหลว: {{error}}",
     "reportGenerated": "สร้างรายงานสำหรับ \"{{name}}\" แล้ว"
   },
   "encryption": {

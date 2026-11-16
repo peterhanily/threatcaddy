@@ -43,6 +43,7 @@
   "backup": {
     "exported": "Backup exportado",
     "exportFailed": "Falha ao exportar backup",
+    "exportFailedDetail": "Falha ao exportar backup: {{error}}",
     "restored": "Backup restaurado",
     "restoreFailed": "Falha ao restaurar backup",
     "mergeComplete": "Mesclagem concluída: {{added}} adicionados, {{updated}} atualizados, {{skipped}} ignorados",
@@ -61,12 +62,16 @@
   "investigation": {
     "sampleLoaded": "Investigação de exemplo carregada",
     "sampleRemoved": "Investigação de exemplo removida",
+    "sampleKept": "Investigação de exemplo removida. Seus itens estão em \"{{name}}\"",
+    "sampleLocked": "Desbloqueie o espaço de trabalho antes de alterar os dados de exemplo.",
+    "sampleSessionChanged": "A sessão do espaço de trabalho mudou. Tente novamente a ação de exemplo após desbloquear.",
     "trashEmptied": "Lixeira esvaziada",
     "savedAsTemplate": "\"{{name}}\" salva como modelo",
     "playbookRan": "Playbook \"{{playbook}}\" executado em \"{{investigation}}\"",
     "createdFromPlaybook": "\"{{name}}\" criada a partir do playbook",
     "exported": "Investigação \"{{name}}\" exportada",
     "exportFailed": "Falha ao exportar investigação",
+    "exportFailedDetail": "Falha ao exportar investigação: {{error}}",
     "reportGenerated": "Relatório gerado para \"{{name}}\""
   },
   "encryption": {

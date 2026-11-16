@@ -42,6 +42,7 @@
   "backup": {
     "exported": "Sicherung exportiert",
     "exportFailed": "Sicherung konnte nicht exportiert werden",
+    "exportFailedDetail": "Sicherung konnte nicht exportiert werden: {{error}}",
     "restored": "Sicherung wiederhergestellt",
     "restoreFailed": "Sicherung konnte nicht wiederhergestellt werden",
     "mergeComplete": "Zusammenführung abgeschlossen: {{added}} hinzugefügt, {{updated}} aktualisiert, {{skipped}} übersprungen",
@@ -60,12 +61,16 @@
   "investigation": {
     "sampleLoaded": "Beispieluntersuchung geladen",
     "sampleRemoved": "Beispieluntersuchung entfernt",
+    "sampleKept": "Beispieluntersuchung entfernt. Ihre Elemente befinden sich in \"{{name}}\"",
+    "sampleLocked": "Entsperren Sie den Arbeitsbereich, bevor Sie Beispieldaten ändern.",
+    "sampleSessionChanged": "Die Sitzung des Arbeitsbereichs hat sich geändert. Wiederholen Sie die Beispielaktion nach dem Entsperren.",
     "trashEmptied": "Papierkorb geleert",
     "savedAsTemplate": "\"{{name}}\" als Vorlage gespeichert",
     "playbookRan": "Playbook \"{{playbook}}\" auf \"{{investigation}}\" ausgeführt",
     "createdFromPlaybook": "\"{{name}}\" aus Playbook erstellt",
     "exported": "Untersuchung \"{{name}}\" exportiert",
     "exportFailed": "Untersuchung konnte nicht exportiert werden",
+    "exportFailedDetail": "Untersuchung konnte nicht exportiert werden: {{error}}",
     "reportGenerated": "Bericht für \"{{name}}\" generiert"
   },
   "encryption": {

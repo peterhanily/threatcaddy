@@ -5,6 +5,9 @@ import { setSessionKey } from '../lib/encryptionMiddleware';
 import { SyncEngine } from '../lib/sync-engine';
 import { ensureSyncWorkspace } from '../lib/sync-workspace';
 import { evictSyncedFolder, uncachedFolderKey, cacheOperationKey } from '../lib/sync-cache';
+import i18n from '../i18n';
+import commonEn from '../../public/locales/en/common.json';
+import commonDe from '../../public/locales/de/common.json';
 
 const api = vi.hoisted(() => ({ push: vi.fn(), pull: vi.fn(), snapshot: vi.fn() }));
 vi.mock('../lib/server-api', () => ({
@@ -136,6 +139,30 @@ describe('sync engine persistence contract', () => {
     expect(api.pull).not.toHaveBeenCalled();
     expect(await db.table('_syncQueue').count()).toBe(1);
     expect(handler).toHaveBeenCalledWith(expect.stringContaining('different server/account'));
+  });
+  it('explains a workspace binding pause in the interface language at start and on each sync', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'common', commonDe, true, true);
+    await i18n.changeLanguage('de');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      for (const [key, prepare] of [
+        ['syncStatus.pausedWorkspaceMismatch', () => engine.setWorkspaceIdentity('https://test.invalid', 'u2')],
+        ['syncStatus.pausedUnboundHistory', async () => { engine.setWorkspaceIdentity('https://test.invalid', 'u1'); await db.table('_syncMeta').delete('syncWorkspaceIdentityV1'); }],
+      ] as const) {
+        const german = (commonDe as Record<string, string>)[key];
+        expect(german, key).not.toBe((commonEn as Record<string, string>)[key]);
+        await prepare();
+        const handler = vi.fn(); engine.setErrorHandler(handler);
+        engine.start();
+        await vi.waitFor(() => expect(handler).toHaveBeenCalledWith(german));
+        handler.mockClear();
+        await engine.sync();
+        expect(handler).toHaveBeenCalledExactlyOnceWith(german);
+        engine.stop();
+      }
+    } finally { warn.mockRestore(); await i18n.changeLanguage('en'); }
+    expect(api.pull).not.toHaveBeenCalled();
   });
   it('retains queued and remote changes when their investigation becomes local-only', async () => {
     await seedNote(note('n1'));
@@ -326,6 +353,34 @@ describe('sync engine persistence contract', () => {
     engine.start();
     await vi.waitFor(() => expect(api.pull).toHaveBeenCalled());
     expect(api.push).not.toHaveBeenCalled();
+  });
+
+  it('initial capture keeps demo tags and timelines on this device', async () => {
+    await db.transaction('rw', db.tags, db.timelines, async () => {
+      suppressSyncInCurrentTransaction();
+      await db.tags.bulkAdd([{ id: 'sample-realistic-tag-1', name: 'synthetic-training', color: '#6366f1' }, { id: 'team-tag', name: 'phishing', color: '#ef4444' }]);
+      await db.timelines.add({ id: 'sample-realistic-timeline-1', name: 'Mailbox Exercise — UTC', order: 998, createdAt: 1, updatedAt: 1 });
+    });
+    engine.start();
+    await vi.waitFor(() => expect(api.push).toHaveBeenCalled());
+    const pushed = api.push.mock.calls.flatMap(([changes]) => (changes as Array<{ entityId: string }>).map(change => change.entityId));
+    expect(pushed).toContain('team-tag');
+    expect(pushed).not.toContain('sample-realistic-tag-1');
+    expect(pushed).not.toContain('sample-realistic-timeline-1');
+  });
+
+  it('drops demo tag and timeline uploads an older build queued, unless the server already holds that row', async () => {
+    // 2.0.0 and 2.0.1 queued them in any bound workspace, even while signed out.
+    await db.table('_syncQueue').bulkAdd([
+      { table: 'tags', entityId: 'sample-realistic-tag-phishing', op: 'put', data: { id: 'sample-realistic-tag-phishing', name: 'synthetic-training', color: '#6366f1' }, clientVersion: 0 },
+      { table: 'timelines', entityId: 'sample-realistic-timeline', op: 'put', data: { id: 'sample-realistic-timeline', name: 'Mailbox Exercise — UTC', order: 998, createdAt: 1, updatedAt: 1 }, clientVersion: 0 },
+      { table: 'tags', entityId: 'sample-realistic-tag-c2', op: 'put', data: { id: 'sample-realistic-tag-c2', name: 'c2-demo', color: '#ef4444' }, clientVersion: 2 },
+    ]);
+    await db.table('_syncMeta').put({ key: revisionKey('tags', 'sample-realistic-tag-c2'), value: 2 });
+    api.push.mockImplementation(async changes => ({ results: changes.map((c: { table: string; entityId: string }) => ({ table: c.table, entityId: c.entityId, status: 'accepted', serverVersion: 3 })) }));
+    await engine.sync();
+    expect(api.push.mock.calls.flatMap(([changes]) => (changes as Array<{ entityId: string }>).map(change => change.entityId))).toEqual(['sample-realistic-tag-c2']);
+    expect(await db.table('_syncQueue').count()).toBe(0);
   });
 });
 

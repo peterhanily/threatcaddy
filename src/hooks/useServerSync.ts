@@ -5,8 +5,14 @@ import { configureServerApi } from '../lib/server-api';
 import { syncEngine } from '../lib/sync-engine';
 import { WSClient } from '../lib/ws-client';
 import { liveQuery } from 'dexie';
+import { useTranslation } from 'react-i18next';
 import { db } from '../db';
-import { getSyncPauseReason } from '../lib/sync-capture-policy';
+import { getSyncPauseReason, type SyncPauseReason } from '../lib/sync-capture-policy';
+import { canKeepServerVersion } from '../lib/sync-sanitize';
+
+const PAUSE_NOTICES: Record<SyncPauseReason | 'unreadable', string> = {
+  capture: 'syncStatus.pausedCapture', history: 'syncStatus.pausedHistory', unreadable: 'syncStatus.pausedUnreadable',
+};
 
 interface AuthState {
   user?: { id: string } | null;
@@ -37,6 +43,7 @@ interface ReloadFns {
  * Extracted from App.tsx to isolate sync concerns.
  */
 export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInvite?: (folderId: string) => void) {
+  const { t } = useTranslation('common');
   const scope = useMemo(() => ({ serverUrl: auth.serverUrl, connected: auth.connected, userId: auth.user?.id }), [auth.serverUrl, auth.connected, auth.user?.id]);
   const activeScope = useRef<typeof scope | null>(null);
   const callbacks = useRef({ auth, reloadFns, onFolderInvite });
@@ -44,14 +51,14 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
   const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([]);
   const [syncConflicts, setSyncConflicts] = useState<SyncResult[]>([]);
   const [syncError, setSyncError] = useState<string | null>(null);
-  const [durablePause, setDurablePause] = useState<string | null>(null);
+  const [durablePause, setDurablePause] = useState<SyncPauseReason | 'unreadable' | null>(null);
   const wsClientRef = useRef<WSClient | null>(null);
 
   // Recovery remains visible while signed out and updates across tabs. Capture
   // is owned by durable DB identity, never this transport effect's lifetime.
   useEffect(() => {
     const subscription = liveQuery(() => db.transaction('r', '_localMigrations', '_syncMeta', () => getSyncPauseReason(db)))
-      .subscribe({ next: setDurablePause, error: () => setDurablePause('Sync safety state could not be read. Local edits remain on this device; reload before syncing.') });
+      .subscribe({ next: setDurablePause, error: () => setDurablePause('unreadable') });
     return () => subscription.unsubscribe();
   }, []);
 
@@ -142,6 +149,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
             if (!current()) return;
             const { folderId: revokedId } = msg as { folderId?: string };
             if (revokedId) {
+              syncEngine.forgetSkippedFolder(revokedId).catch(() => {});
               callbacks.current.reloadFns.folders();
             }
           });
@@ -184,7 +192,8 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
 
   const handleResolveAllConflicts = useCallback(async (choice: 'mine' | 'theirs') => {
     if (activeScope.current !== scope || stateScope !== scope) return;
-    const resolvable = syncConflicts.filter(c => c.status === 'conflict');
+    // A server version this device cannot read stays listed; only "Mine" resolves it.
+    const resolvable = syncConflicts.filter(c => c.status === 'conflict' && (choice === 'mine' || canKeepServerVersion(c)));
     await syncEngine.resolveConflicts(resolvable, choice);
     if (activeScope.current === scope) setSyncConflicts(previous => previous.filter(c => !resolvable.includes(c)));
   }, [syncConflicts, scope, stateScope]);
@@ -192,7 +201,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
   return {
     presenceUsers: stateScope === scope ? presenceUsers : [],
     syncConflicts: stateScope === scope ? syncConflicts : [],
-    syncError: durablePause ?? (stateScope === scope ? syncError : null),
+    syncError: durablePause ? t(PAUSE_NOTICES[durablePause]) : (stateScope === scope ? syncError : null),
     setSyncConflicts,
     handleResolveConflict,
     handleResolveAllConflicts,

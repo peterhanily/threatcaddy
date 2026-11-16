@@ -2,6 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { ServerConnection } from '../components/Settings/ServerConnection';
 import { REMOTE_LOGOUT_FAILED } from '../lib/session-logout';
+import { createInstance } from 'i18next';
+import { I18nextProvider } from 'react-i18next';
+import settingsEn from '../../public/locales/en/settings.json';
+import settingsDe from '../../public/locales/de/settings.json';
+import commonEn from '../../public/locales/en/common.json';
 
 const mocks = vi.hoisted(() => ({ logout: vi.fn(), setServerUrl: vi.fn(), addToast: vi.fn() }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({
@@ -26,6 +31,18 @@ describe('server disconnect feedback', () => {
     expect(mocks.addToast).not.toHaveBeenCalled();
     await act(async () => { rejectLogout(new Error(REMOTE_LOGOUT_FAILED)); });
     expect(mocks.addToast).toHaveBeenCalledExactlyOnceWith('warning', REMOTE_LOGOUT_FAILED, 12_000);
+  });
+
+  it('reports the unconfirmed remote logout in the interface language', async () => {
+    const locale = createInstance();
+    await locale.init({ lng: 'de', fallbackLng: 'en', defaultNS: 'settings', interpolation: { escapeValue: false },
+      resources: { en: { settings: settingsEn, common: commonEn }, de: { settings: settingsDe } } });
+    mocks.logout.mockRejectedValue(new Error(REMOTE_LOGOUT_FAILED));
+    render(<I18nextProvider i18n={locale}><ServerConnection settings={{ serverUrl: 'https://team.example' }} onUpdateSettings={vi.fn()} /></I18nextProvider>);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: settingsDe['server.disconnectLogout'] })); });
+    const german = (settingsDe as Record<string, string>)['server.remoteLogoutFailed'];
+    expect(german).toBeTruthy();
+    expect(mocks.addToast).toHaveBeenCalledExactlyOnceWith('warning', german, 12_000);
   });
 
   it('shows the normal disconnect receipt only after remote revocation succeeds', async () => {

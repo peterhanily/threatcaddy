@@ -1,7 +1,8 @@
-import { createContext, useContext, useLayoutEffect, useRef, useId, type ReactNode } from 'react';
+import { createContext, useContext, useInsertionEffect, useLayoutEffect, useRef, useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useScreenshare } from '../../hooks/ScreenshareContext';
+import { useModalFocusExemptRegionShown } from '../../hooks/useModalFocusExemption';
 
 interface ModalProps {
   open: boolean;
@@ -40,6 +41,7 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
   const { maxLevel } = useScreenshare();
   const inheritedSuspension = useContext(ModalSuspensionContext);
   const suspended = maxLevel !== null || requestedSuspension || inheritedSuspension;
+  const exemptRegionShown = useModalFocusExemptRegionShown();
   const overlayRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
@@ -47,13 +49,27 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
   const onCloseRef = useRef(onClose);
   useLayoutEffect(() => { onCloseRef.current = onClose; });
 
+  // React applies a child's autoFocus before this component's layout effect.
+  // Insertion effects run earlier in the same commit, while the opener still
+  // has focus. The dialog's own content is never recorded as its opener, and
+  // neither is <body>, where a browser leaves focus while screen sharing hides it.
+  const openerRef = useRef<Element | null>(null);
+  // Focus inside the dialog when its effect was last torn down, so a
+  // StrictMode remount or the end of screen sharing returns there.
+  const resumeRef = useRef<Element | null>(null);
+  useInsertionEffect(() => {
+    if (!open) { openerRef.current = null; return; }
+    const active = document.activeElement;
+    if (!suspended && active && active !== document.body && !overlayRef.current?.contains(active)) openerRef.current = active;
+  }, [open, suspended]);
+
   // Install the stack, focus trap and Escape handler before the dialog paints.
   // A visible lazy-loaded dialog must already accept its first keyboard action.
   useLayoutEffect(() => {
     const el = overlayRef.current;
     if (!open || suspended || !el) return;
     focusRevision++;
-    const previousFocus = document.activeElement as HTMLElement;
+    const previousFocus = openerRef.current as HTMLElement;
     if (!stack.length) {
       priorOverflow = document.body.style.overflow;
       priorFocus = previousFocus;
@@ -65,25 +81,42 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
     updateStack();
     const isTop = () => stack.at(-1) === el;
     const focusFirst = () => (focusable(el)[0] ?? el).focus();
+    // The workspace-lock warning must stay usable over an open form; it is not
+    // part of this dialog, so Escape there must not close (and discard) the form.
+    const exempt = (target: EventTarget | null) => target instanceof Element && !!target.closest('[data-modal-focus-exempt]');
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isTop()) return;
-      if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); onCloseRef.current(); return; }
+      const active = document.activeElement;
+      const inWarning = exempt(event.target) || exempt(active);
+      if (event.key === 'Escape' && !inWarning) { event.preventDefault(); event.stopImmediatePropagation(); onCloseRef.current(); return; }
       if (event.key !== 'Tab') return;
       const items = focusable(el);
       const first = items[0] ?? el;
       const last = items.at(-1) ?? el;
-      if (!el.contains(document.activeElement) || (event.shiftKey && document.activeElement === first) || (!event.shiftKey && document.activeElement === last)) {
-        event.preventDefault();
-        (event.shiftKey ? last : first).focus();
-      }
+      // Tab continues from this dialog's edges into the warning and back, so a
+      // keyboard user can reach it without leaving the form.
+      const warning = [...document.querySelectorAll<HTMLElement>('[data-modal-focus-exempt]')].flatMap(focusable);
+      let next: HTMLElement | undefined;
+      if (inWarning) {
+        if (active === (event.shiftKey ? warning[0] : warning.at(-1))) next = event.shiftKey ? last : first;
+      } else if (!el.contains(active)) next = event.shiftKey ? last : first;
+      else if (active === (event.shiftKey ? first : last)) next = (event.shiftKey ? warning.at(-1) : warning[0]) ?? (event.shiftKey ? last : first);
+      if (next) { event.preventDefault(); next.focus(); }
     };
-    const handleFocus = (event: FocusEvent) => { if (isTop() && !el.contains(event.target as Node)) focusFirst(); };
+    const handleFocus = (event: FocusEvent) => { if (isTop() && !el.contains(event.target as Node) && !exempt(event.target)) focusFirst(); };
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('focusin', handleFocus);
-    if (isTop()) focusFirst();
+    // Keep focus a child already placed in the dialog (autoFocus).
+    const resume = resumeRef.current;
+    resumeRef.current = null;
+    if (isTop() && !el.contains(document.activeElement)) {
+      if (resume instanceof HTMLElement && el.contains(resume) && availableForFocus(resume)) resume.focus();
+      else focusFirst();
+    }
     return () => {
       const revision = ++focusRevision;
       const wasTop = isTop();
+      resumeRef.current = el.contains(document.activeElement) ? document.activeElement : null;
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('focusin', handleFocus);
       const index = stack.indexOf(el);
@@ -132,7 +165,10 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
       className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4"
       onClick={(e) => { if (e.target === overlayRef.current && stack.at(-1) === overlayRef.current) onClose(); }}
       role="dialog"
-      aria-modal="true"
+      // The workspace-lock warning sits outside every dialog. While it is shown,
+      // aria-modal would hide it from screen readers; the focus trap above still
+      // bridges Tab to it.
+      aria-modal={!exemptRegionShown}
       aria-labelledby={titleId}
     >
       <div className={`bg-gray-900 dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-700 w-full ${extraWide ? 'max-w-5xl' : wide ? 'max-w-2xl' : 'max-w-md'} max-h-[90vh] flex flex-col`}>

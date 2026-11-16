@@ -3,6 +3,22 @@
 Keep the complete audit and publication gates enabled. Settings, repository
 changes, published artifacts and running server deployments are separate states.
 
+## 15 November 2026 Hono update
+
+The server's Hono dependency is pinned to exactly 4.13.18, the maintainer's
+[security release](https://github.com/honojs/hono/releases/tag/v4.13.18) for
+GHSA-39q9-qp46-w8xg: `bodyLimit()` in 4.12.16–4.13.17 kept every transfer chunk
+in memory, and the server applies it before authentication. A 1 MiB body sent
+in 1-byte chunks retained about 269 MB of heap on 4.13.16 and about 3 MB on
+4.13.18. This is a documented exception to the seven-day release window: the
+release is four days old, and neither `npm audit` nor Dependabot reported the
+repository-level advisory. Only the `hono` lockfile entry changed.
+
+A fixed `bodyLimit()` still buffers a body without `Content-Length` up to its
+limit before the route runs. The server therefore applies the larger sync, file
+and backup limits (16, 51 and 101 MiB) only after authentication; anonymous
+requests are read no further than the 1 MiB API limit.
+
 ## 13 November 2026 remediation update
 
 The server's Hono dependency is pinned to 4.13.16, the maintainer's

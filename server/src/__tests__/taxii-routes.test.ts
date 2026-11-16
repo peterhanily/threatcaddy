@@ -62,6 +62,15 @@ describe('TAXII current-state objects', () => {
     mocks.rows.push([folder]);
     expect((await app.request(`${path}?${query}`)).status).toBe(400);
   });
+  it.each([
+    ['its own', [[ioc('damaged', { enrichment: { stix: 'damaged' } })]]],
+    ['a related', [[ioc('source', { relationships: [{ targetIOCId: 'damaged', relationshipType: 'related-to' }] })], [ioc('damaged', { enrichment: { stix: 'damaged' } })]]],
+  ])('answers %s IOC with damaged marking provenance with a TAXII 422 that names the remedy', async (_label, rows) => {
+    mocks.rows.push([folder], ...rows);
+    const response = await app.request(path);
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ title: 'Cannot export damaged STIX marking provenance; restore the original source first' });
+  });
   it('respects type filters without relabelling CVEs or ATT&CK techniques as indicators', async () => {
     mocks.rows.push([folder], [ioc('cve', { type: 'cve', value: 'cve-2024-12345' }), ioc('technique', { type: 'mitre-attack', value: 'T1059' })]);
     const body = await (await app.request(`${path}?match[type]=vulnerability`)).json();

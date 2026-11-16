@@ -12,7 +12,7 @@ const embeddedIOCs = [relation('iocAnalysis.iocs.*.relationships.*.targetIOCId',
 /** Explicit relationships only: never rewrite IDs buried in analyst prose or tool input. */
 export const ENTITY_RELATIONS: Record<string, Relation[]> = {
   notes: [folder, ...links, ...embeddedIOCs, relation('parentNoteId', 'notes')],
-  tasks: [folder, ...links, ...embeddedIOCs],
+  tasks: [folder, ...links, ...embeddedIOCs, relation('assignedDeploymentId', 'agentDeployments')],
   timelineEvents: [folder, ...links, ...embeddedIOCs, relation('timelineId', 'timelines'), relation('linkedIOCIds', 'iocs', true)],
   standaloneIOCs: [folder, ...links, relation('linkedEvidenceIds', 'evidenceItems', true), relation('relationships.*.targetIOCId', 'iocs')],
   evidenceItems: [folder, relation('linkedIOCIds', 'iocs', true)],
@@ -28,6 +28,9 @@ export const ENTITY_RELATIONS: Record<string, Relation[]> = {
   agentMeetings: [relation('investigationId', 'folders'), relation('threadId', 'chatThreads'),
     relation('minutesNoteId', 'notes'), relation('participantDeploymentIds', 'agentDeployments', true)],
 };
+/** Agent history has no modification time and requires its thread edge; an
+ * empty edge (as ask_human records use) keeps it valid for backup. */
+const HISTORY_TABLES = new Set(['agentActions', 'agentMeetings']);
 export const TAGGED_TABLES = ['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'chatThreads', 'folders'] as const;
 export const FOLDER_CONTENT_TABLES = TAGGED_TABLES.filter(name => name !== 'folders');
 let lifecycleTail: Promise<void> = Promise.resolve();
@@ -66,8 +69,9 @@ export function mapEntityReferences(table: string, row: EntityRecord, mapper: (t
   return copy;
 }
 
-/** Permanent delete + every known reverse edge is one transaction; trash retains restorable links. */
-export async function deleteEntitiesWithReferences(deletions: Record<string, string[]>, investigationWithContents?: string, onlyExpiredTrashBefore?: number, signal?: AbortSignal, assertCurrent: () => void = () => {}): Promise<void> {
+/** Permanent delete + every known reverse edge is one transaction; trash retains restorable links.
+ * `prepare` runs first in that transaction, behind the same draft barrier. */
+export async function deleteEntitiesWithReferences(deletions: Record<string, string[]>, investigationWithContents?: string, onlyExpiredTrashBefore?: number, signal?: AbortSignal, assertCurrent: () => void = () => {}, prepare?: () => Promise<void>): Promise<void> {
   if (!Object.values(deletions).some(ids => ids.length)) return;
   signal?.throwIfAborted();
   await lifecycle(async () => {
@@ -79,6 +83,7 @@ export async function deleteEntitiesWithReferences(deletions: Record<string, str
     try {
       await integrationWrite(Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), signal, async () => {
         assertCurrent();
+        await prepare?.();
         if (onlyExpiredTrashBefore !== undefined) {
           for (const [name, ids] of Object.entries(deletions)) {
             const rows = await db.table<EntityRecord>(name).bulkGet(ids);
@@ -107,11 +112,11 @@ export async function deleteEntitiesWithReferences(deletions: Record<string, str
           const rows = await db.table<EntityRecord>(table).toArray();
           for (const row of rows) {
             let changed = false;
-            const updated = mapEntityReferences(table, row, (target, id) => {
-              if (removed.get(target)?.has(id)) { changed = true; return undefined; }
+            const updated = mapEntityReferences(table, row, (target, id, path) => {
+              if (removed.get(target)?.has(id)) { changed = true; return HISTORY_TABLES.has(table) && path === 'threadId' ? '' : undefined; }
               return id;
             });
-            if (changed) await db.table(table).put({ ...updated, updatedAt: now });
+            if (changed) await db.table(table).put(HISTORY_TABLES.has(table) ? updated : { ...updated, updatedAt: now });
           }
         }
         assertCurrent();

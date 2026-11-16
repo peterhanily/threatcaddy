@@ -1,6 +1,7 @@
 {
   "view.title": "Fil d'équipe",
   "view.connectToServer": "Connectez-vous à un serveur d'équipe pour utiliser le Fil d'équipe.",
+  "view.viewerReadOnly": "Avec le rôle Lecteur, vous pouvez lire les publications et y réagir, mais pas publier, répondre, modifier ni épingler.",
   "view.loading": "Chargement...",
   "view.noPostsYet": "Aucune publication pour l'instant. Soyez le premier à partager une mise à jour !",
   "view.noTeamActivity": "Aucune activité d'équipe pour l'instant.",

@@ -7,6 +7,7 @@ import * as schema from '../db/schema.js';
 import { logActivity } from '../services/audit-service.js';
 import { createNotification } from '../services/notification-service.js';
 import { logger } from '../lib/logger.js';
+import { describeError } from '../lib/db-errors.js';
 import { botEventBus, botEventDepth, botEventOrigins } from './event-bus.js';
 import { botRateLimiter } from './rate-limiter.js';
 import { decryptConfigSecrets } from './secret-store.js';
@@ -76,7 +77,7 @@ export class BotManager {
           logger.info(`Cleaned up ${stale.length} stale bot run(s) from previous crash`);
         }
       } catch (err) {
-        logger.error('Failed to clean up stale bot runs', { error: String(err) });
+        logger.error('Failed to clean up stale bot runs', { error: describeError(err) });
       }
 
       // Listen for all events and route to bots
@@ -536,7 +537,7 @@ export class BotManager {
         error = timedOut ? `Bot execution timed out after ${BOT_EXECUTION_TIMEOUT_MS}ms` : 'Bot execution cancelled';
       } else {
         status = 'error';
-        error = String(err);
+        error = describeError(err);
       }
       logger.error(`Bot "${config.name}" execution failed`, { botId, runId, error });
     } finally {
@@ -578,10 +579,10 @@ export class BotManager {
             apiCallsMade: ctx?.apiCallsMade ?? 0,
             log: ctx?.log ?? [],
           }).where(eq(schema.botRuns.id, runId)).catch(err => {
-            logger.error(`Failed to update bot run record ${runId}`, { error: String(err) });
+            logger.error(`Failed to update bot run record ${runId}`, { error: describeError(err) });
           }),
           db.update(schema.botConfigs).set(statsUpdate).where(eq(schema.botConfigs.id, botId)).catch(err => {
-            logger.error(`Failed to update bot config stats for ${botId}`, { error: String(err) });
+            logger.error(`Failed to update bot config stats for ${botId}`, { error: describeError(err) });
           }),
         ]);
 
@@ -609,7 +610,7 @@ export class BotManager {
                 message: `Bot "${config.name}" was auto-disabled after ${count} consecutive failures. Last error: ${error}`,
               }).catch(() => { /* best effort */ });
             } catch (err) {
-              logger.error(`Failed to check circuit breaker for bot ${botId}`, { error: String(err) });
+              logger.error(`Failed to check circuit breaker for bot ${botId}`, { error: describeError(err) });
             }
           }
         } else if (status === 'success') {
@@ -626,7 +627,7 @@ export class BotManager {
           itemTitle: config.name,
           folderId: event?.folderId,
         }).catch(err => {
-          logger.error(`Failed to log bot run audit for ${botId}`, { error: String(err) });
+          logger.error(`Failed to log bot run audit for ${botId}`, { error: describeError(err) });
         });
       }
     }

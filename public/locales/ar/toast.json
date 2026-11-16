@@ -46,6 +46,7 @@
   "backup": {
     "exported": "تم تصدير النسخة الاحتياطية",
     "exportFailed": "فشل تصدير النسخة الاحتياطية",
+    "exportFailedDetail": "فشل تصدير النسخة الاحتياطية: {{error}}",
     "restored": "تمت استعادة النسخة الاحتياطية",
     "restoreFailed": "فشل استعادة النسخة الاحتياطية",
     "mergeComplete": "اكتمل الدمج: {{added}} مضاف، {{updated}} محدَّث، {{skipped}} تم تخطيه",
@@ -64,12 +65,16 @@
   "investigation": {
     "sampleLoaded": "تم تحميل التحقيق النموذجي",
     "sampleRemoved": "تمت إزالة التحقيق النموذجي",
+    "sampleKept": "تمت إزالة التحقيق النموذجي. عناصرك موجودة في \"{{name}}\"",
+    "sampleLocked": "افتح قفل مساحة العمل قبل تغيير البيانات النموذجية.",
+    "sampleSessionChanged": "تغيّرت جلسة مساحة العمل. أعد محاولة إجراء النموذج بعد فتح القفل.",
     "trashEmptied": "تم إفراغ المهملات",
     "savedAsTemplate": "تم حفظ \"{{name}}\" كقالب",
     "playbookRan": "تم تشغيل دليل التشغيل \"{{playbook}}\" على \"{{investigation}}\"",
     "createdFromPlaybook": "تم إنشاء \"{{name}}\" من دليل التشغيل",
     "exported": "تم تصدير التحقيق \"{{name}}\"",
     "exportFailed": "فشل تصدير التحقيق",
+    "exportFailedDetail": "فشل تصدير التحقيق: {{error}}",
     "reportGenerated": "تم إنشاء تقرير لـ \"{{name}}\""
   },
   "encryption": {

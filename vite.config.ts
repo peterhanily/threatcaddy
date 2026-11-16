@@ -7,6 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { applyDeploymentPolicy, type DeploymentPolicy } from './src/lib/deployment-policy'
 import { startupBudget } from './build/startup-budget'
 import { dependencyProvenance } from './build/dependency-provenance'
+import { localeCacheName, workboxOptions } from './build/pwa-workbox'
 
 function deploymentPolicy(policy: DeploymentPolicy): Plugin {
   return {
@@ -40,6 +41,7 @@ function selfHostedFontAssets(): Plugin {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
+  const localeCache = localeCacheName(resolve(__dirname, 'public/locales'));
   return {
   plugins: [
     selfHostedFontAssets(),
@@ -52,56 +54,13 @@ export default defineConfig(({ mode }) => {
       registerType: 'autoUpdate',
       manifest: false,
       injectRegister: 'auto',
-      workbox: {
-        // Cache the built module graph and English fallback together. Manual
-        // chunking shares dependencies between nominally lazy features; a
-        // filename exclusion can otherwise break even a basic offline reload.
-        // Preserve all packaged font subsets, including Xiaolai CJK, so first
-        // use of a script offline does not depend on a previously warmed CDN.
-        globPatterns: ['index.html', 'logo.svg', 'manifest.json', 'locales/en/*.json', 'assets/**/*.{js,css}', 'fonts/**/*.woff2', 'licenses/*.txt', '*.{ico,js}'],
-        navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/\/(?:api|ws)(?:\/|$)/],
-        skipWaiting: true,
-        clientsClaim: true,
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-        runtimeCaching: [
-          {
-            urlPattern: /^.*\/api\/.*/,
-            handler: 'NetworkOnly',
-          },
-          {
-            urlPattern: /^.*\/ws.*/,
-            handler: 'NetworkOnly',
-          },
-          {
-            // English fallback is precached; other locales are cached on use.
-            urlPattern: /\/locales\/[^/]+\/[^/]+\.json$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'i18n-locales',
-              expiration: {
-                maxEntries: 600,
-                maxAgeSeconds: 30 * 24 * 60 * 60,
-              },
-            },
-          },
-          {
-            // Cache lazy-loaded JS/CSS chunks on first use — StaleWhileRevalidate
-            // serves from cache instantly on repeat visits while fetching updates
-            urlPattern: /\/assets\/.*\.(js|css)$/,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'lazy-chunks',
-              expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
-              },
-            },
-          },
-        ],
-      },
+      workbox: workboxOptions(localeCache),
     }),
   ],
+  // The page deletes locale caches written under any other name.
+  define: {
+    __LOCALE_CACHE__: JSON.stringify(localeCache),
+  },
   base: './',
   worker: {
     format: 'es',

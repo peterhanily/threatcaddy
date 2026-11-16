@@ -42,6 +42,7 @@
   "backup": {
     "exported": "备份已导出",
     "exportFailed": "导出备份失败",
+    "exportFailedDetail": "导出备份失败：{{error}}",
     "restored": "备份已恢复",
     "restoreFailed": "恢复备份失败",
     "mergeComplete": "合并完成：{{added}} 个已添加，{{updated}} 个已更新，{{skipped}} 个已跳过",
@@ -60,12 +61,16 @@
   "investigation": {
     "sampleLoaded": "示例调查已加载",
     "sampleRemoved": "示例调查已移除",
+    "sampleKept": "示例调查已移除。您的项目位于\"{{name}}\"",
+    "sampleLocked": "请先解锁工作区，再更改示例数据。",
+    "sampleSessionChanged": "工作区会话已更改。请在解锁后重试示例操作。",
     "trashEmptied": "回收站已清空",
     "savedAsTemplate": "已将\"{{name}}\"保存为模板",
     "playbookRan": "已在\"{{investigation}}\"上运行\"{{playbook}}\"剧本",
     "createdFromPlaybook": "已从剧本创建\"{{name}}\"",
     "exported": "调查\"{{name}}\"已导出",
     "exportFailed": "导出调查失败",
+    "exportFailedDetail": "导出调查失败：{{error}}",
     "reportGenerated": "已生成\"{{name}}\"的报告"
   },
   "encryption": {

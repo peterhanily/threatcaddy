@@ -4,13 +4,6 @@ import type { generateSampleInvestigation } from './sample-investigation';
 export type SampleInvestigationKind = 'realistic' | 'parody';
 export const REALISTIC_SAMPLE_FOLDER_ID = 'sample-realistic-investigation';
 
-/** Keep removal of either demo scoped to that demo, including its global tags/templates. */
-export function isSampleEntityForKind(id: string, kind: SampleInvestigationKind): boolean {
-  return kind === 'realistic'
-    ? id.startsWith('sample-realistic-')
-    : id.startsWith('sample-') && !id.startsWith('sample-realistic-');
-}
-
 /** Offline training data only: reserved network identifiers, no provider output or active agents. */
 export function generateRealisticInvestigation(): ReturnType<typeof generateSampleInvestigation> {
   const base = Date.UTC(2026, 10, 10, 9);
@@ -159,7 +152,7 @@ Replace this draft with your reviewed assessment. Download this note as Markdown
     fileName: i === 0 ? 'authentication-example.csv' : 'mailbox-audit-example.csv', fileType: 'text',
     mimeType: 'text/csv', content, size: content.length, extractionStatus: 'extracted',
     extractionWarning: 'Generated training excerpt, not an imported original or verified forensic acquisition.',
-    importedAt: base + 40 * minute, chunkIndex: 0, chunkCount: 1,
+    importedAt: base + 40 * minute, chunkIndex: 1, chunkCount: 1,
     linkedIOCIds: i === 0 ? [id('ioc', 1), id('ioc', 3)] : [id('ioc', 2)],
   }));
   return {
@@ -168,7 +161,8 @@ Replace this draft with your reviewed assessment. Download this note as Markdown
       order: 998, status: 'active', localOnly: true, timelineId, createdAt: base, updatedAt: base + 180 * minute,
       clsLevel: 'TLP:CLEAR', tags: ['synthetic-training'] },
     notes, tasks, timelineEvents, standaloneIOCs, evidenceItems,
-    timeline: { id: timelineId, name: 'Mailbox Exercise — UTC', order: 0, createdAt: base, updatedAt: base },
+    // Sort after user timelines so it never becomes the default for real events.
+    timeline: { id: timelineId, name: 'Mailbox Exercise — UTC', order: 998, createdAt: base, updatedAt: base },
     whiteboard: { ...common, id: id('whiteboard', 1), name: 'Mailbox Exercise — Analysis Workspace', order: 0, elements: '[]' },
     tags: [{ id: id('tag', 1), name: 'synthetic-training', color: '#6366f1' }],
     chatThreads: [], noteTemplates: [],

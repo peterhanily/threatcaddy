@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Shield, Loader2, Trash2, Download, Upload, AlertCircle, CheckCircle, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../hooks/useSettings';
+import { useAuth } from '../../contexts/AuthContext';
+import { useSyncWorkspaceBound } from '../../hooks/useSyncWorkspaceBound';
 import { useToast } from '../../contexts/ToastContext';
 import { db } from '../../db';
 import { encryptBackup, decryptBackup, type BackupPayload, type EncryptedBackupBlob } from '../../lib/backup-crypto';
@@ -30,7 +32,11 @@ export function ServerBackup() {
   const { t: tt } = useTranslation('toast');
   const { settings } = useSettings();
   const { addToast } = useToast();
+  const { user } = useAuth();
+  const syncBound = useSyncWorkspaceBound();
   const isConnected = !!settings.serverUrl;
+  // The server refuses backup uploads from the read-only viewer role.
+  const readOnly = user?.role === 'viewer';
 
   // Backup list
   const [backupsList, setBackupsList] = useState<BackupMeta[]>([]);
@@ -283,7 +289,8 @@ export function ServerBackup() {
       </p>
 
       {/* ─── Create Backup ─── */}
-      <div className="bg-gray-800/30 rounded-lg p-3 space-y-3">
+      {readOnly && <p className="text-xs text-gray-500">{t('encryption.viewerCannotCreate')}</p>}
+      {!readOnly && <div className="bg-gray-800/30 rounded-lg p-3 space-y-3">
         <h4 className="text-xs font-semibold text-gray-400">{t('encryption.createBackup')}</h4>
 
         <div>
@@ -364,7 +371,7 @@ export function ServerBackup() {
             : <Upload size={16} />}
           {t('encryption.createBackup')}
         </button>
-      </div>
+      </div>}
 
       {/* ─── Backup List ─── */}
       <div className="space-y-2">
@@ -494,6 +501,7 @@ export function ServerBackup() {
                   </ul>
                   {restorePreview.sharedPreserved > 0 && <p>{t('encryption.sharedPreserved', { count: restorePreview.sharedPreserved })}</p>}
                   <p>{t(restoreMode === 'replace' ? 'encryption.restoreScopeNotice' : 'encryption.mergeScopeNotice')}</p>
+                  {syncBound && <p className="text-amber-200">{t('data.syncBoundRestoreNotice')}</p>}
                   <button
                     onClick={() => handleRestore(restoreMode)}
                     className={`${btnClass} bg-red-600/80 hover:bg-red-600 text-white`}

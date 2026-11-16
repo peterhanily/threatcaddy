@@ -19,6 +19,7 @@
     "backToThreads": "Back to threads",
     "clickToRename": "Click to rename",
     "threadTitleAria": "Chat thread title",
+    "recoveredThreadTitle": "Recovered interrupted response",
     "filterThreadsAria": "Filter threads by source",
     "filterAll": "all",
     "filterHuman": "human",
@@ -129,6 +130,7 @@
     "branchTitle": "Branch conversation from here",
     "rewindTitle": "Rewind to this message",
     "undoTitle": "Undo: restore entities to before this action",
+    "lockInterrupted": "[Response interrupted when the workspace locked.]",
     "attachmentAlt": "Attachment {{index}}",
     "tokenCount": "{{count}} tokens",
     "tokenCountTitle": "Input: {{input}} tokens, Output: {{output}} tokens"
@@ -136,6 +138,7 @@
   "tool": {
     "noInput": "(no input)",
     "errorPrefix": "Error: {{message}}",
+    "lockInterrupted": "Interrupted by workspace lock. Check the saved item or checkpoint before retrying this tool.",
     "resultCount_one": "{{count}} result",
     "resultCount_other": "{{count}} results",
     "doneWithLabel": "Done: {{label}}",

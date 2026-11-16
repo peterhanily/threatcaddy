@@ -47,4 +47,33 @@ describe('evidence import cancellation controls', () => {
     await act(async () => { unmount(); });
     expect(onImportFiles.mock.calls[1][1]?.aborted).toBe(true);
   });
+
+  it('clears the file picker as soon as files are read, so the same file can be chosen after a folder change', async () => {
+    const onImportFiles = waitingImport();
+    const props = { items: [], onImportFiles, onOpenChat: () => {} };
+    const { container, rerender, unmount } = render(<EvidenceView {...props} folderId="first" />);
+    const input = fileInput(container) as HTMLInputElement;
+    // Browsers fire no change event for an unchanged selection.
+    const assigned = vi.spyOn(input, 'value', 'set');
+    fireEvent.change(input, { target: { files: [file] } });
+    expect(assigned).toHaveBeenCalledWith('');
+    await act(async () => { rerender(<EvidenceView {...props} folderId="second" />); });
+    expect(onImportFiles.mock.calls[0][1]?.aborted).toBe(true);
+    expect(assigned).toHaveBeenLastCalledWith('');
+    await act(async () => { unmount(); });
+  });
+
+  it('disables importing and states why when the destination cannot accept evidence', async () => {
+    const onImportFiles = waitingImport();
+    const { container } = render(<EvidenceView folderId="case" items={[]} onImportFiles={onImportFiles} onOpenChat={() => {}} importBlockedReason="screenshareActive" />);
+    expect(screen.getByRole('button', { name: 'actions.import' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'dropzone.browse' })).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('importError.screenshareActive');
+    const dropzone = screen.getByText('dropzone.label').closest('div[class*="border-dashed"]');
+    if (!dropzone) throw new Error('Expected the evidence drop zone');
+    fireEvent.drop(dropzone, { dataTransfer: { files: [file] } });
+    fireEvent.change(fileInput(container), { target: { files: [file] } });
+    expect(onImportFiles).not.toHaveBeenCalled();
+    expect(screen.getByText('importError.screenshareActive', { selector: 'span' })).toBeVisible();
+  });
 });

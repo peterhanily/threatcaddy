@@ -15,6 +15,7 @@ import { TagInput } from '../Common/TagInput';
 import { ClsSelect } from '../Common/ClsSelect';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { cn } from '../../lib/utils';
+import { isScriptableEmbed, withoutScriptableEmbeds } from '../../lib/whiteboard-embeds';
 
 interface WhiteboardEditorProps {
   whiteboard: Whiteboard;
@@ -35,6 +36,9 @@ function pickAppState(appState: Record<string, unknown>): Record<string, unknown
 const CANVAS_UI_OPTIONS = { canvasActions: {
   loadScene: false, saveToActiveFile: false, export: { saveFileToDisk: true },
 } };
+
+/** Returning false stops Excalidraw from inserting the clipboard scene. */
+const allowPaste = (data: { elements?: readonly unknown[] }) => !data.elements?.some(isScriptableEmbed);
 
 export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdate, onCreateTag, onBack, onDelete, settings }: WhiteboardEditorProps) {
   const { t } = useTranslation('whiteboard');
@@ -61,6 +65,11 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
   };
 
   const handleExcalidrawChange = useCallback((elements: readonly unknown[], appState: Record<string, unknown>, files: Record<string, unknown> = {}) => {
+    // A dropped file or library item can still add one: remove it at once.
+    if (elements.some(isScriptableEmbed)) {
+      elements = withoutScriptableEmbeds(elements);
+      excalidrawApiRef.current?.updateScene({ elements: elements as never });
+    }
     const next = {
       elements: JSON.stringify(elements),
       appState: JSON.stringify(pickAppState(appState)),
@@ -115,7 +124,7 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
     let elements: unknown[] = [];
     let appState: Record<string, unknown> = {};
     let files: Record<string, unknown> = {};
-    try { elements = JSON.parse(retainedElements); } catch (e) { console.warn('Failed to parse whiteboard elements:', e); }
+    try { elements = withoutScriptableEmbeds(JSON.parse(retainedElements)); } catch (e) { console.warn('Failed to parse whiteboard elements:', e); }
     if (retainedFiles) {
       try { files = JSON.parse(retainedFiles); } catch (e) { console.warn('Failed to parse whiteboard files:', e); }
     }
@@ -237,6 +246,7 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
             excalidrawAPI={setExcalidrawApi}
             initialData={initialData}
             onChange={handleExcalidrawChange as never}
+            onPaste={allowPaste}
             UIOptions={CANVAS_UI_OPTIONS}
           >
             {/* Custom menu without social links (GitHub, X, Discord) */}

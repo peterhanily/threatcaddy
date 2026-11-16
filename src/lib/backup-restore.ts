@@ -7,6 +7,10 @@ import { BACKUP_TABLES, investigationOf, isBackupTable, parseEntityScope, type B
 import { flushEntityDrafts, withEntityDraftBarrier } from './entity-drafts';
 import { mapEntityReferences } from './entity-relations';
 import { validatePortableTables } from './backup-records';
+import { isSyncTable, suppressSyncInCurrentTransaction } from './sync-state';
+import { isSyncWorkspaceIdentity, markRestoredSyncHistory, SYNC_WORKSPACE_KEY } from './sync-capture-policy';
+import { queuedPuts, syncItemLabels } from './sync-outgoing';
+import i18n from '../i18n';
 
 type Row = Record<string, unknown> & { id: string };
 type Mode = 'replace' | 'merge';
@@ -241,16 +245,49 @@ export async function previewRestore(payload: BackupPayload, mode: Mode = 'repla
   });
 }
 
+/** A queued put for a row the restore deletes would block Sync history recovery. */
+async function assertNoUnsentChangesRemoved(operations: Operation[]): Promise<void> {
+  const deleted = new Set(operations.flatMap(op => op.deletes.map(id => JSON.stringify([op.table, id]))));
+  const { held, unsent } = await queuedPuts(entry => deleted.has(JSON.stringify([entry.table, entry.entityId])));
+  // Push never sends a held put, so signing in or recovery cannot clear it.
+  if (held.length) {
+    throw new Error(i18n.t('data.syncHeldRestoreBlocked', { ns: 'settings', count: held.length, records: await syncItemLabels(held) }));
+  }
+  if (unsent.length) {
+    throw new Error(i18n.t('data.syncUnsentRestoreBlocked', { ns: 'settings', count: unsent.length, records: await syncItemLabels(unsent) }));
+  }
+}
+
 async function restore(payload: BackupPayload, mode: Mode, expected?: RestorePreview, parent?: BackupPayload): Promise<RestoreResult> {
   const snapshot = structuredClone(payload);
   const base = parent && structuredClone(parent);
   try {
-    return await withEntityDraftBarrier(() => db.transaction('rw', BACKUP_TABLES.map(name => db.table(name)), async () => {
+    return await withEntityDraftBarrier(() => db.transaction('rw', [...BACKUP_TABLES, '_syncMeta', '_syncQueue', '_localMigrations'].map(name => db.table(name)), async () => {
       const plan = await prepare(snapshot, mode, base);
       if (expected && previewSnapshots.get(expected) !== plan.basis) throw new Error('Data changed after the restore preview. Review a fresh preview before restoring.');
+      // A restore is local history, not a team edit. In a bound workspace it must
+      // never reach the outbox as deletes or rollbacks at current revisions: sync
+      // pauses and Sync history recovery turns every difference into a reviewed conflict.
+      const bound = isSyncWorkspaceIdentity((await db.table('_syncMeta').get(SYNC_WORKSPACE_KEY))?.value)
+        && plan.operations.some(op => isSyncTable(op.table) && (op.puts.length || op.deletes.length));
+      let folders: Row[] = [];
+      if (bound) {
+        await assertNoUnsentChangesRemoved(plan.operations);
+        const op = plan.operations.find(operation => operation.table === 'folders');
+        if (op) folders = [...op.puts, ...(await table('folders').bulkGet(op.deletes)).filter((row): row is Row => !!row)];
+        suppressSyncInCurrentTransaction();
+      }
       for (const operation of plan.operations) {
         if (operation.deletes.length) await table(operation.table).bulkDelete(operation.deletes);
         if (operation.puts.length) await table(operation.table).bulkPut(operation.puts);
+      }
+      if (bound) {
+        // Suppression also skips the outbox's folder privacy record; keep it identical.
+        for (const folder of folders) {
+          const key = JSON.stringify(['localOnly', folder.id]);
+          if (folder.localOnly === true || await db.table('_syncMeta').get(key)) await db.table('_syncMeta').put({ key, value: folder.localOnly === true });
+        }
+        await markRestoredSyncHistory(db);
       }
       return { added: plan.preview.added, updated: plan.preview.updated, deleted: plan.preview.deleted, tables: plan.preview.tables };
     }));

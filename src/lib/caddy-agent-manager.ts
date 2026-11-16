@@ -9,6 +9,7 @@ import { runAgentCycle, type AgentCycleResult } from './caddy-agent';
 import { BUILTIN_AGENT_PROFILES } from './builtin-agent-profiles';
 import { shouldBlockNewCycle } from './agent-handoff';
 import { cancellableRequest } from './request-cancellation';
+import { tokenCount } from './model-pricing';
 
 export interface MultiAgentCycleResult {
   deploymentResults: Map<string, AgentCycleResult>;
@@ -163,12 +164,12 @@ async function runMultiAgentCycleInner(
         tasksRejected: prev.tasksRejected,
         tokensUsed: summary
           ? {
-              input: prev.tokensUsed.input + summary.tokens.input,
-              output: prev.tokensUsed.output + summary.tokens.output,
+              input: tokenCount(prev.tokensUsed.input) + tokenCount(summary.tokens.input),
+              output: tokenCount(prev.tokensUsed.output) + tokenCount(summary.tokens.output),
             }
           : prev.tokensUsed,
         lastCycleAt: Date.now(),
-        costUSD: (prev.costUSD || 0) + (summary?.costUSD || 0),
+        costUSD: tokenCount(prev.costUSD) + tokenCount(summary?.costUSD),
         toolCallHistogram: mergeHist(prev.toolCallHistogram, summary?.toolHistogram),
         errorHistogram: mergeHist(prev.errorHistogram, summary?.errorHistogram),
         cyclesByOutcome: prevByOutcome,

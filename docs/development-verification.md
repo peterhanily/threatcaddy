@@ -1,8 +1,9 @@
 # Development and verification
 
-The supported baseline is Node **24.22.2**, pnpm **10.29.1** for the client,
+The supported baseline is Node **24.22.3**, pnpm **10.29.1** for the client,
 and npm **11.19.0** for the server and extension. `.node-version`, `.nvmrc`,
-`packageManager`, and `engines` record this baseline. The client uses TypeScript 6
+`packageManager`, and the server image record this baseline; `engines` still
+accepts Node 24.22.2 or later on the 24 line for local tooling. The client uses TypeScript 6
 with its compatible lint tooling; the server uses the TypeScript 7 native CLI.
 Keep their separate lockfiles and compiler dependencies. Server tools that need
 the old TypeScript JavaScript compiler API require a compatibility review before
@@ -15,10 +16,10 @@ Run these commands from the repository root after selecting the recorded Node
 version (`nvm install` once, then `nvm use`, when using nvm). Running a new login shell in a subdirectory
 can select a different system Node; verify `node --version` and `npm --version`.
 
-The 30 October runtime refresh stays on Node 24 LTS. Node's bundled OpenSSL/HTTP runtime
-is not covered by npm lockfile audits. See the official
-[24.22.2 release](https://nodejs.org/en/blog/release/v24.22.2).
-Both Docker stages use the verified official 24.22.2 Alpine image digest and
+The runtime stays on Node 24 LTS. Node's bundled OpenSSL/HTTP runtime
+is not covered by npm lockfile audits or the image scan's package inventory. See the official
+[24.22.3 security release](https://nodejs.org/en/blog/release/v24.22.3).
+Both Docker stages use the verified official 24.22.3 Alpine image index digest and
 install the exact recorded npm version. CI selects that npm version before
 server/extension installation and audit. The container gate executes argon2
 hash/verify and a sharp PNG transformation as the non-root runtime user, then
@@ -35,10 +36,14 @@ Do not copy real credentials into tests or commit either local `.env` file.
 pnpm install --frozen-lockfile
 npm --prefix server ci
 npm --prefix extension ci
+pnpm audit --audit-level=high
+npm --prefix server audit --audit-level=high
+npm --prefix extension audit --audit-level=high
 
 pnpm lint
 pnpm locales:check
 pnpm test:ci
+pnpm test:release:unit
 pnpm exec tsc -b
 pnpm test:run
 npm run test:server
@@ -53,6 +58,11 @@ pnpm exec playwright install chromium firefox webkit
 PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e
 pnpm exec playwright test --config playwright.standalone.config.ts
 ```
+
+This block is the required gate's non-Docker subset; the audits query the npm
+registry, as CI does. CI additionally builds, starts and scans the server image
+(see [Publication](#publication)). To repeat one browser locally after the
+build, add `--project=webkit` (or `chromium`, `firefox`) to `pnpm test:e2e`.
 
 The extension test command uses the client's locked Vitest installation, so
 install the client first. It never downloads a test runner on demand. Normal
@@ -208,10 +218,26 @@ publishers. All required jobs must succeed. High and critical advisories in any 
 three complete dependency graphs also block publication; audit errors do not
 become successful checks. Scheduled audits retain their evidence.
 
+After its startup and restart acceptance, the server image job also audits the
+exact packaged image with Trivy 0.76.2. The workflow checks the downloaded
+scanner against a pinned SHA-256 before extracting it, then scans operating-system
+and application packages at every severity, without an ignore file and including
+advisories that have no fix yet. `scripts/ci-audit-server-image.mjs` requires a
+complete report for that image ID and source revision. Any HIGH or CRITICAL
+finding, scanner error or unreviewed scanner warning blocks promotion. The
+`runtime-image-audit-<sha>` artifact keeps the report, policy result, scanner log,
+scanner checksum and vulnerability-database metadata for fourteen days, including
+after a failure. To clear a block, update the base-image digest or the affected
+server dependency and let CI scan again. Do not add an ignore file, skip unfixed
+advisories or remove the scan.
+
 Publication promotes the artifacts built and tested for that exact revision;
 it does not rebuild them with deployment credentials. `pnpm deploy` dispatches
 the gated Pages workflow through the GitHub CLI. It no longer downloads an
-unpinned publisher or uploads an unchecked local build.
+unpinned publisher or uploads an unchecked local build. The
+`verified-client-<sha>` and `verified-server-<sha>` artifacts are kept for 90
+days, GitHub's maximum for this public repository, so a release can be assembled
+and re-verified from those bytes. Test evidence is kept for seven to fourteen days.
 
 Automatic server image publication retains its existing path scope:
 `server/**`, `.github/workflows/**`, `scripts/ci-*.mjs` and `.node-version`.
@@ -247,12 +273,32 @@ Preserve the existing custom-domain and DNS settings during that one-time
 change. Local development and test commands do not change repository settings
 or publish anything.
 
-The hosted browser suite covers Chromium, Firefox and WebKit. CI enables
-`failOnFlakyTests`: the diagnostic retry cannot turn a failing first attempt into
-a successful publication gate. `retain-on-failure` preserves the original failing
-trace, including network and browser diagnostics. Diagnose that evidence before
-changing readiness assertions; do not suppress errors or disable the flaky gate.
-The standalone suite also retains its first failure trace.
+The hosted browser suite covers Chromium, Firefox and WebKit, in one job per
+Playwright project. The client job builds once, runs the standalone
+acceptance in Chromium and WebKit and uploads `verified-client-<sha>`. Each
+browser job downloads that
+artifact by ID, checks its download digest, source revision and archive checksum,
+and serves those exact bytes with `pnpm preview`. It also receives the hosted
+build's startup-budget and dependency-provenance reports, which some checks
+compare with the requested chunks; the reports are never published. The
+Publication gate requires every browser job. A failed, skipped or cancelled
+browser job blocks publication, and that run's client artifact is never promoted.
+After diagnosing a failure, re-run only the failed browser job.
+
+CI enables `failOnFlakyTests`: the diagnostic retry cannot turn a failing first
+attempt into a successful publication gate. Local runs do not retry. In CI, the
+tenth failed test stops a browser job, and Playwright's 20-minute `globalTimeout`
+ends a stuck run. Both still write the report before the job's 30-minute limit.
+`retain-on-failure` preserves the original failing trace, including network and
+browser diagnostics. Each browser job uploads its report and traces as
+`browser-results-<project>-<sha>`. Diagnose that evidence before changing
+readiness assertions; do not suppress errors or disable the flaky gate. The
+standalone suite also retains its first failure trace (`standalone-results-<sha>`).
+
+`goToApp` in `e2e/fixtures.ts` returns only after the main view has rendered.
+By then the always-mounted chat view has loaded its lazily fetched locale.
+WebKit reports an intercepted request that a reload cancels as a page error, so
+a spec that reloads again soon after a reload should call `waitForAppReady` first.
 
 The hosted suite's offline test
 stops its own temporary HTTP origin before cached reload and new-tab checks;

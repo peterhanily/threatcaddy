@@ -143,7 +143,11 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
   });
 });
 
-document.getElementById('logoutBtn').addEventListener('click', function() { logout(); });
+document.getElementById('logoutBtn').addEventListener('click', function() {
+  // Revoke the token on the server too; sign out locally whatever the outcome.
+  if (token) fetch(BASE + '/admin/api/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }).catch(function() {});
+  logout();
+});
 
 function logout() {
   resetAiSession();

@@ -4,7 +4,7 @@ Backend API server for ThreatCaddy. Handles authentication, real-time sync, soci
 
 ## Prerequisites
 
-- Node.js 24.22.2 (the pinned 24.x runtime) and npm 11.19.x
+- Node.js 24.22.3 (the pinned 24.x runtime) and npm 11.19.x
 - PostgreSQL 17+
 
 ## Setup
@@ -30,8 +30,9 @@ ADMIN_PORT=3002
 ALLOWED_ORIGINS=http://localhost:5173
 TRUST_PROXY=false
 
-# Admin
-ADMIN_SECRET=changeme
+# Admin bootstrap secret: blank generates one on first launch, or set a long
+# random value, for example from: openssl rand -base64 32
+ADMIN_SECRET=
 
 # Required persistent encryption key; generate once with: openssl rand -hex 32
 # Preserve the existing effective key when upgrading; do not replace it casually.
@@ -91,7 +92,7 @@ tests, fixtures, and source maps; unit and integration checks still run separate
 | `ADMIN_PORT` | No | `3002` | Admin panel port |
 | `ADMIN_HOST` | No | `127.0.0.1` | Admin bind address, independent of the public API's `HOST` |
 | `ALLOWED_ORIGINS` | No | `*` | Comma-separated CORS origins |
-| `ADMIN_SECRET` | No | auto-generated | Secret for admin panel login |
+| `ADMIN_SECRET` | No | auto-generated | Bootstrap secret for creating the first admin account; use at least 24 random characters (shorter values log a startup warning). A configured value replaces a secret changed in the admin panel at every restart |
 | `TRUST_PROXY` | No | `false` | Trust proxy headers (set `true` behind a reverse proxy) |
 | `FILE_STORAGE_PATH` | No | `./data/files` | Directory for uploaded files |
 | `ANTHROPIC_API_KEY` | No | — | Anthropic API key for Claude models |

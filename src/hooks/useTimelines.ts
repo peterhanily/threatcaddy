@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { db } from '../db';
 import type { Timeline } from '../types';
 import { nanoid } from 'nanoid';
+import { nextTimelineOrder } from '../lib/sync-capture-policy';
 
 export function useTimelines() {
   const [timelines, setTimelines] = useState<Timeline[]>([]);
@@ -17,14 +18,13 @@ export function useTimelines() {
   }, [loadTimelines]);
 
   const createTimeline = useCallback(async (name: string, description?: string, color?: string): Promise<Timeline> => {
-    const maxOrder = timelines.reduce((max, t) => Math.max(max, t.order), 0);
     const now = Date.now();
     const timeline: Timeline = {
       id: nanoid(),
       name,
       description,
       color,
-      order: maxOrder + 1,
+      order: nextTimelineOrder(timelines),
       createdAt: now,
       updatedAt: now,
     };

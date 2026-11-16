@@ -9,7 +9,7 @@ const investigation = () => ({
   v: 1, s: 'investigation', t: 1_700_000_000_000,
   d: {
     folder: { id: 'folder', name: 'Shared investigation', timelineId: 'timeline', agentEnabled: true, agentStatus: 'running', agentPolicy: { autoApproveReads: true } },
-    notes: [{ id: 'note', title: 'Shared note', content: 'Ordinary content', folderId: 'folder', linkedTaskIds: ['task'], linkedNoteIds: ['outside'], tags: ['Existing'],
+    notes: [{ id: 'note', title: 'Shared note', content: 'Ordinary content', folderId: 'folder', linkedTaskIds: ['task'], linkedNoteIds: ['outside'], tags: ['Existing', 'Shared'],
       iocAnalysis: { iocs: [{ id: 'embedded', type: 'domain', value: 'example.test', relationships: [{ targetIOCId: 'ioc', relationshipType: 'related-to' }] }] } }],
     tasks: [{ id: 'task', title: 'Shared task', folderId: 'folder', linkedNoteIds: ['note'], assigneeId: 'outside-user' }],
     events: [{ id: 'event', title: 'Shared event', folderId: 'folder', timelineId: 'timeline', linkedIOCIds: ['ioc', 'embedded'], linkedNoteIds: ['note'] }],
@@ -17,7 +17,7 @@ const investigation = () => ({
     whiteboards: [{ id: 'board', name: 'Shared board', folderId: 'folder', elements: '[]', appState: '{}', files: '{}' }],
     iocs: [{ id: 'ioc', type: 'domain', value: 'example.test', folderId: 'folder', linkedNoteIds: ['note'], assigneeId: 'sender-user', assigneeName: 'Sender analyst' }],
     chatThreads: [{ id: 'chat', title: 'Transcript', folderId: 'folder', messages: [] }],
-    tags: [{ id: 'tag-existing', name: 'Existing', color: '#ffffff' }, { id: 'tag-new', name: 'Shared', color: '#112233' }],
+    tags: [{ id: 'tag-existing', name: 'Existing', color: '#ffffff' }, { id: 'tag-new', name: 'Shared', color: '#112233' }, { id: 'tag-unused', name: 'Unrelated case', color: '#000000' }],
   },
 });
 
@@ -52,7 +52,8 @@ describe('additive shared-content persistence', () => {
     expect((await db.chatThreads.toCollection().first())?.folderId).toBe(folder?.id);
     expect(await db.tags.get('tag-existing')).toMatchObject({ color: '#445566' });
     expect(await db.tags.get('tag-new')).toBeUndefined();
-    expect(await db.tags.count()).toBe(2);
+    // A tag no shared record uses is not imported.
+    expect((await db.tags.toArray()).map(tag => tag.name).sort()).toEqual(['Existing', 'Shared']);
   });
 
   it('imports a single entity as a new unfiled copy, including on repeated imports', async () => {

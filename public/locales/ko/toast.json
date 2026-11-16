@@ -42,6 +42,7 @@
   "backup": {
     "exported": "백업 내보내기됨",
     "exportFailed": "백업 내보내기 실패",
+    "exportFailedDetail": "백업 내보내기 실패: {{error}}",
     "restored": "백업 복원됨",
     "restoreFailed": "백업 복원 실패",
     "mergeComplete": "병합 완료: {{added}}개 추가됨, {{updated}}개 업데이트됨, {{skipped}}개 건너뜀",
@@ -60,12 +61,16 @@
   "investigation": {
     "sampleLoaded": "샘플 조사 로드됨",
     "sampleRemoved": "샘플 조사 제거됨",
+    "sampleKept": "샘플 조사가 제거되었습니다. 항목은 \"{{name}}\"에 있습니다",
+    "sampleLocked": "샘플 데이터를 변경하기 전에 작업 공간 잠금을 해제하세요.",
+    "sampleSessionChanged": "작업 공간 세션이 변경되었습니다. 잠금 해제 후 샘플 작업을 다시 시도하세요.",
     "trashEmptied": "휴지통 비워짐",
     "savedAsTemplate": "\"{{name}}\"이/가 템플릿으로 저장됨",
     "playbookRan": "\"{{investigation}}\"에서 \"{{playbook}}\" 플레이북 실행됨",
     "createdFromPlaybook": "플레이북에서 \"{{name}}\" 만들어짐",
     "exported": "조사 \"{{name}}\" 내보내기됨",
     "exportFailed": "조사 내보내기 실패",
+    "exportFailedDetail": "조사 내보내기 실패: {{error}}",
     "reportGenerated": "\"{{name}}\"에 대한 보고서 생성됨"
   },
   "encryption": {

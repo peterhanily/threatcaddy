@@ -12,6 +12,7 @@
     "backToThreads": "Kembali ke utas",
     "clickToRename": "Klik untuk ganti nama",
     "threadTitleAria": "Judul utas obrolan",
+    "recoveredThreadTitle": "Respons terputus yang dipulihkan",
     "filterThreadsAria": "Filter utas berdasarkan sumber",
     "filterAll": "semua",
     "filterHuman": "manusia",
@@ -122,6 +123,7 @@
     "branchTitle": "Cabangkan percakapan dari sini",
     "rewindTitle": "Putar ulang ke pesan ini",
     "undoTitle": "Batalkan: pulihkan entitas ke sebelum tindakan ini",
+    "lockInterrupted": "[Respons terputus saat ruang kerja terkunci.]",
     "attachmentAlt": "Lampiran {{index}}",
     "tokenCount": "{{count}} token",
     "tokenCountTitle": "Masukan: {{input}} token, Keluaran: {{output}} token"
@@ -129,6 +131,7 @@
   "tool": {
     "noInput": "(tidak ada masukan)",
     "errorPrefix": "Kesalahan: {{message}}",
+    "lockInterrupted": "Terputus karena ruang kerja terkunci. Periksa item yang tersimpan atau titik periksa sebelum mencoba ulang alat ini.",
     "resultCount_one": "{{count}} hasil",
     "resultCount_other": "{{count}} hasil",
     "doneWithLabel": "Selesai: {{label}}",

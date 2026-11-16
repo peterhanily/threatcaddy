@@ -153,7 +153,7 @@ export function InlineNameGenerator({ onCreateInvestigation, onCancel }: InlineN
         <button
           onClick={handleCreate}
           disabled={animating}
-          className="flex items-center gap-1 px-2 py-1 rounded bg-purple text-white text-xs font-medium hover:brightness-110 disabled:opacity-50 transition-all"
+          className="flex items-center gap-1 px-2 py-1 rounded bg-accent text-white text-xs font-medium hover:brightness-110 disabled:opacity-50 transition-all"
           title="Create investigation"
           aria-label="Create investigation"
         >

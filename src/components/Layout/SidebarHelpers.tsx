@@ -119,7 +119,7 @@ export const InvestigationListItem = React.memo(function InvestigationListItem({
       <span className="truncate flex-1 text-start text-[12px]">{folder.name}</span>
       {synced && (
         <span title="Synced with team server">
-          <Cloud size={10} className="shrink-0 text-purple/60" />
+          <Cloud size={10} className="shrink-0 text-purple" />
         </span>
       )}
       <span className="font-mono text-[10px] text-text-muted shrink-0">

@@ -96,6 +96,16 @@ test('reply paging and reaction summaries remain optional backward-compatible pr
   assert.equal(schemas.ReplyPage.properties.limit.maximum, Number(sourceLimit[1]));
 });
 
+test('OpenAPI names the server release and lets logout use a refresh credential without a bearer', () => {
+  assert.equal(api.info.version, JSON.parse(read('server/package.json')).version);
+  const logout = api.paths['/api/auth/logout'].post;
+  assert.deepEqual(logout.security, [{ bearerAuth: [] }, {}]);
+  assert.equal(logout.responses['401'].$ref, '#/components/responses/Unauthorized');
+  const route = read('server/src/routes/auth.ts').match(/refreshToken: z\.string\(\)\.regex\(\/(.+?)\/\)/);
+  assert.ok(route, 'Logout refresh credential validation changed; review the public schema');
+  assert.equal(logout.requestBody.content['application/json'].schema.properties.refreshToken.pattern, route[1]);
+});
+
 test('root Compose template has blank secrets and exact-origin placeholder, not a second database URL', () => {
   const environment = parseEnv(read('.env.example'));
   for (const key of ['POSTGRES_PASSWORD', 'BOT_MASTER_KEY', 'JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY', 'ADMIN_SECRET', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'MISTRAL_API_KEY']) {
@@ -127,4 +137,56 @@ test('README setup uses the recorded runtime and root Compose directory', () => 
   }
   assert.match(readme, /\[CONTRIBUTING\.md\]\(CONTRIBUTING\.md\)/);
   assert.match(readme, /\[SECURITY\.md\]\(SECURITY\.md\)/);
+});
+
+test('operator guides keep administration private and ship no usable example secrets', () => {
+  const deployment = read('docs/deployment.md');
+  for (const [path, text] of [['docs/deployment.md', deployment], ['server/README.md', read('server/README.md')]]) {
+    assert.doesNotMatch(text, /^ADMIN_SECRET=\S/m, `${path} must leave ADMIN_SECRET blank in examples`);
+  }
+  const proxies = [...deployment.matchAll(/```(?:nginx|caddyfile)\n([\s\S]*?)```/g)].map(match => match[1]);
+  assert.equal(proxies.length, 2);
+  for (const proxy of proxies) assert.doesNotMatch(proxy, /3002|threatcaddy_admin|admin\./, 'Public proxy examples must not route the admin listener');
+  assert.doesNotMatch(deployment, /\$server_name\$request_uri/);
+  assert.match(deployment, /ufw/);
+  for (const name of ['HOST', 'ADMIN_HOST']) assert.match(deployment, new RegExp(`^\\| \`${name}\` \\|`, 'm'));
+});
+
+test('upgrade guidance rebuilds the supplied Compose server and has one canonical procedure', () => {
+  const upgrading = read('server/UPGRADING.md');
+  assert.doesNotMatch(upgrading, /docker compose pull/);
+  assert.match(upgrading, /\(\.\.\/docs\/deployment\.md#6-upgrading\)/);
+  const deployment = read('docs/deployment.md');
+  assert.match(deployment, /^## 6\. Upgrading$/m);
+  assert.match(deployment, /ADMIN_HOST=0\.0\.0\.0[\s\S]{0,400}127\.0\.0\.1:3002:3002/);
+});
+
+test('a Compose log driver comes with a way back to the daemon-wide driver', () => {
+  const services = Object.entries(load(read('docker-compose.yml')).services)
+    .filter(([, service]) => service.logging?.driver);
+  if (!services.length) return;
+  const deployment = read('docs/deployment.md');
+  // A per-service driver silently wins over log-driver in daemon.json, e.g. a SIEM shipper.
+  assert.match(deployment, /daemon\.json/);
+  // Compose replaces the whole logging block, options included, when an override names a different driver.
+  const overrides = [...deployment.matchAll(/```yaml\n# docker-compose\.override\.yml[^\n]*\n([\s\S]*?)```/g)]
+    .map(match => load(match[1]));
+  assert.ok(overrides.some(override => services.every(([name, service]) => {
+    const driver = override?.services?.[name]?.logging?.driver;
+    return driver && driver !== service.logging.driver;
+  })), 'Show an override that names another driver for every service that sets one');
+  const upgrade = deployment.slice(deployment.indexOf('\n## 6. Upgrading\n'));
+  assert.match(upgrade, /\(#48-logging\)/, 'Upgrade notes must point Compose operators at the logging override');
+});
+
+test('sandbox guidance states that Docker API access is host root', () => {
+  const deployment = read('docs/deployment.md');
+  assert.doesNotMatch(deployment, /only container creation and management/);
+  assert.match(deployment, /root on that Docker host/);
+  assert.match(deployment, /^### 4\.6 Docker Socket Security \(Bot Sandbox\)$/m);
+  for (const path of ['docs/architecture.md', 'docs/bot-architecture.md']) {
+    const sandbox = read(path).match(/^###? [^\n]*Sandbox[^\n]*\n([\s\S]*?)(?=^#{1,3} )/m)?.[1] ?? '';
+    assert.match(sandbox, /root on that Docker host/, `${path} sandbox section must state the host-root exposure`);
+    assert.match(sandbox, /\(deployment\.md#46-docker-socket-security-bot-sandbox\)/);
+  }
 });
