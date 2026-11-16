@@ -451,6 +451,7 @@
   "syncRecovery.error.localDataChanged": "Lokale gegevens zijn na de back-up gewijzigd. Download een nieuw herstelarchief voordat je afstemt.",
   "syncRecovery.error.otherAccount": "Deze werkruimte hoort bij een ander account. Wissel van werkruimte in plaats van haar opnieuw te koppelen.",
   "syncRecovery.error.ambiguousRows": "Afstemming is geblokkeerd: updates in de wachtrij zonder huidig lokaal record: {{count}} ({{records}}). Bewaar het geverifieerde archief en controleer deze records voordat je het opnieuw probeert. Het ontbreken kan wijzen op een oude verwijdering of een verwijdering uit de cache; er is geen verwijdering of inhoud in de wachtrij afgeleid.",
+  "syncRecovery.error.ambiguousRowsMore": "Afstemming is geblokkeerd: updates in de wachtrij zonder huidig lokaal record: {{count}} ({{records}}; meer items staan in het archief). Bewaar het geverifieerde archief en controleer deze records voordat je het opnieuw probeert. Het ontbreken kan wijzen op een oude verwijdering of een verwijdering uit de cache; er is geen verwijdering of inhoud in de wachtrij afgeleid.",
   "syncRecovery.error.serverUnsupported": "Deze server ondersteunt geen veilig herstel van de geschiedenis.",
   "syncRecovery.error.archiveExceedsLimit": "Het herstelarchief overschrijdt de ondersteunde herstellimiet van 512 MiB. Lokale gegevens zijn niet gewijzigd.",
   "syncRecovery.error.wrongPassword": "Onjuist wachtwoord, of het bestand is geen geldig herstelarchief.",

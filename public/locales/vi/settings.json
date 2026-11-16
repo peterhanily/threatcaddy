@@ -451,6 +451,7 @@
   "syncRecovery.error.localDataChanged": "Dữ liệu cục bộ đã thay đổi sau khi sao lưu. Hãy tải xuống kho khôi phục mới trước khi đối chiếu.",
   "syncRecovery.error.otherAccount": "Không gian làm việc này thuộc về một tài khoản khác. Hãy chuyển không gian làm việc thay vì liên kết lại nó.",
   "syncRecovery.error.ambiguousRows": "Việc đối chiếu bị chặn: số cập nhật trong hàng đợi không có bản ghi cục bộ hiện tại: {{count}} ({{records}}). Hãy giữ kho lưu trữ đã xác minh và xem xét các bản ghi này trước khi thử lại. Việc thiếu bản ghi có thể do một thao tác xóa cũ hoặc do bị loại khỏi bộ nhớ đệm; không có thao tác xóa hay nội dung trong hàng đợi nào được suy đoán.",
+  "syncRecovery.error.ambiguousRowsMore": "Việc đối chiếu bị chặn: số cập nhật trong hàng đợi không có bản ghi cục bộ hiện tại: {{count}} ({{records}}; các mục bổ sung nằm trong kho lưu trữ). Hãy giữ kho lưu trữ đã xác minh và xem xét các bản ghi này trước khi thử lại. Việc thiếu bản ghi có thể do một thao tác xóa cũ hoặc do bị loại khỏi bộ nhớ đệm; không có thao tác xóa hay nội dung trong hàng đợi nào được suy đoán.",
   "syncRecovery.error.serverUnsupported": "Máy chủ này không hỗ trợ khôi phục lịch sử an toàn.",
   "syncRecovery.error.archiveExceedsLimit": "Kho khôi phục vượt quá giới hạn khôi phục được hỗ trợ là 512 MiB. Dữ liệu cục bộ không bị thay đổi.",
   "syncRecovery.error.wrongPassword": "Sai mật khẩu, hoặc tệp không phải là kho khôi phục hợp lệ.",

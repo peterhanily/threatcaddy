@@ -205,6 +205,7 @@
   "syncRecovery.error.localDataChanged": "Local data changed after backup. Download a new recovery archive before reconciling.",
   "syncRecovery.error.otherAccount": "This workspace belongs to another account. Switch workspaces instead of rebinding it.",
   "syncRecovery.error.ambiguousRows": "Reconciliation is blocked: {{count}} queued update(s) have no current local record: {{records}}. Keep the verified archive and review these records before retrying. Absence may mean an old deletion or cache removal; no deletion or queued content was inferred.",
+  "syncRecovery.error.ambiguousRowsMore": "Reconciliation is blocked: {{count}} queued update(s) have no current local record: {{records}} (additional entries are in the archive). Keep the verified archive and review these records before retrying. Absence may mean an old deletion or cache removal; no deletion or queued content was inferred.",
   "syncRecovery.error.serverUnsupported": "This server does not support safe history recovery.",
   "syncRecovery.error.archiveExceedsLimit": "Recovery archive exceeds the supported 512 MiB restore limit. Local data was not changed.",
   "syncRecovery.error.wrongPassword": "Wrong password, or the file is not a valid recovery archive.",

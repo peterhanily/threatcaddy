@@ -16,7 +16,7 @@ export interface SyncRecoveryReceipt { blob: EncryptedBackupBlob; filename: stri
 const receipts = new WeakMap<SyncRecoveryReceipt, string>();
 /** Refusals the recovery panel shows in the interface language; the English
  * messages stay for logs and tests. */
-export const SYNC_RECOVERY_ERROR_CODES = ['accountChanged', 'localDataChanged', 'otherAccount', 'ambiguousRows', 'serverUnsupported',
+export const SYNC_RECOVERY_ERROR_CODES = ['accountChanged', 'localDataChanged', 'otherAccount', 'ambiguousRows', 'ambiguousRowsMore', 'serverUnsupported',
   'archiveExceedsLimit', 'wrongPassword', 'unsupportedArchive', 'archiveAccount', 'notEmpty'] as const;
 export type SyncRecoveryErrorCode = typeof SYNC_RECOVERY_ERROR_CODES[number];
 const coded = (error: Error, code: SyncRecoveryErrorCode, params?: Record<string, string | number>) => Object.assign(error, { code, params });
@@ -31,7 +31,7 @@ function assertNoAmbiguousMissingRows(data: Snapshot): void {
   const present = new Set(SYNC_TABLES.flatMap(table => data[table].map(row => JSON.stringify([table, row.id]))));
   const ambiguous = [...latest].filter(([key, row]) => row.op === 'put' && !present.has(key)).map(([key]) => key);
   if (ambiguous.length) throw coded(new Error(`Reconciliation is blocked: ${ambiguous.length} queued update(s) have no current local record: ${ambiguous.slice(0, 10).join(', ')}${ambiguous.length > 10 ? ' (additional entries are in the archive)' : ''}. Keep the verified archive and review these records before retrying. Absence may mean an old deletion or cache removal; no deletion or queued content was inferred.`),
-    'ambiguousRows', { count: ambiguous.length, records: ambiguous.slice(0, 10).join(', ') });
+    ambiguous.length > 10 ? 'ambiguousRowsMore' : 'ambiguousRows', { count: ambiguous.length, records: ambiguous.slice(0, 10).join(', ') });
 }
 
 async function snapshot(): Promise<Snapshot> {

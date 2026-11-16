@@ -451,6 +451,7 @@
   "syncRecovery.error.localDataChanged": "I dati locali sono cambiati dopo il backup. Scarica un nuovo archivio di recupero prima di riconciliare.",
   "syncRecovery.error.otherAccount": "Quest’area di lavoro appartiene a un altro account. Cambia area di lavoro invece di ricollegarla.",
   "syncRecovery.error.ambiguousRows": "La riconciliazione è bloccata: aggiornamenti in coda senza un record locale attuale: {{count}} ({{records}}). Conserva l’archivio verificato ed esamina questi record prima di riprovare. L’assenza può indicare una vecchia eliminazione o una rimozione dalla cache; non è stata dedotta alcuna eliminazione né alcun contenuto in coda.",
+  "syncRecovery.error.ambiguousRowsMore": "La riconciliazione è bloccata: aggiornamenti in coda senza un record locale attuale: {{count}} ({{records}}; altre voci si trovano nell’archivio). Conserva l’archivio verificato ed esamina questi record prima di riprovare. L’assenza può indicare una vecchia eliminazione o una rimozione dalla cache; non è stata dedotta alcuna eliminazione né alcun contenuto in coda.",
   "syncRecovery.error.serverUnsupported": "Questo server non supporta il recupero sicuro della cronologia.",
   "syncRecovery.error.archiveExceedsLimit": "L’archivio di recupero supera il limite di ripristino supportato di 512 MiB. I dati locali non sono stati modificati.",
   "syncRecovery.error.wrongPassword": "Password errata, oppure il file non è un archivio di recupero valido.",

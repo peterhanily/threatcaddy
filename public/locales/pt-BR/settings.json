@@ -451,6 +451,7 @@
   "syncRecovery.error.localDataChanged": "Os dados locais mudaram após o backup. Baixe um novo arquivo de recuperação antes de reconciliar.",
   "syncRecovery.error.otherAccount": "Este espaço de trabalho pertence a outra conta. Troque de espaço de trabalho em vez de vinculá-lo novamente.",
   "syncRecovery.error.ambiguousRows": "A reconciliação está bloqueada: atualizações em fila sem um registro local atual: {{count}} ({{records}}). Guarde o arquivo verificado e revise esses registros antes de tentar novamente. A ausência pode indicar uma exclusão antiga ou uma remoção do cache; nenhuma exclusão ou conteúdo em fila foi deduzido.",
+  "syncRecovery.error.ambiguousRowsMore": "A reconciliação está bloqueada: atualizações em fila sem um registro local atual: {{count}} ({{records}}; há entradas adicionais no arquivo). Guarde o arquivo verificado e revise esses registros antes de tentar novamente. A ausência pode indicar uma exclusão antiga ou uma remoção do cache; nenhuma exclusão ou conteúdo em fila foi deduzido.",
   "syncRecovery.error.serverUnsupported": "Este servidor não oferece suporte à recuperação segura do histórico.",
   "syncRecovery.error.archiveExceedsLimit": "O arquivo de recuperação excede o limite de restauração compatível de 512 MiB. Os dados locais não foram alterados.",
   "syncRecovery.error.wrongPassword": "Senha incorreta, ou o arquivo selecionado não é um arquivo de recuperação válido.",

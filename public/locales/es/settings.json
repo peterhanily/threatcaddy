@@ -451,6 +451,7 @@
   "syncRecovery.error.localDataChanged": "Los datos locales cambiaron después de la copia de seguridad. Descargue un nuevo archivo de recuperación antes de conciliar.",
   "syncRecovery.error.otherAccount": "Este espacio de trabajo pertenece a otra cuenta. Cambie de espacio de trabajo en lugar de volver a vincularlo.",
   "syncRecovery.error.ambiguousRows": "La conciliación está bloqueada: actualizaciones en cola sin un registro local actual: {{count}} ({{records}}). Conserve el archivo verificado y revise estos registros antes de volver a intentarlo. La ausencia puede deberse a una eliminación antigua o a una retirada de la caché; no se dedujo ninguna eliminación ni contenido en cola.",
+  "syncRecovery.error.ambiguousRowsMore": "La conciliación está bloqueada: actualizaciones en cola sin un registro local actual: {{count}} ({{records}}; hay más entradas en el archivo). Conserve el archivo verificado y revise estos registros antes de volver a intentarlo. La ausencia puede deberse a una eliminación antigua o a una retirada de la caché; no se dedujo ninguna eliminación ni contenido en cola.",
   "syncRecovery.error.serverUnsupported": "Este servidor no admite la recuperación segura del historial.",
   "syncRecovery.error.archiveExceedsLimit": "El archivo de recuperación supera el límite de restauración admitido de 512 MiB. Los datos locales no se modificaron.",
   "syncRecovery.error.wrongPassword": "Contraseña incorrecta, o el archivo elegido no es un archivo de recuperación válido.",

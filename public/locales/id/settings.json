@@ -451,6 +451,7 @@
   "syncRecovery.error.localDataChanged": "Data lokal berubah setelah pencadangan. Unduh arsip pemulihan baru sebelum melakukan rekonsiliasi.",
   "syncRecovery.error.otherAccount": "Ruang kerja ini milik akun lain. Beralihlah ke ruang kerja lain alih-alih mengikatnya ulang.",
   "syncRecovery.error.ambiguousRows": "Rekonsiliasi diblokir: pembaruan dalam antrean tanpa catatan lokal saat ini: {{count}} ({{records}}). Simpan arsip yang telah diverifikasi dan tinjau catatan ini sebelum mencoba lagi. Ketiadaan catatan dapat berarti penghapusan lama atau penghapusan dari cache; tidak ada penghapusan atau konten antrean yang disimpulkan.",
+  "syncRecovery.error.ambiguousRowsMore": "Rekonsiliasi diblokir: pembaruan dalam antrean tanpa catatan lokal saat ini: {{count}} ({{records}}; entri tambahan ada di dalam arsip). Simpan arsip yang telah diverifikasi dan tinjau catatan ini sebelum mencoba lagi. Ketiadaan catatan dapat berarti penghapusan lama atau penghapusan dari cache; tidak ada penghapusan atau konten antrean yang disimpulkan.",
   "syncRecovery.error.serverUnsupported": "Server ini tidak mendukung pemulihan riwayat yang aman.",
   "syncRecovery.error.archiveExceedsLimit": "Arsip pemulihan melebihi batas pemulihan yang didukung sebesar 512 MiB. Data lokal tidak diubah.",
   "syncRecovery.error.wrongPassword": "Kata sandi salah, atau file tersebut bukan arsip pemulihan yang valid.",

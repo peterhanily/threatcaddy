@@ -451,6 +451,7 @@
   "syncRecovery.error.localDataChanged": "Yerel veriler yedeklemeden sonra değişti. Uzlaştırmadan önce yeni bir kurtarma arşivi indirin.",
   "syncRecovery.error.otherAccount": "Bu çalışma alanı başka bir hesaba ait. Yeniden bağlamak yerine çalışma alanını değiştirin.",
   "syncRecovery.error.ambiguousRows": "Uzlaştırma engellendi: mevcut yerel kaydı olmayan kuyruktaki güncellemeler: {{count}} ({{records}}). Doğrulanmış arşivi saklayın ve yeniden denemeden önce bu kayıtları inceleyin. Kaydın olmaması eski bir silme veya önbellekten kaldırma anlamına gelebilir; hiçbir silme veya kuyruktaki içerik çıkarsanmadı.",
+  "syncRecovery.error.ambiguousRowsMore": "Uzlaştırma engellendi: mevcut yerel kaydı olmayan kuyruktaki güncellemeler: {{count}} ({{records}}; ek girdiler arşivde bulunur). Doğrulanmış arşivi saklayın ve yeniden denemeden önce bu kayıtları inceleyin. Kaydın olmaması eski bir silme veya önbellekten kaldırma anlamına gelebilir; hiçbir silme veya kuyruktaki içerik çıkarsanmadı.",
   "syncRecovery.error.serverUnsupported": "Bu sunucu güvenli geçmiş kurtarmayı desteklemiyor.",
   "syncRecovery.error.archiveExceedsLimit": "Kurtarma arşivi desteklenen 512 MiB geri yükleme sınırını aşıyor. Yerel veriler değiştirilmedi.",
   "syncRecovery.error.wrongPassword": "Parola yanlış veya dosya geçerli bir kurtarma arşivi değil.",

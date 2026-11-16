@@ -6,6 +6,7 @@ import { prepareSyncRecovery, reconcileSyncWorkspace, restoreSyncRecovery } from
 import { decryptBackup, encryptBackup } from '../lib/backup-crypto';
 import { buildFullBackupPayload } from '../lib/backup-data';
 import { exportJSON } from '../lib/export';
+import i18n from '../i18n';
 const api = vi.hoisted(() => ({ pull: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ syncPull: api.pull }));
 const password = 'a separate recovery phrase';
@@ -179,6 +180,20 @@ describe('recovery refusals carry a code the panel translates and keep their Eng
       code: 'ambiguousRows', params: { count: 1, records: '["notes","gone"]' },
       message: expect.stringContaining('Reconciliation is blocked: 1 queued update(s) have no current local record: ["notes","gone"].'),
     });
+  });
+  it('says when more queued updates without a record are listed only in the archive, in English as before', async () => {
+    const english = i18n.getFixedT('en', 'settings');
+    const ids = Array.from({ length: 11 }, (_, index) => `gone-${index}`);
+    for (const id of ids) await db.table('_syncQueue').add({ table: 'notes', entityId: id, folderId: 'f', op: 'put', data: { ...note, id }, clientVersion: 3 });
+    const listed = ids.slice(0, 10).map(id => JSON.stringify(['notes', id])).join(', ');
+    const error = await reconcileSyncWorkspace(await prepareSyncRecovery(password), identity.serverUrl, identity.userId, confirmed).catch(cause => cause);
+    expect(error).toMatchObject({ code: 'ambiguousRowsMore', params: { count: 11, records: listed },
+      message: expect.stringContaining(`${listed} (additional entries are in the archive). Keep the verified archive`) });
+    expect(english(`syncRecovery.error.${error.code}`, error.params)).toBe(error.message);
+    await db.table('_syncQueue').where('entityId').anyOf(ids.slice(1)).delete();
+    const single = await reconcileSyncWorkspace(await prepareSyncRecovery(password), identity.serverUrl, identity.userId, confirmed).catch(cause => cause);
+    expect(single).toMatchObject({ code: 'ambiguousRows', params: { count: 1, records: '["notes","gone-0"]' } });
+    expect(english(`syncRecovery.error.${single.code}`, single.params)).toBe(single.message);
   });
   it('codes archive restore refusals', async () => {
     const receipt = await prepareSyncRecovery(password);

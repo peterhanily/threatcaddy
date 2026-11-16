@@ -451,6 +451,7 @@
   "syncRecovery.error.localDataChanged": "백업 후 로컬 데이터가 변경되었습니다. 조정하기 전에 새 복구 아카이브를 다운로드하세요.",
   "syncRecovery.error.otherAccount": "이 작업 공간은 다른 계정에 속합니다. 다시 연결하지 말고 작업 공간을 전환하세요.",
   "syncRecovery.error.ambiguousRows": "조정이 차단되었습니다. 현재 로컬 기록이 없는 대기 중인 업데이트: {{count}}개({{records}}). 검증된 아카이브를 보관하고 다시 시도하기 전에 이 기록을 검토하세요. 기록이 없는 것은 오래전 삭제나 캐시 제거 때문일 수 있습니다. 삭제나 대기 중인 내용을 추정하지 않았습니다.",
+  "syncRecovery.error.ambiguousRowsMore": "조정이 차단되었습니다. 현재 로컬 기록이 없는 대기 중인 업데이트: {{count}}개({{records}}, 추가 항목은 아카이브에 있음). 검증된 아카이브를 보관하고 다시 시도하기 전에 이 기록을 검토하세요. 기록이 없는 것은 오래전 삭제나 캐시 제거 때문일 수 있습니다. 삭제나 대기 중인 내용을 추정하지 않았습니다.",
   "syncRecovery.error.serverUnsupported": "이 서버는 안전한 이력 복구를 지원하지 않습니다.",
   "syncRecovery.error.archiveExceedsLimit": "복구 아카이브가 지원되는 복원 한도인 512MiB를 초과합니다. 로컬 데이터는 변경되지 않았습니다.",
   "syncRecovery.error.wrongPassword": "비밀번호가 틀렸거나 파일이 올바른 복구 아카이브가 아닙니다.",
