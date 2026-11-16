@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { configure, fireEvent, getConfig, render, screen, waitFor, within } from '@testing-library/react';
 import App from '../App';
 import { DataImportModal } from '../components/Import/DataImportModal';
 import { db } from '../db';
@@ -20,6 +20,18 @@ async function openSettings() {
   fireEvent.click(await screen.findByRole('button', { name: 'Settings' }));
   await screen.findByText('Sample Data');
 }
+
+// Each test cold-renders the whole App and its lazy chunks. Under a loaded
+// parallel suite that can exceed testing-library's 1 s default for a query.
+const defaultAsyncTimeout = getConfig().asyncUtilTimeout;
+beforeAll(() => {
+  configure({ asyncUtilTimeout: 5_000 });
+  vi.setConfig({ testTimeout: 30_000 });
+});
+afterAll(() => {
+  configure({ asyncUtilTimeout: defaultAsyncTimeout });
+  vi.resetConfig();
+});
 
 beforeEach(async () => {
   vi.stubGlobal('matchMedia', (query: string) => ({ matches: false, media: query, onchange: null, addListener() {},
