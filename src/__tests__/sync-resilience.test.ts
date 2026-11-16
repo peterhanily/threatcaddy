@@ -195,6 +195,9 @@ describe('uploads the server would refuse', () => {
     expect(onError).toHaveBeenLastCalledWith(expect.stringContaining('Pasted log'));
   });
 
+  const shot = { id: 'e1', title: 'Beacon screenshot', folderId: 'f1', fileName: 'beacon.bmp', fileType: 'image', size: 2, imageData: 'Qk0=', imageDataMimeType: 'image/bmp',
+    content: '', extractionStatus: 'metadata-only', importedAt: 1, chunkIndex: 1, chunkCount: 1, tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 };
+
   it('keeps an evidence preview type the server refuses on this device instead of resending it every cycle', async () => {
     const onConflict = vi.fn();
     engine.setConflictHandler(onConflict);
@@ -204,8 +207,6 @@ describe('uploads the server would refuse', () => {
         ? { table: change.table, entityId: change.entityId, status: 'rejected', reason: 'Evidence image MIME type must be image/png, image/jpeg, image/gif or image/webp' }
         : { table: change.table, entityId: change.entityId, status: 'accepted', serverVersion: 1 }),
     }));
-    const shot = { id: 'e1', title: 'Beacon screenshot', folderId: 'f1', fileName: 'beacon.bmp', fileType: 'image', size: 2, imageData: 'Qk0=', imageDataMimeType: 'image/bmp',
-      content: '', extractionStatus: 'metadata-only', importedAt: 1, chunkIndex: 1, chunkCount: 1, tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 };
     await seed('evidenceItems', shot);
     await engine.enqueue('evidenceItems', 'e1', 'put', shot);
     await engine.enqueue('notes', 'n1', 'put', note('n1'));
@@ -216,6 +217,21 @@ describe('uploads the server would refuse', () => {
     expect(onConflict).not.toHaveBeenCalled();
     expect((await db.table('_syncQueue').toArray()).map(entry => entry.entityId)).toEqual(['e1']);
     expect(onError).toHaveBeenLastCalledWith(expect.stringMatching(/Beacon screenshot \(Phishing case\).*PNG, JPEG, GIF or WebP preview images/));
+  });
+
+  it('refuses to remove an offline copy holding an item it keeps back, naming it and a remedy that works', async () => {
+    await seed('notes', note('n1'));
+    await db.evidenceItems.add(shot as never);
+    const refusal = await evictSyncedFolder('f1').then(() => null, (error: Error) => error.message);
+    expect(refusal).toContain('Beacon screenshot (Phishing case)');
+    expect(refusal).toContain('Delete them permanently');
+    expect(refusal).not.toContain('unsynced edits');
+    expect(await db.evidenceItems.get('e1')).toBeDefined();
+    // Deleting it permanently queues a delete that sync sends; the copy can then be removed.
+    await db.evidenceItems.delete('e1');
+    await engine.sync();
+    await evictSyncedFolder('f1');
+    expect(await db.notes.get('n1')).toBeUndefined();
   });
 
   it('keeps every request inside the server structure budget', async () => {

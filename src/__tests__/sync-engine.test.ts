@@ -341,6 +341,20 @@ describe('sync engine persistence contract', () => {
     expect(pushed).not.toContain('sample-realistic-tag-1');
     expect(pushed).not.toContain('sample-realistic-timeline-1');
   });
+
+  it('drops demo tag and timeline uploads an older build queued, unless the server already holds that row', async () => {
+    // 2.0.0 and 2.0.1 queued them in any bound workspace, even while signed out.
+    await db.table('_syncQueue').bulkAdd([
+      { table: 'tags', entityId: 'sample-realistic-tag-phishing', op: 'put', data: { id: 'sample-realistic-tag-phishing', name: 'synthetic-training', color: '#6366f1' }, clientVersion: 0 },
+      { table: 'timelines', entityId: 'sample-realistic-timeline', op: 'put', data: { id: 'sample-realistic-timeline', name: 'Mailbox Exercise — UTC', order: 998, createdAt: 1, updatedAt: 1 }, clientVersion: 0 },
+      { table: 'tags', entityId: 'sample-realistic-tag-c2', op: 'put', data: { id: 'sample-realistic-tag-c2', name: 'c2-demo', color: '#ef4444' }, clientVersion: 2 },
+    ]);
+    await db.table('_syncMeta').put({ key: revisionKey('tags', 'sample-realistic-tag-c2'), value: 2 });
+    api.push.mockImplementation(async changes => ({ results: changes.map((c: { table: string; entityId: string }) => ({ table: c.table, entityId: c.entityId, status: 'accepted', serverVersion: 3 })) }));
+    await engine.sync();
+    expect(api.push.mock.calls.flatMap(([changes]) => (changes as Array<{ entityId: string }>).map(change => change.entityId))).toEqual(['sample-realistic-tag-c2']);
+    expect(await db.table('_syncQueue').count()).toBe(0);
+  });
 });
 
 describe('round trips keep fields the server cannot store', () => {

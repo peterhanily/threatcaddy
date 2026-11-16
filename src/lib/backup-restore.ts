@@ -9,6 +9,7 @@ import { mapEntityReferences } from './entity-relations';
 import { validatePortableTables } from './backup-records';
 import { isSyncTable, suppressSyncInCurrentTransaction } from './sync-state';
 import { isSyncWorkspaceIdentity, markRestoredSyncHistory, SYNC_WORKSPACE_KEY } from './sync-capture-policy';
+import { queuedPuts, syncItemLabels } from './sync-outgoing';
 import i18n from '../i18n';
 
 type Row = Record<string, unknown> & { id: string };
@@ -246,11 +247,14 @@ export async function previewRestore(payload: BackupPayload, mode: Mode = 'repla
 
 /** A queued put for a row the restore deletes would block Sync history recovery. */
 async function assertNoUnsentChangesRemoved(operations: Operation[]): Promise<void> {
-  const latest = new Map<string, unknown>();
-  for (const entry of await db.table('_syncQueue').toArray()) latest.set(JSON.stringify([entry.table, entry.entityId]), entry.op);
-  const unsent = operations.flatMap(op => op.deletes.filter(id => latest.get(JSON.stringify([op.table, id])) === 'put').map(id => `${op.table}:${id}`));
+  const deleted = new Set(operations.flatMap(op => op.deletes.map(id => JSON.stringify([op.table, id]))));
+  const { held, unsent } = await queuedPuts(entry => deleted.has(JSON.stringify([entry.table, entry.entityId])));
+  // Push never sends a held put, so signing in or recovery cannot clear it.
+  if (held.length) {
+    throw new Error(i18n.t('data.syncHeldRestoreBlocked', { ns: 'settings', count: held.length, records: await syncItemLabels(held) }));
+  }
   if (unsent.length) {
-    throw new Error(i18n.t('data.syncUnsentRestoreBlocked', { ns: 'settings', count: unsent.length, records: unsent.slice(0, 5).join(', ') }));
+    throw new Error(i18n.t('data.syncUnsentRestoreBlocked', { ns: 'settings', count: unsent.length, records: await syncItemLabels(unsent) }));
   }
 }
 

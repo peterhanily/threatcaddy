@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} n'a pas été envoyé, car les autres appareils ne pourraient pas le lire (éléments retenus : {{total}}). Il reste enregistré sur cet appareil ; corrigez-le pour le synchroniser.",
   "syncStatus.oversizedOutgoing": "{{item}} n'a pas été envoyé, car il dépasse les limites du serveur d'équipe (éléments retenus : {{total}}). Il reste enregistré sur cet appareil ; raccourcissez-le pour le synchroniser.",
   "syncStatus.previewTypeOutgoing": "{{item}} n'a pas été envoyé, car le serveur d'équipe n'accepte que les images d'aperçu PNG, JPEG, GIF ou WebP (éléments retenus : {{total}}). Il reste enregistré sur cet appareil.",
+  "syncStatus.heldBlocksLocalCopyRemoval": "La copie locale n’a pas été retirée : {{count}} élément(s) de cette enquête comportent des modifications que la synchronisation conserve sur cet appareil, car le serveur d’équipe ne peut pas les accepter ({{items}}). Supprimez-les définitivement (les placer dans la corbeille ne suffit pas) ou modifiez-les pour qu’ils puissent être envoyés (par exemple, raccourcissez un texte très long), puis réessayez.",
   "syncStatus.rejectedInvalid": "Le serveur d'équipe a refusé cette modification, car elle n'est pas valide ({{reason}}). Elle reste enregistrée sur cet appareil ; corrigez-la pour la synchroniser.",
   "syncStatus.theirsUnreadable": "Cet appareil ne peut pas lire la version du serveur d'équipe ; seule votre version peut donc être conservée.",
   "syncStatus.itemType.notes": "Note",

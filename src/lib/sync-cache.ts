@@ -4,6 +4,8 @@ import { withEntityDraftBarrier } from './entity-drafts';
 import { hasPendingChanges, PendingChangesError } from './pending-changes';
 import { nanoid } from 'nanoid';
 import { assertSyncCaptureReady, ensureSyncCaptureCoverage } from './sync-capture-policy';
+import { queuedPuts, syncItemLabels, type SyncQueueEntry } from './sync-outgoing';
+import i18n from '../i18n';
 
 export const uncachedFolderKey = (id: string) => JSON.stringify(['notCached', id]);
 export const cacheOperationKey = (id: string) => JSON.stringify(['cacheOperation', id]);
@@ -22,7 +24,7 @@ export async function rotateCacheOperation(folderId: string): Promise<string> {
  * not immediately recreate the evicted investigation. */
 export async function evictSyncedFolder(folderId: string): Promise<void> {
   await ensureSyncCaptureCoverage(db);
-  return withEntityDraftBarrier(() => db.transaction('rw', [...SYNC_TABLES, '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
+  return withEntityDraftBarrier(() => db.transaction('rw', [...SYNC_TABLES, 'agentDeployments', '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
     await assertSyncCaptureReady(db);
     if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work before removing an offline copy.');
     if ((await db.folders.get(folderId))?.localOnly
@@ -38,8 +40,12 @@ export async function evictSyncedFolder(folderId: string): Promise<void> {
       rows.set(table, ids);
       for (const id of ids) identities.add(JSON.stringify([table, id]));
     }
+    const inFolder = (row: SyncQueueEntry) => row.folderId === folderId || row.data?.folderId === folderId || identities.has(JSON.stringify([row.table, row.entityId]));
+    // Push never sends a held put, so syncing cannot clear it: its changes exist only on this device.
+    const { held } = await queuedPuts(inFolder);
+    if (held.length) throw new Error(i18n.t('syncStatus.heldBlocksLocalCopyRemoval', { ns: 'common', count: held.length, items: await syncItemLabels(held) }));
     const pending = await db.table('_syncQueue').toArray();
-    if (pending.some(row => row.folderId === folderId || row.data?.folderId === folderId || identities.has(JSON.stringify([row.table, row.entityId])))) {
+    if (pending.some(inFolder)) {
       throw new Error('This investigation has unsynced edits. Sync or resolve them before removing its offline copy.');
     }
     suppressSyncInCurrentTransaction();

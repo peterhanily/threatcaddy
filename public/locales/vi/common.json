@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} chưa được tải lên vì các thiết bị khác sẽ không đọc được (số mục bị giữ lại: {{total}}). Mục này vẫn được lưu trên thiết bị này; hãy sửa để đồng bộ.",
   "syncStatus.oversizedOutgoing": "{{item}} chưa được tải lên vì vượt quá giới hạn của máy chủ nhóm (số mục bị giữ lại: {{total}}). Mục này vẫn được lưu trên thiết bị này; hãy rút gọn để đồng bộ.",
   "syncStatus.previewTypeOutgoing": "{{item}} chưa được tải lên vì máy chủ nhóm chỉ chấp nhận ảnh xem trước PNG, JPEG, GIF hoặc WebP (số mục bị giữ lại: {{total}}). Mục này vẫn được lưu trên thiết bị này.",
+  "syncStatus.heldBlocksLocalCopyRemoval": "Bản sao cục bộ chưa được xóa: {{count}} mục trong cuộc điều tra này có thay đổi mà đồng bộ đang giữ lại trên thiết bị này vì máy chủ nhóm không thể chấp nhận chúng ({{items}}). Hãy xóa vĩnh viễn (chỉ chuyển vào thùng rác là chưa đủ) hoặc chỉnh sửa để chúng có thể được tải lên (ví dụ: rút gọn văn bản rất dài), sau đó thử lại.",
   "syncStatus.rejectedInvalid": "Máy chủ nhóm đã từ chối thay đổi này vì không hợp lệ ({{reason}}). Thay đổi này vẫn được lưu trên thiết bị này; hãy sửa để đồng bộ.",
   "syncStatus.theirsUnreadable": "Thiết bị này không đọc được phiên bản trên máy chủ nhóm, vì vậy chỉ có thể giữ phiên bản của bạn.",
   "syncStatus.itemType.notes": "Ghi chú",
