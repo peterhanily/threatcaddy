@@ -1,5 +1,5 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SettingsPanel } from '../components/Settings/SettingsPanel';
 import { DEFAULT_SETTINGS } from '../types';
@@ -423,6 +423,28 @@ describe('SettingsPanel: where AI data goes', () => {
     expect(screen.getByText(/from the browser extension straight to your AI provider/)).toBeInTheDocument();
     delete document.documentElement.dataset.tcBridgeCaps;
     expect(await screen.findByText('Web fetch needs the ThreatCaddy browser extension.')).toBeInTheDocument();
+  });
+
+  // The bridge withdraws its capabilities while it rechecks app approval and then publishes the same ones again.
+  // The earlier answer belongs to the check that ran before, so it must not show while the new check runs.
+  it('never shows a check result after the capabilities it was checked for are withdrawn', async () => {
+    document.documentElement.dataset.tcBridgeCaps = GUARDED_CAPS;
+    answerPing(GUARDED_CAPS);
+    renderAI();
+    expect(await within(section()).findByText(FETCH_AVAILABLE)).toBeInTheDocument();
+    delete document.documentElement.dataset.tcBridgeCaps;
+    expect(await within(section()).findByText('Web fetch needs the ThreatCaddy browser extension.')).toBeInTheDocument();
+    // The bridge that answers now is store 1.1.1, and the new check's ping has not reached it yet.
+    window.removeEventListener('message', bridges!);
+    const post = answerPing(STORE_1_1_1_CAPS);
+    const held: unknown[] = [];
+    post.mockImplementation((message: unknown) => { if ((message as { type?: string })?.type === 'TC_EXTENSION_PING') held.push(message); else deliver(message); });
+    document.documentElement.dataset.tcBridgeCaps = GUARDED_CAPS;
+    await waitFor(() => expect(held).toHaveLength(1));
+    expect(within(section()).queryByText('Web fetch needs the ThreatCaddy browser extension.')).not.toBeInTheDocument();
+    expect(within(section()).queryByText(FETCH_AVAILABLE)).not.toBeInTheDocument();
+    held.forEach(deliver);
+    expect(await within(section()).findByText(FETCH_UPDATE)).toBeInTheDocument();
   });
 
   it('says where keys and prompts go instead of claiming every call uses the extension', () => {
