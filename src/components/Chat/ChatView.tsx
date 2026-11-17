@@ -26,7 +26,7 @@ import { truncateConversation, summarizeConversation, MAX_CONTEXT_MESSAGES } fro
 import { db } from '../../db';
 import { useChatLoops } from '../../hooks/useChatLoops';
 import { hasLoopsForThread, type LoopTransport } from '../../lib/chat-loop';
-import { resolveMentions } from '../../lib/chat-mentions';
+import { hasMentionToken, resolveMentions } from '../../lib/chat-mentions';
 import { executeCheckpointedTool, restoreCheckpoint } from '../../lib/checkpoints';
 import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCustomSlashCommands';
 import { useToast } from '../../contexts/ToastContext';
@@ -305,7 +305,7 @@ export function ChatView({
     }
 
     // Resolve @-mentions: replace tokens with labels for display, inject entity data for LLM
-    const { displayText: mentionDisplayText, contextBlock: mentionContext } = await resolveMentions(text);
+    const { displayText: mentionDisplayText, contextBlock: mentionContext } = await resolveMentions(text, activeThread.folderId ?? selectedFolderId);
 
     // Retain the draft's images until the user message is actually saved.
     const images = pendingImages.length > 0 ? [...pendingImages] : undefined;
@@ -679,9 +679,10 @@ export function ChatView({
     setTimeout(() => onNavigateToEntity?.('note', noteId), 100);
   }, [activeThread, selectedFolderId, onEntitiesChanged, onNavigateToEntity]);
 
-  // A chip is model-written text: it may ask a question, never run a slash command such as /fetch.
+  // A chip is model-written text: it may ask a question, never run a slash command such as /fetch
+  // or read an entity through an @-mention.
   const handleSuggestionClick = useCallback((text: string) => {
-    if (text.trimStart().startsWith('/')) return;
+    if (text.trimStart().startsWith('/') || hasMentionToken(text)) return;
     handleSend(text);
   }, [handleSend]);
 
@@ -1324,7 +1325,7 @@ export function ChatView({
                 localModelName={settings.llmLocalModelName}
                 configuredProviders={configuredProviders}
                 onOpenSettings={onOpenSettings ? () => onOpenSettings('ai') : undefined}
-                folderId={selectedFolderId}
+                folderId={activeThread.folderId ?? selectedFolderId}
                 customCommands={customCommands.map(c => ({ command: `/${c.name}`, description: c.description }))}
                 onImageAttach={handleImageAttach}
                 readingImages={readingImages}

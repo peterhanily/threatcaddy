@@ -3,6 +3,7 @@ import { ChevronRight, FileText, ListChecks, Shield, Clock, GitBranch, RotateCcw
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 import { renderMarkdown, sanitizeHtml } from '../../lib/markdown';
+import { hasMentionToken } from '../../lib/chat-mentions';
 import type { ToolCallRecord, ChatAttachment } from '../../types';
 
 interface ChatMessageProps {
@@ -146,11 +147,11 @@ function processEntityLinks(html: string, onEntityClick?: (type: string, id: str
 }
 
 /** The model writes these, so they are follow-up questions only: a slash command such as
- * /fetch would run on one click with no approval card. */
+ * /fetch, or an @-mention that reads an entity, would run on one click with no approval card. */
 function parseSuggestions(content: string): string[] {
   const match = content.match(/<!--\s*suggestions:\s*(.*?)\s*-->/);
   if (!match) return [];
-  return match[1].split('|').map(s => s.trim()).filter(s => s && !s.startsWith('/'));
+  return match[1].split('|').map(s => s.trim()).filter(s => s && !s.startsWith('/') && !hasMentionToken(s));
 }
 
 function stripSuggestions(content: string): string {
