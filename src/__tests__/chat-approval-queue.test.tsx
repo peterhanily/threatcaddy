@@ -139,13 +139,22 @@ describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
       // The page arrives but its note cannot be saved.
       addNote.mockRejectedValueOnce(new Error('Synthetic storage failure'));
       await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/second'); });
+      // The extension can fail a page without saying why.
+      vi.mocked(window.postMessage).mockImplementationOnce((message: unknown) => {
+        const request = message as { type: string; requestId: string; url: string };
+        egress.posts.push(request);
+        setTimeout(() => window.dispatchEvent(new MessageEvent('message', {
+          source: window, data: { type: 'TC_FETCH_URL_RESULT', requestId: request.requestId, success: false } })), 0);
+      });
+      await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/third'); });
       const replies = props.onAddMessage.mock.calls.map(([, message]) => message).filter(message => message.role === 'assistant');
       expect(replies.map(message => message.content)).toEqual([
         'Notiz **Fixture page** aus https://www.cisa.gov/advisory erstellt',
         `URL konnte nicht abgerufen werden: ${i18n.t('fetch.privateTarget', { ns: 'integrations' })}`,
         'URL konnte nicht abgerufen werden: Synthetic storage failure',
+        'URL konnte nicht abgerufen werden: Unbekannter Fehler',
       ]);
-      expect(egress.fetchUrlPosts()).toEqual(['https://www.cisa.gov/advisory', 'https://www.cisa.gov/second']);
+      expect(egress.fetchUrlPosts()).toEqual(['https://www.cisa.gov/advisory', 'https://www.cisa.gov/second', 'https://www.cisa.gov/third']);
     } finally {
       addNote.mockRestore();
       await act(async () => { await i18n.changeLanguage('en'); });
