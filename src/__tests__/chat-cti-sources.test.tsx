@@ -80,6 +80,13 @@ describe('C-CHAT-8 CTI slash commands', () => {
     expect(state.executeHostSkill).not.toHaveBeenCalled();
   });
 
+  // Https would not help a host with no skills: getHostToolDefinitions offers nothing from it either way.
+  it('keep the general answer when the plain-http CTI host has no skills', async () => {
+    const messages = await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [{ ...ctiHost('http://10.0.0.5:8443'), skills: [] }] } as Settings);
+    expect(messages.at(-1)).toEqual(expect.objectContaining({ role: 'assistant', content: NO_SOURCES }));
+    expect(state.executeHostSkill).not.toHaveBeenCalled();
+  });
+
   it('still run the sources of a CTI host on plain http to this computer', async () => {
     state.executeHostSkill.mockResolvedValue(JSON.stringify({ ok: true }));
     await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [ctiHost('http://localhost:8080')] } as Settings);
