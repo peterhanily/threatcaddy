@@ -80,6 +80,15 @@ describe('A-GATE-1 an exit needs an unforgeable, single-use, call-bound approval
     expect((await (executeTool as (...args: unknown[]) => ReturnType<typeof executeTool>)(fetchCall, 'S')).isError).toBe(true);
     expect(egress.fetchUrlPosts()).toEqual([]);
   });
+
+  it('refuses a JavaScript caller that declares an unknown surface', async () => {
+    for (const surface of ['chat', 'Agent', 'constructor']) {
+      const read = call('read_note', { id: ids('P').note });
+      const result = await executeTool(read, 'S', undefined, { surface, allowedTools: ALL_STATIC_TOOLS } as unknown as Parameters<typeof executeTool>[3]);
+      expect(result.isError).toBe(true);
+      expect(result.result).not.toContain(canary('P'));
+    }
+  });
 });
 
 describe('A-GATE-2 agent lifecycle tools outside any loop', () => {
@@ -173,6 +182,75 @@ describe('A-GATE-5 writes into another investigation', () => {
     const link = call('link_entities', { links: [{ sourceType: 'note', sourceId: ids('S').note, targetType: 'note', targetId: ids('P').note }] });
     expect((await dispatch(link, 'S', 'agent', mintHumanApproval(link, 'S', 'action-queue'))).isError).toBe(true);
     expect((await db.notes.get(ids('S').note))?.linkedNoteIds ?? []).toEqual([]);
+  });
+});
+
+describe('A-GATE-5b ids that are not strings resolve as the executors coerce them', () => {
+  const SURFACES = ['chat-act', 'chat-yolo', 'chat-plan', 'agent', 'supervisor', 'bridge'] as const;
+  const reads = (folderId: string) => [call('read_note', { id: [ids(folderId).note] }), call('read_task', { id: [ids(folderId).task] }), call('read_ioc', { id: [[ids(folderId).ioc]] })];
+  const writes = (folderId: string) => [call('update_note', { id: [ids(folderId).note], content: 'overwritten' }),
+    call('update_task', { id: [ids(folderId).task], title: 'overwritten' }), call('update_ioc', { id: [ids(folderId).ioc], analystNotes: 'overwritten' })];
+  const rows = async () => [await db.notes.toArray(), await db.tasks.toArray(), await db.standaloneIOCs.toArray()];
+  const approve = (toolUse: ToolUseBlock, surface: ToolSurface) => mintHumanApproval(toolUse, 'S', surface === 'agent' ? 'action-queue' : 'chat-card');
+
+  it.each(SURFACES)('local-only rows stay not found on %s, even with approval', async surface => {
+    const before = await rows();
+    for (const toolUse of [...reads('L'), ...writes('L')]) {
+      const result = await dispatch(toolUse, 'S', surface, approve(toolUse, surface));
+      expect(result.isError).toBe(true);
+      expect(result.result).not.toContain(canary('L'));
+    }
+    expect(await rows()).toEqual(before);
+  });
+
+  it.each(['agent', 'bridge', 'chat-plan'] as const)('another investigation\'s rows are refused on %s, even with approval', async surface => {
+    await db.folders.update('S', { agentPolicy: { autoApproveReads: true, autoApproveEnrich: true, autoApproveFetch: true, autoApproveCreate: true, autoApproveModify: true, intervalMinutes: 5 } });
+    const before = await rows();
+    for (const toolUse of [...reads('P'), ...writes('P')]) {
+      const result = await dispatch(toolUse, 'S', surface, approve(toolUse, surface));
+      expect(result.isError).toBe(true);
+      expect(result.result).not.toContain(canary('P'));
+    }
+    expect(await rows()).toEqual(before);
+  });
+
+  it.each(['chat-act', 'chat-yolo'] as const)('another investigation\'s rows need approval on %s', async surface => {
+    const before = await rows();
+    for (const toolUse of [...reads('P'), ...writes('P')]) {
+      const result = await dispatch(toolUse, 'S', surface);
+      expect(result.isError).toBe(true);
+      expect(result.result).not.toContain(canary('P'));
+    }
+    expect(await rows()).toEqual(before);
+  });
+
+  it('supervisor writes into another investigation need approval', async () => {
+    const before = await rows();
+    for (const toolUse of writes('P')) expect((await dispatch(toolUse, 'S', 'supervisor')).isError).toBe(true);
+    expect(await rows()).toEqual(before);
+  });
+
+  it('a number id reaches the row with that string id', async () => {
+    await db.notes.add({ id: '4242', folderId: 'P', title: 'Numbered', content: `Evidence ${canary('P')}`, tags: [], pinned: false, archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
+    const read = call('read_note', { id: 4242 });
+    for (const surface of ['agent', 'bridge'] as const) expect((await dispatch(read, 'S', surface, approve(read, surface))).result).not.toContain(canary('P'));
+    expect((await dispatch(read, 'S', 'chat-act')).isError).toBe(true);
+  });
+
+  it('other id arguments of an agent call cannot leave the investigation', async () => {
+    await db.notes.update(ids('P').note, { isFolder: true });
+    const before = await rows();
+    for (const toolUse of [
+      call('review_completed_task', { taskId: [ids('P').task], quality: 'needs-redo', feedback: 'Redo', requestedDelta: 'Add the DNS resolution history.' }),
+      call('enrich_ioc', { iocId: [ids('P').ioc] }),
+      call('delete_note_folder', { folderId: [ids('P').note] }),
+      call('move_to_folder', { noteId: [ids('P').note] }),
+      call('link_entities', { links: [{ sourceType: 'note', sourceId: [ids('P').note], targetType: 'note', targetId: ids('S').note }] }),
+    ]) {
+      expect((await dispatch(toolUse, 'S', 'agent', approve(toolUse, 'agent'))).isError).toBe(true);
+    }
+    expect(integration.run).not.toHaveBeenCalled();
+    expect(await rows()).toEqual(before);
   });
 });
 

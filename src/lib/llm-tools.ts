@@ -3,7 +3,7 @@ import { notifyDesktop } from './desktop-notifications';
 import { nanoid } from 'nanoid';
 import type { AgentPolicy, Folder, ToolUseBlock, Settings, AgentProfile } from '../types';
 import { getToolExecutionError, normalizeToolResult, toolExecutionError, type ToolExecutionConstraints, type ToolExecutionResult } from './llm-tool-execution';
-import { classifyToolCall, decideToolCall, type ToolReach } from './tool-reach';
+import { classifyToolCall, decideToolCall, type ToolReach, type ToolSurface } from './tool-reach';
 import { consumeHumanApproval } from './human-approval';
 import { listAgentProfiles, loadAgentPolicy, resolveAgentProfile } from './agent-profile-resolver';
 import { currentCreator, popCreator, pushCreator } from './tool-creator';
@@ -210,6 +210,8 @@ export async function buildSystemPrompt(folder?: Folder, customPrompt?: string, 
 
 // ── Dispatcher ─────────────────────────────────────────────────────────
 
+const TOOL_SURFACES: ReadonlySet<string> = new Set<ToolSurface>(['chat-act', 'chat-yolo', 'chat-plan', 'agent', 'supervisor', 'bridge']);
+
 const atomicLocalTools = new Set(['create_note', 'update_note', 'create_task', 'update_task', 'create_ioc', 'update_ioc',
   'bulk_create_iocs', 'create_timeline_event', 'update_timeline_event', 'link_entities', 'generate_report',
   'create_in_investigation', 'create_note_folder', 'delete_note_folder', 'move_to_folder']);
@@ -248,7 +250,7 @@ async function dispatchTool(
   constraints: ToolExecutionConstraints,
 ): Promise<ToolExecutionResult> {
   // Runtime guard for JavaScript callers that bypass the required type.
-  if (!constraints?.surface) return toolExecutionError('Tool calls must state where they come from.');
+  if (!constraints || !TOOL_SURFACES.has(constraints.surface)) return toolExecutionError('Tool calls must state where they come from.');
   const error = getToolExecutionError(toolUse, constraints) ?? await constraints.validateScope?.(toolUse);
   if (error) return toolExecutionError(error);
   const { name, input } = toolUse;
