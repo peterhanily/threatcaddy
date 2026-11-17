@@ -6,7 +6,12 @@ import { hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, se
 import { useLLM } from '../hooks/useLLM';
 import { getAllLoops, startLoop, stopLoop } from '../lib/chat-loop';
 import { runAgentMeeting } from '../lib/caddy-agent-meeting';
+import { runAgentCycle } from '../lib/caddy-agent';
+import { runSupervisorCycle } from '../lib/caddy-agent-supervisor';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
+import i18n from '../i18n';
+import enSettings from '../../public/locales/en/settings.json';
+import deSettings from '../../public/locales/de/settings.json';
 
 // Real resolver, recorded transports. Each transport answers at once so a meeting completes.
 const { answer } = vi.hoisted(() => ({
@@ -130,5 +135,70 @@ describe('D-ROUTE-4 meetings need a signed-in server session', () => {
     expect(result.error).toBeUndefined();
     expect(sendViaServer).toHaveBeenCalled();
     expect(sendViaExtension).not.toHaveBeenCalled();
+  });
+});
+
+describe('D-ROUTE-5 agent cycles and the supervisor go where Settings says', () => {
+  const base = { ...DEFAULT_SETTINGS, llmAnthropicApiKey: 'synthetic-key' };
+  const cycle = (settings: Partial<Settings>, extensionAvailable: boolean) => runAgentCycle(folder, { ...base, ...settings }, extensionAvailable);
+  // The supervisor compares investigations, so it needs two before it calls a model.
+  const supervise = async (settings: Partial<Settings>, extensionAvailable: boolean) => {
+    if (!await db.folders.get('case-2')) await db.folders.add({ ...folder, id: 'case-2', name: 'Second synthetic case' });
+    return runSupervisorCycle({ ...base, ...settings }, extensionAvailable);
+  };
+  const noModelCall = () => {
+    expect(sendViaServer).not.toHaveBeenCalled();
+    expect(sendViaExtension).not.toHaveBeenCalled();
+    expect(sendDirectToLocal).not.toHaveBeenCalled();
+  };
+
+  it('Auto with a server URL but no signed-in user: an agent cycle uses the extension, not the server', async () => {
+    const result = await cycle({ serverUrl: 'https://team.example', llmRoutingMode: 'auto' }, true);
+    expect(result.error).toBeUndefined();
+    expect(sendViaExtension).toHaveBeenCalled();
+    expect(sendViaServer).not.toHaveBeenCalled();
+  });
+
+  it('Auto with a server URL but no signed-in user: the supervisor uses the extension, not the server', async () => {
+    const result = await supervise({ serverUrl: 'https://team.example', llmRoutingMode: 'auto' }, true);
+    expect(result.error).toBeUndefined();
+    expect(sendViaExtension).toHaveBeenCalled();
+    expect(sendViaServer).not.toHaveBeenCalled();
+  });
+
+  it('an agent cycle refuses an explicit extension route with no extension, before any model call or audit thread', async () => {
+    signIn();
+    const result = await cycle({ serverUrl: 'https://team.example', llmRoutingMode: 'extension' }, false);
+    expect(result.error).toBe(enSettings['ai.dataFlow.errorNoExtension']);
+    noModelCall();
+    expect(await db.chatThreads.count()).toBe(0);
+  });
+
+  it('the supervisor refuses an explicit server route while signed out, before any model call', async () => {
+    const result = await supervise({ serverUrl: 'https://team.example', llmRoutingMode: 'server' }, true);
+    expect(result.error).toBe(enSettings['ai.dataFlow.errorNoServer']);
+    noModelCall();
+  });
+
+  it('a local model with an endpoint gets its own key, never the server placeholder', async () => {
+    signIn();
+    const settings: Partial<Settings> = { serverUrl: 'https://team.example', llmDefaultProvider: 'local', llmLocalModelName: 'llama3', llmLocalApiKey: 'synthetic-local-key', ...local };
+    expect((await cycle(settings, true)).error).toBeUndefined();
+    expect((await supervise(settings, true)).error).toBeUndefined();
+    expect(vi.mocked(sendDirectToLocal).mock.calls.length).toBeGreaterThanOrEqual(2);
+    for (const [request] of vi.mocked(sendDirectToLocal).mock.calls) expect(request.apiKey).toBe('synthetic-local-key');
+    expect(sendViaServer).not.toHaveBeenCalled();
+  });
+
+  it('says why in the analyst’s language', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'settings', deSettings, true, true);
+    await i18n.changeLanguage('de');
+    try {
+      expect((await cycle({ llmRoutingMode: 'auto' }, false)).error).toBe(deSettings['ai.dataFlow.errorNone']);
+      expect((await supervise({ llmRoutingMode: 'auto' }, false)).error).toBe(deSettings['ai.dataFlow.errorNone']);
+      expect((await meet({ llmRoutingMode: 'auto' }, false)).error).toBe(deSettings['ai.dataFlow.errorNone']);
+      noModelCall();
+    } finally { await i18n.changeLanguage('en'); }
   });
 });

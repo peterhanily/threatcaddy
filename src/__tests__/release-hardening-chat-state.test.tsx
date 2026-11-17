@@ -4,6 +4,7 @@ import type { ChatThread, Folder, Settings } from '../types';
 import { ChatView } from '../components/Chat/ChatView';
 import { ScreenshareContext } from '../hooks/ScreenshareContext';
 import { discardAllComposerDrafts } from '../lib/chat-composer-drafts';
+import { workspaceStorageKey } from '../lib/workspace-profiles';
 
 const state = vi.hoisted(() => ({
   selectedThreadId: 'thread',
@@ -47,10 +48,20 @@ const thread: ChatThread = { id: 'thread', title: 'Synthetic chat', folderId: 'a
 const settings = { llmAnthropicApiKey: 'synthetic-unit-test-only', llmRoutingMode: 'auto' } as Settings;
 const props = { threads: [thread], settings, onCreateThread: state.createThread, onUpdateThread: state.updateThread,
   onAddMessage: state.addMessage, onTrashThread: vi.fn() };
+// Chat reads the session as Settings → AI does: a configured server URL and a stored signed-in user.
+const serverProps = { ...props, settings: { ...settings, serverUrl: 'https://server.test' } };
+const authKey = workspaceStorageKey('threatcaddy-auth');
+const setSignedIn = (signedIn: boolean) => {
+  state.signedIn = signedIn;
+  if (!signedIn) { localStorage.removeItem(authKey); return; }
+  localStorage.setItem(authKey, JSON.stringify({ serverUrl: 'https://server.test', accessToken: 'synthetic-access', refreshToken: 'synthetic-refresh',
+    user: { id: 'synthetic-user', email: 'analyst@example.test', displayName: 'Analyst' } }));
+};
 
 beforeEach(() => {
   discardAllComposerDrafts();
   vi.clearAllMocks();
+  localStorage.removeItem(authKey);
   state.folder = { id: 'a', name: 'Investigation A', order: 0, createdAt: 1 };
   state.serverUrl = ''; state.signedIn = false; state.extensionAvailable = true; state.commands = []; state.selectedThreadId = 'thread';
   state.addMessage.mockResolvedValue(undefined);
@@ -99,10 +110,10 @@ describe('release hardening: committed chat submission state', () => {
 
   it('uses the current route after extension availability changes', async () => {
     state.serverUrl = 'https://server.test';
-    state.signedIn = true;
-    const view = render(<ChatView {...props} />);
+    setSignedIn(true);
+    const view = render(<ChatView {...serverProps} />);
     state.extensionAvailable = false;
-    view.rerender(<ChatView {...props} />);
+    view.rerender(<ChatView {...serverProps} />);
     await act(async () => { await state.input.onSend('Synthetic question'); });
     expect(state.send).toHaveBeenCalledWith(expect.objectContaining({ useServerProxy: true }), expect.any(Function), expect.any(Function), expect.objectContaining({ threadId: thread.id, messageId: expect.any(String), model: thread.model, provider: thread.provider }));
     expect(state.input.serverRoute).toBe(true);
@@ -110,11 +121,11 @@ describe('release hardening: committed chat submission state', () => {
 
   it('does not advertise a server route for an unsigned-in configured URL', () => {
     state.serverUrl = 'https://server.test'; state.extensionAvailable = false;
-    const view = render(<ChatView {...props} />);
+    const view = render(<ChatView {...serverProps} />);
     expect(state.input.serverRoute).toBe(false);
-    state.signedIn = true; view.rerender(<ChatView {...props} />);
+    setSignedIn(true); view.rerender(<ChatView {...serverProps} />);
     expect(state.input.serverRoute).toBe(true);
-    state.signedIn = false; view.rerender(<ChatView {...props} />);
+    setSignedIn(false); view.rerender(<ChatView {...serverProps} />);
     expect(state.input.serverRoute).toBe(false);
   });
 

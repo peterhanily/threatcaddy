@@ -871,8 +871,8 @@ const subscribeBridgeCaps = (onChange: () => void) => {
 };
 const bridgeCapsSnapshot = () => document.documentElement.dataset.tcBridgeCaps ?? '';
 
-/** Describes the route resolveRoute picks. Call sites still on resolveRoutingMode
- * (chat, agent cycles, supervisor) can differ until they migrate to it. */
+/** Describes the route resolveRoute picks for the default provider. Chat, agent cycles,
+ * meetings and the supervisor route with the same resolver and session check. */
 function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpdateSettings: (updates: Partial<Settings>) => void }) {
   const { t } = useTranslation('settings');
   const headingId = useId();

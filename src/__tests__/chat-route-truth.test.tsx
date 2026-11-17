@@ -1,0 +1,142 @@
+/**
+ * M-LLM-ROUTING-HIDDEN in chat: prompts go where Settings → AI says they go.
+ * Real useLLM and route resolver; recorded transports and extension.
+ */
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_SETTINGS, type ChatMessage, type ChatThread, type Folder, type Settings } from '../types';
+import { ChatView } from '../components/Chat/ChatView';
+import { discardAllComposerDrafts } from '../lib/chat-composer-drafts';
+import { sendDirectToLocal, sendViaServer, type LLMRouteCallbacks } from '../lib/llm-router';
+import { generateChatTitle, summarizeConversation } from '../lib/chat-utils';
+import { workspaceStorageKey } from '../lib/workspace-profiles';
+import enSettings from '../../public/locales/en/settings.json';
+
+const state = vi.hoisted(() => ({
+  signedIn: false,
+  folder: { id: 'case', name: 'Case', order: 0, createdAt: 1 } as Folder,
+  input: { onSend: async () => {} } as { onSend: (text: string) => Promise<void> },
+}));
+const { answer } = vi.hoisted(() => ({
+  answer: (_request: unknown, callbacks: LLMRouteCallbacks) => { callbacks.onChunk('Answer.'); callbacks.onDone('end_turn', [{ type: 'text', text: 'Answer.' }]); return 'request'; },
+}));
+vi.mock('../lib/llm-router', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../lib/llm-router')>(), sendViaServer: vi.fn(answer), sendDirectToLocal: vi.fn(answer),
+}));
+vi.mock('../lib/chat-utils', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../lib/chat-utils')>(), generateChatTitle: vi.fn().mockResolvedValue(null), summarizeConversation: vi.fn().mockResolvedValue(null),
+}));
+vi.mock('../lib/llm-tools', async (importOriginal) => ({ ...await importOriginal<typeof import('../lib/llm-tools')>(), buildSystemPrompt: async () => 'Synthetic context' }));
+vi.mock('../contexts/AuthContext', () => ({ useAuth: () => (state.signedIn
+  ? { serverUrl: 'https://team.example', user: { id: 'user-1', email: 'analyst@example.test', displayName: 'Analyst' } }
+  : { serverUrl: null, user: null }) }));
+vi.mock('../contexts/NavigationContext', () => ({ useNavigation: () => ({ selectedChatThreadId: 'thread', setSelectedChatThreadId: vi.fn() }) }));
+vi.mock('../contexts/InvestigationContext', () => ({ useInvestigation: () => ({ selectedFolderId: state.folder.id, selectedFolder: state.folder }) }));
+vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: vi.fn() }) }));
+vi.mock('../hooks/useChatLoops', () => ({ useChatLoops: () => ({ loops: [], startLoop: vi.fn(), stopAllForThread: vi.fn() }) }));
+vi.mock('../hooks/useCustomSlashCommands', () => ({ useCustomSlashCommands: () => ({ commands: [] }), interpolateTemplate: (template: string) => template }));
+vi.mock('../components/Chat/ChatInput', () => ({ ChatInput: (props: typeof state.input) => { state.input = props; return null; } }));
+vi.mock('../components/Chat/ChatMessage', () => ({ ChatMessageBubble: () => null }));
+vi.mock('../components/Agent/AgentCycleSummaryCard', () => ({ AgentCycleSummaryCard: () => null }));
+vi.mock('react-virtuoso', () => ({ Virtuoso: () => null }));
+
+const signIn = () => {
+  state.signedIn = true;
+  localStorage.setItem(workspaceStorageKey('threatcaddy-auth'), JSON.stringify({
+    serverUrl: 'https://team.example', accessToken: 'synthetic-access', refreshToken: 'synthetic-refresh',
+    user: { id: 'user-1', email: 'analyst@example.test', displayName: 'Analyst' },
+  }));
+};
+
+// Extension double: records every request to the extension and answers it at once.
+let extensionRequests: unknown[] = [];
+function installExtensionDouble() {
+  vi.spyOn(window, 'postMessage').mockImplementation(((message: { type?: string; requestId?: string }) => {
+    if (message?.type === 'TC_LLM_REQUEST') {
+      extensionRequests.push(message);
+      setTimeout(() => {
+        window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'TC_LLM_CHUNK', requestId: message.requestId, content: 'Answer.' } }));
+        window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'TC_LLM_DONE', requestId: message.requestId, stopReason: 'end_turn', contentBlocks: [{ type: 'text', text: 'Answer.' }] } }));
+      }, 0);
+    } else if (message?.type?.startsWith('TC_LLM_')) {
+      // useLLM forwards server and local transport events to itself.
+      setTimeout(() => window.dispatchEvent(new MessageEvent('message', { source: window, data: message })), 0);
+    }
+  }) as typeof window.postMessage);
+}
+const announceExtension = () => act(() => { window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'TC_EXTENSION_READY', protocolVersion: 2, capabilities: [] } })); });
+
+const message = (id: string, role: 'user' | 'assistant'): ChatMessage => ({ id, role, content: `Earlier ${role} message ${id}`, createdAt: 1 });
+const makeThread = (provider: ChatThread['provider'], messages: ChatMessage[] = []): ChatThread => ({ id: 'thread', title: 'Synthetic chat', folderId: 'case',
+  model: provider === 'local' ? 'llama3' : 'synthetic-model', provider, messages, tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+const onAddMessage = vi.fn().mockResolvedValue(undefined);
+const renderChat = (settings: Partial<Settings>, thread = makeThread('anthropic')) => render(<ChatView threads={[thread]}
+  settings={{ ...DEFAULT_SETTINGS, ...settings }} onCreateThread={vi.fn()} onUpdateThread={vi.fn()} onAddMessage={onAddMessage}
+  onTrashThread={vi.fn()} onOpenSettings={vi.fn()} />);
+
+beforeEach(() => {
+  discardAllComposerDrafts();
+  vi.clearAllMocks();
+  localStorage.clear();
+  localStorage.setItem('caddyai-onboarded', '1');
+  state.signedIn = false;
+  extensionRequests = [];
+  Element.prototype.scrollIntoView = vi.fn();
+  installExtensionDouble();
+});
+afterEach(() => { cleanup(); discardAllComposerDrafts(); vi.restoreAllMocks(); });
+
+describe('chat routes where Settings says', () => {
+  it('explicit Browser Extension, no extension, signed in: shows why with a Settings link and sends nothing', async () => {
+    signIn();
+    renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'extension', serverUrl: 'https://team.example' });
+    await act(async () => { await state.input.onSend('What happened?'); });
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent(enSettings['ai.dataFlow.errorNoExtension']);
+    expect(within(alert).getByRole('button', { name: 'Settings → AI/LLM' })).toBeInTheDocument();
+    expect(sendViaServer).not.toHaveBeenCalled();
+    expect(sendDirectToLocal).not.toHaveBeenCalled();
+    expect(extensionRequests).toEqual([]);
+    expect(onAddMessage).not.toHaveBeenCalled();
+  });
+
+  it('Auto while signed in: a local model with an endpoint is called directly with its own key', async () => {
+    signIn();
+    renderChat({ llmRoutingMode: 'auto', serverUrl: 'https://team.example', llmLocalEndpoint: 'http://localhost:11434/v1', llmLocalModelName: 'llama3',
+      llmLocalApiKey: 'synthetic-local-key' }, makeThread('local'));
+    await act(async () => { await state.input.onSend('What happened?'); });
+    expect(sendDirectToLocal).toHaveBeenCalledOnce();
+    expect(vi.mocked(sendDirectToLocal).mock.calls[0][0]).toMatchObject({ apiKey: 'synthetic-local-key', endpoint: 'http://localhost:11434/v1' });
+    expect(sendViaServer).not.toHaveBeenCalled();
+    expect(extensionRequests).toEqual([]);
+  });
+
+  // The title helper runs after a first exchange; the summary helper once a thread outgrows the context limit.
+  // Both can only use the extension, which would send the text straight to the provider.
+  const helpers = [
+    ['title', generateChatTitle, [] as ChatMessage[]],
+    ['summary', summarizeConversation, [message('m1', 'user'), message('m2', 'assistant'), message('m3', 'user')]],
+  ] as const;
+
+  it.each(helpers)('through the team server, the chat %s does not go to the provider through the extension', async (_name, helper, earlier) => {
+    signIn();
+    renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'auto', serverUrl: 'https://team.example', llmMaxContextMessages: 2 },
+      makeThread('anthropic', [...earlier]));
+    announceExtension();
+    await act(async () => { await state.input.onSend('What happened?'); });
+    await waitFor(() => expect(onAddMessage).toHaveBeenCalledWith('thread', expect.objectContaining({ role: 'assistant', content: 'Answer.' })));
+    expect(sendViaServer).toHaveBeenCalledOnce();
+    expect(helper).not.toHaveBeenCalled();
+    expect(extensionRequests).toEqual([]);
+  });
+
+  it.each(helpers)('through the extension, the chat %s still runs', async (_name, helper, earlier) => {
+    renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'auto', serverUrl: 'https://team.example', llmMaxContextMessages: 2 },
+      makeThread('anthropic', [...earlier]));
+    announceExtension();
+    await act(async () => { await state.input.onSend('What happened?'); });
+    await waitFor(() => expect(helper).toHaveBeenCalledOnce());
+    expect(extensionRequests).toHaveLength(1);
+    expect(sendViaServer).not.toHaveBeenCalled();
+  });
+});

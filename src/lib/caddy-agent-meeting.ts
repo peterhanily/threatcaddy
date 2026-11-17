@@ -225,7 +225,7 @@ export async function runAgentMeeting(
     if (settings.llmLocalEndpoint?.trim()) { provider = 'local'; model = settings.llmLocalModelName || 'llama3'; }
   }
   const route = resolveRoute(settings, { ...routeEnv, provider });
-  if (route.route === 'unavailable') return { meetingId: '', threadId: '', roundsCompleted: 0, error: unavailableRouteError(route.reason) };
+  if (route.route === 'unavailable') return { meetingId: '', threadId: '', roundsCompleted: 0, error: await unavailableRouteError(route.reason) };
   const useServerProxy = route.route === 'server';
 
   const apiKey = useServerProxy ? 'server-proxy' : (getApiKeyForProvider(provider, settings) || '');

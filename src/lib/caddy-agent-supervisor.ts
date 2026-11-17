@@ -11,7 +11,7 @@ import { nanoid } from 'nanoid';
 import type { Folder, Settings, ChatThread, ChatMessage, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
 import { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
 import { executeTool, buildSystemPrompt } from './llm-tools';
-import { resolveRoutingMode, sendViaExtension, sendViaServer, sendDirectToLocal } from './llm-router';
+import { hasServerSession, resolveRoute, sendViaExtension, sendViaServer, sendDirectToLocal, unavailableRouteError } from './llm-router';
 import { notifyDesktop } from './desktop-notifications';
 import { isFolderLocalOnly } from './ai-scope';
 import { SUPERVISOR_TOOLS, SUPERVISOR_ACTION_PROFILE, getSupervisorToolPermission, validateSupervisorDispatch } from './supervisor-tool-policy';
@@ -193,9 +193,10 @@ async function runSupervisorCycleInner(
   signal.throwIfAborted();
   const provider = (settings.llmDefaultProvider || 'anthropic') as LLMProvider;
   const model = settings.llmDefaultModel || 'claude-sonnet-4-6';
-  const serverConnected = !!settings.serverUrl;
-  const routingMode = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
-  const useServerProxy = routingMode === 'server';
+  // The route Settings → AI shows: local endpoint first, strict explicit modes, a signed-in session for the server.
+  const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(settings), provider });
+  if (route.route === 'unavailable') return { findings: [], escalations: [], error: await unavailableRouteError(route.reason) };
+  const useServerProxy = route.route === 'server';
 
   const apiKey = useServerProxy ? 'server-proxy' : getApiKeyForProvider(provider, settings);
   if (!useServerProxy && !apiKey) {

@@ -31,7 +31,7 @@ import { executeCheckpointedTool, restoreCheckpoint } from '../../lib/checkpoint
 import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCustomSlashCommands';
 import { useToast } from '../../contexts/ToastContext';
 import { supportsVision, describeImage } from '../../lib/image-ocr';
-import { resolveRoutingMode } from '../../lib/llm-router';
+import { hasServerSession, resolveRoute, unavailableRouteError } from '../../lib/llm-router';
 import { chatThreadGroups } from '../../lib/folder-tree';
 import { useImageAttachments } from '../../hooks/useImageAttachments';
 import { hasComposerDrafts, subscribeComposerDrafts, discardAllComposerDrafts } from '../../lib/chat-composer-drafts';
@@ -95,11 +95,13 @@ export function ChatView({
   const { extensionAvailable, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
   const { t } = useTranslation('chat');
   const { addToast } = useToast();
-  const { serverUrl, user } = useAuth();
-  const serverConnected = !!serverUrl && !!user;
-  const effectiveRoute = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
+  // Re-render on sign-in and sign-out. The route reads the stored session, as Settings → AI does.
+  useAuth();
+  const serverSession = hasServerSession(settings);
+  // Where cloud models go; a local model with an endpoint is always called directly.
+  const cloudRoute = resolveRoute(settings, { extensionAvailable, serverSession }).route;
   const hasLocalLLM = !!settings.llmLocalEndpoint?.trim();
-  const canChat = extensionAvailable || serverConnected || hasLocalLLM;
+  const canChat = extensionAvailable || serverSession || hasLocalLLM;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [threadSourceFilter, setThreadSourceFilter] = useState<'all' | 'human' | 'agent' | 'meeting'>('all');
@@ -215,7 +217,7 @@ export function ChatView({
       let defaultModel = settings.llmDefaultModel || 'claude-sonnet-4-6';
       let defaultProvider: LLMProvider = (settings.llmDefaultProvider as LLMProvider) || 'anthropic';
       // If the default provider has no API key, pick the first configured provider
-      if (effectiveRoute !== 'server' && configuredProviders.size > 0 && !configuredProviders.has(defaultProvider)) {
+      if (cloudRoute !== 'server' && configuredProviders.size > 0 && !configuredProviders.has(defaultProvider)) {
         const first = configuredProviders.values().next().value!;
         defaultProvider = first as LLMProvider;
         // Pick a sensible model for that provider
@@ -231,7 +233,7 @@ export function ChatView({
       console.error('Failed to create chat thread:', err);
       setLocalError(t('view.errorCreateThread'));
     }
-  }, [onCreateThread, onSelectThread, settings, selectedFolderId, configuredProviders, threads, selectedThreadId, effectiveRoute, t]);
+  }, [onCreateThread, onSelectThread, settings, selectedFolderId, configuredProviders, threads, selectedThreadId, cloudRoute, t]);
 
   const getApiKeyForProvider = useCallback((provider: LLMProvider, s: Settings): string | undefined => {
     switch (provider) {
@@ -262,11 +264,20 @@ export function ChatView({
 
     const provider = activeThread.provider;
     const currentTokenTotal = activeThread.messages.reduce((sum, message) => sum + (message.tokenCount ? message.tokenCount.input + message.tokenCount.output : 0), 0);
-    const useServerProxy = effectiveRoute === 'server';
+    // The route Settings → AI shows, resolved for this send.
+    const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(settings), provider });
+    const useServerProxy = route.route === 'server';
 
     // CTI slash commands run allowlisted host tools directly (no LLM call), so they
-    // must NOT be gated behind the LLM API-key / token-budget checks below.
+    // must NOT be gated behind the LLM route / API-key / token-budget checks below.
     const isDirectCtiCommand = parseCtiSlashCommand(text) !== null;
+
+    // No route: say why and send nothing.
+    if (route.route === 'unavailable' && !isDirectCtiCommand) {
+      setLocalError(await unavailableRouteError(route.reason));
+      setErrorHasSettingsLink(true);
+      return;
+    }
 
     // Validate API key (skip when routing through server — server has its own keys)
     if (!useServerProxy && !isDirectCtiCommand) {
@@ -407,7 +418,7 @@ export function ChatView({
         apiKey: apiKey!,
         systemPrompt: await buildSystemPrompt(homeFolder, settings.llmSystemPrompt, activeThread.provider),
         endpoint: activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined,
-        useServerProxy: effectiveRoute === 'server',
+        useServerProxy,
         onMessage: onAddMessage,
       });
       const confirmMsg: ChatMessage = {
@@ -484,8 +495,9 @@ export function ChatView({
     const maxMessages = settings.llmMaxContextMessages || MAX_CONTEXT_MESSAGES;
     const truncatedTextMessages = truncateConversation(textMessages, maxMessages, activeThread.contextSummary);
 
-    // Trigger async summarization of truncated messages for future use
-    if (textMessages.length > maxMessages && !activeThread.contextSummary) {
+    // Trigger async summarization of truncated messages for future use. It goes through
+    // the extension only, so it never runs while chat goes through the team server.
+    if (!useServerProxy && textMessages.length > maxMessages && !activeThread.contextSummary) {
       const truncatedPortion = textMessages.slice(2, -(maxMessages - 2));
       summarizeConversation(truncatedPortion, activeThread.provider, activeThread.model, apiKey!, activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined)
         .then((summary) => {
@@ -572,7 +584,7 @@ export function ChatView({
         systemPrompt: finalSystemPrompt,
         tools,
         endpoint: activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined,
-        useServerProxy: effectiveRoute === 'server',
+        useServerProxy,
       },
       async (toolUse: ToolUseBlock, signal: AbortSignal) => {
         const result = await executeChatTool(toolUse, signal);
@@ -603,8 +615,8 @@ export function ChatView({
           onEntitiesChanged();
         }
 
-        // Auto-generate a contextual title after first exchange
-        if (activeThread.messages.length <= 1 && content) {
+        // Auto-generate a contextual title after first exchange (through the extension only, like summaries)
+        if (activeThread.messages.length <= 1 && content && !useServerProxy) {
           const titleApiKey = getApiKeyForProvider(activeThread.provider, settings);
           if (titleApiKey) {
             const titleEndpoint = activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined;
@@ -618,7 +630,7 @@ export function ChatView({
       },
       { threadId: activeThread.id, messageId: assistantMessageId, model: activeThread.model, provider: activeThread.provider },
     );
-  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread, pendingImages, setPendingImages, readingImages, customCommands, effectiveRoute, settleApproval, t]);
+  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread, pendingImages, setPendingImages, readingImages, customCommands, extensionAvailable, settleApproval, t]);
 
   const handleModelChange = useCallback((model: string, provider: LLMProvider) => {
     if (activeThread) {
@@ -1293,7 +1305,7 @@ export function ChatView({
                 onStop={abort}
                 isStreaming={isStreaming}
                 extensionAvailable={extensionAvailable}
-                serverRoute={effectiveRoute === 'server' && serverConnected}
+                serverRoute={cloudRoute === 'server'}
                 provider={activeThread.provider}
                 model={activeThread.model}
                 onModelChange={handleModelChange}
