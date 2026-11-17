@@ -181,7 +181,8 @@ const chatCatalogs = import.meta.glob<{ default: Record<string, unknown> }>('../
 const valueOf = (catalog: Record<string, unknown>, key: string): unknown => key in catalog ? catalog[key]
   : key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], catalog);
 describe('the chat copy this round changed is translated', () => {
-  const KEYS = ['view.emptySubtitleV2', 'approval.targetSyncsLater', 'approval.conversationSyncsLater'];
+  const KEYS = ['view.emptySubtitleV2', 'approval.title.lookupNothingSent', 'approval.lookupNone',
+    'approval.targetSyncsLater', 'approval.conversationSyncsLater'];
   const english = chatCatalogs['../../public/locales/en/chat.json'].default;
   const others = Object.entries(chatCatalogs).filter(([path]) => !path.endsWith('/en/chat.json'));
   it('has 20 other locales', () => expect(others).toHaveLength(20));

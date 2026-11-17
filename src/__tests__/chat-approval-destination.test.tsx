@@ -158,8 +158,34 @@ describe('C2-2 a write card names the investigation that changes', () => {
     void start(handler, call('enrich_ioc', { iocId: 'S-ioc' }));
     const shown = await card();
     // The looked-up value loads together with the conversation's name.
-    expect(await within(shown).findByText('No enabled lookup applies to canary-s.example.')).toBeInTheDocument();
+    expect(await within(shown).findByText('Nothing is sent: no enabled lookup applies to canary-s.example.')).toBeInTheDocument();
     expect(within(shown).queryByText(/^Shared case:/)).toBeNull();
+  });
+});
+
+// The card's title and its line agree: a lookup with no enabled vendor sends nothing.
+describe('C4-3 an enrichment card that sends nothing does not ask to send data', () => {
+  it('titles the card as an enrichment and says nothing is sent, on the card and in the announcement', async () => {
+    renderChat('S');
+    const handler = await sendAndGetHandler();
+    void start(handler, call('enrich_ioc', { iocId: 'S-ioc' }));
+    const shown = await card();
+    expect(within(shown).getByText('Approve an IOC enrichment?')).toBeInTheDocument();
+    expect(within(shown).queryByText('Send data outside ThreatCaddy?')).toBeNull();
+    expect(await within(shown).findByText('Nothing is sent: no enabled lookup applies to canary-s.example.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Approve an IOC enrichment? enrich_ioc');
+  });
+
+  it('keeps asking to send data when an enabled lookup applies', async () => {
+    await db.installedIntegrations.add({ id: 'vt', templateId: 'vt-domain-lookup', name: 'VT', enabled: true, config: {}, scopeType: 'all',
+      scopeFolderIds: [], runCount: 0, errorCount: 0, createdAt: 1, updatedAt: 1 });
+    renderChat('S');
+    const handler = await sendAndGetHandler();
+    void start(handler, call('enrich_ioc', { iocId: 'S-ioc' }));
+    const shown = await card();
+    expect(within(shown).getByText('Send data outside ThreatCaddy?')).toBeInTheDocument();
+    expect(await within(shown).findByText(/^Sends canary-s\.example to: .*www\.virustotal\.com/)).toBeInTheDocument();
+    expect(within(shown).queryByText(/Nothing is sent/)).toBeNull();
   });
 });
 
