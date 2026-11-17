@@ -361,9 +361,10 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({ role, content
             )}
             {displayContent && (
               // No remote media: model output (chat, agent audit, meeting turns) must not beacon when displayed.
+              // Entity links are spliced into the rendered HTML, so the final pass forbids media too.
               <div
                 className="markdown-preview text-sm"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(processEntityLinks(renderMarkdown(meetingSpeaker ? meetingSpeaker.contentWithout : displayContent, undefined, { disableMedia: true }), onEntityClick)) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(processEntityLinks(renderMarkdown(meetingSpeaker ? meetingSpeaker.contentWithout : displayContent, undefined, { disableMedia: true }), onEntityClick), { disableMedia: true }) }}
                 onClick={(e) => {
                   const target = (e.target as HTMLElement).closest('.tc-entity-link') as HTMLElement;
                   if (target && onEntityClick) {
