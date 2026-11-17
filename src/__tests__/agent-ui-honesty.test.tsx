@@ -83,6 +83,15 @@ describe('B-UI-1 action cards name the action class and where it reaches', () =>
     expect(screen.getByText(iocHostWarning)).toBeInTheDocument();
   });
 
+  it('the warning goes once the fetch is no longer pending', async () => {
+    const fetchAction = (status: AgentAction['status']) => action({ toolName: 'fetch_url', status, toolInput: { url: 'https://canary-s.example/beacon' } });
+    const view = render(<AgentActionCard action={fetchAction('pending')} />);
+    expect(await screen.findByText(iocHostWarning)).toBeInTheDocument();
+    view.rerender(<AgentActionCard action={fetchAction('executed')} />);
+    await reachSettled();
+    expect(screen.queryByText(iocHostWarning)).not.toBeInTheDocument();
+  });
+
   it('enrichment, skills and delegation say what they are', () => {
     render(<>
       <AgentActionCard action={action({ toolName: 'enrich_ioc', toolInput: { iocId: ids('S').ioc } })} />
