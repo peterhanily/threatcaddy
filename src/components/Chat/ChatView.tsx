@@ -1,5 +1,5 @@
 import { persistChatCompletion } from '../../lib/locked-chat-recovery';
-import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore, type KeyboardEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useId, useSyncExternalStore, type KeyboardEvent } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -152,6 +152,7 @@ export function ChatView({
 
   // ── YOLO mode — auto-approve in-scope changes and passive lookups; the decision table still asks for the rest
   const [yoloMode, setYoloMode] = useState(false);
+  const yoloDescriptionId = useId();
   // Track which thread is streaming so we don't show stale content on thread switch
   const streamingThreadRef = useRef<string | undefined>(undefined);
   const yoloModeRef = useRef(false);
@@ -728,6 +729,9 @@ export function ChatView({
 
   // ── Plan/Act mode ──────────────────────────────────────────────────
   const threadMode = activeThread?.mode || 'act';
+  const yoloTitle = threadMode === 'plan'
+    ? t('mode.yoloInPlanTitle', { setting: yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2') })
+    : yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2');
 
   const toggleMode = useCallback(() => {
     if (!activeThread) return;
@@ -1139,19 +1143,21 @@ export function ChatView({
                 </button>
                 <button
                   onClick={() => setYoloMode(!yoloMode)}
+                  aria-pressed={yoloMode}
+                  aria-describedby={yoloDescriptionId}
                   className={cn(
                     'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors me-1',
                     yoloMode
                       ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
                       : 'bg-surface-raised border-border-subtle text-text-muted hover:text-text-secondary'
                   )}
-                  title={threadMode === 'plan'
-                    ? t('mode.yoloInPlanTitle', { setting: yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2') })
-                    : yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2')}
+                  title={yoloTitle}
                 >
                   <Shield size={10} />
                   {yoloMode ? t('view.yoloLabel') : t('mode.askLabel')}
                 </button>
+                {/* The title reaches only mouse users; assistive technology reads the same text as the switch's description. */}
+                <span id={yoloDescriptionId} className="sr-only">{yoloTitle}</span>
                 {threadTokenTotal > 0 && (
                   <span className={cn(
                     'text-[10px] font-mono px-1.5 py-0.5 rounded border me-1',

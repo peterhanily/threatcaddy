@@ -179,6 +179,26 @@ describe('mode copy', () => {
   }));
 });
 
+// Assistive technology gets the switch's state and the description the tooltip gives mouse users.
+describe('the Ask/YOLO switch for assistive technology', () => {
+  it('says whether YOLO is on and describes the current setting', () => {
+    renderChat('act');
+    const toggle = screen.getByRole('button', { name: 'Ask' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(toggle).toHaveAccessibleDescription(ASK_TITLE);
+    fireEvent.click(toggle);
+    const on = screen.getByRole('button', { name: 'YOLO' });
+    expect(on).toHaveAttribute('aria-pressed', 'true');
+    expect(on).toHaveAccessibleDescription(YOLO_TITLE);
+    expect(on).toHaveAttribute('title', YOLO_TITLE);
+  });
+
+  it('in Plan mode, the description says the switch applies only in Act mode', () => {
+    renderChat('plan');
+    expect(screen.getByRole('button', { name: 'Ask' })).toHaveAccessibleDescription(IN_PLAN + ASK_TITLE);
+  });
+});
+
 // Encryption is off by default, and a conversation in an investigation that syncs reaches its team server.
 const EMPTY_SUBTITLE = 'Messages are saved in this browser. A conversation in an investigation that syncs is shared with its team server, '
   + 'and each request goes where Settings → AI shows.';
