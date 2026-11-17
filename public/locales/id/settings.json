@@ -115,7 +115,7 @@
   "ai.dataFlow.errorNoServer": "Perutean AI diatur ke \"Proxy Server Tim\", tetapi Anda belum masuk ke server tim. Masuk, atau ubah perutean di Pengaturan → AI.",
   "ai.dataFlow.errorNone": "Tidak ada rute AI yang tersedia. Pasang ekstensi browser, masuk ke server tim, atau siapkan model lokal di Pengaturan → AI.",
   "ai.dataFlow.fetchSupported": "Pengambilan web: tersedia. Ekstensi hanya membuka alamat web publik.",
-  "ai.dataFlow.fetchUpdate": "Pengambilan web: tidak tersedia. Fitur ini memerlukan ekstensi ThreatCaddy versi 1.1.3 atau yang lebih baru, yang disetujui untuk aplikasi ini. Jika lebih dari satu ekstensi ThreatCaddy terpasang, simpan hanya yang terbaru dan muat ulang halaman.",
+  "ai.dataFlow.fetchUpdate": "Pengambilan web: tidak tersedia. Fitur ini memerlukan ekstensi ThreatCaddy versi 1.1.3 atau yang lebih baru, yang disetujui untuk aplikasi ini. Biarkan hanya ekstensi ThreatCaddy terbaru yang terpasang, lalu muat ulang halaman.",
   "ai.dataFlow.fetchNoExtension": "Pengambilan web memerlukan ekstensi browser ThreatCaddy.",
   "ai.dataFlow.bridgeLabel": "Jembatan agen",
   "ai.dataFlow.bridgeHelp": "Saat aktif, skrip di halaman ini, termasuk otomatisasi browser seperti Claude Code melalui CDP, dapat melihat nama investigasi Anda serta membaca dan mengedit investigasi yang dipilih melalui window.threatcaddy; pengambilan web, isi investigasi lain, dan perubahan pada agen tidak pernah tersedia melaluinya.",

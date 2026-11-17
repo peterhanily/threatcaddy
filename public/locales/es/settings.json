@@ -115,7 +115,7 @@
   "ai.dataFlow.errorNoServer": "El enrutamiento de IA está configurado como «Proxy del servidor de equipo», pero no ha iniciado sesión en un servidor de equipo. Inicie sesión o cambie el enrutamiento en Configuración → IA.",
   "ai.dataFlow.errorNone": "No hay ninguna ruta de IA disponible. Instale la extensión del navegador, inicie sesión en un servidor de equipo o configure un modelo local en Configuración → IA.",
   "ai.dataFlow.fetchSupported": "Obtención web: disponible. La extensión solo abre direcciones web públicas.",
-  "ai.dataFlow.fetchUpdate": "Obtención web: no disponible. Requiere la extensión de ThreatCaddy 1.1.3 o posterior, aprobada para esta aplicación. Si hay más de una extensión de ThreatCaddy instalada, conserve solo la más reciente y recargue la página.",
+  "ai.dataFlow.fetchUpdate": "Obtención web: no disponible. Requiere la extensión de ThreatCaddy 1.1.3 o posterior, aprobada para esta aplicación. Conserve instalada solo la extensión de ThreatCaddy más reciente y luego recargue la página.",
   "ai.dataFlow.fetchNoExtension": "La obtención web requiere la extensión de navegador de ThreatCaddy.",
   "ai.dataFlow.bridgeLabel": "Puente de agentes",
   "ai.dataFlow.bridgeHelp": "Cuando está activado, los scripts de esta página, incluida la automatización del navegador como Claude Code mediante CDP, pueden ver los nombres de sus investigaciones y leer y editar la seleccionada a través de window.threatcaddy; la obtención web, el contenido de otras investigaciones y los cambios en los agentes nunca están disponibles a través de él.",

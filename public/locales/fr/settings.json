@@ -115,7 +115,7 @@
   "ai.dataFlow.errorNoServer": "Le routage de l'IA est réglé sur « Proxy serveur d'équipe », mais vous n'êtes connecté à aucun serveur d'équipe. Connectez-vous ou modifiez le routage dans Paramètres → IA.",
   "ai.dataFlow.errorNone": "Aucune route d'IA n'est disponible. Installez l'extension de navigateur, connectez-vous à un serveur d'équipe ou configurez un modèle local dans Paramètres → IA.",
   "ai.dataFlow.fetchSupported": "Récupération web : disponible. L'extension n'ouvre que des adresses web publiques.",
-  "ai.dataFlow.fetchUpdate": "Récupération web : indisponible. Elle nécessite l'extension ThreatCaddy 1.1.3 ou ultérieure, approuvée pour cette application. Si plusieurs extensions ThreatCaddy sont installées, ne gardez que la plus récente et rechargez la page.",
+  "ai.dataFlow.fetchUpdate": "Récupération web : indisponible. Elle nécessite l'extension ThreatCaddy 1.1.3 ou ultérieure, approuvée pour cette application. Ne gardez installée que l'extension ThreatCaddy la plus récente, puis rechargez la page.",
   "ai.dataFlow.fetchNoExtension": "La récupération web nécessite l'extension de navigateur ThreatCaddy.",
   "ai.dataFlow.bridgeLabel": "Pont d'agents",
   "ai.dataFlow.bridgeHelp": "Lorsqu'il est activé, les scripts de cette page, y compris l'automatisation du navigateur comme Claude Code via CDP, peuvent voir les noms de vos enquêtes et lire et modifier l'enquête sélectionnée via window.threatcaddy ; la récupération web, le contenu des autres enquêtes et les modifications des agents ne sont jamais disponibles par ce biais.",

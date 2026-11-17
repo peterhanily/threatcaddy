@@ -116,7 +116,7 @@
   "ai.dataFlow.errorNoServer": "AI routing is set to Team Server Proxy, but you are not signed in to a team server. Sign in, or change the routing in Settings → AI.",
   "ai.dataFlow.errorNone": "No AI route is available. Install the browser extension, sign in to a team server or set up a local model in Settings → AI.",
   "ai.dataFlow.fetchSupported": "Web fetch: available. The extension opens only public web addresses.",
-  "ai.dataFlow.fetchUpdate": "Web fetch: unavailable. It needs the ThreatCaddy extension 1.1.3 or later, approved for this app. If more than one ThreatCaddy extension is installed, keep only the newest and reload the page.",
+  "ai.dataFlow.fetchUpdate": "Web fetch: unavailable. It needs the ThreatCaddy extension 1.1.3 or later, approved for this app. Keep only the newest ThreatCaddy extension installed, then reload the page.",
   "ai.dataFlow.fetchNoExtension": "Web fetch needs the ThreatCaddy browser extension.",
   "ai.dataFlow.bridgeLabel": "Agent bridge",
   "ai.dataFlow.bridgeHelp": "When on, scripts on this page, including browser automation such as Claude Code over CDP, can see the names of your investigations and read and edit the selected one through window.threatcaddy; web fetch, the contents of other investigations and agent changes are never available through it.",

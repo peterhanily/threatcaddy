@@ -115,7 +115,7 @@
   "ai.dataFlow.errorNoServer": "AI 라우팅이 '팀 서버 프록시'로 설정되어 있지만 팀 서버에 로그인하지 않았습니다. 로그인하거나 설정 → AI에서 라우팅을 변경하세요.",
   "ai.dataFlow.errorNone": "사용 가능한 AI 경로가 없습니다. 브라우저 확장 프로그램을 설치하거나, 팀 서버에 로그인하거나, 설정 → AI에서 로컬 모델을 설정하세요.",
   "ai.dataFlow.fetchSupported": "웹 가져오기: 사용 가능. 확장 프로그램은 공개 웹 주소만 엽니다.",
-  "ai.dataFlow.fetchUpdate": "웹 가져오기: 사용 불가. 이 앱을 승인한 ThreatCaddy 확장 프로그램 1.1.3 이상이 필요합니다. ThreatCaddy 확장 프로그램이 둘 이상 설치되어 있으면 최신 버전만 남기고 페이지를 새로 고치세요.",
+  "ai.dataFlow.fetchUpdate": "웹 가져오기: 사용 불가. 이 앱을 승인한 ThreatCaddy 확장 프로그램 1.1.3 이상이 필요합니다. 최신 ThreatCaddy 확장 프로그램만 설치된 상태로 두고 페이지를 새로 고치세요.",
   "ai.dataFlow.fetchNoExtension": "웹 가져오기에는 ThreatCaddy 브라우저 확장 프로그램이 필요합니다.",
   "ai.dataFlow.bridgeLabel": "에이전트 브리지",
   "ai.dataFlow.bridgeHelp": "켜면 이 페이지의 스크립트(CDP를 통한 Claude Code 같은 브라우저 자동화 포함)가 window.threatcaddy를 통해 조사 이름을 보고 선택한 조사를 읽고 편집할 수 있지만, 웹 가져오기, 다른 조사의 내용, 에이전트 변경은 이를 통해 절대 사용할 수 없습니다.",

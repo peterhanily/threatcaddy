@@ -115,7 +115,7 @@
   "ai.dataFlow.errorNoServer": "Das KI-Routing ist auf „Team-Server-Proxy“ eingestellt, aber Sie sind bei keinem Team-Server angemeldet. Melden Sie sich an oder ändern Sie das Routing unter Einstellungen → KI.",
   "ai.dataFlow.errorNone": "Keine KI-Route verfügbar. Installieren Sie die Browser-Erweiterung, melden Sie sich bei einem Team-Server an oder richten Sie unter Einstellungen → KI ein lokales Modell ein.",
   "ai.dataFlow.fetchSupported": "Webabruf: verfügbar. Die Erweiterung öffnet nur öffentliche Webadressen.",
-  "ai.dataFlow.fetchUpdate": "Webabruf: nicht verfügbar. Er benötigt die ThreatCaddy-Erweiterung 1.1.3 oder neuer, freigegeben für diese App. Wenn mehr als eine ThreatCaddy-Erweiterung installiert ist, behalten Sie nur die neueste und laden Sie die Seite neu.",
+  "ai.dataFlow.fetchUpdate": "Webabruf: nicht verfügbar. Er benötigt die ThreatCaddy-Erweiterung 1.1.3 oder neuer, freigegeben für diese App. Lassen Sie nur die neueste ThreatCaddy-Erweiterung installiert und laden Sie dann die Seite neu.",
   "ai.dataFlow.fetchNoExtension": "Der Webabruf benötigt die ThreatCaddy-Browser-Erweiterung.",
   "ai.dataFlow.bridgeLabel": "Agenten-Brücke",
   "ai.dataFlow.bridgeHelp": "Wenn aktiviert, können Skripte auf dieser Seite, einschließlich Browser-Automatisierung wie Claude Code über CDP, über window.threatcaddy die Namen Ihrer Untersuchungen sehen und die ausgewählte Untersuchung lesen und bearbeiten; Webabruf, die Inhalte anderer Untersuchungen und Änderungen an Agenten sind darüber nie verfügbar.",

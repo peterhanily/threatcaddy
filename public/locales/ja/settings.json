@@ -115,7 +115,7 @@
   "ai.dataFlow.errorNoServer": "AI のルーティングが「チームサーバープロキシ」に設定されていますが、チームサーバーにサインインしていません。サインインするか、設定 → AI でルーティングを変更してください。",
   "ai.dataFlow.errorNone": "利用できる AI ルートがありません。ブラウザ拡張機能をインストールするか、チームサーバーにサインインするか、設定 → AI でローカルモデルを設定してください。",
   "ai.dataFlow.fetchSupported": "Web 取得: 利用可能。拡張機能は公開 Web アドレスのみを開きます。",
-  "ai.dataFlow.fetchUpdate": "Web 取得: 利用不可。このアプリを承認済みの ThreatCaddy 拡張機能 1.1.3 以降が必要です。ThreatCaddy 拡張機能が複数インストールされている場合は、最新のものだけを残してページを再読み込みしてください。",
+  "ai.dataFlow.fetchUpdate": "Web 取得: 利用不可。このアプリを承認済みの ThreatCaddy 拡張機能 1.1.3 以降が必要です。インストールする ThreatCaddy 拡張機能は最新のものだけにして、ページを再読み込みしてください。",
   "ai.dataFlow.fetchNoExtension": "Web 取得には ThreatCaddy ブラウザ拡張機能が必要です。",
   "ai.dataFlow.bridgeLabel": "エージェントブリッジ",
   "ai.dataFlow.bridgeHelp": "オンにすると、このページ上のスクリプト (CDP 経由の Claude Code などのブラウザ自動化を含む) が window.threatcaddy を通じて調査の名前を確認し、選択中の調査を読み取り・編集できますが、Web 取得、ほかの調査の内容、エージェントの変更はこの経路では一切利用できません。",

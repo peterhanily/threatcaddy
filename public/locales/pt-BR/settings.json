@@ -115,7 +115,7 @@
   "ai.dataFlow.errorNoServer": "O roteamento de IA está definido como \"Proxy do servidor de equipe\", mas você não está conectado a um servidor de equipe. Entre, ou altere o roteamento em Configurações → IA.",
   "ai.dataFlow.errorNone": "Nenhuma rota de IA disponível. Instale a extensão do navegador, entre em um servidor de equipe ou configure um modelo local em Configurações → IA.",
   "ai.dataFlow.fetchSupported": "Busca na web: disponível. A extensão abre apenas endereços web públicos.",
-  "ai.dataFlow.fetchUpdate": "Busca na web: indisponível. Requer a extensão ThreatCaddy 1.1.3 ou posterior, aprovada para este app. Se houver mais de uma extensão ThreatCaddy instalada, mantenha apenas a mais recente e recarregue a página.",
+  "ai.dataFlow.fetchUpdate": "Busca na web: indisponível. Requer a extensão ThreatCaddy 1.1.3 ou posterior, aprovada para este app. Mantenha instalada apenas a extensão ThreatCaddy mais recente e depois recarregue a página.",
   "ai.dataFlow.fetchNoExtension": "A busca na web requer a extensão de navegador do ThreatCaddy.",
   "ai.dataFlow.bridgeLabel": "Ponte de agentes",
   "ai.dataFlow.bridgeHelp": "Quando ativada, scripts nesta página, incluindo automação do navegador como o Claude Code via CDP, podem ver os nomes das suas investigações e ler e editar a selecionada por meio de window.threatcaddy; busca na web, o conteúdo de outras investigações e alterações em agentes nunca ficam disponíveis por ela.",

@@ -377,7 +377,7 @@ describe('SettingsPanel: where AI data goes', () => {
   });
 
   const FETCH_UPDATE = 'Web fetch: unavailable. It needs the ThreatCaddy extension 1.1.3 or later, approved for this app. '
-    + 'If more than one ThreatCaddy extension is installed, keep only the newest and reload the page.';
+    + 'Keep only the newest ThreatCaddy extension installed, then reload the page.';
   const FETCH_AVAILABLE = 'Web fetch: available. The extension opens only public web addresses.';
 
   it.each([
@@ -393,7 +393,7 @@ describe('SettingsPanel: where AI data goes', () => {
 
   it.each([
     ['store 1.1.1 answers although the page shows guarded capabilities', [STORE_1_1_1_CAPS]],
-    ['no bridge answers', []],
+    ['no bridge answers, as after the only extension updates without a page reload', []],
     ['one of two answering bridges is old', [GUARDED_CAPS, STORE_1_1_1_CAPS]],
   ])('asks the bridge, as web fetch does, and shows the update line when %s', async (_case, replies) => {
     document.documentElement.dataset.tcBridgeCaps = GUARDED_CAPS;

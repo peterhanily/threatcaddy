@@ -229,8 +229,10 @@ describe('SPA web fetch guard with two ThreatCaddy extensions installed', () => 
     expect(postedTypes(post)).toEqual([]);
   });
 
-  it('tells the analyst what to do in either case', () => {
+  // A single current extension updated without a page reload also stops answering the ping, so the
+  // reload advice cannot depend on having two extensions.
+  it('tells the analyst what to do in every case', () => {
     expect(enIntegrations['fetch.updateExtension']).toBe('Web fetch needs the ThreatCaddy extension 1.1.3 or later, approved for this app. '
-      + 'If more than one ThreatCaddy extension is installed, keep only the newest and reload the page.');
+      + 'Keep only the newest ThreatCaddy extension installed, then reload the page.');
   });
 });

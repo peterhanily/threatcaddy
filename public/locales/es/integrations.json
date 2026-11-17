@@ -5,7 +5,7 @@
   "team.installedDisabledNoDomains": "{{name}} se instaló desactivada. No realiza solicitudes web. Revísala y después actívala en la pestaña Instaladas.",
   "fetch.privateTarget": "Solo se pueden obtener direcciones http(s) públicas sin credenciales. No se permiten destinos privados, locales ni direcciones IP literales.",
   "fetch.tooLong": "No se pueden obtener direcciones de más de 2048 caracteres. Acorta la URL e inténtalo de nuevo.",
-  "fetch.updateExtension": "La obtención web requiere la extensión de ThreatCaddy 1.1.3 o posterior, aprobada para esta aplicación. Si hay más de una extensión de ThreatCaddy instalada, conserva solo la más reciente y recarga la página.",
+  "fetch.updateExtension": "La obtención web requiere la extensión de ThreatCaddy 1.1.3 o posterior, aprobada para esta aplicación. Conserva instalada solo la extensión de ThreatCaddy más reciente y luego recarga la página.",
   "fetch.bridgeTimeout": "Se agotó el tiempo de espera del puente de la extensión. Asegúrate de que la extensión de ThreatCaddy esté instalada y de que la página se haya recargado después de instalarla.",
   "builtin.vtIpLookup.name": "Búsqueda de IP en VirusTotal",
   "builtin.vtIpLookup.description": "Buscar una dirección IP en VirusTotal para obtener reputación, geolocalización y estadísticas de análisis.",
