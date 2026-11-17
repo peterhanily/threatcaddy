@@ -1239,17 +1239,6 @@ export function ChatView({
                           ))}
                         </div>
                       )}
-                      {/* Tool approval card: the head of this thread's queue */}
-                      {headApproval && (
-                        <ChatApprovalCard
-                          key={headApproval.id}
-                          item={headApproval.item}
-                          index={1}
-                          total={visibleApprovals.length}
-                          onApprove={handleApprove}
-                          onReject={handleReject}
-                        />
-                      )}
                       <div ref={messagesEndRef} />
                     </div>
                   ),
@@ -1257,6 +1246,21 @@ export function ChatView({
               />
               )}
             </div>
+
+            {/* Tool approval card: the head of this thread's queue. Outside the list, whose
+                footer remounts on every render, so the card keeps its state and focus. */}
+            {headApproval && (
+              <div className="px-4">
+                <ChatApprovalCard
+                  key={headApproval.id}
+                  item={headApproval.item}
+                  index={1}
+                  total={visibleApprovals.length}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                />
+              </div>
+            )}
 
             {/* Input */}
             {localError && (

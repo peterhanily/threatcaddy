@@ -36,8 +36,8 @@ vi.mock('../hooks/useCustomSlashCommands', () => ({ useCustomSlashCommands: () =
 vi.mock('../components/Chat/ChatInput', () => ({ ChatInput: (props: typeof state.input) => { state.input = props; return null; } }));
 vi.mock('../components/Chat/ChatMessage', () => ({ ChatMessageBubble: () => null }));
 vi.mock('../components/Agent/AgentCycleSummaryCard', () => ({ AgentCycleSummaryCard: () => null }));
-// The approval card lives in the list footer. Virtuoso renders the Footer as a component, so a
-// new Footer function on each ChatView render remounts it.
+// Virtuoso renders the Footer as a component, so a new Footer function on each ChatView render
+// remounts it. The approval card lives outside the list, so it keeps its state and focus.
 vi.mock('react-virtuoso', () => ({ Virtuoso: ({ components }: { components?: { Footer?: ComponentType } }) => {
   const Footer = components?.Footer;
   return Footer ? <Footer /> : null;
@@ -215,6 +215,19 @@ describe('the approval card', () => {
     const after = screen.getByRole('group', { name: /\?$/ });
     expect(after.querySelector('details')).toHaveAttribute('open');
     expect(within(after).getByText('Shared case: syncs to its members')).toBeInTheDocument();
+  });
+
+  it('keeps keyboard focus on its buttons when the chat re-renders', async () => {
+    const view = renderChat([makeThread('thread', 'S')]);
+    const handler = await sendAndGetHandler();
+    void start(handler, call('fetch_url', { url: 'https://collector.example/e' }));
+    const shown = await card();
+    const reject = within(shown).getByRole('button', { name: /reject/i });
+    act(() => reject.focus());
+
+    view.rerender();
+    expect(screen.getByRole('group', { name: /\?$/ })).toBe(shown);
+    expect(document.activeElement).toBe(reject);
   });
 
   it('leads with the destination and its warnings, with the raw input under Details', async () => {
