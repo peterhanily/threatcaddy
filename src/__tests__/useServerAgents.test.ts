@@ -97,9 +97,34 @@ describe('server action reconciliation (compatible servers)', () => {
         createdAt: '2026-11-01T00:00:00.000Z', executedAt: null, reviewedAt: null }] })
       : json({})));
     renderHook(() => useServerAgents({ investigationId: 'case-one', deployments, profiles: [], enabled: true }));
-    await waitFor(async () => expect(await db.agentActions.get('server-action')).toBeDefined());
-    const stored = await db.agentActions.get('server-action');
+    await waitFor(async () => expect(await db.agentActions.get('srv:server-action')).toBeDefined());
+    const stored = await db.agentActions.get('srv:server-action');
     expect(() => validatePortableRow('agentActions', stored)).not.toThrow();
     expect(stored).toMatchObject({ threadId: '', status: 'executed' });
+  });
+
+  it('B-SRV-1 stores server rows as terminal history under the requested investigation', async () => {
+    await db.agentActions.clear();
+    mocks.reclaim.mockResolvedValue(undefined); mocks.reconcile.mockResolvedValue(undefined);
+    const deployments = [deployment('server-owned')];
+    await db.agentDeployments.bulkAdd(deployments);
+    const json = (body: unknown) => new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } });
+    const row =(id: string, values: Record<string, unknown>) => ({ id, investigationId: 'case-one', threadId: null, botConfigId: null, toolName: 'create_note',
+      toolInput: {}, rationale: 'Server cycle', status: 'executed', resultSummary: null, severity: null, createdAt: '2026-11-01T00:00:00.000Z', executedAt: null, reviewedAt: null, ...values });
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => url.includes('/status/') ? json({ registered: true, serverRunning: false })
+      : url.includes('/heartbeat') ? json({ serverWasRunning: true })
+      : url.includes('/actions/') ? json({ actions: [
+        row('proposal', { status: 'pending', investigationId: 'other', toolName: 'fetch_url', toolInput: { url: 'https://collector.example/' } }),
+        row('dynamic', { toolName: 'host:remote:run' }),
+        row('undated', { createdAt: 'not a date' }),
+        row('done', { status: 'failed', investigationId: 'other' }),
+      ] })
+      : json({})));
+    renderHook(() => useServerAgents({ investigationId: 'case-one', deployments, profiles: [], enabled: true }));
+    await waitFor(async () => expect(await db.agentActions.get('srv:done')).toBeDefined());
+    expect(await db.agentActions.get('srv:proposal')).toMatchObject({ investigationId: 'case-one', toolName: 'fetch_url', status: 'rejected', resultSummary: 'Server proposal not imported' });
+    expect(await db.agentActions.get('srv:done')).toMatchObject({ investigationId: 'case-one', status: 'failed' });
+    expect((await db.agentActions.toArray()).map(action => action.id).sort()).toEqual(['srv:done', 'srv:proposal']);
+    await waitFor(() => expect(mocks.reconcile).toHaveBeenCalledWith('server-owned', { serverActionIds: ['srv:proposal', 'srv:done'] }));
   });
 });

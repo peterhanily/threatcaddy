@@ -13,20 +13,30 @@ interface AgentActionCardProps {
   onViewReasoning?: (threadId: string) => void;
 }
 
-const ACTION_CLASS_LABELS: Record<string, { label: string; color: string }> = {
-  read: { label: 'Read', color: 'text-accent-blue' },
-  enrich: { label: 'Enrich', color: 'text-accent-green' },
-  create: { label: 'Create', color: 'text-accent-amber' },
-  modify: { label: 'Modify', color: 'text-orange-400' },
+const ACTION_CLASS_LABELS: Record<string, { labelKey: string; color: string }> = {
+  read: { labelKey: 'action.classRead', color: 'text-accent-blue' },
+  enrich: { labelKey: 'action.classEnrich', color: 'text-accent-green' },
+  fetch: { labelKey: 'action.classFetch', color: 'text-purple' },
+  create: { labelKey: 'action.classCreate', color: 'text-accent-amber' },
+  modify: { labelKey: 'action.classModify', color: 'text-orange-400' },
+  delegate: { labelKey: 'action.classDelegate', color: 'text-text-secondary' },
 };
 
-const STATUS_CONFIG: Record<string, { icon: typeof Check; label: string; color: string; bg: string }> = {
-  pending: { icon: Clock, label: 'Pending', color: 'text-accent-amber', bg: 'bg-accent-amber/10' },
-  approved: { icon: Check, label: 'Approved', color: 'text-accent-green', bg: 'bg-accent-green/10' },
-  executed: { icon: Check, label: 'Executed', color: 'text-accent-green', bg: 'bg-accent-green/10' },
-  rejected: { icon: X, label: 'Rejected', color: 'text-text-muted', bg: 'bg-surface-raised' },
-  failed: { icon: AlertTriangle, label: 'Failed', color: 'text-red-400', bg: 'bg-red-400/10' },
+const STATUS_CONFIG: Record<string, { icon: typeof Check; labelKey: string; color: string; bg: string }> = {
+  pending: { icon: Clock, labelKey: 'action.statusPending', color: 'text-accent-amber', bg: 'bg-accent-amber/10' },
+  approved: { icon: Check, labelKey: 'action.statusApproved', color: 'text-accent-green', bg: 'bg-accent-green/10' },
+  executed: { icon: Check, labelKey: 'action.statusExecuted', color: 'text-accent-green', bg: 'bg-accent-green/10' },
+  rejected: { icon: X, labelKey: 'action.statusRejected', color: 'text-text-muted', bg: 'bg-surface-raised' },
+  failed: { icon: AlertTriangle, labelKey: 'action.statusFailed', color: 'text-red-400', bg: 'bg-red-400/10' },
 };
+
+/** The host a web fetch or agent-host skill sends to. */
+function destinationHost(action: AgentAction): string | undefined {
+  if (action.toolName === 'fetch_url') {
+    try { return new URL(String(action.toolInput.url)).hostname; } catch { return String(action.toolInput.url ?? '').slice(0, 200); }
+  }
+  if (action.toolName.startsWith('host:')) return action.toolName.split(':')[1];
+}
 
 export function AgentActionCard({ action, onApprove, onEditApprove, onReject, onViewReasoning }: AgentActionCardProps) {
   const { t } = useTranslation('agent');
@@ -40,6 +50,10 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
   const statusInfo = STATUS_CONFIG[action.status] || STATUS_CONFIG.pending;
   const StatusIcon = statusInfo.icon;
   const isPending = action.status === 'pending';
+  // Where the action sends data, for actions that leave this device.
+  const destination = action.toolName === 'enrich_ioc' ? t('action.vendorLookups')
+    : action.toolName.startsWith('local:') ? t('action.localAgent')
+    : destinationHost(action);
 
   return (
     <div className={cn(
@@ -61,21 +75,25 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
             {action.toolName}
           </code>
           <span className={cn('text-[10px] font-medium uppercase', classInfo.color)}>
-            {classInfo.label}
+            {t(classInfo.labelKey)}
           </span>
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
           <span className={cn('flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded', statusInfo.bg, statusInfo.color)}>
             <StatusIcon size={10} />
-            {statusInfo.label}
+            {t(statusInfo.labelKey)}
           </span>
         </div>
       </div>
 
-      {/* Rationale preview */}
+      {destination && (
+        <p className="text-xs text-text-secondary mt-1 ps-6 break-all">{t('action.destination', { destination })}</p>
+      )}
+
+      {/* Rationale preview: model text, not a system statement */}
       <p className="text-xs text-text-muted mt-1.5 line-clamp-2 ps-6">
-        {action.rationale.substring(0, 200)}
+        <span className="font-medium">{t('action.aiReason')}</span> {action.rationale.substring(0, 200)}
       </p>
 
       {/* Expanded details */}

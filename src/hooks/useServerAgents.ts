@@ -7,9 +7,10 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { AgentDeployment, AgentProfile } from '../types';
+import type { AgentActionStatus, AgentDeployment, AgentProfile } from '../types';
 import { db } from '../db';
 import { useAuth } from '../contexts/AuthContext';
+import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
 import {
   markHandoffPending,
   markReclaimPending,
@@ -21,6 +22,13 @@ const HEARTBEAT_INTERVAL_MS = 30_000; // 30 seconds
 /** Legacy protocol threshold for compatible servers: two missed heartbeats
  *  precede the proposed 90s takeover grace. Current servers disable takeover. */
 const HEARTBEAT_FAIL_THRESHOLD = 2;
+
+/** Server rows are stored as terminal history only (srv: ids), never as approvable proposals. */
+const STATIC_TOOL_NAMES: ReadonlySet<string> = new Set(
+  [...TOOL_DEFINITIONS, ...DELEGATION_TOOL_DEFINITIONS, ...EXECUTIVE_TOOL_DEFINITIONS].map(tool => tool.name));
+const TERMINAL_STATUSES: ReadonlySet<string> = new Set<AgentActionStatus>(['executed', 'failed', 'rejected']);
+/** Milliseconds for a server timestamp; NaN when present but unparseable. */
+const serverTime = (value: unknown) => value ? new Date(value as string).getTime() : undefined;
 
 interface UseServerAgentsOptions {
   investigationId?: string;
@@ -216,25 +224,34 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
             const actionsResult = await apiCall(`/actions/${investigationId}`, 'GET');
             if (actionsResult.actions?.length > 0) {
               for (const action of actionsResult.actions) {
-                const existing = await db.agentActions.get(action.id);
+                // History only: a srv: id, the requested investigation and a
+                // terminal status, so no server row can be approved here.
+                const id = `srv:${action.id}`;
+                const createdAt = serverTime(action.createdAt);
+                const executedAt = serverTime(action.executedAt);
+                const reviewedAt = serverTime(action.reviewedAt);
+                if (!STATIC_TOOL_NAMES.has(action.toolName)) continue;
+                if (!Number.isFinite(createdAt) || [executedAt, reviewedAt].some(time => time !== undefined && !Number.isFinite(time))) continue;
+                const terminal = TERMINAL_STATUSES.has(action.status);
+                const existing = await db.agentActions.get(id);
                 if (!existing) {
                   await db.agentActions.add({
-                    id: action.id,
-                    investigationId: action.investigationId,
+                    id,
+                    investigationId,
                     threadId: action.threadId || '',
                     // Nullable server columns are absent fields locally (backup shape).
                     agentConfigId: action.botConfigId ?? undefined,
                     toolName: action.toolName,
                     toolInput: action.toolInput || {},
                     rationale: action.rationale || '',
-                    status: action.status,
-                    resultSummary: action.resultSummary ?? undefined,
+                    status: terminal ? action.status : 'rejected',
+                    resultSummary: terminal ? action.resultSummary ?? undefined : 'Server proposal not imported',
                     severity: action.severity ?? undefined,
-                    createdAt: new Date(action.createdAt).getTime(),
-                    executedAt: action.executedAt ? new Date(action.executedAt).getTime() : undefined,
-                    reviewedAt: action.reviewedAt ? new Date(action.reviewedAt).getTime() : undefined,
+                    createdAt: createdAt as number,
+                    executedAt,
+                    reviewedAt,
                   });
-                  newServerActionIds.push(action.id);
+                  newServerActionIds.push(id);
                 }
               }
             }

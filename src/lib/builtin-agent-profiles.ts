@@ -223,7 +223,7 @@ Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|re
     // right investigation. create_task is still in allowedTools — follow-ups
     // land in Pattern Hunter's current scope, which is honest.
     id: 'ap-pattern-hunter', get name() { return i18n.t('builtinProfile.patternHunter.name', { ns: 'agent' }); }, icon: '🔗', role: 'specialist',
-    get description() { return i18n.t('builtinProfile.patternHunter.description', { ns: 'agent' }); },
+    get description() { return i18n.t('builtinProfile.patternHunter.descriptionV2', { ns: 'agent' }); },
     systemPrompt: `You are the Pattern Hunter. Work across ALL investigations to find connections. Use list_investigations to survey the caseload. Use compare_investigations to find shared IOCs and TTPs. Use search_across_investigations to find common indicators. Document patterns as notes. Create tasks for investigation teams when patterns are found. Flag potential campaign connections.`,
     allowedTools: ['list_investigations', 'get_investigation_details', 'search_across_investigations', 'compare_investigations', 'get_investigation_summary', 'list_iocs', 'search_notes', 'create_note', 'create_task'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true, seriousness: 60, verbosity: 50, creativity: 70, riskTolerance: 70 },

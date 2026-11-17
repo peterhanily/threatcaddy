@@ -2,6 +2,7 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCaddyAgent } from '../hooks/useCaddyAgent';
 import { DEFAULT_SETTINGS, type Folder } from '../types';
+import type { AgentAction } from '../types';
 import type { AgentCycleResult } from '../lib/caddy-agent';
 
 const mocks = vi.hoisted(() => ({
@@ -15,7 +16,11 @@ vi.mock('../lib/utils', () => ({ postMessageOrigin: () => '*' }));
 vi.mock('../db', () => ({ db: {
   folders: { get: mocks.get, update: vi.fn() },
   agentDeployments: { where: () => ({ equals: () => ({ count: mocks.count, toArray: mocks.metrics }) }) },
-  agentActions: { where: () => ({ equals: () => ({ count: mocks.pending }) }) },
+  // mocks.pending resolves the investigation's pending rows.
+  agentActions: { where: () => ({ equals: () => ({
+    count: async () => (await mocks.pending()).length,
+    filter: (keep: (row: Partial<AgentAction>) => boolean) => ({ count: async () => (await mocks.pending()).filter(keep).length }),
+  }) }) },
   chatThreads: { where: () => ({ equals: () => ({ modify: mocks.memory }) }) },
 } }));
 function deferred<T>() {
@@ -28,8 +33,8 @@ const folder = (id = 'first', enabled = true): Folder => ({ id, name: id, order:
 beforeEach(() => {
   vi.useFakeTimers(); vi.clearAllMocks(); mocks.folders.clear();
   mocks.get.mockImplementation(async (id: string) => mocks.folders.get(id));
-  mocks.count.mockResolvedValue(0); mocks.pending.mockResolvedValue(0); mocks.metrics.mockResolvedValue([]);
-  mocks.run.mockResolvedValue(outcome); mocks.multi.mockResolvedValue({ deploymentResults: new Map(), errors: [] });
+  mocks.count.mockResolvedValue(0); mocks.pending.mockResolvedValue([]); mocks.metrics.mockResolvedValue([]);
+  mocks.run.mockResolvedValue(outcome); mocks.multi.mockResolvedValue({ deploymentResults: new Map(), errors: [], waitingForReview: [] });
   mocks.supervisor.mockResolvedValue({ findings: [], escalations: [] });
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -102,12 +107,78 @@ describe('agent hook lifecycle ownership', () => {
     expect(mocks.run.mock.calls[0][2]).toBe(true);
   });
 
-  it('does not auto-start a cycle while a persisted approval is pending', async () => {
-    const first = folder(); mocks.folders.set(first.id, first); mocks.pending.mockResolvedValue(1);
-    renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+  it('does not auto-start the legacy agent while its own proposal is pending', async () => {
+    const first = folder(); mocks.folders.set(first.id, first); mocks.pending.mockResolvedValue([{ toolName: 'fetch_url' }]);
+    const { result } = renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
     await act(async () => vi.advanceTimersByTimeAsync(3000));
     expect(mocks.run).not.toHaveBeenCalled();
     expect(mocks.metrics).toHaveBeenCalledOnce();
+    expect(result.current.agentStatus).toBe('waiting');
+  });
+
+  it('a manual run still runs the legacy agent while its own proposal is pending', async () => {
+    const first = folder('first', false); mocks.folders.set(first.id, first); mocks.pending.mockResolvedValue([{ toolName: 'fetch_url' }]);
+    const { result } = renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+    await act(async () => result.current.runOnce());
+    expect(mocks.run).toHaveBeenCalledOnce();
+  });
+
+  it('one agent waiting for review does not slow the others', async () => {
+    const first = folder(); mocks.folders.set(first.id, first); mocks.count.mockResolvedValue(2);
+    mocks.multi.mockResolvedValue({ deploymentResults: new Map([['dep-ap-lead-analyst', outcome]]), errors: [], waitingForReview: ['ap-threat-hunter'] });
+    const { result } = renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(result.current.agentStatus).toBe('waiting');
+    await act(async () => vi.advanceTimersByTimeAsync(300_000));
+    expect(mocks.multi).toHaveBeenCalledTimes(2);
+  });
+
+  it('B-PAUSE-1 keeps running deployed agents while one of them waits for review', async () => {
+    const first = folder(); mocks.folders.set(first.id, first); mocks.count.mockResolvedValue(2);
+    mocks.pending.mockResolvedValue([{ toolName: 'fetch_url', agentConfigId: 'ap-threat-hunter' }]);
+    renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(mocks.multi).toHaveBeenCalledOnce();
+  });
+
+  it('B-PAUSE-1 a deployed agent\'s or the supervisor\'s proposal does not pause the legacy agent', async () => {
+    const first = folder(); mocks.folders.set(first.id, first);
+    mocks.pending.mockResolvedValue([{ toolName: 'fetch_url', agentConfigId: 'ap-threat-hunter' }, { toolName: 'update_ioc', agentConfigId: 'caddy-supervisor' }]);
+    renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(mocks.run).toHaveBeenCalledOnce();
+  });
+
+  it('every deployed agent waiting for review leaves the investigation waiting, without an error', async () => {
+    const first = folder(); mocks.folders.set(first.id, first); mocks.count.mockResolvedValue(1);
+    mocks.multi.mockResolvedValue({ deploymentResults: new Map(), errors: [], waitingForReview: ['ap-threat-hunter'] });
+    const { result } = renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(result.current.agentStatus).toBe('waiting');
+    expect(result.current.error).toBeNull();
+  });
+
+  it('does not shorten the interval for agents whose actions mostly ran', async () => {
+    const first = folder(); mocks.folders.set(first.id, first); mocks.count.mockResolvedValue(1);
+    mocks.metrics.mockResolvedValue([{ metrics: { toolCallsExecuted: 100, toolCallsProposed: 0 } }]);
+    renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(mocks.multi).toHaveBeenCalledTimes(1);
+    await act(async () => vi.advanceTimersByTimeAsync(299_000));
+    expect(mocks.multi).toHaveBeenCalledTimes(1);
+    await act(async () => vi.advanceTimersByTimeAsync(1_000));
+    expect(mocks.multi).toHaveBeenCalledTimes(2);
+  });
+
+  it('still slows down agents whose actions mostly wait for review', async () => {
+    const first = folder(); mocks.folders.set(first.id, first); mocks.count.mockResolvedValue(1);
+    mocks.metrics.mockResolvedValue([{ metrics: { toolCallsExecuted: 2, toolCallsProposed: 18 } }]);
+    renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    await act(async () => vi.advanceTimersByTimeAsync(599_000));
+    expect(mocks.multi).toHaveBeenCalledTimes(1);
+    await act(async () => vi.advanceTimersByTimeAsync(1_000));
+    expect(mocks.multi).toHaveBeenCalledTimes(2);
   });
 
   it('stops active requests and ignores manual callbacks when the workspace switches', async () => {

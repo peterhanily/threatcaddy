@@ -8,9 +8,9 @@ import * as supervisorPolicy from '../lib/supervisor-tool-policy';
 import * as approval from '../lib/agent-action-queue';
 
 const mocks = vi.hoisted(() => ({ run: vi.fn(), route: vi.fn(), execute: vi.fn() }));
-vi.mock('../lib/caddy-agent', () => ({ runAgentCycle: mocks.run, parseToolCallsFromText: () => [] }));
+vi.mock('../lib/caddy-agent', () => ({ runAgentCycle: mocks.run }));
 vi.mock('../lib/llm-tools', () => ({ executeTool: mocks.execute, buildSystemPrompt: async () => 'Synthetic investigation context' }));
-vi.mock('../lib/llm-router', () => ({ resolveRoutingMode: () => 'extension', sendViaExtension: mocks.route, sendViaServer: mocks.route }));
+vi.mock('../lib/llm-router', () => ({ resolveRoutingMode: () => 'extension', sendViaExtension: mocks.route, sendViaServer: mocks.route, sendDirectToLocal: mocks.route }));
 
 const investigation: Folder = { id: 'case', name: 'Synthetic case', order: 0, createdAt: 1, status: 'active' };
 const settings = { ...DEFAULT_SETTINGS, llmDefaultProvider: 'local' as const, llmLocalEndpoint: 'http://localhost:11434', agentSupervisorEnabled: true };
