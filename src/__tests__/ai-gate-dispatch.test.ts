@@ -207,6 +207,20 @@ describe('A-GATE-5 writes into another investigation', () => {
     expect(errorOf(result)).toMatch(/Investigation not found/);
     expect(await rowsContain('P', canary('S'))).toBe(false);
   });
+
+  it.each(['trash_contents', 'move_out'])('delete_note_folder %s leaves children filed in other investigations untouched', async action => {
+    // Only possible after an earlier approved move across investigations.
+    await db.notes.add({ id: 'S-folder', folderId: 'S', title: 'Folder', content: '', isFolder: true, tags: [], pinned: false, archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
+    for (const folderId of ['S', 'P', 'L']) await db.notes.update(ids(folderId).note, { parentNoteId: 'S-folder' });
+    const foreignBefore = await db.notes.bulkGet([ids('P').note, ids('L').note]);
+    const remove = call('delete_note_folder', { folderId: 'S-folder', action });
+    const result = await dispatch(remove, 'S', 'agent', mintHumanApproval(remove, 'S', 'action-queue'), { profileId: 'ap-lead-analyst' });
+    expect(errorOf(result)).toBe('');
+    expect(JSON.parse(result.result).childrenCount).toBe(1);
+    expect(await db.notes.bulkGet([ids('P').note, ids('L').note])).toEqual(foreignBefore);
+    const own = await db.notes.get(ids('S').note);
+    expect(action === 'trash_contents' ? own?.trashed : own?.parentNoteId).toBe(action === 'trash_contents' ? true : undefined);
+  });
 });
 
 describe('A-GATE-5b ids that are not strings resolve as the executors coerce them', () => {

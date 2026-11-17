@@ -1288,8 +1288,9 @@ async function executeDeleteNoteFolder(inp: Record<string, unknown>): Promise<st
   if (!folder) return JSON.stringify({ error: 'Folder not found' });
   if (!folder.isFolder) return JSON.stringify({ error: 'That note is not a folder' });
 
-  // Find all children
-  const children = await db.notes.where('parentNoteId').equals(targetId).toArray();
+  // Find all children. Only the folder-note's investigation was checked, so a
+  // child filed in another investigation (after an approved move) is left alone.
+  const children = (await db.notes.where('parentNoteId').equals(targetId).toArray()).filter(child => child.folderId === folder.folderId);
 
   if (action === 'trash_contents') {
     // Trash all children
