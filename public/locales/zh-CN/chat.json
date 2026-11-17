@@ -22,7 +22,7 @@
     "badgeMeeting": "会议",
     "planMode": "计划",
     "actMode": "执行",
-    "actModeTitle": "执行模式：AI 在审批下执行操作",
+    "actModeTitleV2": "执行模式：CaddyAI 可以进行更改并使用工具。询问/YOLO 开关决定哪些操作需要您批准。",
     "yoloLabel": "YOLO",
     "tokSuffix": "令牌",
     "tokenTotal": "总令牌数：{{total}}",
@@ -53,8 +53,8 @@
     "restoreLabel": "恢复",
     "approve": "批准",
     "reject": "拒绝",
-    "switchedToAct": "已切换到执行模式——AI 将在审批下执行",
-    "switchedToActMessage": "已切换到**执行模式**。发送\"执行计划\"以在审批下运行提案操作，或继续对话。",
+    "switchedToActV2": "已切换到执行模式。询问/YOLO 开关决定哪些操作需要您批准。",
+    "switchedToActMessageV2": "已切换到**执行模式**。发送\"执行计划\"以运行提案操作，或继续对话。询问/YOLO 开关决定哪些操作需要您批准。",
     "errorCreateThread": "创建聊天会话失败。请尝试刷新页面。",
     "settingsAiLlm": "设置 → AI/LLM",
     "errorNoLocalEndpoint": "未配置本地 LLM 端点。请在设置 → AI/LLM 中添加。",
@@ -73,11 +73,12 @@
     "onboardingDismiss": "明白了"
   },
   "mode": {
-    "planTitle": "计划模式：CaddyAI 只读取此调查，其他一切都以计划的形式描述",
-    "switchedToPlan": "已切换到计划模式。CaddyAI 只读取此调查，其他一切都以计划的形式描述",
+    "planTitleV2": "计划模式：CaddyAI 只读取，其他一切都以计划的形式描述。在调查中它只读取该调查；在任何调查之外，它可以读取所有调查。",
+    "switchedToPlanV2": "已切换到计划模式。CaddyAI 只读取，其他一切都以计划的形式描述。",
     "askLabel": "询问",
-    "yoloOnTitle": "YOLO 已开启：自动批准此调查内的更改和内置供应商查询。在打开网页、读取或写入其他调查、使用技能或更改代理之前仍会询问。",
-    "yoloOffTitle": "CaddyAI 在每次更改前都会询问。点击开启 YOLO：自动批准此调查内的更改和内置供应商查询，并在打开网页、读取或写入其他调查、使用技能或更改代理之前仍会询问。"
+    "yoloOnTitleV2": "YOLO 已开启：更改和内置供应商查询无需询问即会运行。网页、技能、其他集成，以及对其他调查或代理的更改仍需您批准；从可同步的调查中读取其他调查也是如此。供应商查询会跳过其他集成而不询问；如需批准它们，请关闭 YOLO。",
+    "yoloOffTitleV2": "CaddyAI 在每次更改、打开网页、供应商查询、使用技能或其他集成之前都会询问，从可同步的调查中读取其他调查之前也会询问。点击开启 YOLO：之后更改和内置供应商查询无需询问即会运行，但对其他调查或代理的更改除外。",
+    "yoloInPlanTitle": "在计划模式下 CaddyAI 只读取，询问/YOLO 开关仅在执行模式下生效。{{setting}}"
   },
   "approval": {
     "position": "第 {{index}} 项，共 {{total}} 项",
@@ -192,12 +193,20 @@
   },
   "cti": {
     "invalidCommand": "无法运行该 CTI 命令:",
-    "noSourcesV2": "没有可用的 CTI 源。此版本中已无法再配置具名代理主机。"
+    "noSourcesV2": "没有可用的 CTI 源。此版本中已无法再配置具名代理主机。",
+    "hostNeedsHttps": "没有可用的 CTI 源。CTI 代理主机需要 https，因此未被使用（普通 http 只在本机上可用）。请参阅 设置 → AI。"
   },
   "fetch": {
     "createdNote": "已从 {{url}} 创建笔记 **{{title}}**",
     "failed": "获取 URL 失败：{{error}}",
     "unknownError": "未知错误"
+  },
+  "loop": {
+    "started": "已启动后台循环 `{{id}}`。每 {{interval}} 运行一次：",
+    "stopHint": "使用 `/stoploop` 停止。",
+    "stopped_one": "已停止 {{count}} 个后台循环。",
+    "stopped_other": "已停止 {{count}} 个后台循环。",
+    "noneToStop": "没有可停止的活动循环。"
   },
   "input.serverStatus": "团队服务器通道",
   "input.serverModelsHelp": "可用的提供商和模型取决于团队服务器配置。",

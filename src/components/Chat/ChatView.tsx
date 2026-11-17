@@ -16,7 +16,7 @@ import { DEFAULT_MODEL_PER_PROVIDER } from '../../lib/models';
 import { cn, formatDate } from '../../lib/utils';
 import { nanoid } from 'nanoid';
 import { TOOL_DEFINITIONS, buildSystemPrompt, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
-import { getHostToolDefinitions, executeHostSkill } from '../../lib/agent-hosts';
+import { getHostToolDefinitions, executeHostSkill, isHttpsOrLoopback } from '../../lib/agent-hosts';
 import { mintHumanApproval, type HumanApproval } from '../../lib/human-approval';
 import { createChatToolExecutor, type ApprovalItem } from '../../lib/chat-tool-executor';
 import { isPlanModeTool } from '../../lib/tool-reach';
@@ -433,7 +433,7 @@ export function ChatView({
       const confirmMsg: ChatMessage = {
         id: nanoid(),
         role: 'assistant',
-        content: `Started background loop \`${loopId}\`. Running every ${formattedInterval}:\n\n> ${prompt}\n\nUse \`/stoploop\` to stop.`,
+        content: `${t('loop.started', { id: loopId, interval: formattedInterval })}\n\n> ${prompt}\n\n${t('loop.stopHint')}`,
         createdAt: Date.now(),
       };
       await onAddMessage(activeThread.id, confirmMsg);
@@ -446,9 +446,7 @@ export function ChatView({
       const confirmMsg: ChatMessage = {
         id: nanoid(),
         role: 'assistant',
-        content: count > 0
-          ? `Stopped ${count} background loop${count > 1 ? 's' : ''}.`
-          : 'No active loops to stop.',
+        content: count > 0 ? t('loop.stopped', { count }) : t('loop.noneToStop'),
         createdAt: Date.now(),
       };
       await onAddMessage(activeThread.id, confirmMsg);
@@ -478,11 +476,13 @@ export function ChatView({
           return normalizeCtiSourceRunResult(plan, (err as Error).message || String(err));
         }
       }));
+      // A legacy 'cti' host on plain http to another computer is not offered: say so rather than that hosts are unconfigurable.
+      const ctiNeedsHttps = (settings.agentHosts ?? []).some(host => host.name === 'cti' && host.enabled && host.skills.length > 0 && !isHttpsOrLoopback(host.url));
       await onAddMessage(activeThread.id, {
         id: nanoid(),
         role: 'assistant',
         content: !availableToolNames.some(name => name.startsWith('host:cti:'))
-          ? t('cti.noSourcesV2')
+          ? t(ctiNeedsHttps ? 'cti.hostNeedsHttps' : 'cti.noSourcesV2')
           : renderCtiRunMarkdown(ctiCommand.target, results, skipped),
         createdAt: Date.now(),
       });
@@ -731,7 +731,7 @@ export function ChatView({
     if (!activeThread) return;
     const newMode = threadMode === 'act' ? 'plan' : 'act';
     onUpdateThread(activeThread.id, { mode: newMode });
-    addToast('success', newMode === 'plan' ? t('mode.switchedToPlan') : t('view.switchedToAct'));
+    addToast('success', newMode === 'plan' ? t('mode.switchedToPlanV2') : t('view.switchedToActV2'));
 
     // When switching from Plan to Act, if the last assistant message exists,
     // prompt the user to execute the plan
@@ -742,7 +742,7 @@ export function ChatView({
         const executeMsg: ChatMessage = {
           id: nanoid(),
           role: 'assistant',
-          content: t('view.switchedToActMessage'),
+          content: t('view.switchedToActMessageV2'),
           createdAt: Date.now(),
         };
         onAddMessage(activeThread.id, executeMsg);
@@ -1130,7 +1130,7 @@ export function ChatView({
                       ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
                       : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
                   )}
-                  title={threadMode === 'plan' ? t('mode.planTitle') : t('view.actModeTitle')}
+                  title={threadMode === 'plan' ? t('mode.planTitleV2') : t('view.actModeTitleV2')}
                 >
                   {threadMode === 'plan' ? <Eye size={10} /> : <Play size={10} />}
                   {threadMode === 'plan' ? t('view.planMode') : t('view.actMode')}
@@ -1143,7 +1143,9 @@ export function ChatView({
                       ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
                       : 'bg-surface-raised border-border-subtle text-text-muted hover:text-text-secondary'
                   )}
-                  title={yoloMode ? t('mode.yoloOnTitle') : t('mode.yoloOffTitle')}
+                  title={threadMode === 'plan'
+                    ? t('mode.yoloInPlanTitle', { setting: yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2') })
+                    : yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2')}
                 >
                   <Shield size={10} />
                   {yoloMode ? t('view.yoloLabel') : t('mode.askLabel')}

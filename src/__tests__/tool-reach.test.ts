@@ -230,3 +230,43 @@ describe('A-REACH-6 web fetch', () => {
     expect((await reach('fetch_url', { url: 'https://canary-s.example/' }, 'S')).flags).toContain('host-is-ioc');
   });
 });
+
+// What the Ask and YOLO tooltips (chat.json mode.yoloOffTitleV2 and mode.yoloOnTitleV2) say, checked from an
+// investigation that can sync, a local-only one, and a conversation outside any investigation.
+describe('chat approval copy holds in every context', () => {
+  const HOMES: Array<[string, string | undefined]> = [['an investigation that can sync', 'S'], ['a local-only investigation', 'L2'],
+    ['a conversation outside any investigation', undefined]];
+  it.each(HOMES)('from %s', async (_context, home) => {
+    const own = home ? ids(home) : { note: 'unfiled-note', ioc: 'unfiled-ioc' };
+    if (!home) {
+      await db.notes.add({ id: own.note, title: 'Unfiled', content: '', tags: [], pinned: false, archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
+      await db.standaloneIOCs.add({ id: own.ioc, type: 'domain', value: 'unfiled.example', confidence: 'medium', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+    }
+    const settings: Settings = { ...DEFAULT_SETTINGS, siemEndpoint: 'https://siem.example/api', agentHosts: [{ id: 'h', name: 'x', displayName: 'X',
+      url: 'https://skills.example', enabled: true, skills: [{ name: 'y', description: 'Look up', parameters: { type: 'object', properties: {} } }] }] } as Settings;
+    const verdict = async (surface: 'chat-act' | 'chat-yolo', name: string, input: Record<string, unknown> = {}) => {
+      const result = decideToolCall(await reach(name, input, home, settings), { surface });
+      return result.kind === 'ask' ? `ask:${result.reason}` : result.kind;
+    };
+    const syncs = home === 'S';
+    for (const surface of ['chat-act', 'chat-yolo'] as const) {
+      const yolo = surface === 'chat-yolo';
+      // Changes, and built-in vendor lookups, run without asking only in YOLO.
+      expect(await verdict(surface, 'create_note', { title: 'x' })).toBe(yolo ? 'run' : 'ask:write');
+      expect(await verdict(surface, 'update_note', { id: own.note, title: 'x' })).toBe(yolo ? 'run' : 'ask:write');
+      expect(await verdict(surface, 'enrich_ioc', { iocId: own.ioc })).toBe(yolo ? 'run' : 'ask:egress');
+      // Web pages, skills, other integrations, changes to other investigations and agent changes always ask.
+      expect(await verdict(surface, 'fetch_url', { url: 'https://nvd.nist.gov/vuln/detail/CVE-2024-0001' })).toBe('ask:egress');
+      expect(await verdict(surface, 'fetch_url', { url: 'https://collector.example/c' })).toBe('ask:egress');
+      expect(await verdict(surface, 'host:x:y')).toBe('ask:egress');
+      expect(await verdict(surface, 'local:summary')).toBe('ask:egress');
+      expect(await verdict(surface, 'query_siem', { query: 'x' })).toBe('ask:egress');
+      expect(await verdict(surface, 'update_note', { id: ids('P').note, title: 'x' })).toBe('ask:cross-write');
+      expect(await verdict(surface, 'create_in_investigation', { investigationId: 'P', entityType: 'note', data: {} })).toBe('ask:agent-control');
+      expect(await verdict(surface, 'spawn_agent', {})).toBe('ask:agent-control');
+      // Reading other investigations asks only from an investigation that can sync.
+      expect(await verdict(surface, 'search_across_investigations', { query: 'x' })).toBe(syncs ? 'ask:cross-read' : 'run');
+      expect(await verdict(surface, 'read_note', { id: ids('P').note })).toBe(syncs ? 'ask:cross-read' : 'run');
+    }
+  });
+});

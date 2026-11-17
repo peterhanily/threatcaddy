@@ -31,6 +31,11 @@ vi.mock('react-virtuoso', () => ({ Virtuoso: () => null }));
 const thread: ChatThread = { id: 'thread', title: 'Synthetic chat', folderId: 'case', model: 'synthetic-model', provider: 'anthropic',
   messages: [], tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 };
 const NO_SOURCES = 'No CTI sources are available. Named agent hosts are no longer configurable in this version.';
+const NEEDS_HTTPS = 'No CTI sources are available. The CTI agent host is not used because it needs https (plain http works only on this computer). '
+  + 'See Settings → AI.';
+const skill = (name: string) => ({ name, description: name, parameters: { type: 'object' as const, properties: {} } });
+const ctiHost = (url: string, enabled = true, skills = [skill('virustotal_ioc_report'), skill('censys_host')]) => ({ id: 'cti', name: 'cti',
+  displayName: 'CTI', url, enabled, skills });
 
 async function runCommand(settings: Settings) {
   const onAddMessage = vi.fn().mockResolvedValue(undefined);
@@ -56,10 +61,43 @@ describe('C-CHAT-8 CTI slash commands', () => {
 
   it('still run the sources a configured CTI host offers', async () => {
     state.executeHostSkill.mockResolvedValue(JSON.stringify({ ok: true }));
-    const skill = (name: string) => ({ name, description: name, parameters: { type: 'object' as const, properties: {} } });
-    const messages = await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [{ id: 'cti', name: 'cti', displayName: 'CTI',
-      url: 'https://cti.example', enabled: true, skills: [skill('virustotal_ioc_report'), skill('censys_host')] }] } as Settings);
+    const messages = await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [ctiHost('https://cti.example')] } as Settings);
     expect(state.executeHostSkill).toHaveBeenCalled();
     expect(messages.at(-1)?.content).not.toBe(NO_SOURCES);
+  });
+
+  // A legacy 'cti' host on plain http to another computer is not offered (every call to it would be refused),
+  // so say why instead of claiming that hosts cannot be configured.
+  it.each(['http://10.0.0.5:8443', 'http://cti.lan'])('say that a CTI host at %s needs https', async url => {
+    const messages = await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [ctiHost(url)] } as Settings);
+    expect(messages.at(-1)).toEqual(expect.objectContaining({ role: 'assistant', content: NEEDS_HTTPS }));
+    expect(state.executeHostSkill).not.toHaveBeenCalled();
+  });
+
+  it('keep the general answer when the plain-http CTI host is turned off', async () => {
+    const messages = await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [ctiHost('http://10.0.0.5:8443', false)] } as Settings);
+    expect(messages.at(-1)).toEqual(expect.objectContaining({ role: 'assistant', content: NO_SOURCES }));
+    expect(state.executeHostSkill).not.toHaveBeenCalled();
+  });
+
+  // Https would not help a host with no skills: getHostToolDefinitions offers nothing from it either way.
+  it('keep the general answer when the plain-http CTI host has no skills', async () => {
+    const messages = await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [ctiHost('http://10.0.0.5:8443', true, [])] } as Settings);
+    expect(messages.at(-1)).toEqual(expect.objectContaining({ role: 'assistant', content: NO_SOURCES }));
+    expect(state.executeHostSkill).not.toHaveBeenCalled();
+  });
+
+  // Only a host named 'cti' serves /cti, so another plain-http host must not be blamed.
+  it('keep the general answer when only a host not named cti is on plain http', async () => {
+    const other = { ...ctiHost('http://192.168.1.50'), id: 'soc1', name: 'soc1', displayName: 'SOC 1' };
+    const messages = await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [other] } as Settings);
+    expect(messages.at(-1)).toEqual(expect.objectContaining({ role: 'assistant', content: NO_SOURCES }));
+    expect(state.executeHostSkill).not.toHaveBeenCalled();
+  });
+
+  it('still run the sources of a CTI host on plain http to this computer', async () => {
+    state.executeHostSkill.mockResolvedValue(JSON.stringify({ ok: true }));
+    await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [ctiHost('http://localhost:8080')] } as Settings);
+    expect(state.executeHostSkill).toHaveBeenCalled();
   });
 });

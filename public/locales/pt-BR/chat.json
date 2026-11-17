@@ -22,7 +22,7 @@
     "badgeMeeting": "reunião",
     "planMode": "Planejar",
     "actMode": "Executar",
-    "actModeTitle": "Modo Executar: a IA executa ações com aprovação",
+    "actModeTitleV2": "Modo Executar: o CaddyAI pode fazer alterações e usar ferramentas. O seletor Perguntar/YOLO define o que precisa da sua aprovação.",
     "yoloLabel": "YOLO",
     "tokSuffix": "tok",
     "tokenTotal": "Total de tokens: {{total}}",
@@ -53,8 +53,8 @@
     "restoreLabel": "Restaurar",
     "approve": "Aprovar",
     "reject": "Rejeitar",
-    "switchedToAct": "Alterado para modo Executar — a IA executa com aprovação",
-    "switchedToActMessage": "Alterado para **modo Executar**. Envie \"executar o plano\" para executar as ações propostas com controle de aprovação, ou continue a conversa.",
+    "switchedToActV2": "Alterado para modo Executar. O seletor Perguntar/YOLO define o que precisa da sua aprovação.",
+    "switchedToActMessageV2": "Alterado para **modo Executar**. Envie \"executar o plano\" para executar as ações propostas, ou continue a conversa. O seletor Perguntar/YOLO define quais ações precisam da sua aprovação.",
     "errorCreateThread": "Falha ao criar tópico de conversa. Tente recarregar a página.",
     "settingsAiLlm": "Configurações → IA/LLM",
     "errorNoLocalEndpoint": "Nenhum endpoint de LLM local configurado. Adicione um em Configurações → IA/LLM.",
@@ -74,11 +74,12 @@
     "loopCount_many": "{{count}} loops"
   },
   "mode": {
-    "planTitle": "Modo Planejar: o CaddyAI só lê esta investigação e descreve todo o resto como um plano",
-    "switchedToPlan": "Alterado para modo Planejar. O CaddyAI só lê esta investigação e descreve todo o resto como um plano",
+    "planTitleV2": "Modo Planejar: o CaddyAI só lê e descreve todo o resto como um plano. Em uma investigação, lê só essa investigação; fora de qualquer investigação, pode ler todas.",
+    "switchedToPlanV2": "Alterado para modo Planejar. O CaddyAI só lê e descreve todo o resto como um plano.",
     "askLabel": "Perguntar",
-    "yoloOnTitle": "YOLO ativado: aprova automaticamente alterações dentro desta investigação e consultas integradas a fornecedores. Ainda pergunta antes de abrir páginas da web, ler ou alterar outras investigações, usar habilidades ou alterar agentes.",
-    "yoloOffTitle": "O CaddyAI pergunta antes de cada alteração. Clique para ativar o YOLO: aprova automaticamente alterações dentro desta investigação e consultas integradas a fornecedores, e ainda pergunta antes de abrir páginas da web, ler ou alterar outras investigações, usar habilidades ou alterar agentes."
+    "yoloOnTitleV2": "YOLO ativado: alterações e consultas integradas a fornecedores são executadas sem perguntar. Páginas da web, habilidades, outras integrações e alterações em outras investigações ou nos agentes ainda precisam da sua aprovação, assim como ler outras investigações a partir de uma investigação que pode sincronizar. Uma consulta a fornecedores ignora outras integrações em vez de perguntar; desative o YOLO para aprová-las.",
+    "yoloOffTitleV2": "O CaddyAI pergunta antes de cada alteração, página da web, consulta a fornecedores, habilidade ou outra integração, e antes de ler outras investigações a partir de uma investigação que pode sincronizar. Clique para ativar o YOLO: alterações e consultas integradas a fornecedores passam a ser executadas sem perguntar, exceto alterações em outras investigações ou nos agentes.",
+    "yoloInPlanTitle": "No modo Planejar, o CaddyAI só lê; o seletor Perguntar/YOLO só vale no modo Executar. {{setting}}"
   },
   "approval": {
     "position": "{{index}} de {{total}}",
@@ -195,12 +196,21 @@
   },
   "cti": {
     "invalidCommand": "Esse comando CTI não pôde ser executado:",
-    "noSourcesV2": "Nenhuma fonte de CTI está disponível. Agent Hosts nomeados não podem mais ser configurados nesta versão."
+    "noSourcesV2": "Nenhuma fonte de CTI está disponível. Agent Hosts nomeados não podem mais ser configurados nesta versão.",
+    "hostNeedsHttps": "Nenhuma fonte de CTI está disponível. O Agent Host de CTI não é usado porque requer https (http simples só funciona neste computador). Veja Configurações → IA."
   },
   "fetch": {
     "createdNote": "Nota **{{title}}** criada a partir de {{url}}",
     "failed": "Falha ao buscar a URL: {{error}}",
     "unknownError": "Erro desconhecido"
+  },
+  "loop": {
+    "started": "Loop em segundo plano `{{id}}` iniciado. Executando a cada {{interval}}:",
+    "stopHint": "Use `/stoploop` para parar.",
+    "stopped_one": "{{count}} loop em segundo plano parado.",
+    "stopped_many": "{{count}} loops em segundo plano parados.",
+    "stopped_other": "{{count}} loops em segundo plano parados.",
+    "noneToStop": "Nenhum loop ativo para parar."
   },
   "input.serverStatus": "Rota pelo servidor da equipe",
   "input.serverModelsHelp": "Os provedores e modelos disponíveis dependem da configuração do servidor da equipe.",

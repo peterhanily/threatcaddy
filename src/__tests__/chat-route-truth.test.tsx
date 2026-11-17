@@ -261,6 +261,40 @@ describe('chat routes where Settings says', () => {
     } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
   });
 
+  // The loop id, the interval and the quoted prompt stay as typed; the sentences around them are translated.
+  const loopReplies = async () => {
+    renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'auto' });
+    announceExtension();
+    await act(async () => { await state.input.onSend('/loop 30s Check the feed'); });
+    state.stopAllForThread.mockReturnValueOnce(1).mockReturnValueOnce(3).mockReturnValueOnce(0);
+    for (let run = 0; run < 3; run++) await act(async () => { await state.input.onSend('/stoploop'); });
+    return onAddMessage.mock.calls.map(([, message]) => message as ChatMessage).filter(message => message.role === 'assistant').map(message => message.content);
+  };
+
+  it('/loop and /stoploop answer as before in English', async () => {
+    expect(await loopReplies()).toEqual([
+      'Started background loop `loop`. Running every 30s:\n\n> Check the feed\n\nUse `/stoploop` to stop.',
+      'Stopped 1 background loop.',
+      'Stopped 3 background loops.',
+      'No active loops to stop.',
+    ]);
+  });
+
+  it('/loop and /stoploop answer in the analyst’s language', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'chat', deChat, true, true);
+    await act(async () => { await i18n.changeLanguage('de'); });
+    try {
+      expect(await loopReplies()).toEqual([
+        `${deChat.loop.started.replace('{{id}}', 'loop').replace('{{interval}}', '30s')}\n\n> Check the feed\n\n${deChat.loop.stopHint}`,
+        deChat.loop.stopped_one.replace('{{count}}', '1'),
+        deChat.loop.stopped_other.replace('{{count}}', '3'),
+        deChat.loop.noneToStop,
+      ]);
+      expect(deChat.loop.started).toContain('`{{id}}`');
+    } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
+  });
+
   it('every /loop run goes where Settings → AI shows at that moment, not where the loop started', async () => {
     const view = renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'auto' });
     announceExtension();

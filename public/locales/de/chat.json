@@ -22,7 +22,7 @@
     "badgeMeeting": "meeting",
     "planMode": "Planen",
     "actMode": "Ausführen",
-    "actModeTitle": "Ausführungsmodus: KI führt Aktionen mit Genehmigung aus",
+    "actModeTitleV2": "Ausführungsmodus: CaddyAI kann Änderungen vornehmen und Tools verwenden. Der Schalter Fragen/YOLO legt fest, was Ihre Genehmigung braucht.",
     "yoloLabel": "YOLO",
     "tokSuffix": "Tok",
     "tokenTotal": "Tokens gesamt: {{total}}",
@@ -53,8 +53,8 @@
     "restoreLabel": "Wiederherstellen",
     "approve": "Genehmigen",
     "reject": "Ablehnen",
-    "switchedToAct": "In den Ausführungsmodus gewechselt — KI führt mit Genehmigung aus",
-    "switchedToActMessage": "In den **Ausführungsmodus** gewechselt. Senden Sie \"Plan ausführen\", um die vorgeschlagenen Aktionen mit Genehmigungsschranke auszuführen, oder führen Sie das Gespräch fort.",
+    "switchedToActV2": "In den Ausführungsmodus gewechselt. Der Schalter Fragen/YOLO legt fest, was Ihre Genehmigung braucht.",
+    "switchedToActMessageV2": "In den **Ausführungsmodus** gewechselt. Senden Sie \"Plan ausführen\", um die vorgeschlagenen Aktionen auszuführen, oder führen Sie das Gespräch fort. Der Schalter Fragen/YOLO legt fest, welche Aktionen Ihre Genehmigung brauchen.",
     "errorCreateThread": "Chat-Thread konnte nicht erstellt werden. Versuchen Sie, die Seite neu zu laden.",
     "settingsAiLlm": "Einstellungen → KI/LLM",
     "errorNoLocalEndpoint": "Kein lokaler LLM-Endpunkt konfiguriert. Fügen Sie einen in Einstellungen → KI/LLM hinzu.",
@@ -73,11 +73,12 @@
     "onboardingDismiss": "Verstanden"
   },
   "mode": {
-    "planTitle": "Planmodus: CaddyAI liest nur diese Untersuchung und beschreibt alles andere als Plan",
-    "switchedToPlan": "In den Planmodus gewechselt. CaddyAI liest nur diese Untersuchung und beschreibt alles andere als Plan",
+    "planTitleV2": "Planmodus: CaddyAI liest nur und beschreibt alles andere als Plan. In einer Untersuchung liest es nur diese Untersuchung; außerhalb jeder Untersuchung kann es alle lesen.",
+    "switchedToPlanV2": "In den Planmodus gewechselt. CaddyAI liest nur und beschreibt alles andere als Plan.",
     "askLabel": "Fragen",
-    "yoloOnTitle": "YOLO ist an: genehmigt Änderungen innerhalb dieser Untersuchung und integrierte Anbieterabfragen automatisch. Fragt weiterhin nach, bevor Webseiten geöffnet, andere Untersuchungen gelesen oder geändert, Skills verwendet oder Agenten geändert werden.",
-    "yoloOffTitle": "CaddyAI fragt vor jeder Änderung nach. Klicken, um YOLO einzuschalten: genehmigt Änderungen innerhalb dieser Untersuchung und integrierte Anbieterabfragen automatisch und fragt weiterhin nach, bevor Webseiten geöffnet, andere Untersuchungen gelesen oder geändert, Skills verwendet oder Agenten geändert werden."
+    "yoloOnTitleV2": "YOLO ist an: Änderungen und integrierte Anbieterabfragen laufen ohne Nachfrage. Webseiten, Skills, andere Integrationen sowie Änderungen an anderen Untersuchungen oder an Agenten brauchen weiterhin Ihre Genehmigung, ebenso das Lesen anderer Untersuchungen aus einer synchronisierbaren Untersuchung. Eine Anbieterabfrage überspringt andere Integrationen, statt nachzufragen; schalten Sie YOLO aus, um sie zu genehmigen.",
+    "yoloOffTitleV2": "CaddyAI fragt vor jeder Änderung, Webseite und Anbieterabfrage, vor jedem Skill und jeder anderen Integration nach sowie vor dem Lesen anderer Untersuchungen aus einer synchronisierbaren Untersuchung. Klicken, um YOLO einzuschalten: Änderungen und integrierte Anbieterabfragen laufen dann ohne Nachfrage, außer Änderungen an anderen Untersuchungen oder an Agenten.",
+    "yoloInPlanTitle": "Im Planmodus liest CaddyAI nur; der Schalter Fragen/YOLO gilt nur im Ausführungsmodus. {{setting}}"
   },
   "approval": {
     "position": "{{index}} von {{total}}",
@@ -192,12 +193,20 @@
   },
   "cti": {
     "invalidCommand": "Dieser CTI-Befehl konnte nicht ausgeführt werden:",
-    "noSourcesV2": "Keine CTI-Quellen verfügbar. Benannte Agent-Hosts können in dieser Version nicht mehr konfiguriert werden."
+    "noSourcesV2": "Keine CTI-Quellen verfügbar. Benannte Agent-Hosts können in dieser Version nicht mehr konfiguriert werden.",
+    "hostNeedsHttps": "Keine CTI-Quellen verfügbar. Der CTI-Agent-Host wird nicht verwendet, weil er https benötigt (einfaches http funktioniert nur auf diesem Computer). Siehe Einstellungen → KI."
   },
   "fetch": {
     "createdNote": "Notiz **{{title}}** aus {{url}} erstellt",
     "failed": "URL konnte nicht abgerufen werden: {{error}}",
     "unknownError": "Unbekannter Fehler"
+  },
+  "loop": {
+    "started": "Hintergrundschleife `{{id}}` gestartet. Läuft alle {{interval}}:",
+    "stopHint": "Verwenden Sie `/stoploop`, um sie zu stoppen.",
+    "stopped_one": "{{count}} Hintergrundschleife gestoppt.",
+    "stopped_other": "{{count}} Hintergrundschleifen gestoppt.",
+    "noneToStop": "Keine aktiven Schleifen zum Stoppen."
   },
   "input.serverStatus": "Route über den Teamserver",
   "input.serverModelsHelp": "Verfügbare Anbieter und Modelle hängen von der Konfiguration Ihres Teamservers ab.",

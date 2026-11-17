@@ -898,13 +898,14 @@ function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpda
     ...(localEndpoint ? [t('ai.dataFlow.routeLocal', { host: hostOf(localEndpoint) })] : []),
     t(cloudKey, cloud.route === 'server' ? { host: hostOf(readStoredAuth()?.serverUrl) } : {}),
   ];
-  // Web fetch asks the extension bridge at call time; show the same answer.
+  // Web fetch asks the extension bridge at call time; show the same answer. A result lasts only as long as
+  // its check: the same capabilities published again, as after an approval refresh, start from no answer.
   const [fetchCheck, setFetchCheck] = useState<{ caps: string; guarded: boolean }>();
   useEffect(() => {
     if (!capsText) return;
     let current = true;
     void hasGuardedBridgeFetch().then(guarded => { if (current) setFetchCheck({ caps: capsText, guarded }); });
-    return () => { current = false; };
+    return () => { current = false; setFetchCheck(undefined); };
   }, [capsText]);
   const fetchLine = !caps.length ? t('ai.dataFlow.fetchNoExtension')
     : fetchCheck?.caps !== capsText ? null

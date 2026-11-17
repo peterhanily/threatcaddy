@@ -4,12 +4,20 @@
   "input.modelLabel": "AI model",
   "cti": {
     "invalidCommand": "That CTI command couldn't be run:",
-    "noSourcesV2": "No CTI sources are available. Named agent hosts are no longer configurable in this version."
+    "noSourcesV2": "No CTI sources are available. Named agent hosts are no longer configurable in this version.",
+    "hostNeedsHttps": "No CTI sources are available. The CTI agent host is not used because it needs https (plain http works only on this computer). See Settings → AI."
   },
   "fetch": {
     "createdNote": "Created note **{{title}}** from {{url}}",
     "failed": "Failed to fetch URL: {{error}}",
     "unknownError": "Unknown error"
+  },
+  "loop": {
+    "started": "Started background loop `{{id}}`. Running every {{interval}}:",
+    "stopHint": "Use `/stoploop` to stop.",
+    "stopped_one": "Stopped {{count}} background loop.",
+    "stopped_other": "Stopped {{count}} background loops.",
+    "noneToStop": "No active loops to stop."
   },
   "view": {
     "newChat": "New Chat",
@@ -34,7 +42,7 @@
     "badgeMeeting": "meeting",
     "planMode": "Plan",
     "actMode": "Act",
-    "actModeTitle": "Act mode: AI executes actions with approval",
+    "actModeTitleV2": "Act mode: CaddyAI can make changes and use tools. The Ask/YOLO switch sets what needs your approval.",
     "yoloLabel": "YOLO",
     "tokSuffix": "tok",
     "tokenTotal": "Total tokens: {{total}}",
@@ -65,8 +73,8 @@
     "restoreLabel": "Restore",
     "approve": "Approve",
     "reject": "Reject",
-    "switchedToAct": "Switched to Act mode — AI will execute with approval",
-    "switchedToActMessage": "Switched to **Act mode**. Send \"execute the plan\" to run the proposed actions with approval gating, or continue the conversation.",
+    "switchedToActV2": "Switched to Act mode. The Ask/YOLO switch sets what needs your approval.",
+    "switchedToActMessageV2": "Switched to **Act mode**. Send \"execute the plan\" to run the proposed actions, or continue the conversation. The Ask/YOLO switch sets which actions need your approval.",
     "errorCreateThread": "Failed to create chat thread. Try refreshing the page.",
     "settingsAiLlm": "Settings → AI/LLM",
     "errorNoLocalEndpoint": "No Local LLM endpoint configured. Add it in Settings → AI/LLM.",
@@ -85,11 +93,12 @@
     "onboardingDismiss": "Got it"
   },
   "mode": {
-    "planTitle": "Plan mode: CaddyAI only reads this investigation and describes anything else as a plan",
-    "switchedToPlan": "Switched to Plan mode. CaddyAI only reads this investigation and describes anything else as a plan",
+    "planTitleV2": "Plan mode: CaddyAI only reads and describes anything else as a plan. In an investigation it reads only that investigation; outside any investigation it can read all of them.",
+    "switchedToPlanV2": "Switched to Plan mode. CaddyAI only reads and describes anything else as a plan.",
     "askLabel": "Ask",
-    "yoloOnTitle": "YOLO is on: auto-approves changes inside this investigation and built-in vendor lookups. Still asks before opening web pages, reading or writing other investigations, using skills, or changing agents.",
-    "yoloOffTitle": "CaddyAI asks before each change. Click to turn on YOLO: auto-approves changes inside this investigation and built-in vendor lookups, and still asks before opening web pages, reading or writing other investigations, using skills, or changing agents."
+    "yoloOnTitleV2": "YOLO is on: changes and built-in vendor lookups run without asking. Web pages, skills, other integrations, and changes to other investigations or to agents still need your approval, as does reading other investigations from an investigation that can sync. A vendor lookup skips other integrations instead of asking; turn YOLO off to approve them.",
+    "yoloOffTitleV2": "CaddyAI asks before each change, web page, vendor lookup, skill or other integration, and before reading other investigations from an investigation that can sync. Click to turn on YOLO: changes and built-in vendor lookups then run without asking, except changes to other investigations or to agents.",
+    "yoloInPlanTitle": "In Plan mode CaddyAI only reads; the Ask/YOLO switch applies only in Act mode. {{setting}}"
   },
   "approval": {
     "position": "{{index}} of {{total}}",

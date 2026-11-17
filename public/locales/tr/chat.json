@@ -22,7 +22,7 @@
     "badgeMeeting": "toplantı",
     "planMode": "Plan",
     "actMode": "Eylem",
-    "actModeTitle": "Eylem modu: AI işlemleri onay ile gerçekleştirir",
+    "actModeTitleV2": "Eylem modu: CaddyAI değişiklik yapabilir ve araçları kullanabilir. Sor/YOLO anahtarı neyin onayınızı gerektirdiğini belirler.",
     "yoloLabel": "YOLO",
     "tokSuffix": "tok",
     "tokenTotal": "Toplam token: {{total}}",
@@ -53,8 +53,8 @@
     "restoreLabel": "Geri Yükle",
     "approve": "Onayla",
     "reject": "Reddet",
-    "switchedToAct": "Eylem moduna geçildi — AI işlemleri onay ile gerçekleştirecek",
-    "switchedToActMessage": "**Eylem moduna** geçildi. Onay kapılı önerilen işlemleri çalıştırmak için \"planı uygula\" gönderin veya konuşmaya devam edin.",
+    "switchedToActV2": "Eylem moduna geçildi. Sor/YOLO anahtarı neyin onayınızı gerektirdiğini belirler.",
+    "switchedToActMessageV2": "**Eylem moduna** geçildi. Önerilen işlemleri çalıştırmak için \"planı uygula\" gönderin veya konuşmaya devam edin. Sor/YOLO anahtarı hangi işlemlerin onayınızı gerektirdiğini belirler.",
     "errorCreateThread": "Sohbet konusu oluşturulamadı. Sayfayı yenilemeyi deneyin.",
     "settingsAiLlm": "Ayarlar → AI/LLM",
     "errorNoLocalEndpoint": "Yerel LLM uç noktası yapılandırılmamış. Ayarlar → AI/LLM bölümüne ekleyin.",
@@ -73,11 +73,12 @@
     "onboardingDismiss": "Anladım"
   },
   "mode": {
-    "planTitle": "Plan modu: CaddyAI yalnızca bu soruşturmayı okur ve diğer her şeyi bir plan olarak açıklar",
-    "switchedToPlan": "Plan moduna geçildi. CaddyAI yalnızca bu soruşturmayı okur ve diğer her şeyi bir plan olarak açıklar",
+    "planTitleV2": "Plan modu: CaddyAI yalnızca okur ve diğer her şeyi bir plan olarak açıklar. Bir soruşturmada yalnızca o soruşturmayı okur; hiçbir soruşturmanın dışında hepsini okuyabilir.",
+    "switchedToPlanV2": "Plan moduna geçildi. CaddyAI yalnızca okur ve diğer her şeyi bir plan olarak açıklar.",
     "askLabel": "Sor",
-    "yoloOnTitle": "YOLO açık: bu soruşturma içindeki değişiklikleri ve yerleşik sağlayıcı sorgularını otomatik onaylar. Web sayfalarını açmadan, diğer soruşturmaları okumadan veya bunlara yazmadan, beceri kullanmadan ya da ajanları değiştirmeden önce yine sorar.",
-    "yoloOffTitle": "CaddyAI her değişiklikten önce sorar. YOLO'yu açmak için tıklayın: bu soruşturma içindeki değişiklikleri ve yerleşik sağlayıcı sorgularını otomatik onaylar; web sayfalarını açmadan, diğer soruşturmaları okumadan veya bunlara yazmadan, beceri kullanmadan ya da ajanları değiştirmeden önce yine sorar."
+    "yoloOnTitleV2": "YOLO açık: değişiklikler ve yerleşik sağlayıcı sorguları sormadan çalışır. Web sayfaları, beceriler, diğer entegrasyonlar ve diğer soruşturmalarda ya da ajanlarda yapılan değişiklikler yine onayınızı gerektirir; senkronize edilebilen bir soruşturmadan diğer soruşturmaları okumak da öyle. Bir sağlayıcı sorgusu diğer entegrasyonları sormak yerine atlar; onaylamak için YOLO'yu kapatın.",
+    "yoloOffTitleV2": "CaddyAI her değişiklikten, web sayfasından, sağlayıcı sorgusundan, beceriden veya diğer entegrasyondan önce sorar; senkronize edilebilen bir soruşturmadan diğer soruşturmaları okumadan önce de sorar. YOLO'yu açmak için tıklayın: değişiklikler ve yerleşik sağlayıcı sorguları artık sormadan çalışır; diğer soruşturmalarda ya da ajanlarda yapılan değişiklikler hariç.",
+    "yoloInPlanTitle": "Plan modunda CaddyAI yalnızca okur; Sor/YOLO anahtarı yalnızca Eylem modunda geçerlidir. {{setting}}"
   },
   "approval": {
     "position": "{{index}} / {{total}}",
@@ -193,12 +194,20 @@
   },
   "cti": {
     "invalidCommand": "Bu CTI komutu çalıştırılamadı:",
-    "noSourcesV2": "Kullanılabilir CTI kaynağı yok. Adlandırılmış ajan host'ları bu sürümde artık yapılandırılamaz."
+    "noSourcesV2": "Kullanılabilir CTI kaynağı yok. Adlandırılmış ajan host'ları bu sürümde artık yapılandırılamaz.",
+    "hostNeedsHttps": "Kullanılabilir CTI kaynağı yok. CTI ajan host'u https gerektirdiği için kullanılmıyor (düz http yalnızca bu bilgisayarda çalışır). Ayarlar → AI bölümüne bakın."
   },
   "fetch": {
     "createdNote": "{{url}} adresinden **{{title}}** notu oluşturuldu",
     "failed": "URL getirilemedi: {{error}}",
     "unknownError": "Bilinmeyen hata"
+  },
+  "loop": {
+    "started": "Arka plan döngüsü `{{id}}` başlatıldı. Her {{interval}} çalışır:",
+    "stopHint": "Durdurmak için `/stoploop` kullanın.",
+    "stopped_one": "{{count}} arka plan döngüsü durduruldu.",
+    "stopped_other": "{{count}} arka plan döngüsü durduruldu.",
+    "noneToStop": "Durdurulacak etkin döngü yok."
   },
   "input.serverStatus": "Ekip sunucusu yolu",
   "input.serverModelsHelp": "Kullanılabilir sağlayıcılar ve modeller ekip sunucusunun yapılandırmasına bağlıdır.",

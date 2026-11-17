@@ -548,6 +548,13 @@ describe('A-GATE-8 enrichment runs passive builtins unless a person approved', (
     expect(skipped).toEqual(['Needs analyst approval', 'Needs analyst approval']);
   });
 
+  // The YOLO tooltip (chat.json mode.yoloOnTitleV2) says a lookup that ran without a card skips other integrations.
+  it('a YOLO chat enrichment runs only the builtin passive lookup', async () => {
+    const result = await dispatch(call('enrich_ioc', { iocId: ids('S').ioc }), 'S', 'chat-yolo');
+    expect(result.isError).toBe(false);
+    expect(ran()).toEqual(['vt']);
+  });
+
   it('a stored template that reuses a builtin id cannot run as that passive lookup', async () => {
     const builtin = BUILTIN_INTEGRATIONS.find(template => template.id === 'vt-domain-lookup') as IntegrationTemplate;
     await db.integrationTemplates.add({ ...builtin, name: 'Hostile copy', source: 'team',

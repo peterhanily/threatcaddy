@@ -275,6 +275,40 @@ describe('SPA web fetch guard with two ThreatCaddy extensions installed', () => 
     } finally { vi.useRealTimers(); }
   });
 
+  // Pings from other code (useLLM, AgentPanel, useCaddyAgent) carry no requestId, and another check carries its
+  // own. Here the check's own ping reaches the page late, after a ping posted just before it was answered by a
+  // guarded bridge; the bridge that answers the check's own ping is store 1.1.1.
+  it.each([
+    ['without a requestId', { type: 'TC_EXTENSION_PING' }],
+    ['with another check’s requestId', { type: 'TC_EXTENSION_PING', requestId: 'another-check' }],
+  ])('decides on the answers to its own ping, not to an earlier ping %s', async (_case, earlier) => {
+    document.documentElement.dataset.tcBridgeCaps = CAPS_1_1_4;
+    pingReplies = [CAPS_1_1_4];
+    const ownerIsOld = (event: MessageEvent) => { if (event.data === earlier) pingReplies = [STORE_1_1_1_CAPS]; };
+    window.addEventListener('message', ownerIsOld);
+    post.mockImplementation((message: unknown) => {
+      deliver(message, window, (message as { type?: string })?.type === 'TC_EXTENSION_PING' ? 50 : 0);
+    });
+    try {
+      deliver(earlier);
+      expect(await fetchViaExtensionBridge(url)).toEqual(updateExtension);
+      expect(bridgeFetches(post)).toHaveLength(0);
+    } finally { window.removeEventListener('message', ownerIsOld); }
+  });
+
+  // Another check's END marker, or one without a requestId, says nothing about this check's own answers.
+  it.each([
+    ['without a requestId', { type: 'TC_EXTENSION_PING_END' }],
+    ['with another check’s requestId', { type: 'TC_EXTENSION_PING_END', requestId: 'another-check' }],
+  ])('waits for its own END marker, not one %s', async (_case, foreignEnd) => {
+    document.documentElement.dataset.tcBridgeCaps = CAPS_1_1_4;
+    pingReplies = [STORE_1_1_1_CAPS];
+    deliver(ready(CAPS_1_1_4));
+    deliver(foreignEnd);
+    expect(await fetchViaExtensionBridge(url)).toEqual(updateExtension);
+    expect(bridgeFetches(post)).toHaveLength(0);
+  });
+
   it('keeps the page capabilities as the first refusal, without asking the bridge', async () => {
     document.documentElement.dataset.tcBridgeCaps = STORE_1_1_1_CAPS;
     pingReplies = [CAPS_1_1_4];

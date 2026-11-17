@@ -22,7 +22,7 @@
     "badgeMeeting": "cuộc họp",
     "planMode": "Lên kế hoạch",
     "actMode": "Hành động",
-    "actModeTitle": "Chế độ hành động: AI thực thi các hành động với sự chấp thuận",
+    "actModeTitleV2": "Chế độ hành động: CaddyAI có thể thực hiện thay đổi và dùng công cụ. Công tắc Hỏi/YOLO quyết định những gì cần bạn phê duyệt.",
     "yoloLabel": "YOLO",
     "tokSuffix": "tok",
     "tokenTotal": "Tổng token: {{total}}",
@@ -53,8 +53,8 @@
     "restoreLabel": "Khôi phục",
     "approve": "Phê duyệt",
     "reject": "Từ chối",
-    "switchedToAct": "Đã chuyển sang chế độ hành động — AI sẽ thực thi với sự chấp thuận",
-    "switchedToActMessage": "Đã chuyển sang **chế độ hành động**. Gửi \"thực thi kế hoạch\" để chạy các hành động đề xuất với cổng phê duyệt, hoặc tiếp tục cuộc trò chuyện.",
+    "switchedToActV2": "Đã chuyển sang chế độ hành động. Công tắc Hỏi/YOLO quyết định những gì cần bạn phê duyệt.",
+    "switchedToActMessageV2": "Đã chuyển sang **chế độ hành động**. Gửi \"thực thi kế hoạch\" để chạy các hành động đề xuất, hoặc tiếp tục cuộc trò chuyện. Công tắc Hỏi/YOLO quyết định những hành động nào cần bạn phê duyệt.",
     "errorCreateThread": "Tạo luồng trò chuyện thất bại. Thử làm mới trang.",
     "settingsAiLlm": "Cài đặt → AI/LLM",
     "errorNoLocalEndpoint": "Chưa cấu hình endpoint LLM cục bộ. Thêm vào Cài đặt → AI/LLM.",
@@ -73,11 +73,12 @@
     "onboardingDismiss": "Đã hiểu"
   },
   "mode": {
-    "planTitle": "Chế độ lên kế hoạch: CaddyAI chỉ đọc cuộc điều tra này và mô tả mọi thứ khác dưới dạng kế hoạch",
-    "switchedToPlan": "Đã chuyển sang chế độ lên kế hoạch. CaddyAI chỉ đọc cuộc điều tra này và mô tả mọi thứ khác dưới dạng kế hoạch",
+    "planTitleV2": "Chế độ lên kế hoạch: CaddyAI chỉ đọc và mô tả mọi thứ khác dưới dạng kế hoạch. Trong một cuộc điều tra, nó chỉ đọc cuộc điều tra đó; ngoài mọi cuộc điều tra, nó có thể đọc tất cả.",
+    "switchedToPlanV2": "Đã chuyển sang chế độ lên kế hoạch. CaddyAI chỉ đọc và mô tả mọi thứ khác dưới dạng kế hoạch.",
     "askLabel": "Hỏi",
-    "yoloOnTitle": "YOLO đang bật: tự động phê duyệt các thay đổi trong cuộc điều tra này và các tra cứu nhà cung cấp tích hợp sẵn. Vẫn hỏi trước khi mở trang web, đọc hoặc ghi các cuộc điều tra khác, dùng kỹ năng hoặc thay đổi tác tử.",
-    "yoloOffTitle": "CaddyAI hỏi trước mỗi thay đổi. Nhấp để bật YOLO: tự động phê duyệt các thay đổi trong cuộc điều tra này và các tra cứu nhà cung cấp tích hợp sẵn, và vẫn hỏi trước khi mở trang web, đọc hoặc ghi các cuộc điều tra khác, dùng kỹ năng hoặc thay đổi tác tử."
+    "yoloOnTitleV2": "YOLO đang bật: các thay đổi và tra cứu nhà cung cấp tích hợp sẵn chạy mà không hỏi. Trang web, kỹ năng, các tích hợp khác và thay đổi đối với cuộc điều tra khác hoặc tác tử vẫn cần bạn phê duyệt, cũng như việc đọc các cuộc điều tra khác từ một cuộc điều tra có thể đồng bộ. Tra cứu nhà cung cấp sẽ bỏ qua các tích hợp khác thay vì hỏi; hãy tắt YOLO để phê duyệt chúng.",
+    "yoloOffTitleV2": "CaddyAI hỏi trước mỗi thay đổi, trang web, tra cứu nhà cung cấp, kỹ năng hoặc tích hợp khác, và trước khi đọc các cuộc điều tra khác từ một cuộc điều tra có thể đồng bộ. Nhấp để bật YOLO: khi đó các thay đổi và tra cứu nhà cung cấp tích hợp sẵn chạy mà không hỏi, trừ thay đổi đối với cuộc điều tra khác hoặc tác tử.",
+    "yoloInPlanTitle": "Ở chế độ lên kế hoạch, CaddyAI chỉ đọc; công tắc Hỏi/YOLO chỉ áp dụng ở chế độ hành động. {{setting}}"
   },
   "approval": {
     "position": "{{index}} trên {{total}}",
@@ -192,12 +193,20 @@
   },
   "cti": {
     "invalidCommand": "Không thể chạy lệnh CTI đó:",
-    "noSourcesV2": "Không có nguồn CTI nào khả dụng. Không thể cấu hình agent host có tên trong phiên bản này nữa."
+    "noSourcesV2": "Không có nguồn CTI nào khả dụng. Không thể cấu hình agent host có tên trong phiên bản này nữa.",
+    "hostNeedsHttps": "Không có nguồn CTI nào khả dụng. Agent host CTI không được dùng vì cần https (http thường chỉ hoạt động trên máy tính này). Xem Cài đặt → AI."
   },
   "fetch": {
     "createdNote": "Đã tạo ghi chú **{{title}}** từ {{url}}",
     "failed": "Không thể lấy URL: {{error}}",
     "unknownError": "Lỗi không xác định"
+  },
+  "loop": {
+    "started": "Đã bắt đầu vòng lặp nền `{{id}}`. Chạy mỗi {{interval}}:",
+    "stopHint": "Dùng `/stoploop` để dừng.",
+    "stopped_one": "Đã dừng {{count}} vòng lặp nền.",
+    "stopped_other": "Đã dừng {{count}} vòng lặp nền.",
+    "noneToStop": "Không có vòng lặp đang hoạt động để dừng."
   },
   "input.serverStatus": "Kênh máy chủ nhóm",
   "input.serverModelsHelp": "Nhà cung cấp và mô hình khả dụng phụ thuộc vào cấu hình máy chủ nhóm.",
