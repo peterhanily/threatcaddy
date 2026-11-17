@@ -5,7 +5,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
-import { DEFAULT_SETTINGS, type Folder } from '../types';
+import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentProfile, type Folder } from '../types';
 import { runAgentCycle } from '../lib/caddy-agent';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { scriptedLLM } from './helpers/scripted-llm';
@@ -98,6 +98,50 @@ describe('lean agent prompts', () => {
     expect(request.systemPrompt).not.toContain('Lab Host');
     const descriptions = (request.tools as Array<{ description: string }>).map(tool => tool.description);
     expect(descriptions.filter(description => description.startsWith('[Lab Host] '))).toEqual([]);
+  });
+
+  describe('AGENT SKILLS names only the skills this agent is offered', () => {
+    const skill = (name: string) => ({ name, description: `Synthetic ${name}`, parameters: { type: 'object' as const, properties: {}, required: [] } });
+    const withSkills = { ...settings, llmLocalEndpoint: 'http://localhost:11434/v1', llmLocalSkills: [skill('triage')], agentHosts: [
+      { id: 'h1', name: 'soc1', displayName: 'SOC One', url: 'https://soc1.example', enabled: true, skills: [skill('isolate')] },
+      { id: 'h2', name: 'loop', displayName: 'Loop Host', url: 'http://127.0.0.1:8080', enabled: true, skills: [skill('scan')] }] };
+    const SKILLS = '\nAGENT SKILLS: Local Agent (triage); SOC One (isolate); Loop Host (scan). Use the tools whose description starts with [<name>] for live system queries.';
+    const run = async (profile: AgentProfile | undefined, withSettings: typeof settings) => {
+      scriptedLLM.reset();
+      await runAgentCycle(await db.folders.get('S') as Folder, withSettings, true, undefined, profile);
+      const [request] = scriptedLLM.requests;
+      return { systemPrompt: request.systemPrompt ?? '', labels: (request.tools as Array<{ description: string }>).map(tool => tool.description).filter(d => /^\[(Local Agent|SOC One|Loop Host)\] /.test(d)) };
+    };
+    const builtin = (id?: string) => BUILTIN_AGENT_PROFILES.find(profile => profile.id === id);
+
+    it.each(['ap-legal-counsel', 'ap-malware-analyst'])('%s, offered no host tool, is told of none', async id => {
+      const { systemPrompt, labels } = await run(builtin(id), withSkills);
+      expect(labels).toEqual([]);
+      expect(systemPrompt).not.toContain('AGENT SKILLS');
+      expect(systemPrompt).toBe((await run(builtin(id), settings)).systemPrompt);
+    });
+
+    it.each([undefined, 'ap-threat-hunter', 'ap-lead-analyst'])('%s, offered every host tool, keeps the same prompt', async id => {
+      const { systemPrompt, labels } = await run(builtin(id), withSkills);
+      expect(labels).toHaveLength(3);
+      const without = (await run(builtin(id), settings)).systemPrompt;
+      // Byte for byte the 2.0.3 prompt: the line sits after the persona's instructions, before the closing line or focus.
+      expect(systemPrompt).toBe(id ? without.replace('\n\nBe PROACTIVE.', `${SKILLS}\n\nBe PROACTIVE.`) : `${without}${SKILLS}`);
+    });
+
+    it('a profile that lists one host tool is told of that skill only', async () => {
+      const profile: AgentProfile = { id: 'custom-isolator', name: 'Isolator', role: 'specialist', systemPrompt: 'Isolate hosts on request.',
+        allowedTools: ['get_investigation_summary', 'host:soc1:isolate'], policy: DEFAULT_AGENT_POLICY, source: 'user', createdAt: 1, updatedAt: 1 };
+      const { systemPrompt, labels } = await run(profile, withSkills);
+      expect(labels).toEqual(['[SOC One] Synthetic isolate']);
+      expect(systemPrompt).toContain('\nAGENT SKILLS: SOC One (isolate). Use the tools');
+    });
+
+    it('local skills without a local endpoint are not offered, so they are not named', async () => {
+      const { systemPrompt, labels } = await run(undefined, { ...withSkills, llmLocalEndpoint: undefined });
+      expect(labels).toEqual(['[SOC One] Synthetic isolate', '[Loop Host] Synthetic scan']);
+      expect(systemPrompt).toContain('\nAGENT SKILLS: SOC One (isolate); Loop Host (scan). Use the tools');
+    });
   });
 
   it('caps the investigation description in the cycle prompt at 2 000 characters', async () => {
