@@ -42,7 +42,7 @@ Most investigation tools lock your data in a cloud you don't control, cost per s
 
 **Try it now:** [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loads a sample investigation with a guided walkthrough.
 
-**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, checksums and source revision. Client and server 2.0.3 add AI prompt-injection hardening to the data-preservation, backup, session and evidence-import fixes of 2.0.2. The extension has its own version, currently 1.1.4; web fetch needs 1.1.3 or later. Read the [2.0.3 upgrade and channel notes](docs/releases/v2.0.3.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
+**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, `release-manifest.json` (with the source revision) and `SHA256SUMS`. Client and server 2.0.3 add AI prompt-injection hardening to the data-preservation, backup, session and evidence-import fixes of 2.0.2. The extension has its own version, currently 1.1.4; web fetch needs 1.1.3 or later. Read the [2.0.3 upgrade and channel notes](docs/releases/v2.0.3.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
 
 **Self-host the client:**
 
