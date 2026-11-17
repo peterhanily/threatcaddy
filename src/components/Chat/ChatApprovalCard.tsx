@@ -77,6 +77,12 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
     summary.push(reach.destinations.length ? t('approval.lookup', { value, vendors: reach.destinations.join(', ') }) : t('approval.lookupNone', { value }));
   } else if (reach.egress === 'configured') summary.push(t('approval.sendsTo', { destination: reach.destinations.join(', ') }));
   if (changesAgents) summary.push(t('approval.agentChange'));
+  // A change in the conversation's own investigation, which the sidebar may not show. Agent
+  // deployments never sync, and an egress card already says where the data goes.
+  if (reach.write && !reach.crossWrite && reach.egress === 'none' && !changesAgents) {
+    if (resolved.homeName) summary.push(t(reach.homeShareable ? 'approval.targetSynced' : 'approval.targetLocal', { name: resolved.homeName }));
+    else if (!reach.homeFolderId) summary.push(t('approval.unfiled'));
+  }
   if (reach.crossRead && reach.targetFolderIds.length === 0) summary.push(t('approval.readsOthers'));
   for (const target of resolved.targets) summary.push(t(target.shareable ? 'approval.targetSynced' : 'approval.targetLocal', { name: target.name }));
   if (reach.flags.includes('unfiled-sink')) summary.push(t('approval.unfiled'));

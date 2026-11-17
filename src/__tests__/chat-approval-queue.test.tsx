@@ -149,7 +149,7 @@ describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
       await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/third'); });
       const replies = props.onAddMessage.mock.calls.map(([, message]) => message).filter(message => message.role === 'assistant');
       expect(replies.map(message => message.content)).toEqual([
-        'Notiz **Fixture page** aus https://www.cisa.gov/advisory erstellt',
+        'Notiz **Fixture page** aus https://www.cisa.gov/advisory erstellt\n\nShared case: wird mit ihren Mitgliedern synchronisiert',
         `URL konnte nicht abgerufen werden: ${i18n.t('fetch.privateTarget', { ns: 'integrations' })}`,
         'URL konnte nicht abgerufen werden: Synthetic storage failure',
         'URL konnte nicht abgerufen werden: Unbekannter Fehler',
