@@ -14,6 +14,10 @@ import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
 
 const queue = (proposal: Partial<AgentAction> & Pick<AgentAction, 'toolName' | 'toolInput'>) =>
   queueAgentAction({ investigationId: 'S', threadId: 'thread', rationale: 'Proposed by an agent', ...proposal }).then(({ action }) => action);
+const errorOf = (result: { result: string }) => String(JSON.parse(result.result).error ?? '');
+/** The proposer stays deployed, so approval reaches the profile and toolset checks. */
+const deploy = (profileId: string) =>
+  db.agentDeployments.add({ id: `dep-${profileId}`, investigationId: 'S', profileId, status: 'idle', order: 0, createdAt: 1, updatedAt: 1 });
 
 let egress: EgressSpy;
 beforeEach(async () => { await seedAIWorkspace(); egress = installEgressSpy(); });
@@ -36,8 +40,11 @@ describe('A-APPR re-derivation on approval', () => {
   });
 
   it('A-APPR-3 refuses a Threat Hunter create_in_investigation row', async () => {
+    await deploy('ap-threat-hunter');
     const action = await queue({ agentConfigId: 'ap-threat-hunter', toolName: 'create_in_investigation', toolInput: { investigationId: 'P', entityType: 'note', data: { title: 'x' } } });
-    expect((await executeApprovedAction(action)).isError).toBe(true);
+    const result = await executeApprovedAction(action);
+    expect(result.isError).toBe(true);
+    expect(errorOf(result)).toBe('Tool "create_in_investigation" is not available to this agent.');
     expect(await db.notes.where('folderId').equals('P').count()).toBe(1);
   });
 
@@ -68,8 +75,12 @@ describe('A-APPR re-derivation on approval', () => {
     await db.folders.update('P', { status: 'archived' });
     const archived = await queue({ investigationId: 'P', toolName: 'create_note', toolInput: { title: 'x' } });
     expect((await executeApprovedAction(archived)).isError).toBe(true);
+    // A deployment of a deleted profile can arrive by restore or sync.
+    await deploy('deleted-profile');
     const orphan = await queue({ agentConfigId: 'deleted-profile', toolName: 'create_note', toolInput: { title: 'x' } });
-    expect((await executeApprovedAction(orphan)).isError).toBe(true);
+    const refused = await executeApprovedAction(orphan);
+    expect(refused.isError).toBe(true);
+    expect(errorOf(refused)).toBe('The agent profile is no longer available.');
     expect(await db.notes.where('title').equals('x').count()).toBe(0);
   });
 
