@@ -34,8 +34,8 @@ const NO_SOURCES = 'No CTI sources are available. Named agent hosts are no longe
 const NEEDS_HTTPS = 'No CTI sources are available. The CTI agent host is not used because it needs https (plain http works only on this computer). '
   + 'See Settings → AI.';
 const skill = (name: string) => ({ name, description: name, parameters: { type: 'object' as const, properties: {} } });
-const ctiHost = (url: string, enabled = true) => ({ id: 'cti', name: 'cti', displayName: 'CTI', url, enabled,
-  skills: [skill('virustotal_ioc_report'), skill('censys_host')] });
+const ctiHost = (url: string, enabled = true, skills = [skill('virustotal_ioc_report'), skill('censys_host')]) => ({ id: 'cti', name: 'cti',
+  displayName: 'CTI', url, enabled, skills });
 
 async function runCommand(settings: Settings) {
   const onAddMessage = vi.fn().mockResolvedValue(undefined);
@@ -82,7 +82,7 @@ describe('C-CHAT-8 CTI slash commands', () => {
 
   // Https would not help a host with no skills: getHostToolDefinitions offers nothing from it either way.
   it('keep the general answer when the plain-http CTI host has no skills', async () => {
-    const messages = await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [{ ...ctiHost('http://10.0.0.5:8443'), skills: [] }] } as Settings);
+    const messages = await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [ctiHost('http://10.0.0.5:8443', true, [])] } as Settings);
     expect(messages.at(-1)).toEqual(expect.objectContaining({ role: 'assistant', content: NO_SOURCES }));
     expect(state.executeHostSkill).not.toHaveBeenCalled();
   });
