@@ -116,6 +116,13 @@ describe('agent hook lifecycle ownership', () => {
     expect(result.current.agentStatus).toBe('waiting');
   });
 
+  it('a manual run still runs the legacy agent while its own proposal is pending', async () => {
+    const first = folder('first', false); mocks.folders.set(first.id, first); mocks.pending.mockResolvedValue([{ toolName: 'fetch_url' }]);
+    const { result } = renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+    await act(async () => result.current.runOnce());
+    expect(mocks.run).toHaveBeenCalledOnce();
+  });
+
   it('B-PAUSE-1 keeps running deployed agents while one of them waits for review', async () => {
     const first = folder(); mocks.folders.set(first.id, first); mocks.count.mockResolvedValue(2);
     mocks.pending.mockResolvedValue([{ toolName: 'fetch_url', agentConfigId: 'ap-threat-hunter' }]);

@@ -186,14 +186,17 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
           }
         }
       } else {
-        // Legacy single-agent mode pauses only for its own proposals: rows
-        // without an agent profile (deployed agents and the supervisor have one).
-        const ownPending = await db.agentActions.where('[investigationId+status]').equals([freshFolder.id, 'pending'])
-          .filter(action => !action.agentConfigId).count();
-        if (!current()) return;
-        if (ownPending > 0) {
-          updateAgentStatus('waiting');
-          return;
+        // On the timer, legacy single-agent mode pauses only for its own
+        // proposals: rows without an agent profile (deployed agents and the
+        // supervisor have one). A manual run still runs.
+        if (requireEnabled) {
+          const ownPending = await db.agentActions.where('[investigationId+status]').equals([freshFolder.id, 'pending'])
+            .filter(action => !action.agentConfigId).count();
+          if (!current()) return;
+          if (ownPending > 0) {
+            updateAgentStatus('waiting');
+            return;
+          }
         }
         setStreamingContent('');
         const result = await runAgentCycle(freshFolder, settingsRef.current, callbacks.current.extensionAvailable, (status) => {
