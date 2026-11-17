@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import { BulkEnrichModal } from '../components/Analysis/BulkEnrichModal';
 import { autoEnrichImportedIOCs } from '../lib/ioc-auto-enrichment';
-import { executeTool } from '../lib/llm-tools';
+import { execTool } from './helpers/tool-exec';
 import type { StandaloneIOC } from '../types';
 import type { InstalledIntegration, IntegrationRun, IntegrationStep, IntegrationTemplate } from '../types/integration-types';
 
@@ -53,7 +53,7 @@ async function invoke(caller: Caller, template: IntegrationTemplate, createNotes
   } else {
     await db.integrationTemplates.add(template);
     await db.installedIntegrations.add(installation);
-    await executeTool({ id: 'call', type: 'tool_use', name: 'enrich_ioc', input: { iocId: subject.id } });
+    await execTool({ id: 'call', type: 'tool_use', name: 'enrich_ioc', input: { iocId: subject.id } });
     const run = await db.integrationRuns.toArray();
     expect(run).toHaveLength(1);
     return run[0];
@@ -154,7 +154,7 @@ it('keeps bulk note creation deliberately disabled without claiming a created en
 
 it('refuses an already-trashed enrichment tool input without starting a run', async () => {
   await db.standaloneIOCs.update(subject.id, { trashed: true });
-  const result = await executeTool({ id: 'call', type: 'tool_use', name: 'enrich_ioc', input: { iocId: subject.id } });
+  const result = await execTool({ id: 'call', type: 'tool_use', name: 'enrich_ioc', input: { iocId: subject.id } });
   expect(result.result).toContain('not found or deleted');
   expect(await db.integrationRuns.count()).toBe(0);
   expect(await db.notes.count()).toBe(0);

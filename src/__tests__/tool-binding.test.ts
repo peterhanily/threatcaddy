@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getToolBinding } from '../lib/tool-binding';
-import { executeTool } from '../lib/llm-tools';
-import { executeApprovedAction } from '../lib/caddy-agent';
-import { queueAgentAction } from '../lib/agent-action-approval';
+import { execTool } from './helpers/tool-exec';
+import { executeApprovedAction } from '../lib/agent-action-approval';
+import { queueAgentAction } from '../lib/agent-action-queue';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
 import { db } from '../db';
 import { DEFAULT_SETTINGS, type Settings, type ToolUseBlock } from '../types';
@@ -18,7 +18,7 @@ describe('dynamic tool approval bindings', () => {
     const binding = await getToolBinding(tool, 'case', 'act');
     expect(binding).toMatch(/^v1:[a-f0-9]{64}$/);
     expect(binding).not.toContain('synthetic-key');
-    const result = await executeTool(tool, 'case', undefined, { allowedTools: new Set([tool.name]), toolBinding: binding });
+    const result = await execTool(tool, 'case', { allowedTools: new Set([tool.name]), toolBinding: binding });
     expect(result).toEqual({ result: 'Prepared report', isError: false });
     expect(fetch).toHaveBeenCalledOnce();
   });
@@ -33,7 +33,7 @@ describe('dynamic tool approval bindings', () => {
     if (change === 'credential') host.apiKey = 'new-synthetic-key';
     if (change === 'disabled') host.enabled = false;
     saveSettings(next);
-    const result = await executeTool(tool, 'case', undefined, { allowedTools: new Set([tool.name]), toolBinding: binding });
+    const result = await execTool(tool, 'case', { allowedTools: new Set([tool.name]), toolBinding: binding });
     expect(result.isError).toBe(true);
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -44,7 +44,7 @@ describe('dynamic tool approval bindings', () => {
       [{ ...tool, input: { document: 'different' } }, 'case', false],
       [tool, 'different-case', false], [tool, 'case', true],
     ] as const) {
-      expect((await executeTool(call, scope, undefined, { allowedTools: new Set([tool.name]), toolBinding: binding, readOnly })).isError).toBe(true);
+      expect((await execTool(call, scope, { surface: readOnly ? 'chat-plan' : 'chat-act', allowedTools: new Set([tool.name]), toolBinding: binding })).isError).toBe(true);
     }
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -63,7 +63,7 @@ describe('dynamic tool approval bindings', () => {
     await queueAgentAction(proposal);
     const bound = await queueAgentAction({ ...proposal, toolBinding: await getToolBinding(tool, 'case') });
     expect(bound.alreadyPending).toBe(false);
-    expect((await executeTool(tool, 'case')).isError).toBe(true);
+    expect((await execTool(tool, 'case')).isError).toBe(true);
     expect(fetch).not.toHaveBeenCalled();
   });
 });

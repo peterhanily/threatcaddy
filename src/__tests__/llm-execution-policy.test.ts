@@ -5,12 +5,12 @@ import { getToolActionClass, resolveEffectivePolicy, shouldAutoApprove } from '.
 import { loadAgentPolicy } from '../lib/agent-profile-resolver';
 import { getHostSkillActionClass } from '../lib/agent-hosts';
 import { isWriteTool } from '../lib/llm-tool-defs';
-import { executeTool } from '../lib/llm-tools';
-import { normalizeToolResult } from '../lib/llm-tool-execution';
+import { execTool } from './helpers/tool-exec';
+import { getToolExecutionError, normalizeToolResult } from '../lib/llm-tool-execution';
 import { getReadOnlyEntityError } from '../lib/tool-entity-policy';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
-import { executeApprovedAction } from '../lib/caddy-agent';
-import { queueAgentAction } from '../lib/agent-action-approval';
+import { executeApprovedAction } from '../lib/agent-action-approval';
+import { queueAgentAction } from '../lib/agent-action-queue';
 import { getSupervisorToolPermission, SUPERVISOR_ACTION_PROFILE, SUPERVISOR_TOOLS, validateSupervisorDispatch } from '../lib/supervisor-tool-policy';
 
 const call = (name: string, input: Record<string, unknown> = {}): ToolUseBlock => ({ type: 'tool_use', id: 'test-call', name, input });
@@ -55,6 +55,13 @@ describe('A-POL-1 effective agent policy', () => {
     const effective = resolveEffectivePolicy({ ...DEFAULT_AGENT_POLICY, intervalMinutes: 30, verbosity: 10 },
       { ...DEFAULT_AGENT_POLICY, intervalMinutes: 15 }, { intervalMinutes: 7 }, true);
     expect(effective).toMatchObject({ intervalMinutes: 7, verbosity: 10 });
+  });
+
+  it('refuses web fetch and other non-reading tools in Plan mode before dispatch', () => {
+    expect(getToolExecutionError(call('fetch_url', { url: 'https://nvd.nist.gov/' }), { surface: 'chat-plan', allowedTools: new Set(['fetch_url']) })).toBeTruthy();
+    expect(getToolExecutionError(call('list_investigations'), { surface: 'chat-plan', allowedTools: new Set(['list_investigations']) })).toBeTruthy();
+    expect(getToolExecutionError(call('search_notes', { query: 'x' }), { surface: 'chat-plan', allowedTools: new Set(['search_notes']) })).toBeUndefined();
+    expect(getToolExecutionError(call('fetch_url', { url: 'https://nvd.nist.gov/' }), { surface: 'chat-act', allowedTools: new Set(['fetch_url']) })).toBeUndefined();
   });
 
   it('caps a deployed Threat Hunter by the investigation fetch setting', async () => {
@@ -108,7 +115,7 @@ describe('request execution constraints', () => {
   it('rechecks persisted profile restrictions at the actual dispatcher', async () => {
     const profile = { ...BUILTIN_AGENT_PROFILES[0], id: 'restricted-profile', readOnlyEntityTypes: ['note'] };
     await db.agentProfiles.put(profile);
-    const result = await executeTool(call('create_note', { title: 'Restricted' }), undefined, { profileId: profile.id });
+    const result = await execTool(call('create_note', { title: 'Restricted' }), undefined, { surface: 'agent', agentContext: { profileId: profile.id } });
     expect(result.isError).toBe(true);
     expect(result.result).toContain('read-only');
     expect(await db.notes.count()).toBe(0);
@@ -116,25 +123,19 @@ describe('request execution constraints', () => {
   });
 
   it('persists an allowed Act-mode note', async () => {
-    const result = await executeTool(call('create_note', { title: 'Approved draft', content: 'Summary' }), undefined, undefined, {
-      allowedTools: new Set(['create_note']),
-    });
+    const result = await execTool(call('create_note', { title: 'Approved draft', content: 'Summary' }), undefined, { allowedTools: new Set(['create_note']) });
     expect(result.isError).toBe(false);
     expect(await db.notes.count()).toBe(1);
   });
 
   it('keeps Plan mode read-only at dispatch', async () => {
-    const result = await executeTool(call('create_note', { title: 'Draft' }), undefined, undefined, {
-      allowedTools: new Set(['create_note']), readOnly: true,
-    });
+    const result = await execTool(call('create_note', { title: 'Draft' }), undefined, { surface: 'chat-plan', allowedTools: new Set(['create_note']) });
     expect(result.isError).toBe(true);
     expect(await db.notes.count()).toBe(0);
   });
 
   it('requires membership of the current request tool set', async () => {
-    const result = await executeTool(call('create_note', { title: 'Draft' }), undefined, undefined, {
-      allowedTools: new Set(['search_notes']),
-    });
+    const result = await execTool(call('create_note', { title: 'Draft' }), undefined, { allowedTools: new Set(['search_notes']) });
     expect(result.isError).toBe(true);
     expect(await db.notes.count()).toBe(0);
   });
@@ -198,10 +199,8 @@ describe('supervisor write scopes and investigation policies', () => {
 
   it('executes a supervisor note when its investigation approves creation', async () => {
     await db.folders.add(folder('supervisor', { ...DEFAULT_AGENT_POLICY, autoApproveCreate: true }));
-    const result = await executeTool(call('create_note', { title: 'Summary' }), 'supervisor', undefined, {
-      allowedTools: SUPERVISOR_TOOLS,
-      validateScope: tool => validateSupervisorDispatch(tool, 'supervisor'),
-    });
+    const result = await execTool(call('create_note', { title: 'Summary' }), 'supervisor', { surface: 'supervisor', approve: false, allowedTools: SUPERVISOR_TOOLS,
+      validateScope: tool => validateSupervisorDispatch(tool, 'supervisor') });
     expect(result.isError).toBe(false);
     expect((await db.notes.toArray())[0].folderId).toBe('supervisor');
   });
@@ -226,10 +225,8 @@ describe('supervisor write scopes and investigation policies', () => {
     await db.folders.bulkAdd([folder('supervisor', { ...DEFAULT_AGENT_POLICY, autoApproveModify: true }), folder('case')]);
     await db.standaloneIOCs.add({ id: 'indicator', folderId: 'case', type: 'domain', value: 'example.com', confidence: 'medium', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
     expect(await getSupervisorToolPermission(call('update_ioc', { id: 'indicator', confidence: 'high' }), 'supervisor')).toEqual({ kind: 'approval-required', investigationId: 'case' });
-    const result = await executeTool(call('update_ioc', { id: 'indicator', confidence: 'high' }), 'supervisor', undefined, {
-      allowedTools: SUPERVISOR_TOOLS,
-      validateScope: tool => validateSupervisorDispatch(tool, 'supervisor'),
-    });
+    const result = await execTool(call('update_ioc', { id: 'indicator', confidence: 'high' }), 'supervisor', { surface: 'supervisor', approve: false, allowedTools: SUPERVISOR_TOOLS,
+      validateScope: tool => validateSupervisorDispatch(tool, 'supervisor') });
     expect(result.isError).toBe(true);
     expect((await db.standaloneIOCs.get('indicator'))?.confidence).toBe('medium');
   });

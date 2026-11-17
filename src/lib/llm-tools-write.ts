@@ -8,6 +8,7 @@ import type {
 } from '../types';
 import { isUserTimeline } from './sync-capture-policy';
 import { CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES, TASK_STATUSES, TIMELINE_EVENT_TYPES } from './entity-enums';
+import { currentCreator, withCreatorTags } from './tool-creator';
 
 const MAX_SNIPPET = 200;
 /** Max stored length for LLM-supplied free-text fields (prevents memory abuse from runaway agents) */
@@ -53,10 +54,11 @@ export async function executeCreateNote(input: Record<string, unknown>, folderId
     title: String(input.title || 'Untitled'),
     content: sanitizeText(String(input.content || '')),
     folderId: folderId || undefined,
-    tags: Array.isArray(input.tags) ? input.tags.map(String) : [],
+    tags: withCreatorTags(Array.isArray(input.tags) ? input.tags.map(String) : []),
     pinned: false,
     archived: false,
     trashed: false,
+    createdBy: currentCreator(),
     createdAt: now,
     updatedAt: now,
   };
@@ -100,10 +102,11 @@ export async function executeCreateTask(input: Record<string, unknown>, folderId
     status: status.value ?? 'todo',
     order: count,
     folderId: folderId || undefined,
-    tags: [],
+    tags: withCreatorTags([]),
     trashed: false,
     archived: false,
     assigneeId: input.assigneeId ? String(input.assigneeId) : undefined,
+    createdBy: currentCreator(),
     createdAt: now,
     updatedAt: now,
   };
@@ -148,9 +151,10 @@ export async function executeCreateIOC(input: Record<string, unknown>, folderId?
     confidence: confidence.value ?? 'medium',
     analystNotes: input.analystNotes ? sanitizeText(String(input.analystNotes)) : undefined,
     folderId: folderId || undefined,
-    tags: [],
+    tags: withCreatorTags([]),
     trashed: false,
     archived: false,
+    createdBy: currentCreator(),
     createdAt: now,
     updatedAt: now,
   };
@@ -204,9 +208,10 @@ export async function executeBulkCreateIOCs(input: Record<string, unknown>, fold
     confidence: confidences[index] ?? 'medium',
     analystNotes: iocInput.analystNotes ? sanitizeText(String(iocInput.analystNotes)) : undefined,
     folderId: folderId || undefined,
-    tags: [],
+    tags: withCreatorTags([]),
     trashed: false,
     archived: false,
+    createdBy: currentCreator(),
     createdAt: now,
     updatedAt: now,
   }));
@@ -262,13 +267,14 @@ export async function executeCreateTimelineEvent(input: Record<string, unknown>,
     linkedTaskIds: [],
     mitreAttackIds: [],
     assets: [],
-    tags: [],
+    tags: withCreatorTags([]),
     starred: false,
     folderId: folderId || undefined,
     timelineId,
     ...(hasGeo ? { latitude: lat, longitude: lng } : {}),
     trashed: false,
     archived: false,
+    createdBy: currentCreator(),
     createdAt: now,
     updatedAt: now,
   };
@@ -452,10 +458,10 @@ export async function executeCreateInInvestigation(input: Record<string, unknown
   if (id) {
     folder = await db.folders.get(id);
   } else if (name) {
+    // Exact name only: a partial match could write into an unintended investigation.
     const lower = name.toLowerCase();
     const all = await db.folders.toArray();
-    folder = all.find(f => f.name.toLowerCase() === lower)
-      || all.find(f => f.name.toLowerCase().includes(lower));
+    folder = all.find(f => f.name.toLowerCase() === lower);
   }
 
   if (!folder) return JSON.stringify({ error: 'Investigation not found' });

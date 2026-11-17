@@ -7,7 +7,7 @@ import type { AgentAction, AgentPolicy, AgentProfile, AgentDeployment, Folder, A
 import { DEFAULT_AGENT_POLICY } from '../../types';
 import { cn, formatDate, postMessageOrigin } from '../../lib/utils';
 import { db } from '../../db';
-import { executeApprovedAction, rejectAction, bulkApproveActions } from '../../lib/caddy-agent';
+import { executeApprovedAction, rejectAction, bulkApproveActions } from '../../lib/agent-action-approval';
 import { acknowledgeReconciliation } from '../../lib/agent-handoff';
 import { AgentActionCard } from './AgentActionCard';
 import { AgentProfilePicker } from './AgentProfilePicker';

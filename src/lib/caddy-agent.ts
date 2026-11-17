@@ -17,9 +17,10 @@ import { DEFAULT_AGENT_POLICY } from '../types';
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
 import { executeTool } from './llm-tools';
 import { getReadOnlyEntityError, getToolEntityEffects } from './tool-entity-policy';
-import { shouldAutoApprove, getToolActionClass } from './caddy-agent-policy';
-import { queueAgentAction } from './agent-action-approval';
-import { SUPERVISOR_ACTION_PROFILE, SUPERVISOR_TOOLS, getSupervisorToolPermission } from './supervisor-tool-policy';
+import { shouldAutoApprove, getToolActionClass, AGENT_NEVER_TOOLS, CROSS_CASE_READ_TOOLS, EXPLICIT_ONLY_TOOLS } from './caddy-agent-policy';
+import { queueAgentAction } from './agent-action-queue';
+import { isShareableFolder } from './ai-scope';
+import { sanitizeSoulText } from './soul-text';
 import { resolveRoutingMode, sendViaExtension, sendViaServer, sendDirectToLocal } from './llm-router';
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
 import { getHostToolDefinitions } from './agent-hosts';
@@ -188,19 +189,6 @@ SOUL: Use read_soul at the start of each investigation to remember your identity
   //   3. The fact that the agent itself wrote it — this is self-reinforced identity,
   //      so we treat it as low-trust prose rather than pretending it's safe.
   const soul = profile?.soul;
-  const sanitizeSoulText = (s: string, max = 150) => {
-    if (typeof s !== 'string') return '';
-    return s
-      // eslint-disable-next-line no-control-regex -- intentional: strip control chars from agent-authored text
-      .replace(/[\u0000-\u001F\u007F]/g, ' ')
-      // Neutralize prompt-injection conjuring words so a soul entry can't be
-      // written to look like system instructions on re-read. Keeps meaning
-      // intact while blunting imperative tone.
-      .replace(/\b(ignore|disregard|override|system|assistant|user|instruction|forget)\b/gi, '·')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, max);
-  };
   // Caps tightened in Phase 7: identity 500→200, lessons 300→150, strengths/
   // weaknesses 100→80 — reduces injection payload room per field. Fenced with
   // an explicit data-not-instructions marker at both ends.
@@ -473,6 +461,8 @@ export interface NamedToolDef { name: string }
  *   - A specialist never sees delegation or executive tools.
  *   - An observer only sees reads + explicitly-allowed create tools.
  *   - A lead/executive's role-granted tools bypass their profile.allowedTools.
+ *   - No agent, legacy included, gets AGENT_NEVER_TOOLS; EXPLICIT_ONLY_TOOLS only
+ *     when its profile lists them; cross-case readers only in a local-only home.
  *   - Runtime allowlist === names of availableTools.
  */
 export function buildAgentToolset(opts: {
@@ -482,32 +472,38 @@ export function buildAgentToolset(opts: {
   executiveTools: readonly NamedToolDef[];
   hostTools: readonly NamedToolDef[];
   getActionClass: (name: string) => string;
+  /** The home investigation can sync (isShareableFolder). */
+  homeShareable: boolean;
 }): { availableTools: NamedToolDef[]; effectiveAllowedTools: Set<string> } {
-  const { profile, baseTools, delegationTools, executiveTools, hostTools, getActionClass } = opts;
+  const { profile, baseTools, delegationTools, executiveTools, hostTools, getActionClass, homeShareable } = opts;
+
+  const profileAllow = profile?.allowedTools?.length ? new Set(profile.allowedTools) : null;
+  let combined: NamedToolDef[];
 
   if (!profile) {
-    const all: NamedToolDef[] = [...baseTools, ...hostTools];
-    return { availableTools: all, effectiveAllowedTools: new Set(all.map(t => t.name)) };
+    combined = [...baseTools, ...hostTools];
+  } else {
+    const filteredBase: NamedToolDef[] = profileAllow
+      ? baseTools.filter(t => profileAllow.has(t.name))
+      : [...baseTools];
+
+    const roleAllowsHosts = profile.role !== 'observer';
+    const matchingHostTools: NamedToolDef[] = roleAllowsHosts
+      ? (profileAllow ? hostTools.filter(t => profileAllow.has(t.name)) : [...hostTools])
+      : [];
+
+    let roleTools: NamedToolDef[] = [];
+    if (profile.role === 'executive') roleTools = [...delegationTools, ...executiveTools];
+    else if (profile.role === 'lead') roleTools = [...delegationTools];
+
+    combined = [...filteredBase, ...matchingHostTools, ...roleTools];
   }
 
-  const profileAllow = profile.allowedTools?.length ? new Set(profile.allowedTools) : null;
+  combined = combined.filter(t => !AGENT_NEVER_TOOLS.has(t.name)
+    && (!EXPLICIT_ONLY_TOOLS.has(t.name) || !!profileAllow?.has(t.name))
+    && !(homeShareable && CROSS_CASE_READ_TOOLS.has(t.name)));
 
-  const filteredBase: NamedToolDef[] = profileAllow
-    ? baseTools.filter(t => profileAllow.has(t.name))
-    : [...baseTools];
-
-  const roleAllowsHosts = profile.role !== 'observer';
-  const matchingHostTools: NamedToolDef[] = roleAllowsHosts
-    ? (profileAllow ? hostTools.filter(t => profileAllow.has(t.name)) : [...hostTools])
-    : [];
-
-  let roleTools: NamedToolDef[] = [];
-  if (profile.role === 'executive') roleTools = [...delegationTools, ...executiveTools];
-  else if (profile.role === 'lead') roleTools = [...delegationTools];
-
-  let combined: NamedToolDef[] = [...filteredBase, ...matchingHostTools, ...roleTools];
-
-  if (profile.role === 'observer') {
+  if (profile?.role === 'observer') {
     const explicitlyAllowed = profileAllow ?? new Set<string>();
     combined = combined.filter(t => {
       const cls = getActionClass(t.name);
@@ -686,6 +682,7 @@ async function _runAgentCycleInner(
     executiveTools: EXECUTIVE_TOOL_DEFINITIONS,
     hostTools,
     getActionClass: getToolActionClass,
+    homeShareable: await isShareableFolder(folder.id),
   });
   const availableTools = availableToolsRaw as typeof TOOL_DEFINITIONS;
 
@@ -807,7 +804,7 @@ async function _runAgentCycleInner(
         // allowlist ∪ role-granted tools ∪ allowed host tools). This must match
         // the prompt-time filter exactly so a role-granted tool like delegate_task
         // is never rejected at runtime after being offered to the LLM.
-        if (profile && !effectiveAllowedTools.has(toolCall.name)) {
+        if (!effectiveAllowedTools.has(toolCall.name)) {
           errorHistogram[toolCall.name] = (errorHistogram[toolCall.name] || 0) + 1;
           toolResults.push({
             type: 'tool_result', tool_use_id: toolCall.id,
@@ -881,8 +878,8 @@ async function _runAgentCycleInner(
             try {
               // Await settlement: a timeout must not mark a still-running write
               // failed and permit an overlapping retry of the same operation.
-              result = await executeTool(toolCall, folder.id, profile ? { profileId: profile.id, deploymentId: deployment?.id } : undefined, {
-                allowedTools: effectiveAllowedTools, signal: lifecycle.signal, toolBinding,
+              result = await executeTool(toolCall, folder.id, { profileId: profile?.id, deploymentId: deployment?.id }, {
+                surface: 'agent', allowedTools: effectiveAllowedTools, signal: lifecycle.signal, toolBinding,
               });
             } finally {
               clearTimeout(timeoutId);
@@ -1008,91 +1005,4 @@ async function _runAgentCycleInner(
     const summary = await finalizeSummary(errorOutcome, errorMsg);
     return { autoExecuted, proposed, threadId, error: errorMsg, summary };
   }
-}
-
-/**
- * Execute an approved agent action that was previously proposed.
- */
-export async function executeApprovedAction(action: AgentAction): Promise<{ result: string; isError: boolean }> {
-  // Atomic compare-and-swap: only proceed if status is still 'pending'
-  // Use Dexie's modify with a filter to prevent concurrent execution
-  let claimed = false;
-  await db.agentActions.where('id').equals(action.id).modify((a) => {
-    if (a.status === 'pending') {
-      a.status = 'approved';
-      a.reviewedAt = Date.now();
-      claimed = true;
-    }
-  });
-
-  if (!claimed) {
-    const fresh = await db.agentActions.get(action.id);
-    return { result: fresh?.resultSummary || 'Already executed or no longer pending', isError: false };
-  }
-
-  const toolUse: ToolUseBlock = {
-    type: 'tool_use',
-    id: nanoid(),
-    name: action.toolName,
-    input: action.toolInput,
-  };
-
-  const result = await executeTool(toolUse, action.investigationId,
-    action.agentConfigId && action.agentConfigId !== SUPERVISOR_ACTION_PROFILE ? { profileId: action.agentConfigId } : undefined,
-    action.agentConfigId === SUPERVISOR_ACTION_PROFILE ? {
-      allowedTools: SUPERVISOR_TOOLS,
-      validateScope: async call => {
-        const permission = await getSupervisorToolPermission(call, action.investigationId);
-        if (permission.kind === 'denied') return permission.error;
-        if (permission.investigationId !== action.investigationId) return 'The action target moved to another investigation. Review a new proposal before applying it.';
-        // The analyst's explicit approval satisfies the remaining policy gate.
-      },
-    } : { allowedTools: new Set([action.toolName]), toolBinding: action.toolBinding });
-
-  await db.agentActions.update(action.id, {
-    status: result.isError ? 'failed' : 'executed',
-    resultSummary: result.result.substring(0, 500),
-    executedAt: Date.now(),
-  });
-
-  return result;
-}
-
-/**
- * Reject a proposed agent action.
- */
-export async function rejectAction(actionId: string): Promise<void> {
-  await db.agentActions.update(actionId, {
-    status: 'rejected',
-    reviewedAt: Date.now(),
-  });
-}
-
-/**
- * Bulk approve all pending actions for an investigation.
- */
-export async function bulkApproveActions(investigationId: string): Promise<{ executed: number; failed: number }> {
-  const pending = await db.agentActions
-    .where('[investigationId+status]')
-    .equals([investigationId, 'pending'])
-    .toArray();
-
-  let executed = 0;
-  let failed = 0;
-
-  for (const action of pending) {
-    try {
-      const result = await executeApprovedAction(action);
-      if (result.isError) failed++;
-      else executed++;
-    } catch (err) {
-      console.error('[caddy-agent] executeApprovedAction failed:', err);
-      failed++;
-    }
-  }
-
-  // Update agent status — reflect failures
-  await db.folders.update(investigationId, { agentStatus: failed > 0 ? 'error' : 'idle' });
-
-  return { executed, failed };
 }

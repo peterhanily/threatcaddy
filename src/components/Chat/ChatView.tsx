@@ -17,6 +17,8 @@ import { nanoid } from 'nanoid';
 import { TOOL_DEFINITIONS, buildSystemPrompt, executeTool, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
 import { getHostToolDefinitions, executeHostSkill } from '../../lib/agent-hosts';
 import { getToolExecutionError, toolExecutionError, type ToolExecutionConstraints } from '../../lib/llm-tool-execution';
+import { mintHumanApproval, type HumanApproval } from '../../lib/human-approval';
+import type { ToolSurface } from '../../lib/tool-reach';
 import { parseCtiSlashCommand, planCtiSourceRequests, normalizeCtiSourceRunResult, renderCtiRunMarkdown } from '../../lib/cti-source-formatting';
 import { generateChatTitle } from '../../lib/chat-utils';
 import { truncateConversation, summarizeConversation, MAX_CONTEXT_MESSAGES } from '../../lib/chat-utils';
@@ -513,10 +515,7 @@ export function ChatView({
     const tools = currentMode === 'plan'
       ? allTools.filter(t => !isWriteTool(t.name))
       : allTools;
-    const toolConstraints: ToolExecutionConstraints = {
-      allowedTools: new Set(tools.map(tool => tool.name)),
-      readOnly: currentMode === 'plan',
-    };
+    const allowedTools = new Set(tools.map(tool => tool.name));
 
     // In plan mode, append instructions to the system prompt
     const finalSystemPrompt = currentMode === 'plan'
@@ -540,13 +539,16 @@ export function ChatView({
       },
       async (toolUse: ToolUseBlock, signal: AbortSignal) => {
         if (signal.aborted) return toolExecutionError('Tool execution was cancelled.');
+        const surface: ToolSurface = currentMode === 'plan' ? 'chat-plan' : yoloModeRef.current ? 'chat-yolo' : 'chat-act';
+        const toolConstraints: ToolExecutionConstraints = { surface, allowedTools };
         const permissionError = getToolExecutionError(toolUse, toolConstraints);
         if (permissionError) return toolExecutionError(permissionError);
         let toolBinding: string | undefined;
         try { toolBinding = await getToolBinding(toolUse, selectedFolderId, currentMode, settings); }
         catch (error) { return toolExecutionError(error instanceof Error ? error.message : 'Tool configuration is unavailable.'); }
         // Approval gate for write tools in Act mode (skip if yolo mode)
-        if (isWriteTool(toolUse.name) && !yoloModeRef.current) {
+        let approval: HumanApproval | undefined;
+        if (isWriteTool(toolUse.name) && surface !== 'chat-yolo') {
           const threadAtRequest = activeThread.id;
           const approved = await new Promise<boolean>((resolve) => {
             const abortApproval = () => { setPendingApproval(null); resolve(false); };
@@ -565,12 +567,13 @@ export function ChatView({
               isError: true,
             };
           }
+          approval = mintHumanApproval(toolUse, selectedFolderId, 'chat-card');
         }
 
         if (signal.aborted) return toolExecutionError('Tool execution was cancelled.');
 
         const result = await executeCheckpointedTool({ ...checkpointContext, signal }, toolUse,
-          () => executeTool(toolUse, selectedFolderId, undefined, { ...toolConstraints, signal, toolBinding }));
+          () => executeTool(toolUse, selectedFolderId, undefined, { ...toolConstraints, signal, toolBinding, approval }));
         if (isWriteTool(toolUse.name) && !result.isError) {
           usedWriteTool = true;
         }

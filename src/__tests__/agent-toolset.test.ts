@@ -1,5 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { buildAgentToolset } from '../lib/caddy-agent';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { buildAgentToolset, runAgentCycle } from '../lib/caddy-agent';
+import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
+import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
+import { AGENT_NEVER_TOOLS, CROSS_CASE_READ_TOOLS, EXPLICIT_ONLY_TOOLS, getToolActionClass } from '../lib/caddy-agent-policy';
+import { DEFAULT_SETTINGS, type AgentProfile, type Folder } from '../types';
+import { db } from '../db';
+import { scriptedLLM } from './helpers/scripted-llm';
+import { seedAIWorkspace } from './helpers/ai-workspace';
+
+vi.mock('../lib/llm-router', async orig => (await import('./helpers/scripted-llm')).scriptedRouter(await orig()));
 
 // Fixture: simplified tool defs just enough to exercise the allowlist logic.
 const BASE = [
@@ -46,6 +55,7 @@ function build(profile: { role?: string; allowedTools?: string[] } | undefined) 
     executiveTools: EXEC,
     hostTools: HOSTS,
     getActionClass: cls,
+    homeShareable: true,
   });
 }
 
@@ -148,5 +158,80 @@ describe('buildAgentToolset', () => {
       allowedTools: ['search_notes'], // host:soc1:scan not listed
     });
     expect(availableTools.find(t => t.name === 'host:soc1:scan')).toBeUndefined();
+  });
+});
+
+// ── A-TOOLSET-1: the real tool definitions ─────────────────────────────
+
+/** define_specialist's explicit list (llm-tools.ts executeDefineSpecialist). */
+const DEFINED_SPECIALIST_TOOLS = ['search_notes', 'search_all', 'read_note', 'read_task', 'read_ioc', 'read_timeline_event',
+  'list_tasks', 'list_iocs', 'list_timeline_events', 'get_investigation_summary', 'create_note', 'create_task'];
+const DELEGATION = new Set(DELEGATION_TOOL_DEFINITIONS.map(t => t.name));
+const EXECUTIVE = new Set(EXECUTIVE_TOOL_DEFINITIONS.map(t => t.name));
+type ProfileLike = Pick<AgentProfile, 'role' | 'allowedTools'> & { id?: string };
+const PROFILES: Array<[string, ProfileLike | undefined]> = [
+  ...BUILTIN_AGENT_PROFILES.map(profile => [profile.id, profile] as [string, ProfileLike]),
+  ['legacy', undefined],
+  ['unrestricted user profile', { role: 'specialist' }],
+  ['unrestricted user executive', { role: 'executive' }],
+  ['define_specialist profile', { role: 'specialist', allowedTools: DEFINED_SPECIALIST_TOOLS }],
+];
+
+describe('A-TOOLSET-1 agent toolsets over the real tool definitions', () => {
+  it('covers all 18 builtin profiles', () => {
+    expect(BUILTIN_AGENT_PROFILES).toHaveLength(18);
+  });
+
+  for (const homeShareable of [true, false]) {
+    for (const [label, profile] of PROFILES) {
+      it(`${label} in a ${homeShareable ? 'shareable' : 'local-only'} investigation`, () => {
+        const { availableTools, effectiveAllowedTools } = buildAgentToolset({
+          profile, baseTools: TOOL_DEFINITIONS, delegationTools: DELEGATION_TOOL_DEFINITIONS,
+          executiveTools: EXECUTIVE_TOOL_DEFINITIONS, hostTools: [], getActionClass: getToolActionClass, homeShareable,
+        });
+        const names = availableTools.map(t => t.name);
+        expect(effectiveAllowedTools).toEqual(new Set(names));
+        expect(names.filter(name => AGENT_NEVER_TOOLS.has(name))).toEqual([]);
+        for (const name of names.filter(n => EXPLICIT_ONLY_TOOLS.has(n))) expect(profile?.allowedTools).toContain(name);
+        const crossCase = names.filter(name => CROSS_CASE_READ_TOOLS.has(name));
+        expect(crossCase.length > 0).toBe(profile?.id === 'ap-pattern-hunter' && !homeShareable);
+        if (!profile || profile.role === 'specialist' || profile.role === 'observer') {
+          expect(names.filter(name => DELEGATION.has(name) || EXECUTIVE.has(name))).toEqual([]);
+        }
+      });
+    }
+  }
+
+  it('Pattern Hunter keeps all four readers only in a local-only investigation', () => {
+    const hunter = BUILTIN_AGENT_PROFILES.find(p => p.id === 'ap-pattern-hunter');
+    const build = (homeShareable: boolean) => buildAgentToolset({ profile: hunter, baseTools: TOOL_DEFINITIONS, delegationTools: DELEGATION_TOOL_DEFINITIONS,
+      executiveTools: EXECUTIVE_TOOL_DEFINITIONS, hostTools: [], getActionClass: getToolActionClass, homeShareable }).effectiveAllowedTools;
+    expect([...CROSS_CASE_READ_TOOLS].every(name => build(false).has(name))).toBe(true);
+    expect([...CROSS_CASE_READ_TOOLS].some(name => build(true).has(name))).toBe(false);
+  });
+});
+
+describe('A-TOOLSET-1 in a running cycle', () => {
+  const settings = { ...DEFAULT_SETTINGS, llmAnthropicApiKey: 'test-key', llmRoutingMode: 'extension' as const };
+  beforeEach(async () => { await seedAIWorkspace(); scriptedLLM.reset(); });
+
+  it('a legacy agent in a shared investigation is offered no lifecycle, cross-case, SIEM or ticket tools, and a forced call is refused', async () => {
+    scriptedLLM.script({ toolCalls: [{ name: 'deploy_agent', input: { profileName: 'Threat Hunter' } }] });
+    const result = await runAgentCycle(await db.folders.get('S') as Folder, settings, true);
+    expect(result.error).toBeUndefined();
+    const offered = scriptedLLM.toolNames();
+    expect(offered).toContain('create_note');
+    for (const name of [...AGENT_NEVER_TOOLS, ...EXPLICIT_ONLY_TOOLS]) expect(offered).not.toContain(name);
+    expect((await db.agentActions.toArray()).filter(action => action.toolName === 'deploy_agent')).toEqual([]);
+    expect(await db.agentDeployments.count()).toBe(0);
+  });
+
+  it('Pattern Hunter in a local-only investigation is offered the cross-case readers', async () => {
+    const hunter = BUILTIN_AGENT_PROFILES.find(p => p.id === 'ap-pattern-hunter');
+    await runAgentCycle(await db.folders.get('L2') as Folder, settings, true, undefined, hunter);
+    expect(scriptedLLM.toolNames()).toEqual(expect.arrayContaining([...CROSS_CASE_READ_TOOLS]));
+    scriptedLLM.reset();
+    await runAgentCycle(await db.folders.get('S') as Folder, settings, true, undefined, hunter);
+    expect(scriptedLLM.toolNames().filter(name => CROSS_CASE_READ_TOOLS.has(name))).toEqual([]);
   });
 });

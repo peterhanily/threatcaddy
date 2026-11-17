@@ -1,21 +1,133 @@
+/**
+ * The analyst's decisions on queued agent actions. Only the agent panel imports
+ * this module (approval-import-boundary.test.ts): approving here is the one
+ * place outside chat that mints a HumanApproval, so the autonomous loops must
+ * not be able to call it.
+ */
 import { nanoid } from 'nanoid';
 import { db } from '../db';
-import type { AgentAction } from '../types';
+import type { AgentAction, Settings, ToolUseBlock } from '../types';
+import { executeTool } from './llm-tools';
+import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from './llm-tool-defs';
+import { getToolActionClass } from './caddy-agent-policy';
+import { buildAgentToolset } from './caddy-agent';
+import { getHostToolDefinitions } from './agent-hosts';
+import { resolveAgentProfile } from './agent-profile-resolver';
+import { isShareableFolder } from './ai-scope';
+import { mintHumanApproval } from './human-approval';
+import { toolExecutionError, type ToolExecutionConstraints, type ToolExecutionResult } from './llm-tool-execution';
+import { SUPERVISOR_ACTION_PROFILE, SUPERVISOR_TOOLS, getSupervisorToolPermission } from './supervisor-tool-policy';
+import { workspaceStorageKey } from './workspace-profiles';
 
-/** Shared approval queue for investigation agents and the supervisor. */
-export async function queueAgentAction(
-  proposal: Omit<AgentAction, 'id' | 'status' | 'createdAt'>,
-): Promise<{ action: AgentAction; alreadyPending: boolean }> {
-  return db.transaction('rw', db.agentActions, async () => {
-    const inputJson = JSON.stringify(proposal.toolInput);
-    const existing = await db.agentActions
-      .where('[investigationId+status]').equals([proposal.investigationId, 'pending'])
-      .filter(action => action.agentConfigId === proposal.agentConfigId && action.toolBinding === proposal.toolBinding && action.toolName === proposal.toolName && JSON.stringify(action.toolInput) === inputJson)
-      .first();
-    if (existing) return { action: existing, alreadyPending: true };
+/** Re-derive what the proposing agent may do today; the stored row is not trusted. */
+async function approvalConstraints(action: AgentAction, toolUse: ToolUseBlock): Promise<ToolExecutionConstraints | string> {
+  if (action.id.startsWith('srv:')) return 'Server proposals are history only and cannot be approved here.';
+  const folder = await db.folders.get(action.investigationId);
+  if (!folder || folder.status === 'archived') return 'Approved actions require an existing, non-archived investigation.';
+  const approval = mintHumanApproval(toolUse, action.investigationId, 'action-queue');
 
-    const action: AgentAction = { ...proposal, id: nanoid(), status: 'pending', createdAt: Date.now() };
-    await db.agentActions.add(action);
-    return { action, alreadyPending: false };
+  if (action.agentConfigId === SUPERVISOR_ACTION_PROFILE) {
+    return {
+      surface: 'supervisor', allowedTools: SUPERVISOR_TOOLS, approval,
+      validateScope: async call => {
+        const permission = await getSupervisorToolPermission(call, action.investigationId);
+        if (permission.kind === 'denied') return permission.error;
+        if (permission.investigationId !== action.investigationId) return 'The action target moved to another investigation. Review a new proposal before applying it.';
+        // The analyst's explicit approval satisfies the remaining policy gate.
+      },
+    };
+  }
+
+  const profile = await resolveAgentProfile(action.agentConfigId);
+  if (action.agentConfigId && !profile) return 'The agent profile is no longer available.';
+  let settings: Settings;
+  try { settings = JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}'); } catch { settings = {} as Settings; }
+  const { effectiveAllowedTools } = buildAgentToolset({
+    profile, baseTools: TOOL_DEFINITIONS, delegationTools: DELEGATION_TOOL_DEFINITIONS, executiveTools: EXECUTIVE_TOOL_DEFINITIONS,
+    hostTools: getHostToolDefinitions(settings), getActionClass: getToolActionClass,
+    homeShareable: await isShareableFolder(action.investigationId),
   });
+  if (!effectiveAllowedTools.has(action.toolName)) return `Tool "${action.toolName}" is not available to this agent.`;
+  return { surface: 'agent', allowedTools: effectiveAllowedTools, toolBinding: action.toolBinding, approval };
+}
+
+/**
+ * Execute an approved agent action that was previously proposed.
+ */
+export async function executeApprovedAction(action: AgentAction): Promise<ToolExecutionResult> {
+  // Atomic compare-and-swap: only proceed if status is still 'pending'
+  // Use Dexie's modify with a filter to prevent concurrent execution
+  let claimed = false;
+  await db.agentActions.where('id').equals(action.id).modify((a) => {
+    if (a.status === 'pending') {
+      a.status = 'approved';
+      a.reviewedAt = Date.now();
+      claimed = true;
+    }
+  });
+
+  if (!claimed) {
+    const fresh = await db.agentActions.get(action.id);
+    return { result: fresh?.resultSummary || 'Already executed or no longer pending', isError: false };
+  }
+
+  const toolUse: ToolUseBlock = {
+    type: 'tool_use',
+    id: nanoid(),
+    name: action.toolName,
+    input: action.toolInput,
+  };
+
+  const constraints = await approvalConstraints(action, toolUse);
+  const result = typeof constraints === 'string'
+    ? toolExecutionError(constraints)
+    : await executeTool(toolUse, action.investigationId,
+      constraints.surface === 'agent' ? { profileId: action.agentConfigId } : undefined, constraints);
+
+  await db.agentActions.update(action.id, {
+    status: result.isError ? 'failed' : 'executed',
+    resultSummary: result.result.substring(0, 500),
+    executedAt: Date.now(),
+  });
+
+  return result;
+}
+
+/**
+ * Reject a proposed agent action.
+ */
+export async function rejectAction(actionId: string): Promise<void> {
+  await db.agentActions.update(actionId, {
+    status: 'rejected',
+    reviewedAt: Date.now(),
+  });
+}
+
+/**
+ * Bulk approve all pending actions for an investigation.
+ */
+export async function bulkApproveActions(investigationId: string): Promise<{ executed: number; failed: number }> {
+  const pending = await db.agentActions
+    .where('[investigationId+status]')
+    .equals([investigationId, 'pending'])
+    .toArray();
+
+  let executed = 0;
+  let failed = 0;
+
+  for (const action of pending) {
+    try {
+      const result = await executeApprovedAction(action);
+      if (result.isError) failed++;
+      else executed++;
+    } catch (err) {
+      console.error('[caddy-agent] executeApprovedAction failed:', err);
+      failed++;
+    }
+  }
+
+  // Update agent status — reflect failures
+  await db.folders.update(investigationId, { agentStatus: failed > 0 ? 'error' : 'idle' });
+
+  return { executed, failed };
 }
