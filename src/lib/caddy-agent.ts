@@ -744,6 +744,9 @@ async function _runAgentCycleInner(
         assistantContent.push({ type: 'text', text: response.content });
       }
 
+      // Set once this agent's deployment is gone: dismissed or removed while this cycle ran.
+      let removed = false;
+
       for (const toolCall of response.toolCalls) {
         assistantContent.push(toolCall);
         toolHistogram[toolCall.name] = (toolHistogram[toolCall.name] || 0) + 1;
@@ -796,6 +799,14 @@ async function _runAgentCycleInner(
           // Never mention pending approval here: the all-pending check below matches on it.
           errorHistogram[toolCall.name] = (errorHistogram[toolCall.name] || 0) + 1;
           toolResults.push({ type: 'tool_result', tool_use_id: toolCall.id, content: JSON.stringify({ error: verdict.message }), is_error: true });
+          continue;
+        }
+
+        // A dismissed agent neither runs nor queues anything more, and its cycle ends with this turn.
+        if (deployment && (removed || !await db.agentDeployments.get(deployment.id))) {
+          removed = true;
+          errorHistogram[toolCall.name] = (errorHistogram[toolCall.name] || 0) + 1;
+          toolResults.push({ type: 'tool_result', tool_use_id: toolCall.id, content: JSON.stringify({ error: 'This agent is no longer deployed in this investigation, so the action was not run or queued.' }), is_error: true });
           continue;
         }
 
@@ -899,10 +910,6 @@ async function _runAgentCycleInner(
             content: truncateToolResult(result.result, 50_000),
             is_error: result.isError,
           });
-        } else if (deployment && !await db.agentDeployments.get(deployment.id)) {
-          // Dismissed or removed while this cycle ran: its proposals would outlive it.
-          errorHistogram[toolCall.name] = (errorHistogram[toolCall.name] || 0) + 1;
-          toolResults.push({ type: 'tool_result', tool_use_id: toolCall.id, content: JSON.stringify({ error: 'This agent is no longer deployed in this investigation, so the action was not queued.' }), is_error: true });
         } else {
           const { action, alreadyPending } = await queueAgentAction({
             investigationId: folder.id,
@@ -937,6 +944,8 @@ async function _runAgentCycleInner(
           });
         }
       }
+
+      if (removed) break;
 
       // If all tool calls in this turn were pending (none auto-executed), stop early
       // to avoid wasting LLM turns repeating "pending approval" responses.

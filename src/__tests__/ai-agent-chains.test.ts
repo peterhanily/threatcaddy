@@ -498,9 +498,58 @@ describe('a dismissed agent leaves no proposal to approve', () => {
     expect(await db.agentDeployments.get('dep-hunter')).toBeUndefined();
     expect(result.proposed).toEqual([]);
     expect(await pendingIn('S')).toEqual([]);
-    expect(String(toolResultTurns()[0][0].content)).not.toContain('pending_approval');
+    expect(scriptedLLM.requests).toHaveLength(1);
     expect(await bulkApproveActions('S')).toEqual({ executed: 0, failed: 0, skipped: 0 });
     expect(await db.notes.where('title').equals('Late proposal').count()).toBe(0);
+  });
+
+  /** Approves the CISO's dismissal of Threat Hunter while the cycle classifies the named tool call. */
+  async function dismissHunterDuring(toolName: string) {
+    await onShift('dep-hunter', 'ap-threat-hunter'); await onShift('dep-ciso', 'ap-ciso');
+    const dismissal: AgentAction = { id: 'dismissal', investigationId: 'S', threadId: 't', agentConfigId: 'ap-ciso', toolName: 'dismiss_agent', rationale: 'Proposed',
+      toolInput: { agentName: builtin('ap-threat-hunter').name, reason: 'Repeatedly ignored the scope of the investigation.', evidence: 'Three off-scope notes.' },
+      status: 'pending', createdAt: 1 };
+    await db.agentActions.add(dismissal);
+    const classify = toolReach.classifyToolCall;
+    let dismissed: Promise<unknown> | undefined;
+    vi.spyOn(toolReach, 'classifyToolCall').mockImplementation(async (call, context) => {
+      if (call.name === toolName && !dismissed) await (dismissed = executeApprovedAction(dismissal));
+      return classify(call, context);
+    });
+  }
+  const hunterActions = async () => (await db.agentActions.where('investigationId').equals('S').toArray()).filter(action => action.agentConfigId === 'ap-threat-hunter');
+
+  it('a dismissed agent\'s cycle takes no further turn: its next turn would have fetched', async () => {
+    // Default policy: fetch runs on its own, create asks.
+    await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY } });
+    await dismissHunterDuring('create_note');
+    scriptedLLM.script(
+      { toolCalls: [{ name: 'create_note', input: { title: 'Late proposal', content: 'Written after the dismissal' } }] },
+      { toolCalls: [{ name: 'fetch_url', input: { url: NVD } }] },
+    );
+    await runAgentCycle(await folder('S'), settings, true, undefined, builtin('ap-threat-hunter'), await db.agentDeployments.get('dep-hunter'));
+
+    expect(await db.agentDeployments.get('dep-hunter')).toBeUndefined();
+    expect(scriptedLLM.requests).toHaveLength(1);
+    expect(egress.fetchUrlPosts()).toEqual([]);
+    expect(await hunterActions()).toEqual([]);
+  });
+
+  it('a call that would run on its own is not run once its agent is dismissed', async () => {
+    await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY } });
+    await dismissHunterDuring('fetch_url');
+    scriptedLLM.script(
+      { toolCalls: [{ name: 'fetch_url', input: { url: NVD } }, { name: 'read_note', input: { id: ids('S').note } }] },
+      { toolCalls: [{ name: 'fetch_url', input: { url: NVD } }] },
+    );
+    const result = await runAgentCycle(await folder('S'), settings, true, undefined, builtin('ap-threat-hunter'), await db.agentDeployments.get('dep-hunter'));
+
+    expect(await db.agentDeployments.get('dep-hunter')).toBeUndefined();
+    expect(egress.fetchUrlPosts()).toEqual([]);
+    expect(result.autoExecuted).toEqual([]);
+    expect(await hunterActions()).toEqual([]);
+    expect(scriptedLLM.requests).toHaveLength(1);
+    expect(result.summary?.errorHistogram).toEqual({ fetch_url: 1, read_note: 1 });
   });
 
   it('a proposal of an agent no longer deployed here runs neither alone nor by Approve all; legacy, supervisor, paused and resting rows do', async () => {
