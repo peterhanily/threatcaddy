@@ -13,6 +13,8 @@ import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { loadAgentPolicy } from '../lib/agent-profile-resolver';
 import { classifyToolCall } from '../lib/tool-reach';
 import { ids, seedAIWorkspace } from './helpers/ai-workspace';
+import i18n from '../i18n';
+import deAgent from '../../public/locales/de/agent.json';
 
 vi.mock('../components/Agent/AgentProfilePicker', () => ({ AgentProfilePicker: () => null }));
 vi.mock('../components/Agent/AgentMeetingPanel', () => ({ AgentMeetingPanel: () => null }));
@@ -171,6 +173,59 @@ describe('agent panel review state', () => {
     fireEvent.click(await screen.findByRole('button', { name: /approve all/i }));
     expect(await screen.findByText('Execute 1?')).toBeInTheDocument();
     expect(screen.getByText('Left for individual review: 1')).toBeInTheDocument();
+  });
+
+  describe('in the analyst’s language', () => {
+    beforeEach(async () => {
+      for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+      i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+      await i18n.changeLanguage('de');
+    });
+    afterEach(async () => { await act(async () => { await i18n.changeLanguage('en'); }); });
+
+    it.each([['running', 'panel.statusRunning'], ['waiting', 'panel.statusWaiting'], ['paused', 'panel.statusPaused'], ['error', 'panel.statusError']] as const)(
+      'the %s status badge', async (status, key) => {
+        await renderPanel({ ...await folder('S'), agentStatus: status }, []);
+        expect(screen.getByText(deAgent[key])).toBeInTheDocument();
+        expect(screen.queryByText(status)).not.toBeInTheDocument();
+      });
+
+    it('the inbox filters and the automatic model choice', async () => {
+      await renderPanel(await folder('S'), []);
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs.map(tab => tab.textContent)).toEqual(['Alle', 'Ausstehend', 'Ausgeführt', 'Abgelehnt']);
+      // CSS capitalize would title-case a multi-word label ('In Behandeling'): the translation sets the case.
+      for (const tab of tabs) expect(tab).not.toHaveClass('capitalize');
+      fireEvent.click(screen.getByRole('button', { name: deAgent['panel.toggleAgentSettings'] }));
+      expect(await screen.findByRole('option', { name: deAgent['panel.autoUseDefault'] })).toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: 'Auto (use default)' })).not.toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: deAgent['panel.model'] })).toBeInTheDocument();
+    });
+
+    it('an agent row names its status, its supervision and its remove button', async () => {
+      const paused: AgentDeployment = { ...deployment('ap-threat-hunter'), status: 'paused', supervisorDeploymentId: 'dep-ap-lead-analyst' };
+      render(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES}
+        deployments={[paused, deployment('ap-ioc-enricher')]} onRemoveDeployment={vi.fn()} />);
+      await act(async () => {});
+      fireEvent.click(screen.getByRole('button', { name: `${deAgent['panel.agents']}(2)` }));
+      expect(await screen.findByText(deAgent['panel.statusPaused'])).toBeInTheDocument();
+      expect(screen.getByText(deAgent['panel.statusIdle'])).toBeInTheDocument();
+      expect(screen.queryByText('paused')).not.toBeInTheDocument();
+      expect(screen.queryByText('idle')).not.toBeInTheDocument();
+      expect(screen.getByText(new RegExp(` · ${deAgent['panel.supervised']}$`))).toBeInTheDocument();
+      expect(screen.queryByText(/ · supervised$/)).not.toBeInTheDocument();
+      expect(screen.getAllByTitle(deAgent['panel.remove'])).toHaveLength(2);
+      expect(screen.queryByTitle('Remove')).not.toBeInTheDocument();
+    });
+
+    it.each([[1, 'pending', 'executed', 'Keine ausstehenden Aktionen.'], [2, 'executed', 'pending', 'Keine ausgeführten Aktionen.'], [3, 'rejected', 'executed', 'Keine abgelehnten Aktionen.']] as const)(
+      'an empty inbox under filter %i says so in a whole sentence', async (tab, filter, other, sentence) => {
+        await db.agentActions.add(action({ status: other }));
+        await renderPanel(await folder('S'), []);
+        fireEvent.click(screen.getAllByRole('tab')[tab]);
+        expect(await screen.findByText(sentence)).toBeInTheDocument();
+        expect(screen.queryByText(new RegExp(filter))).not.toBeInTheDocument();
+      });
   });
 
   it('a cross-case profile in a shareable investigation says its cross-case tools are off', async () => {

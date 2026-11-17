@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type Folder, type Settings } from '../types';
 import { AgentPanel } from '../components/Agent/AgentPanel';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
+import { resolveRoute, UNAVAILABLE_ROUTE_ERRORS } from '../lib/llm-router';
 import i18n from '../i18n';
 import enSettings from '../../public/locales/en/settings.json';
 import deAgent from '../../public/locales/de/agent.json';
@@ -111,19 +112,41 @@ describe('AgentCaddy readiness follows the investigation’s agent model, as the
     } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
   });
 
-  it('a run refused because the investigation model has no route offers the AI settings in the analyst’s language', async () => {
-    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
-    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
-    i18n.addResourceBundle('de', 'settings', deSettings, true, true);
-    await i18n.changeLanguage('de');
-    try {
+  describe('a run refused because the investigation model has no route offers the AI settings in the analyst’s language', () => {
+    beforeEach(async () => {
+      for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+      i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+      i18n.addResourceBundle('de', 'settings', deSettings, true, true);
+      await i18n.changeLanguage('de');
+    });
+    afterEach(async () => { await act(async () => { await i18n.changeLanguage('en'); }); });
+    // The default local model has a route, so the panel is open; the cloud model has none.
+    const renderRefused = async (settings: Partial<Settings>, agentError: string) => {
       const onOpenSettings = vi.fn();
-      // The default local model has a route, so the panel is open; the cloud model has none.
-      render(<AgentPanel folder={withModel('claude-sonnet-4-6')} settings={{ ...DEFAULT_SETTINGS, ...twoRoutes, llmDefaultProvider: 'local' }}
-        agentError={`[Lead Analyst] ${deSettings['ai.dataFlow.errorNone']}`} onOpenSettings={onOpenSettings} />);
+      render(<AgentPanel folder={withModel('claude-sonnet-4-6')} settings={{ ...DEFAULT_SETTINGS, ...twoRoutes, llmDefaultProvider: 'local', ...settings }}
+        agentError={agentError} onOpenSettings={onOpenSettings} />);
       await act(async () => {});
+      return onOpenSettings;
+    };
+
+    it.each([
+      ['Team Server routing while signed out', { llmRoutingMode: 'server' }, 'no-server'],
+      ['Browser Extension routing with no extension', { llmRoutingMode: 'extension' }, 'no-extension'],
+      ['Auto with neither', { llmRoutingMode: 'auto' }, 'none'],
+    ] as const)('%s', async (_case, settings, reason) => {
+      // The cycle refuses the cloud model with this reason, signed out and with no extension.
+      expect(resolveRoute({ ...DEFAULT_SETTINGS, ...twoRoutes, ...settings }, { extensionAvailable: false, serverSession: false, provider: 'anthropic' }))
+        .toEqual({ route: 'unavailable', reason });
+      const onOpenSettings = await renderRefused(settings, `[Lead Analyst] ${deSettings[UNAVAILABLE_ROUTE_ERRORS[reason]]}`);
       fireEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: deAgent['panel.openAISettingsLink'] }));
       expect(onOpenSettings).toHaveBeenCalledExactlyOnceWith('ai');
-    } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
+    });
+
+    it('an unrelated error offers no AI settings link', async () => {
+      await renderRefused({}, deAgent['panel.rejectFailed'].replace('{{message}}', 'Datenbank gesperrt'));
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveTextContent(deAgent['panel.rejectFailed'].replace('{{message}}', 'Datenbank gesperrt'));
+      expect(within(alert).queryByRole('button', { name: deAgent['panel.openAISettingsLink'] })).not.toBeInTheDocument();
+    });
   });
 });

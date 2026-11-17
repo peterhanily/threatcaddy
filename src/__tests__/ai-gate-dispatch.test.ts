@@ -366,6 +366,21 @@ describe('A-GATE-6 review and escalation scope', () => {
     expect(memory.length).toBe(500);
   });
 
+  it('never cuts a character in two at the feedback bound', async () => {
+    await db.chatThreads.add({ id: 'th-thread', title: 't', messages: [], model: '', provider: 'anthropic', folderId: 'S', tags: [], archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
+    await db.agentDeployments.add({ id: 'th', investigationId: 'S', profileId: 'ap-threat-hunter', threadId: 'th-thread', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 });
+    await db.tasks.update(ids('S').task, { assignedDeploymentId: 'th' });
+    const prefix = '[FEEDBACK/needs-redo] Task "Shared case task": Add the DNS resolution history for the domain. ';
+    // The emoji's two UTF-16 halves sit at positions 499 and 500 of the line.
+    const feedback = `${'X'.repeat(499 - prefix.length)}🔥 then more`;
+    const review = call('review_completed_task', { taskId: ids('S').task, quality: 'needs-redo', feedback, requestedDelta: 'Add the DNS resolution history for the domain.' });
+    expect((await execTool(review, 'S', { surface: 'agent', agentContext: {} })).isError).toBe(false);
+    const memory = (await db.chatThreads.get('th-thread'))?.contextSummary ?? '';
+    // A lone surrogate fails the delegated agent's next request on providers that reject one.
+    expect(memory).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/);
+    expect(memory).toBe(`${prefix}${'X'.repeat(499 - prefix.length)}`);
+  });
+
   it('delegate_task finds a deployment by the code builtin\'s name, not a stored row\'s', async () => {
     const builtin = BUILTIN_AGENT_PROFILES.find(profile => profile.id === 'ap-threat-hunter') as AgentProfile;
     await db.agentProfiles.put(JSON.parse(JSON.stringify({ ...builtin, name: 'Stale Persona' })));

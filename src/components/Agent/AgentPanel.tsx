@@ -34,6 +34,14 @@ const POLICY_TOGGLES: { key: 'autoApproveReads' | 'autoApproveEnrich' | 'autoApp
   { key: 'autoApproveModify', labelKey: 'panel.modify', descriptionKey: 'panel.modifyDesc' },
 ];
 
+/** The header badge names every status but idle. */
+const STATUS_LABEL_KEYS: Record<Exclude<AgentStatus, 'idle'>, string> = {
+  running: 'panel.statusRunning', waiting: 'panel.statusWaiting', paused: 'panel.statusPaused', error: 'panel.statusError',
+};
+
+/** One whole sentence per inbox filter: a filter name does not inflect inside another sentence. */
+const EMPTY_FILTER_KEYS = { pending: 'panel.noPendingActions', executed: 'panel.noExecutedActions', rejected: 'panel.noRejectedActions' } as const;
+
 interface AgentPanelProps {
   folder: Folder;
   settings: Settings;
@@ -396,7 +404,7 @@ function InvestigationAgentPanel({
               displayStatus === 'error' && 'bg-red-400/10 text-red-400',
               displayStatus === 'paused' && 'bg-surface-raised text-text-muted',
             )}>
-              {displayStatus}
+              {t(STATUS_LABEL_KEYS[displayStatus])}
             </span>
           )}
           {folder.agentEnabled && (
@@ -525,8 +533,8 @@ function InvestigationAgentPanel({
             <div className="flex gap-1" role="tablist">
               {(['all', 'pending', 'executed', 'rejected'] as const).map(f => (
                 <button key={f} role="tab" aria-selected={filter === f} onClick={() => setFilter(f)}
-                  className={cn('text-[10px] px-1.5 py-0.5 rounded capitalize', filter === f ? 'bg-surface-raised text-text-primary font-medium' : 'text-text-muted hover:text-text-secondary')}
-                >{f}{f === 'pending' && pendingCount > 0 && <span className="ms-0.5 text-accent-amber">({pendingCount})</span>}</button>
+                  className={cn('text-[10px] px-1.5 py-0.5 rounded', filter === f ? 'bg-surface-raised text-text-primary font-medium' : 'text-text-muted hover:text-text-secondary')}
+                >{t(`panel.${f}`)}{f === 'pending' && pendingCount > 0 && <span className="ms-0.5 text-accent-amber">({pendingCount})</span>}</button>
               ))}
             </div>
             {pendingCount > 0 && (confirmBulk ? (
@@ -546,7 +554,7 @@ function InvestigationAgentPanel({
             {filteredActions.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-text-muted">
                 <Bot size={24} className="mb-1 opacity-30" />
-                <p className="text-xs">{actions.length === 0 ? t('panel.noActivityYet') : t('panel.noFilteredActions', { filter })}</p>
+                <p className="text-xs">{actions.length === 0 || filter === 'all' ? t('panel.noActivityYet') : t(EMPTY_FILTER_KEYS[filter])}</p>
               </div>
             ) : filteredActions.map(action => (
               <AgentActionCard key={action.id} action={action}
@@ -588,7 +596,7 @@ function InvestigationAgentPanel({
                       <span className="text-lg">{p.icon || '🤖'}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium text-text-primary">{p.name}</div>
-                        <div className="text-[10px] text-text-muted">{p.role}{d.supervisorDeploymentId ? ' · supervised' : ''}</div>
+                        <div className="text-[10px] text-text-muted">{p.role}{d.supervisorDeploymentId ? ` · ${t('panel.supervised')}` : ''}</div>
                         {homeShareable && p.allowedTools?.some(name => CROSS_CASE_READ_TOOLS.has(name)) && (
                           <div className="text-[9px] text-accent-amber mt-0.5">{t('panel.crossCaseOff')}</div>
                         )}
@@ -659,9 +667,9 @@ function InvestigationAgentPanel({
                         d.status === 'idle' && 'bg-surface-raised text-text-muted',
                         d.status === 'waiting' && 'bg-accent-amber/10 text-accent-amber',
                         d.status === 'error' && 'bg-red-400/10 text-red-400',
-                      )}>{d.status}</span>
+                      )}>{t(d.status === 'idle' ? 'panel.statusIdle' : STATUS_LABEL_KEYS[d.status])}</span>
                       {onRemoveDeployment && (
-                        <button onClick={() => onRemoveDeployment(d.id)} className="text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" title="Remove"><X size={12} /></button>
+                        <button onClick={() => onRemoveDeployment(d.id)} className="text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" title={t('panel.remove')}><X size={12} /></button>
                       )}
                     </div>
                   );
@@ -930,6 +938,7 @@ function AgentModelSelector({ settings, policy, onModelChange }: {
   policy: AgentPolicy;
   onModelChange: (model: string | undefined) => void;
 }) {
+  const { t } = useTranslation('agent');
   // Build list of available models from configured providers
   const configuredProviders = new Set<string>();
   if (settings.llmAnthropicApiKey?.trim()) configuredProviders.add('anthropic');
@@ -943,14 +952,14 @@ function AgentModelSelector({ settings, policy, onModelChange }: {
 
   return (
     <div className="flex items-center gap-3">
-      <label htmlFor="agent-model" className="text-xs text-text-muted shrink-0">Model</label>
+      <label htmlFor="agent-model" className="text-xs text-text-muted shrink-0">{t('panel.model')}</label>
       <select
         id="agent-model"
         value={policy.model || ''}
         onChange={(e) => onModelChange(e.target.value || undefined)}
         className="flex-1 text-xs bg-surface border border-border-subtle rounded px-2 py-1.5 text-text-primary focus:outline-none focus:border-accent-blue/50"
       >
-        <option value="">Auto (use default)</option>
+        <option value="">{t('panel.autoUseDefault')}</option>
         {Array.from(new Set(availableModels.map(m => m.group))).map(group => (
           <optgroup key={group} label={group}>
             {availableModels.filter(m => m.group === group).map(m => (

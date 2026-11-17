@@ -11,9 +11,15 @@ import { executeTool } from '../lib/llm-tools';
 import { SUPERVISOR_ACTION_PROFILE, SUPERVISOR_TOOLS, validateSupervisorDispatch } from '../lib/supervisor-tool-policy';
 import { ids, seedAIWorkspace } from './helpers/ai-workspace';
 import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
+import i18n from '../i18n';
+import deAgent from '../../public/locales/de/agent.json';
 
 const queue = (proposal: Partial<AgentAction> & Pick<AgentAction, 'toolName' | 'toolInput'>) =>
   queueAgentAction({ investigationId: 'S', threadId: 'thread', rationale: 'Proposed by an agent', ...proposal }).then(({ action }) => action);
+const errorOf = (result: { result: string }) => String(JSON.parse(result.result).error ?? '');
+/** The proposer stays deployed, so approval reaches the profile and toolset checks. */
+const deploy = (profileId: string) =>
+  db.agentDeployments.add({ id: `dep-${profileId}`, investigationId: 'S', profileId, status: 'idle', order: 0, createdAt: 1, updatedAt: 1 });
 
 let egress: EgressSpy;
 beforeEach(async () => { await seedAIWorkspace(); egress = installEgressSpy(); });
@@ -36,8 +42,11 @@ describe('A-APPR re-derivation on approval', () => {
   });
 
   it('A-APPR-3 refuses a Threat Hunter create_in_investigation row', async () => {
+    await deploy('ap-threat-hunter');
     const action = await queue({ agentConfigId: 'ap-threat-hunter', toolName: 'create_in_investigation', toolInput: { investigationId: 'P', entityType: 'note', data: { title: 'x' } } });
-    expect((await executeApprovedAction(action)).isError).toBe(true);
+    const result = await executeApprovedAction(action);
+    expect(result.isError).toBe(true);
+    expect(errorOf(result)).toBe('Tool "create_in_investigation" is not available to this agent.');
     expect(await db.notes.where('folderId').equals('P').count()).toBe(1);
   });
 
@@ -49,6 +58,7 @@ describe('A-APPR re-derivation on approval', () => {
   });
 
   it('runs an approved Threat Hunter fetch once', async () => {
+    await db.agentDeployments.add({ id: 'dep-hunter', investigationId: 'S', profileId: 'ap-threat-hunter', status: 'idle', order: 0, createdAt: 1, updatedAt: 1 });
     const action = await queue({ agentConfigId: 'ap-threat-hunter', toolName: 'fetch_url', toolInput: { url: 'https://collector.example/c' } });
     expect((await executeApprovedAction(action)).isError).toBe(false);
     expect(egress.fetchUrlPosts()).toEqual(['https://collector.example/c']);
@@ -67,9 +77,28 @@ describe('A-APPR re-derivation on approval', () => {
     await db.folders.update('P', { status: 'archived' });
     const archived = await queue({ investigationId: 'P', toolName: 'create_note', toolInput: { title: 'x' } });
     expect((await executeApprovedAction(archived)).isError).toBe(true);
+    // A deployment of a deleted profile can arrive by restore or sync.
+    await deploy('deleted-profile');
     const orphan = await queue({ agentConfigId: 'deleted-profile', toolName: 'create_note', toolInput: { title: 'x' } });
-    expect((await executeApprovedAction(orphan)).isError).toBe(true);
+    const refused = await executeApprovedAction(orphan);
+    expect(refused.isError).toBe(true);
+    expect(errorOf(refused)).toBe('The agent profile is no longer available.');
     expect(await db.notes.where('title').equals('x').count()).toBe(0);
+  });
+
+  it('says in the analyst’s language that a dismissed agent’s proposal cannot run', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+    await i18n.changeLanguage('de');
+    try {
+      // Threat Hunter has no deployment in S: it was dismissed after proposing.
+      const action = await queue({ agentConfigId: 'ap-threat-hunter', toolName: 'create_note', toolInput: { title: 'From a dismissed agent' } });
+      const refused = await executeApprovedAction(action);
+      expect(refused.isError).toBe(true);
+      expect(errorOf(refused)).toBe(deAgent['refusal.proposerRemoved']);
+      expect(await db.agentActions.get(action.id)).toMatchObject({ status: 'failed' });
+      expect(await db.notes.where('title').equals('From a dismissed agent').count()).toBe(0);
+    } finally { await i18n.changeLanguage('en'); }
   });
 
   it('approving an agent question acknowledges it without asking again', async () => {

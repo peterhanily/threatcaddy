@@ -588,7 +588,8 @@ async function injectAgentFeedback(task: { title: string; assignedDeploymentId?:
     if (deployment?.investigationId === folderId && deployment.threadId) {
       await db.chatThreads.where('id').equals(deployment.threadId).modify((thread: { contextSummary?: string }) => {
         const existing = thread.contextSummary || '';
-        const feedbackLine = `[FEEDBACK/${quality}] Task "${task.title}": ${feedback}`.replace(/\s+/g, ' ').trim().slice(0, MAX_FEEDBACK_LINE_CHARS);
+        // Never end on half a character: providers can reject a lone surrogate.
+        const feedbackLine = `[FEEDBACK/${quality}] Task "${task.title}": ${feedback}`.replace(/\s+/g, ' ').trim().slice(0, MAX_FEEDBACK_LINE_CHARS).replace(/[\uD800-\uDBFF]$/, '');
         const lines = existing.split('\n').filter(Boolean);
         lines.push(feedbackLine);
         thread.contextSummary = lines.slice(-10).join('\n');

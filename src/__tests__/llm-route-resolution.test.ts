@@ -2,11 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { db } from '../db';
 import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentDeployment, type Folder, type Settings } from '../types';
-import { hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, type LLMRouteCallbacks } from '../lib/llm-router';
+import { agentRefusal, hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, unavailableRouteError, type LLMRouteCallbacks } from '../lib/llm-router';
 import { useLLM } from '../hooks/useLLM';
 import { getAllLoops, startLoop, stopLoop } from '../lib/chat-loop';
 import { runAgentMeeting } from '../lib/caddy-agent-meeting';
 import { resolveAgentModel, runAgentCycle } from '../lib/caddy-agent';
+import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
 import { runSupervisorCycle } from '../lib/caddy-agent-supervisor';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
 import i18n from '../i18n';
@@ -240,6 +241,19 @@ describe('D-ROUTE-5 agent cycles and the supervisor go where Settings says', () 
     } finally { await i18n.changeLanguage('en'); }
   });
 
+  it('says in the analyst’s language that no deployed agent is active', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+    await i18n.changeLanguage('de');
+    try {
+      // Every deployed agent is paused or resting, and the analyst clicks Run.
+      await db.agentDeployments.bulkAdd([{ ...deployments[0], status: 'paused' }, { ...deployments[1], shift: 'resting' }]);
+      const result = await runMultiAgentCycle(folder, { ...base, llmRoutingMode: 'extension' }, true, undefined, undefined, { manual: true });
+      expect(result.errors).toEqual([deAgent['refusal.noActiveDeployments']]);
+      noModelCall();
+    } finally { await i18n.changeLanguage('en'); }
+  });
+
   it('an investigation whose agent model is the local model runs on it directly, signed out and with no extension', async () => {
     const settings: Partial<Settings> = { llmRoutingMode: 'auto', llmLocalModelName: 'llama3', ...local };
     await db.folders.update(folder.id, { agentPolicy: { ...DEFAULT_AGENT_POLICY, model: 'llama3' } });
@@ -248,5 +262,26 @@ describe('D-ROUTE-5 agent cycles and the supervisor go where Settings says', () 
     expect((await cycle(settings, false)).error).toBeUndefined();
     expect(sendDirectToLocal).toHaveBeenCalled();
     expect(sendViaExtension).not.toHaveBeenCalled();
+  });
+});
+
+describe('translated refusals load their namespace first', () => {
+  // The suite bundles every namespace, so only a spy sees a hosted build's lazy load go missing.
+  it.each([
+    ['agentRefusal', 'agent', () => agentRefusal('refusal.noApiKey', { provider: 'openai' }), 'refusal.noApiKey'],
+    ['unavailableRouteError', 'settings', () => unavailableRouteError('none'), 'ai.dataFlow.errorNone'],
+  ] as const)('%s waits for the %s namespace before it translates', async (_name, namespace, refuse, key) => {
+    let loaded = () => {};
+    const load = vi.spyOn(i18n, 'loadNamespaces').mockImplementation(() => new Promise<void>(resolve => { loaded = resolve; }));
+    const translate = vi.spyOn(i18n, 't');
+    try {
+      const refusal = refuse();
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(load).toHaveBeenCalledExactlyOnceWith(namespace);
+      expect(translate).not.toHaveBeenCalled();
+      loaded();
+      await refusal;
+      expect(translate).toHaveBeenCalledWith(key, expect.objectContaining({ ns: namespace }));
+    } finally { load.mockRestore(); translate.mockRestore(); }
   });
 });

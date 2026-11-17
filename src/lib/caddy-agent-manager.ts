@@ -8,6 +8,7 @@ import type { AgentCycleOutcome, AgentDeployment, AgentMetrics, AgentProfile, Fo
 import { runAgentCycle, type AgentCycleResult } from './caddy-agent';
 import { listAgentProfiles } from './agent-profile-resolver';
 import { shouldBlockNewCycle } from './agent-handoff';
+import { agentRefusal } from './llm-router';
 import { cancellableRequest } from './request-cancellation';
 import { tokenCount } from './model-pricing';
 
@@ -83,7 +84,7 @@ async function runMultiAgentCycleInner(
       await db.folders.update(folder.id, { agentStatus: 'waiting' });
       return { deploymentResults: new Map(), errors: [], waitingForReview };
     }
-    return { deploymentResults: new Map(), errors: ['No active agent deployments'], waitingForReview };
+    return { deploymentResults: new Map(), errors: [await agentRefusal('refusal.noActiveDeployments')], waitingForReview };
   }
 
   // Resolve profiles for all deployments. Builtins come from code; a stored
