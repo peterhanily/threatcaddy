@@ -141,19 +141,29 @@ IMPORTANT: Use write tools judiciously. Only create tasks and links when finding
 
 // ── Main ────────────────────────────────────────────────────────────────
 
-/** Get or create the Supervisor system investigation. Its findings come from
+/** The Supervisor system investigation, if it exists. Its findings come from
  * every investigation, so it is local-only: a synced folder with this name
- * (a teammate's, or one from an older version) is never adopted. */
-async function ensureSupervisorFolder(signal: AbortSignal): Promise<Folder> {
+ * (a teammate's, or one from an older version) is never it. */
+export async function findSupervisorFolder(): Promise<Folder | undefined> {
   const named = await db.folders
     .filter(folder => folder.name === SUPERVISOR_FOLDER_NAME)
     .toArray();
-  signal.throwIfAborted();
-
   for (const existing of named) {
     if (await isFolderLocalOnly(existing)) return existing;
   }
+}
+
+/** The reason stored on a supervisor proposal in another investigation: the
+ * supervisor's reasoning can quote any investigation, so it stays in its own. */
+export function supervisorProposalRationale(): Promise<string> {
+  return agentRefusal('supervisor.proposalRationale');
+}
+
+/** Get or create the Supervisor system investigation. */
+async function ensureSupervisorFolder(signal: AbortSignal): Promise<Folder> {
+  const existing = await findSupervisorFolder();
   signal.throwIfAborted();
+  if (existing) return existing;
 
   const folder: Folder = {
     id: nanoid(),
@@ -351,6 +361,10 @@ async function runSupervisorCycleInner(
         if (permission.kind === 'denied') {
           result = toolExecutionError(permission.error);
         } else if (permission.kind === 'approval-required') {
+          const rationale = permission.investigationId === supervisorFolder.id
+            ? response.content || 'Supervisor proposed action'
+            : await supervisorProposalRationale();
+          signal.throwIfAborted();
           await db.transaction('rw', db.agentActions, async () => {
             signal.throwIfAborted();
             await queueAgentAction({
@@ -359,7 +373,7 @@ async function runSupervisorCycleInner(
               agentConfigId: SUPERVISOR_ACTION_PROFILE,
               toolName: toolCall.name,
               toolInput: toolCall.input as Record<string, unknown>,
-              rationale: response.content || 'Supervisor proposed action',
+              rationale,
               severity: 'warning',
             });
             signal.throwIfAborted();

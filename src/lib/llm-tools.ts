@@ -8,6 +8,7 @@ import { consumeHumanApproval } from './human-approval';
 import { listAgentProfiles, loadAgentPolicy, resolveAgentProfile } from './agent-profile-resolver';
 import { sanitizeSoulText } from './soul-text';
 import { MAX_ACTIVE_DEPLOYMENTS_PER_INVESTIGATION } from './caddy-agent-policy';
+import { SUPERVISOR_ACTION_PROFILE } from './supervisor-tool-policy';
 import { PASSIVE_LOOKUP_TEMPLATE_IDS } from './builtin-integrations';
 import { getReadOnlyEntityError } from './tool-entity-policy';
 import { withCreatorTags } from './tool-creator';
@@ -682,10 +683,12 @@ async function executeListAgentActivity(inp: Record<string, unknown>, folderId?:
   const allProfiles = await getAllAgentProfiles();
   const profileMap = new Map(allProfiles.map(p => [p.id, p.name]));
 
+  // Leaves out the supervisor's rows, whose reasons can quote other investigations, and server history.
   let actions = await db.agentActions
     .where('[investigationId+createdAt]')
     .between([folderId, -Infinity], [folderId, Infinity])
     .reverse()
+    .filter(a => a.agentConfigId !== SUPERVISOR_ACTION_PROFILE && !a.id.startsWith('srv:'))
     .limit(limit * 2)
     .toArray();
 

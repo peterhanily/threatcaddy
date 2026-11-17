@@ -236,6 +236,7 @@
   "meeting.meetingInProgress": "회의 진행 중...",
   "meeting.couldNotRun": "회의를 진행할 수 없습니다: {{error}}",
   "supervisor.couldNotRun": "슈퍼바이저 에이전트를 실행할 수 없습니다: {{error}}",
+  "supervisor.proposalRationale": "CaddyAgent Supervisor의 제안입니다. 그 근거는 CaddyAgent Supervisor 조사에 남아 있습니다.",
   "refusal.noApiKey": "{{provider}}에 대한 API 키가 구성되어 있지 않습니다.",
   "refusal.configuredProviders": "구성된 공급자: {{providers}}. AgentCaddy 설정에서 에이전트 모델을 설정하세요.",
   "refusal.noActiveDeployments": "이 조사에서 활성 상태인 배포된 에이전트가 없습니다.",

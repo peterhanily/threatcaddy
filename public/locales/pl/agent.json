@@ -236,6 +236,7 @@
   "meeting.meetingInProgress": "Spotkanie w toku...",
   "meeting.couldNotRun": "Nie udało się przeprowadzić spotkania: {{error}}",
   "supervisor.couldNotRun": "Nie udało się uruchomić agenta Supervisor: {{error}}",
+  "supervisor.proposalRationale": "Propozycja CaddyAgent Supervisor. Jej uzasadnienie pozostaje w dochodzeniu CaddyAgent Supervisor.",
   "refusal.noApiKey": "Nie skonfigurowano klucza API dla {{provider}}.",
   "refusal.configuredProviders": "Skonfigurowani dostawcy: {{providers}}. Ustaw model agenta w ustawieniach AgentCaddy.",
   "refusal.noActiveDeployments": "Żaden wdrożony agent nie jest aktywny w tym dochodzeniu.",

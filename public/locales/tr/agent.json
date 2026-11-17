@@ -236,6 +236,7 @@
   "meeting.meetingInProgress": "Toplantı devam ediyor...",
   "meeting.couldNotRun": "Toplantı yapılamadı: {{error}}",
   "supervisor.couldNotRun": "Süpervizör Ajan çalıştırılamadı: {{error}}",
+  "supervisor.proposalRationale": "CaddyAgent Supervisor önerisi. Gerekçesi CaddyAgent Supervisor soruşturmasında kalır.",
   "refusal.noApiKey": "{{provider}} için yapılandırılmış bir API anahtarı yok.",
   "refusal.configuredProviders": "Yapılandırılmış sağlayıcılar: {{providers}}. Ajan modelini AgentCaddy ayarlarından belirleyin.",
   "refusal.noActiveDeployments": "Bu soruşturmada etkin dağıtılmış ajan yok.",

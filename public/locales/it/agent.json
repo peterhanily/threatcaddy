@@ -236,6 +236,7 @@
   "meeting.meetingInProgress": "Riunione in corso...",
   "meeting.couldNotRun": "Impossibile svolgere la riunione: {{error}}",
   "supervisor.couldNotRun": "Impossibile eseguire l'agente supervisor: {{error}}",
+  "supervisor.proposalRationale": "Proposta di CaddyAgent Supervisor. Il suo ragionamento resta nell'indagine CaddyAgent Supervisor.",
   "refusal.noApiKey": "Nessuna chiave API configurata per {{provider}}.",
   "refusal.configuredProviders": "Provider configurati: {{providers}}. Imposta il modello dell'agente nelle impostazioni di AgentCaddy.",
   "refusal.noActiveDeployments": "Nessun agente distribuito è attivo in questa indagine.",

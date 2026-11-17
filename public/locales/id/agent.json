@@ -236,6 +236,7 @@
   "meeting.meetingInProgress": "Rapat sedang berlangsung...",
   "meeting.couldNotRun": "Rapat tidak dapat dijalankan: {{error}}",
   "supervisor.couldNotRun": "Agen Supervisor tidak dapat dijalankan: {{error}}",
+  "supervisor.proposalRationale": "Usulan CaddyAgent Supervisor. Alasannya tetap berada di investigasi CaddyAgent Supervisor.",
   "refusal.noApiKey": "Tidak ada kunci API yang dikonfigurasi untuk {{provider}}.",
   "refusal.configuredProviders": "Penyedia yang dikonfigurasi: {{providers}}. Atur model agen di pengaturan AgentCaddy.",
   "refusal.noActiveDeployments": "Tidak ada agen yang di-deploy dan aktif dalam investigasi ini.",
