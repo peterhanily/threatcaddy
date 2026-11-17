@@ -35,7 +35,8 @@ Clip text, images, and selections from web pages into ThreatCaddy. Works on Chro
 - **Rich content** — Preserves formatting, links, and inline images as Markdown
 - **Confirmation bubble** — Visual feedback after each capture
 - **Send to ThreatCaddy** — Confirm the destination workspace and transfer captured clips with per-clip save receipts
-- **LLM Proxy** — Routes CaddyAI API calls from the web app through the extension's background script, bypassing CORS restrictions for Anthropic, OpenAI, Gemini, Mistral, and local LLM endpoints
+- **LLM Proxy** — Routes CaddyAI API calls from the web app through the extension's background script, bypassing CORS restrictions for Anthropic, OpenAI, Gemini and Mistral. When a local LLM endpoint is configured in the app, the app calls it directly, not through the extension
+- **Web fetch** — Fetches public web pages for CaddyAI and agents. ThreatCaddy 2.0.3 uses web fetch only with extension 1.1.3 or later; if more than one ThreatCaddy extension is installed, keep only the newest enabled and reload the app tab
 
 ## Usage
 
@@ -94,6 +95,8 @@ not an independent backup. Deleting browser storage removes its local receipts.
 - General URL fetching accepts public HTTP(S) hostnames only, with separate browser host permission. Proxy requests additionally require a nonempty, per-app exact-host policy refreshed within 24 hours. Redirects and ambient cookies are not forwarded; responses are capped at 5 MiB.
 - Literal IP addresses, localhost and local-network hostname suffixes are not general-fetch targets. The portable browser API cannot pin DNS resolution, so an approved public hostname is still a trust boundary; do not approve domains you do not trust.
 - AI provider requests use the configured provider and explicit permissions. Changing app approvals aborts existing AI streams. Captured content is never transferred to a different origin after a redirect.
+- For a local model that returns no structured tool calls, version 1.1.4 reads tool calls from the reply text only in the exact `<tool_call>{…}</tool_call>` wrapper the app asks for; JSON in code fences or other tags is ignored. The app treats such calls as taken from reply text and asks before any that write, send data out or reach another investigation.
+- Version 1.1.4 advertises its guarded web fetch as `fetch_url_public_v1`. When another installed ThreatCaddy extension loaded the bridge first, 1.1.4 leaves that extension's capabilities alone.
 
 ## Build
 
