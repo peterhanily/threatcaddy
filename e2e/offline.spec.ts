@@ -3,9 +3,9 @@ import { dismissInitialOverlays, createQuickNote, navigateToView } from './fixtu
 import { startOfflineOrigin } from './offline-origin';
 
 const INSTALLING_NOTICE = 'ThreatCaddy is still saving itself for offline use. Keep this tab open.';
-const UNAVAILABLE_NOTICE = "This browser can't keep ThreatCaddy available offline. It still works online, and your investigations stay saved in this browser either way.";
+const FAILED_NOTICE = "ThreatCaddy couldn't finish saving itself for offline use. It still works online and will try again next time you open it.";
 const INSTALLED_SETTING = 'ThreatCaddy opens in this browser without an internet connection; team sync, AI and other online services still need one.';
-const UNAVAILABLE_SETTING = "This browser can't keep ThreatCaddy available offline, but it still works online.";
+const FAILED_SETTING = "The last attempt to save ThreatCaddy for offline use didn't finish. ThreatCaddy still works online and tries again next time you open it.";
 const UNCONFIRMED_SETTING = "Offline use isn't confirmed in this browser yet. ThreatCaddy still works online and tries again next time you open it.";
 
 /** The app shell stays silent unless the user must act; Settings > General always reports the status. */
@@ -19,7 +19,7 @@ async function offlineSetting(page: Page) {
 const activeWorkerState = (page: Page) =>
   page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.active?.state ?? null);
 
-test('failed first installation says so plainly, remembers dismissal and keeps saved content', async ({ page }, testInfo) => {
+test('failed first installation says it will try again, remembers dismissal and keeps saved content', async ({ page }, testInfo) => {
   test.setTimeout(90_000);
   // The worker really starts installing, then its download fails.
   const { url, stop, failPrecache, precacheRequestCount } = await startOfflineOrigin({ precacheResponse: 'deferred' });
@@ -36,8 +36,9 @@ test('failed first installation says so plainly, remembers dismissal and keeps s
     await expect(notice).toHaveAttribute('data-status', 'installing', { timeout: 10_000 });
     failPrecache();
     // The keep-this-tab-open notice turns into the failure note at once instead of vanishing.
-    await expect(notice).toHaveAttribute('data-status', 'unavailable', { timeout: 5_000 });
-    await expect(notice.getByRole('status')).toHaveText(UNAVAILABLE_NOTICE);
+    // One failed download is not a browser limit: the note says the next open tries again.
+    await expect(notice).toHaveAttribute('data-status', 'failed', { timeout: 5_000 });
+    await expect(notice.getByRole('status')).toHaveText(FAILED_NOTICE);
     expect(await activeWorkerState(page)).toBeNull();
     await page.setViewportSize({ width: 390, height: 844 });
     // The phone layout loads lazily; measure only once it has replaced the desktop one.
@@ -60,8 +61,8 @@ test('failed first installation says so plainly, remembers dismissal and keeps s
     const row = await offlineSetting(page);
     await expect(row).toHaveAttribute('data-status', 'installing', { timeout: 10_000 });
     failPrecache();
-    await expect(row).toHaveAttribute('data-status', 'unavailable', { timeout: 5_000 });
-    await expect(row.getByRole('status')).toHaveText(UNAVAILABLE_SETTING);
+    await expect(row).toHaveAttribute('data-status', 'failed', { timeout: 5_000 });
+    await expect(row.getByRole('status')).toHaveText(FAILED_SETTING);
     await expect(notice).toHaveCount(0);
   } finally { await stop(); }
 });

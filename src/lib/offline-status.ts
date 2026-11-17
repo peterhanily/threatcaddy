@@ -1,9 +1,10 @@
 /** 'checking' looks for a registration; 'installing' means an expected worker
  * is downloading or activating, so closing the tab can interrupt it.
  * 'unconfirmed' found no expected worker in time, which a late or failed
- * download looks like too; 'unavailable' is a definite failure: no worker
- * support, a refused lookup or an expected worker that became redundant. */
-export type OfflineStatus = 'checking' | 'installing' | 'installed' | 'unconfirmed' | 'unavailable';
+ * download looks like too; 'failed' means an expected worker became redundant
+ * (one failed download is enough) and the next page load registers it again;
+ * 'unavailable' is a browser limit: no worker support or a refused lookup. */
+export type OfflineStatus = 'checking' | 'installing' | 'installed' | 'unconfirmed' | 'failed' | 'unavailable';
 
 export interface ObservedOfflineWorker extends EventTarget {
   readonly state: ServiceWorkerState;
@@ -91,7 +92,7 @@ export function observeOfflineStatus({
       emit('installing');
       installFailed = false;
     } else if (installFailed || [...workers].some(worker => worker.state === 'redundant')) {
-      emit('unavailable');
+      emit('failed');
     } else {
       emit(timedOut ? 'unconfirmed' : 'checking');
     }
