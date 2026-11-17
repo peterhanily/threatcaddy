@@ -23,34 +23,40 @@ async function inGerman(run: (de: Record<string, string>) => Promise<void>) {
   try { await run(deIntegrations as Record<string, string>); } finally { await i18n.changeLanguage('en'); }
 }
 
+/** The page's own posts. */
 let post: ReturnType<typeof vi.spyOn>;
 /** The capabilities each bridge answers TC_EXTENSION_PING with. Only a bridge that owns the page's
  * listeners answers, and that bridge is the one that would relay TC_FETCH_URL. */
 let pingReplies: string[];
+/** Readiness messages that do not come from this window, such as an embedded page's. */
+let foreignReplies: string[];
 let fetchAnswered: boolean;
 /** A bridge that answers the ping but never the fetch. */
 const answerPingOnly = () => { fetchAnswered = false; };
-// How long the app collects ping replies (llm-tools-analysis.ts).
-const PING_WINDOW_MS = 250;
+/** As in a browser, a posted message reaches the window's listeners on a later task, in posting order. */
+const deliver = (data: unknown, source: Window | null = window, delayMs = 0) =>
+  setTimeout(() => window.dispatchEvent(new MessageEvent('message', { source, data })), delayMs);
+const ready = (caps: string) => ({ type: 'TC_EXTENSION_READY', protocolVersion: 1, capabilities: caps.split(',') });
+/** The installed bridges, answering from their message listener as bridge.js does. */
+function bridges(event: MessageEvent) {
+  if (event.source !== window) return;
+  const request = event.data as { type?: string; requestId?: string };
+  if (request?.type === 'TC_EXTENSION_PING') {
+    for (const caps of pingReplies) deliver(ready(caps));
+    for (const caps of foreignReplies) deliver(ready(caps), null);
+  } else if (request?.type === 'TC_FETCH_URL' && fetchAnswered) {
+    deliver({ type: 'TC_FETCH_URL_RESULT', requestId: request.requestId, success: true, title: 'Fixture', content: 'Fixture page' });
+  }
+}
 beforeEach(() => {
   pingReplies = [HEAD_CAPS];
+  foreignReplies = [];
   fetchAnswered = true;
-  post = vi.spyOn(window, 'postMessage').mockImplementation((message: unknown) => {
-    const request = message as { type?: string; requestId?: string };
-    if (request?.type === 'TC_EXTENSION_PING') {
-      for (const caps of pingReplies) queueMicrotask(() => window.dispatchEvent(new MessageEvent('message', {
-        source: window, data: { type: 'TC_EXTENSION_READY', protocolVersion: 1, capabilities: caps.split(',') },
-      })));
-      return;
-    }
-    if (request?.type !== 'TC_FETCH_URL' || !fetchAnswered) return;
-    queueMicrotask(() => window.dispatchEvent(new MessageEvent('message', {
-      source: window,
-      data: { type: 'TC_FETCH_URL_RESULT', requestId: request.requestId, success: true, title: 'Fixture', content: 'Fixture page' },
-    })));
-  });
+  post = vi.spyOn(window, 'postMessage').mockImplementation((message: unknown) => { deliver(message); });
+  window.addEventListener('message', bridges);
 });
 afterEach(() => {
+  window.removeEventListener('message', bridges);
   vi.restoreAllMocks();
   delete document.documentElement.dataset.tcBridgeCaps;
 });
@@ -142,7 +148,7 @@ describe('SPA web fetch guard', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       const pending = fetchViaExtensionBridge('https://nvd.nist.gov/vuln/detail/CVE-2024-3094');
-      await vi.advanceTimersByTimeAsync(PING_WINDOW_MS + 20000);
+      await vi.advanceTimersByTimeAsync(21_000);
       expect(await pending).toEqual({ success: false, error: de['fetch.bridgeTimeout'] });
       expect(bridgeFetches(post)).toHaveLength(1);
     } finally { vi.useRealTimers(); }
@@ -167,7 +173,7 @@ describe('SPA web fetch guard', () => {
       answerPingOnly();
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
       const pending = fetchViaExtensionBridge('https://nvd.nist.gov/vuln/detail/CVE-2024-3094');
-      await vi.advanceTimersByTimeAsync(PING_WINDOW_MS + 20000);
+      await vi.advanceTimersByTimeAsync(21_000);
       await vi.runAllTimersAsync(); // the mocked backend read answers on its own timer
       expect(await pending).toEqual({ success: false, error: enIntegrations['fetch.bridgeTimeout'] });
       expect(reads).toContain('en/integrations');
@@ -205,7 +211,7 @@ describe('SPA web fetch guard with two ThreatCaddy extensions installed', () => 
     document.documentElement.dataset.tcBridgeCaps = CAPS_1_1_4;
     pingReplies = [CAPS_1_1_4];
     expect(await fetchViaExtensionBridge(url)).toMatchObject({ success: true, title: 'Fixture' });
-    expect(postedTypes(post)).toEqual(['TC_EXTENSION_PING', 'TC_FETCH_URL']);
+    expect(postedTypes(post)).toEqual(['TC_EXTENSION_PING', 'TC_EXTENSION_PING_END', 'TC_FETCH_URL']);
   });
 
   it('refuses when no bridge answers', async () => {
@@ -220,6 +226,53 @@ describe('SPA web fetch guard with two ThreatCaddy extensions installed', () => 
     pingReplies = replies;
     expect(await fetchViaExtensionBridge(url)).toEqual(updateExtension);
     expect(bridgeFetches(post)).toHaveLength(0);
+  });
+
+  it('ignores readiness messages that do not come from this window', async () => {
+    document.documentElement.dataset.tcBridgeCaps = CAPS_1_1_4;
+    pingReplies = [];
+    foreignReplies = [CAPS_1_1_4];
+    expect(await fetchViaExtensionBridge(url)).toEqual(updateExtension);
+    expect(bridgeFetches(post)).toHaveLength(0);
+  });
+
+  // F2S review: a long task right after the ping, such as a large render or parallel agents' work, made the
+  // only, current bridge's reply arrive after a fixed 250 ms window, and the check told the analyst to reload.
+  it('waits for the bridge’s answer however long the page is busy after the ping', async () => {
+    document.documentElement.dataset.tcBridgeCaps = CAPS_1_1_4;
+    pingReplies = [CAPS_1_1_4];
+    const pending = fetchViaExtensionBridge(url);
+    const until = performance.now() + 300;
+    while (performance.now() < until) { /* a long task on the page's main thread */ }
+    expect(await pending).toMatchObject({ success: true, title: 'Fixture' });
+    expect(bridgeFetches(post)).toHaveLength(1);
+  });
+
+  it('waits for the answer of a bridge whose listener was added after the check began', async () => {
+    document.documentElement.dataset.tcBridgeCaps = CAPS_1_1_4;
+    pingReplies = [CAPS_1_1_4];
+    window.removeEventListener('message', bridges);
+    const pending = fetchViaExtensionBridge(url);
+    window.addEventListener('message', bridges);
+    expect(await pending).toMatchObject({ success: true, title: 'Fixture' });
+  });
+
+  // The check decides only on the answers to its own ping. A readiness message that arrives first, such as a
+  // second extension re-signalling after injection, says nothing about the bridge that owns the page.
+  it('refuses when its ping is not delivered in time, whatever else announces itself', async () => {
+    document.documentElement.dataset.tcBridgeCaps = CAPS_1_1_4;
+    pingReplies = [STORE_1_1_1_CAPS];
+    post.mockImplementation((message: unknown) => {
+      deliver(message, window, (message as { type?: string })?.type === 'TC_EXTENSION_PING' ? 60_000 : 0);
+    });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      deliver(ready(CAPS_1_1_4));
+      const pending = fetchViaExtensionBridge(url);
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(await pending).toEqual(updateExtension);
+      expect(bridgeFetches(post)).toHaveLength(0);
+    } finally { vi.useRealTimers(); }
   });
 
   it('keeps the page capabilities as the first refusal, without asking the bridge', async () => {

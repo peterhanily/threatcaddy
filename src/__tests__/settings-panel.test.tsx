@@ -299,15 +299,25 @@ describe('SettingsPanel: where AI data goes', () => {
   }));
   const GUARDED_CAPS = 'llm_streaming,fetch_url,clip_import,clip_import_ack_v2,proxy_fetch';
   const STORE_1_1_1_CAPS = 'llm_streaming,fetch_url,clip_import,proxy_fetch';
-  /** Extension bridges that answer TC_EXTENSION_PING; only a bridge that owns the page's listeners answers. */
-  const answerPing = (...replies: string[]) => vi.spyOn(window, 'postMessage').mockImplementation((message: unknown) => {
-    if ((message as { type?: string })?.type !== 'TC_EXTENSION_PING') return;
-    for (const caps of replies) queueMicrotask(() => window.dispatchEvent(new MessageEvent('message', {
-      source: window, data: { type: 'TC_EXTENSION_READY', protocolVersion: 1, capabilities: caps.split(',') } })));
-  });
+  /** As in a browser, a posted message reaches the window's listeners on a later task. */
+  const deliver = (data: unknown) => setTimeout(() => window.dispatchEvent(new MessageEvent('message', { source: window, data })), 0);
+  let bridges: ((event: MessageEvent) => void) | undefined;
+  /** Extension bridges that answer TC_EXTENSION_PING from their listener; only a bridge that owns the page's listeners answers. */
+  const answerPing = (...replies: string[]) => {
+    bridges = event => {
+      if (event.source !== window || event.data?.type !== 'TC_EXTENSION_PING') return;
+      for (const caps of replies) deliver({ type: 'TC_EXTENSION_READY', protocolVersion: 1, capabilities: caps.split(',') });
+    };
+    window.addEventListener('message', bridges);
+    return vi.spyOn(window, 'postMessage').mockImplementation((message: unknown) => { deliver(message); });
+  };
   const section = () => screen.getByRole('region', { name: 'Where AI data goes' });
   const lines = () => Array.from(section().querySelectorAll('p'), line => line.textContent);
-  afterEach(() => { localStorage.clear(); delete document.documentElement.dataset.tcBridgeCaps; vi.restoreAllMocks(); });
+  afterEach(() => {
+    localStorage.clear(); delete document.documentElement.dataset.tcBridgeCaps; vi.restoreAllMocks();
+    if (bridges) window.removeEventListener('message', bridges);
+    bridges = undefined;
+  });
 
   it('D-ROUTE-4: shows Auto when no routing mode was chosen', () => {
     renderAI();
@@ -401,7 +411,7 @@ describe('SettingsPanel: where AI data goes', () => {
     renderAI();
     expect(await within(section()).findByText(FETCH_UPDATE, {}, { timeout: 2000 })).toBeInTheDocument();
     expect(screen.queryByText(FETCH_AVAILABLE)).not.toBeInTheDocument();
-    expect(post).toHaveBeenCalledWith({ type: 'TC_EXTENSION_PING' }, expect.anything());
+    expect(post).toHaveBeenCalledWith(expect.objectContaining({ type: 'TC_EXTENSION_PING' }), expect.anything());
   });
 
   it('updates the route and web fetch lines when the extension publishes or withdraws its capabilities', async () => {

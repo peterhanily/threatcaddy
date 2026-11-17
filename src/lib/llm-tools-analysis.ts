@@ -128,8 +128,10 @@ export function isPublicFetchURL(value: string): boolean {
 
 const isGuardedFetchCaps = (caps: unknown) => Array.isArray(caps) && (caps.includes('clip_import_ack_v2') || caps.includes('fetch_url_public_v1'));
 
-/** How long to collect ping replies. A bridge answers from its message listener, one message hop. */
-const BRIDGE_PING_WINDOW_MS = 250;
+/** Posted after a ping's dispatch; no bridge handles it. */
+const BRIDGE_PING_END = 'TC_EXTENSION_PING_END';
+/** A safety net only: the check ends a few message hops after its ping is delivered, however busy the page. */
+const BRIDGE_PING_TIMEOUT_MS = 5000;
 
 /** Extensions older than 1.1.3 follow redirects and have no host filter. The page attribute is read at call
  *  time (the bridge deletes it while it refreshes app approval), but with two ThreatCaddy extensions installed
@@ -137,15 +139,28 @@ const BRIDGE_PING_WINDOW_MS = 250;
  *  ping, so every reply must be guarded. Settings → AI shows the same check. */
 export async function hasGuardedBridgeFetch(): Promise<boolean> {
   if (!isGuardedFetchCaps(document.documentElement.dataset.tcBridgeCaps?.split(','))) return false;
+  const requestId = Math.random().toString(36).slice(2);
   const replies: unknown[] = [];
-  const handler = (event: MessageEvent) => {
-    if (event.source === window && event.data?.type === 'TC_EXTENSION_READY') replies.push(event.data.capabilities);
-  };
-  window.addEventListener('message', handler);
-  window.postMessage({ type: 'TC_EXTENSION_PING' }, postMessageOrigin());
-  await new Promise(resolve => setTimeout(resolve, BRIDGE_PING_WINDOW_MS));
-  window.removeEventListener('message', handler);
-  return replies.length > 0 && replies.every(isGuardedFetchCaps);
+  const answered = await new Promise<boolean>(resolve => {
+    const timeout = setTimeout(() => finish(false), BRIDGE_PING_TIMEOUT_MS);
+    function finish(complete: boolean) {
+      clearTimeout(timeout);
+      window.removeEventListener('message', handler);
+      resolve(complete);
+    }
+    function handler(event: MessageEvent) {
+      if (event.source !== window || !event.data) return;
+      const { type, requestId: id } = event.data;
+      if (type === 'TC_EXTENSION_READY') replies.push(event.data.capabilities);
+      // A bridge answers from its listener while the ping is dispatched, and posted messages arrive in order,
+      // so a message posted after that dispatch arrives after every answer, however long the page was busy.
+      else if (type === 'TC_EXTENSION_PING' && id === requestId) setTimeout(() => window.postMessage({ type: BRIDGE_PING_END, requestId }, postMessageOrigin()));
+      else if (type === BRIDGE_PING_END && id === requestId) finish(true);
+    }
+    window.addEventListener('message', handler);
+    window.postMessage({ type: 'TC_EXTENSION_PING', requestId }, postMessageOrigin());
+  });
+  return answered && replies.length > 0 && replies.every(isGuardedFetchCaps);
 }
 
 /** `/fetch` shows this text to the analyst, so it is translated. Hosted builds load the namespace lazily. */

@@ -25,6 +25,10 @@ export function installEgressSpy(caps: string[] = HEAD_BRIDGE_CAPS): EgressSpy {
   const postSpy = vi.spyOn(window, 'postMessage').mockImplementation((message: unknown) => {
     const data = (message && typeof message === 'object' ? message : { value: message }) as Record<string, unknown>;
     posts.push(data);
+    // As in a browser, the page's own ping and the marker it posts after the ping reach its listeners.
+    if (data.type === 'TC_EXTENSION_PING' || data.type === 'TC_EXTENSION_PING_END') {
+      setTimeout(() => window.dispatchEvent(new MessageEvent('message', { source: window, data })), 0);
+    }
     if (data.type === 'TC_EXTENSION_PING') {
       setTimeout(() => window.dispatchEvent(new MessageEvent('message', {
         source: window, data: { type: 'TC_EXTENSION_READY', protocolVersion: 1, capabilities: caps },

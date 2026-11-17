@@ -73,20 +73,31 @@ test('names the team server for cloud models when the default model is local, an
 });
 
 // One ThreatCaddy bridge owns the page listeners and answers pings; the page attribute may come from another.
-for (const { name, owner, settingsLine, fetches } of [
+for (const { name, owner, settingsLine, fetches, busyMs } of [
   { name: 'store 1.1.1 owns the page while a newer copy published its capabilities', owner: STORE_1_1_1_CAPS,
-    settingsLine: settings['ai.dataFlow.fetchUpdate'], fetches: 0 },
-  { name: 'only a guarded 1.1.4 bridge answers', owner: CAPS_1_1_4, settingsLine: settings['ai.dataFlow.fetchSupported'], fetches: 1 },
+    settingsLine: settings['ai.dataFlow.fetchUpdate'], fetches: 0, busyMs: 0 },
+  { name: 'only a guarded 1.1.4 bridge answers', owner: CAPS_1_1_4, settingsLine: settings['ai.dataFlow.fetchSupported'], fetches: 1, busyMs: 0 },
+  // F2S review: a fixed 250 ms window refused the only, current extension when a long task followed the ping.
+  { name: 'only a guarded 1.1.4 bridge answers while a long task follows each ping', owner: CAPS_1_1_4,
+    settingsLine: settings['ai.dataFlow.fetchSupported'], fetches: 1, busyMs: 600 },
 ]) test(`web fetch and Settings ask the bridge at call time: ${name}`, async ({ page, context, baseURL }) => {
   const origin = new URL(String(baseURL)).origin;
   await context.route(/^https?:\/\//, route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
   await context.routeWebSocket(/.*/, socket => socket.close());
   // The bridge that owns the page answers pings and relays fetches; the published capabilities stay guarded.
-  await page.addInitScript(({ published, owner }) => {
+  await page.addInitScript(({ published, owner, busyMs }) => {
     const fetched: string[] = [];
     Object.assign(window, { tcStubFetched: fetched });
     const publish = () => { document.documentElement.dataset.tcBridgeLoaded = '1'; document.documentElement.dataset.tcBridgeCaps = published.join(','); };
     if (document.documentElement) publish(); else document.addEventListener('DOMContentLoaded', publish);
+    if (busyMs) {
+      // A long task, such as a large render, runs before the ping reaches the bridge.
+      const post = window.postMessage.bind(window);
+      window.postMessage = ((message: { type?: string }, ...rest: [string]) => {
+        post(message, ...rest);
+        if (message?.type === 'TC_EXTENSION_PING') queueMicrotask(() => { const until = performance.now() + busyMs; while (performance.now() < until) { /* busy */ } });
+      }) as typeof window.postMessage;
+    }
     window.addEventListener('message', event => {
       if (event.source !== window || !event.data) return;
       if (event.data.type === 'TC_EXTENSION_PING') {
@@ -97,7 +108,7 @@ for (const { name, owner, settingsLine, fetches } of [
         window.postMessage({ type: 'TC_FETCH_URL_RESULT', requestId: event.data.requestId, success: true, title: 'Fictional advisory', content: 'Fictional page' }, location.origin);
       }
     });
-  }, { published: CAPS_1_1_4, owner });
+  }, { published: CAPS_1_1_4, owner, busyMs });
   await page.addInitScript(() => localStorage.setItem('caddyai-onboarded', '1'));
   await goToApp(page);
   const now = Date.now();
