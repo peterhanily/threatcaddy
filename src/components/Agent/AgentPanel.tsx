@@ -20,7 +20,7 @@ import { AgentActionCard } from './AgentActionCard';
 import { AgentProfilePicker } from './AgentProfilePicker';
 import { AgentMeetingPanel } from './AgentMeetingPanel';
 import { MODELS } from '../../lib/models';
-import { BUILTIN_AGENT_PROFILES } from '../../lib/builtin-agent-profiles';
+import { BUILTIN_AGENT_PROFILES, ROLE_LABEL_KEYS } from '../../lib/builtin-agent-profiles';
 import { formatUSD } from '../../lib/model-pricing';
 
 const ACTION_PAGE_SIZE = 100;
@@ -41,6 +41,14 @@ const STATUS_LABEL_KEYS: Record<Exclude<AgentStatus, 'idle'>, string> = {
 
 /** One whole sentence per inbox filter: a filter name does not inflect inside another sentence. */
 const EMPTY_FILTER_KEYS = { pending: 'panel.noPendingActions', executed: 'panel.noExecutedActions', rejected: 'panel.noRejectedActions' } as const;
+
+/** Labels for stored values, as Maps: a synced or restored row can carry any value, which then shows as stored. */
+const ACTION_STATUS_KEYS: ReadonlyMap<string, string> = new Map([
+  ['pending', 'action.statusPending'], ['approved', 'action.statusApproved'], ['executed', 'action.statusExecuted'],
+  ['rejected', 'action.statusRejected'], ['failed', 'action.statusFailed'],
+]);
+const TASK_STATUS_KEYS: ReadonlyMap<string, string> = new Map([['todo', 'status.todo'], ['in-progress', 'status.inProgress'], ['done', 'status.done']]);
+const TASK_PRIORITY_KEYS: ReadonlyMap<string, string> = new Map([['low', 'priority.low'], ['medium', 'priority.medium'], ['high', 'priority.high']]);
 
 interface AgentPanelProps {
   folder: Folder;
@@ -85,6 +93,7 @@ function InvestigationAgentPanel({
 }: AgentPanelProps) {
   const { t } = useTranslation('agent');
   const { t: tSettings } = useTranslation('settings');
+  const { t: tTasks } = useTranslation('tasks');
   const [actions, setActions] = useState<AgentAction[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [pageCount, setPageCount] = useState(1);
@@ -212,10 +221,10 @@ function InvestigationAgentPanel({
       }));
     } catch (error) {
       if (mounted.current && version === loadVersion.current) {
-        setLocalError(error instanceof Error ? error.message : 'Unable to load investigation actions.');
+        setLocalError(error instanceof Error ? error.message : t('panel.loadActionsFailed'));
       }
     }
-  }, [folder.id, pageCount]);
+  }, [folder.id, pageCount, t]);
 
   // Refresh on pagination/run transitions; each response is owned by this
   // mounted investigation and the newest load, including manual reloads.
@@ -591,12 +600,13 @@ function InvestigationAgentPanel({
                 {deployments.map(d => {
                   const p = profiles.find(pr => pr.id === d.profileId) || BUILTIN_AGENT_PROFILES.find(pr => pr.id === d.profileId);
                   if (!p) return null;
+                  const roleKey = ROLE_LABEL_KEYS.get(p.role);
                   return (
                     <div key={d.id} className="flex items-center gap-2 p-2 rounded-lg border border-border-subtle bg-surface group">
                       <span className="text-lg">{p.icon || '🤖'}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium text-text-primary">{p.name}</div>
-                        <div className="text-[10px] text-text-muted">{p.role}{d.supervisorDeploymentId ? ` · ${t('panel.supervised')}` : ''}</div>
+                        <div className="text-[10px] text-text-muted">{roleKey ? t(roleKey) : p.role}{d.supervisorDeploymentId ? ` · ${t('panel.supervised')}` : ''}</div>
                         {homeShareable && p.allowedTools?.some(name => CROSS_CASE_READ_TOOLS.has(name)) && (
                           <div className="text-[9px] text-accent-amber mt-0.5">{t('panel.crossCaseOff')}</div>
                         )}
@@ -608,27 +618,27 @@ function InvestigationAgentPanel({
                           const totalTokens = m.tokensUsed.input + m.tokensUsed.output;
                           return (
                             <>
-                              <div className="text-[9px] text-text-muted flex gap-2 mt-0.5">
-                                <span>{m.cyclesRun} cycles</span>
-                                <span>{m.toolCallsExecuted} exec</span>
-                                <span>{m.toolCallsProposed} proposed</span>
+                              <div className="text-[9px] text-text-muted flex flex-wrap gap-x-2 mt-0.5">
+                                <span>{t('panel.cycles', { count: m.cyclesRun })}</span>
+                                <span>{t('panel.exec', { count: m.toolCallsExecuted })}</span>
+                                <span>{t('panel.proposed', { count: m.toolCallsProposed })}</span>
                               </div>
                               {(m.costUSD || totalTokens > 0 || topTool) && (
-                                <div className="text-[9px] text-text-muted flex gap-2 mt-0.5">
+                                <div className="text-[9px] text-text-muted flex flex-wrap gap-x-2 mt-0.5">
                                   {m.costUSD != null && m.costUSD > 0 && (
-                                    <span title={`${m.tokensUsed.input.toLocaleString()} in / ${m.tokensUsed.output.toLocaleString()} out`}>
+                                    <span title={t('cycleSummary.tokensInOut', { in: m.tokensUsed.input.toLocaleString(), out: m.tokensUsed.output.toLocaleString() })}>
                                       {formatUSD(m.costUSD)}
                                     </span>
                                   )}
                                   {totalTokens > 0 && (
-                                    <span>{totalTokens >= 1000 ? `${Math.round(totalTokens / 1000)}k` : totalTokens} tok</span>
+                                    <span>{t('panel.tokens', { count: totalTokens })}</span>
                                   )}
-                                  {topTool && <span title="Most-used tool">{topTool[0]} ×{topTool[1]}</span>}
+                                  {topTool && <span title={t('panel.mostUsedTool')}>{topTool[0]} ×{topTool[1]}</span>}
                                 </div>
                               )}
                               {m.tasksEscalated != null && m.tasksEscalated > 0 && (
-                                <div className="text-[9px] text-accent-amber flex gap-1 mt-0.5" title="Tasks this agent auto-escalated to a human after 3 rejections — needs analyst review.">
-                                  <AlertTriangle size={10} /> {m.tasksEscalated} escalated to human
+                                <div className="text-[9px] text-accent-amber flex gap-1 mt-0.5" title={t('panel.escalatedTitle')}>
+                                  <AlertTriangle size={10} className="shrink-0" /> {t('panel.escalated', { count: m.tasksEscalated })}
                                 </div>
                               )}
                               {(() => {
@@ -718,23 +728,29 @@ function InvestigationAgentPanel({
             <div className="flex flex-col items-center justify-center h-32 text-text-muted">
               <p className="text-xs">{t('panel.noAgentTasks')}</p>
             </div>
-          ) : agentTasks.map(task => (
-            <div key={task.id} className="border border-border-subtle rounded-lg p-2.5 bg-surface">
-              <div className="flex items-center gap-2">
-                <span className={cn('text-[9px] uppercase font-medium px-1.5 py-0.5 rounded',
-                  task.status === 'done' ? 'text-accent-green bg-accent-green/10' : task.status === 'in-progress' ? 'text-accent-blue bg-accent-blue/10' : 'text-accent-amber bg-accent-amber/10',
-                )}>{task.status}</span>
-                <span className="text-xs text-text-primary flex-1 truncate">{task.title}</span>
-                {task.priority && <span className={cn('text-[9px]', task.priority === 'high' ? 'text-red-400' : 'text-text-muted')}>{task.priority}</span>}
+          ) : agentTasks.map(task => {
+            const statusKey = TASK_STATUS_KEYS.get(task.status);
+            const priorityKey = TASK_PRIORITY_KEYS.get(task.priority ?? '');
+            return (
+              <div key={task.id} className="border border-border-subtle rounded-lg p-2.5 bg-surface">
+                <div className="flex items-center gap-2">
+                  <span className={cn('text-[9px] uppercase font-medium px-1.5 py-0.5 rounded',
+                    task.status === 'done' ? 'text-accent-green bg-accent-green/10' : task.status === 'in-progress' ? 'text-accent-blue bg-accent-blue/10' : 'text-accent-amber bg-accent-amber/10',
+                  )}>{statusKey ? tTasks(statusKey) : task.status}</span>
+                  <span className="text-xs text-text-primary flex-1 truncate">{task.title}</span>
+                  {task.priority && task.priority !== 'none' && (
+                    <span className={cn('text-[9px]', task.priority === 'high' ? 'text-red-400' : 'text-text-muted')}>{priorityKey ? tTasks(priorityKey) : task.priority}</span>
+                  )}
+                </div>
+                {task.description && <p className="text-[10px] text-text-muted mt-1 line-clamp-2">{task.description.replace(/\[.*?\]\s*/g, '').substring(0, 150)}</p>}
+                <div className="flex items-center gap-2 mt-1 text-[9px] text-text-muted">
+                  <span>{formatDate(task.createdAt)}</span>
+                  {task.createdBy?.startsWith('agent:') && <span className="text-accent-blue">{t('panel.taskSourceAgent')}</span>}
+                  {task.tags?.includes('agent-delegated') && <span className="text-purple">{t('panel.taskSourceDelegated')}</span>}
+                </div>
               </div>
-              {task.description && <p className="text-[10px] text-text-muted mt-1 line-clamp-2">{task.description.replace(/\[.*?\]\s*/g, '').substring(0, 150)}</p>}
-              <div className="flex items-center gap-2 mt-1 text-[9px] text-text-muted">
-                <span>{formatDate(task.createdAt)}</span>
-                {task.createdBy?.startsWith('agent:') && <span className="text-accent-blue">agent</span>}
-                {task.tags?.includes('agent-delegated') && <span className="text-purple">delegated</span>}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -748,17 +764,18 @@ function InvestigationAgentPanel({
           ) : (
             <>
               {/* Aggregate stats */}
-              <div className="flex gap-4 mb-3 text-[10px] text-text-muted">
-                <span>Total: {actions.length} actions</span>
-                <span className="text-accent-green">{actions.filter(a => a.status === 'executed').length} executed</span>
-                <span className="text-accent-amber">{actions.filter(a => a.status === 'pending').length} pending</span>
-                <span className="text-red-400">{actions.filter(a => a.status === 'failed').length} failed</span>
+              <div className="flex flex-wrap gap-x-4 mb-3 text-[10px] text-text-muted">
+                <span>{t('panel.totalActions', { count: actions.length })}</span>
+                <span className="text-accent-green">{t('panel.executedCount', { count: actions.filter(a => a.status === 'executed').length })}</span>
+                <span className="text-accent-amber">{t('panel.pendingCount', { count: actions.filter(a => a.status === 'pending').length })}</span>
+                <span className="text-red-400">{t('panel.failedCount', { count: actions.filter(a => a.status === 'failed').length })}</span>
               </div>
               {/* Chronological log */}
               {actions.map(action => {
                 const profile = action.agentConfigId
                   ? profiles.find(p => p.id === action.agentConfigId) || BUILTIN_AGENT_PROFILES.find(p => p.id === action.agentConfigId)
                   : null;
+                const statusKey = ACTION_STATUS_KEYS.get(action.status);
                 return (
                   <div key={action.id} className="flex items-center gap-2 py-1 text-[10px] border-b border-border-subtle/50">
                     <span className="text-text-muted w-20 shrink-0 font-mono">{formatDate(action.createdAt)}</span>
@@ -766,7 +783,7 @@ function InvestigationAgentPanel({
                     <code className="text-text-primary shrink-0">{action.toolName}</code>
                     <span className={cn('shrink-0',
                       action.status === 'executed' ? 'text-accent-green' : action.status === 'pending' ? 'text-accent-amber' : action.status === 'failed' ? 'text-red-400' : 'text-text-muted',
-                    )}>{action.status}</span>
+                    )}>{statusKey ? t(statusKey) : action.status}</span>
                     <span className="text-text-muted truncate flex-1">{action.rationale.substring(0, 60)}</span>
                   </div>
                 );
@@ -888,7 +905,7 @@ function PolicyEditor({ folder, settings, onFolderChanged, deployments, profiles
 
       {/* Interval */}
       <div className="flex items-center gap-3">
-        <label htmlFor="agent-interval" className="text-xs text-text-muted shrink-0">Interval</label>
+        <label htmlFor="agent-interval" className="text-xs text-text-muted shrink-0">{t('panel.interval')}</label>
         <input
           id="agent-interval"
           type="range"
@@ -898,7 +915,7 @@ function PolicyEditor({ folder, settings, onFolderChanged, deployments, profiles
           onChange={(e) => updatePolicy({ intervalMinutes: parseInt(e.target.value) })}
           className="flex-1 h-1 accent-accent-blue"
         />
-        <span className="text-xs text-text-secondary w-12 text-end">{localPolicy.intervalMinutes || 5}m</span>
+        <span className="text-xs text-text-secondary min-w-12 shrink-0 text-end">{t('panel.intervalMinutes', { count: localPolicy.intervalMinutes || 5 })}</span>
       </div>
 
       {/* Focus areas */}
@@ -909,7 +926,7 @@ function PolicyEditor({ folder, settings, onFolderChanged, deployments, profiles
           aria-expanded={showFocus}
         >
           {showFocus ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-          Focus areas
+          {t('panel.focusAreas')}
         </button>
         {showFocus && (
           <div className="mt-1.5">
@@ -918,12 +935,12 @@ function PolicyEditor({ folder, settings, onFolderChanged, deployments, profiles
               value={focusText}
               onChange={(e) => setFocusText(e.target.value)}
               onBlur={saveFocusAreas}
-              placeholder="e.g. enrich IOCs, build timeline, look for lateral movement"
+              placeholder={t('panel.focusAreasPlaceholder')}
               rows={2}
-              aria-label="Agent focus areas (comma-separated)"
+              aria-label={t('panel.focusAreasLabel')}
               className="w-full text-xs bg-surface border border-border-subtle rounded px-2 py-1.5 text-text-primary placeholder:text-text-muted/50 resize-none focus:outline-none focus:border-accent-blue/50"
             />
-            <p className="text-[10px] text-text-muted mt-0.5">Comma-separated areas the agent should focus on</p>
+            <p className="text-[10px] text-text-muted mt-0.5">{t('panel.focusAreasHint')}</p>
           </div>
         )}
       </div>
@@ -968,8 +985,8 @@ function AgentModelSelector({ settings, policy, onModelChange }: {
           </optgroup>
         ))}
         {hasLocal && settings.llmLocalModelName && (
-          <optgroup label="Local">
-            <option value={settings.llmLocalModelName}>Local: {settings.llmLocalModelName}</option>
+          <optgroup label={t('panel.localModels')}>
+            <option value={settings.llmLocalModelName}>{t('panel.localModel', { name: settings.llmLocalModelName })}</option>
           </optgroup>
         )}
       </select>

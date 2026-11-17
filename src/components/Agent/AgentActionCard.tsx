@@ -182,7 +182,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
                 <Info size={12} className="text-accent-amber" />
               )}
               <span className={action.severity === 'critical' ? 'text-red-400' : 'text-accent-amber'}>
-                {action.severity}
+                {t(action.severity === 'critical' ? 'action.severityCritical' : 'action.severityWarning')}
               </span>
             </div>
           )}

@@ -3,14 +3,16 @@
  * lookups an enrichment proposal sends the IOC to, the whole input a proposal
  * sends, why a proposal failed, and the panel's own labels.
  */
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
-import type { AgentAction, AgentDeployment } from '../types';
+import type { AgentAction, AgentDeployment, Folder, Settings } from '../types';
 import type { InstalledIntegration, IntegrationTemplate } from '../types/integration-types';
 import { AgentActionCard } from '../components/Agent/AgentActionCard';
+import { AgentPanel } from '../components/Agent/AgentPanel';
 import { AgentProfilePicker } from '../components/Agent/AgentProfilePicker';
 import { executeApprovedAction } from '../lib/agent-action-approval';
+import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { FORENSICATE_AGENT_PROFILE } from '../lib/forensicate-tool';
 import { ids, seedAIWorkspace } from './helpers/ai-workspace';
 import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
@@ -24,10 +26,12 @@ vi.mock('../components/Agent/AgentMeetingPanel', () => ({ AgentMeetingPanel: () 
 const agentCatalogs = import.meta.glob<{ default: Record<string, string> }>('../../public/locales/*/agent.json', { eager: true });
 const de = deAgent as Record<string, string>;
 const en = enAgent as Record<string, string>;
+const settings = { llmLocalEndpoint: 'http://localhost:11434', llmLocalModelName: 'fixture-local-model' } as Settings;
 const action = (values: Partial<AgentAction>): AgentAction => ({ id: `action-${values.toolName}`, investigationId: 'S', threadId: 't', toolName: 'create_note',
   toolInput: {}, rationale: 'Proposed by the agent', status: 'pending', createdAt: 1, ...values });
 const deployment = (profileId: string, values: Partial<AgentDeployment> = {}): AgentDeployment => ({ id: `dep-${profileId}`, investigationId: 'S', profileId,
   status: 'idle', order: 0, createdAt: 1, updatedAt: 1, ...values });
+const folder = async (id: string) => await db.folders.get(id) as Folder;
 /** i18next's own value for a key, so plural forms resolve as they do in the app. */
 const deText = (key: string, options?: Record<string, unknown>) => i18n.t(key, { ns: 'agent', lng: 'de', ...options });
 
@@ -73,7 +77,7 @@ describe('A4-1 the Forensicate Scanner says what leaves the device', () => {
       + 'The check runs on this device; like every agent, it sends what it reads to your AI model.');
     await inGerman();
     render(<AgentProfilePicker profiles={[FORENSICATE_AGENT_PROFILE]} deployments={[]} onDeployMultiple={vi.fn()} onClose={vi.fn()} />);
-    expect(screen.getByTitle(title => title.endsWith(`: ${de['builtinProfile.forensicateScanner.descriptionV2']}`))).toBeInTheDocument();
+    expect(screen.getByTitle(`Forensicate Scanner (${de['panel.roleSpecialist']}): ${de['builtinProfile.forensicateScanner.descriptionV2']}`)).toBeInTheDocument();
   });
 });
 
@@ -195,13 +199,98 @@ describe('A4-4 a refused approval says why, in plain text and in the analyst’s
   });
 });
 
+describe('A4-5 the agent panel and cards speak the analyst’s language', () => {
+  beforeEach(inGerman);
+
+  it('an agent row names its role, its metrics and its escalations', async () => {
+    const hunter = deployment('ap-threat-hunter', { metrics: {
+      cyclesRun: 3, toolCallsExecuted: 2, toolCallsProposed: 1, tasksCompleted: 0, tasksRejected: 0, tokensUsed: { input: 9000, output: 3345 },
+      lastCycleAt: 1, toolCallHistogram: { search_notes: 4 }, tasksEscalated: 1 } });
+    render(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={[hunter]} />);
+    await act(async () => {});
+    fireEvent.click(screen.getByRole('button', { name: `${de['panel.agents']}(1)` }));
+    expect(await screen.findByText(de['panel.roleSpecialist'])).toBeInTheDocument();
+    expect(screen.queryByText('specialist')).not.toBeInTheDocument();
+    for (const [key, count] of [['panel.cycles', 3], ['panel.exec', 2], ['panel.proposed', 1], ['panel.tokens', 12345], ['panel.escalated', 1]] as const) {
+      expect(screen.getByText(deText(key, { count }))).toBeInTheDocument();
+    }
+    expect(screen.queryByText(/ tok$|escalated to human| cycles$/)).not.toBeInTheDocument();
+    expect(screen.getByTitle(de['panel.mostUsedTool'])).toHaveTextContent('search_notes ×4');
+    expect(screen.getByTitle(de['panel.escalatedTitle'])).toBeInTheDocument();
+  });
+
+  it('the tasks tab names each task’s status, priority and source', async () => {
+    await db.tasks.add({ id: 'agent-task', folderId: 'S', title: 'Delegated follow-up', completed: false, priority: 'high', status: 'in-progress', order: 1,
+      tags: ['agent-delegated'], createdBy: 'agent:ap-lead-analyst', trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+    render(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={[]} />);
+    await act(async () => {});
+    fireEvent.click(screen.getByRole('button', { name: `${de['panel.tasks']}(1)` }));
+    expect(await screen.findByText(deTasks['status.inProgress'])).toBeInTheDocument();
+    expect(screen.getByText(deTasks['priority.high'])).toBeInTheDocument();
+    expect(screen.getByText(de['panel.taskSourceAgent'])).toBeInTheDocument();
+    expect(screen.getByText(de['panel.taskSourceDelegated'])).toBeInTheDocument();
+    expect(screen.queryByText(/^(in-progress|high|agent|delegated)$/)).not.toBeInTheDocument();
+  });
+
+  it('the logs tab counts and names each status', async () => {
+    await db.agentActions.bulkAdd([
+      action({ id: 'a1', status: 'executed' }), action({ id: 'a2', status: 'pending' }), action({ id: 'a3', status: 'failed' }),
+    ]);
+    render(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={[]} />);
+    await act(async () => {});
+    fireEvent.click(screen.getByRole('button', { name: de['panel.logs'] }));
+    for (const [key, count] of [['panel.totalActions', 3], ['panel.executedCount', 1], ['panel.pendingCount', 1], ['panel.failedCount', 1]] as const) {
+      expect(await screen.findByText(deText(key, { count }))).toBeInTheDocument();
+    }
+    for (const key of ['action.statusExecuted', 'action.statusPending', 'action.statusFailed']) expect(screen.getByText(de[key])).toBeInTheDocument();
+    expect(screen.queryByText(/^Total:|^(executed|pending|failed)$/)).not.toBeInTheDocument();
+  });
+
+  it('the policy editor labels the interval, the focus areas and the local model', async () => {
+    render(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={[]} />);
+    await act(async () => {});
+    fireEvent.click(screen.getByRole('button', { name: de['panel.toggleAgentSettings'] }));
+    expect(await screen.findByLabelText(de['panel.interval'])).toBeInTheDocument();
+    expect(screen.getByText(deText('panel.intervalMinutes', { count: 5 }))).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: de['panel.focusAreas'] }));
+    const focus = screen.getByRole('textbox', { name: de['panel.focusAreasLabel'] });
+    expect(focus).toHaveAttribute('placeholder', de['panel.focusAreasPlaceholder']);
+    expect(screen.getByText(de['panel.focusAreasHint'])).toBeInTheDocument();
+    expect(document.querySelector('optgroup:last-of-type')).toHaveAttribute('label', de['panel.localModels']);
+    expect(screen.getByRole('option', { name: deText('panel.localModel', { name: 'fixture-local-model' }) })).toBeInTheDocument();
+    expect(screen.queryByText(/^(Interval|Focus areas)$/)).not.toBeInTheDocument();
+  });
+
+  it('a failed load says so in German', async () => {
+    const failing = vi.spyOn(db.agentActions, 'where').mockImplementationOnce(() => { throw 'not an Error'; });
+    try {
+      render(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={[]} />);
+      await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(de['panel.loadActionsFailed']));
+    } finally { failing.mockRestore(); }
+  });
+
+  it('a card names its severity', () => {
+    render(<AgentActionCard action={action({ toolName: 'ask_human', status: 'executed', severity: 'warning' })} />);
+    fireEvent.click(screen.getByRole('button', { expanded: false }));
+    expect(screen.getByText(de['action.severityWarning'])).toBeInTheDocument();
+    expect(screen.queryByText('warning')).not.toBeInTheDocument();
+  });
+});
+
 describe('A4 catalogs', () => {
   const ADDED = [
-    'action.lookupDestinations', 'action.lookupNone', 'action.lookupChecking', 'action.questionAcknowledged',
+    'action.lookupDestinations', 'action.lookupNone', 'action.lookupChecking', 'action.severityWarning', 'action.severityCritical', 'action.questionAcknowledged',
     'refusal.serverProposal', 'refusal.investigationUnavailable', 'refusal.profileGone', 'refusal.toolNotAllowed', 'refusal.targetMoved',
+    'panel.roleExecutive', 'panel.roleLead', 'panel.roleSpecialist', 'panel.roleObserver',
+    'panel.cycles_one', 'panel.cycles_other', 'panel.exec_one', 'panel.exec_other', 'panel.proposed_one', 'panel.proposed_other',
+    'panel.tokens_one', 'panel.tokens_other', 'panel.mostUsedTool', 'panel.escalated_one', 'panel.escalated_other', 'panel.escalatedTitle',
+    'panel.taskSourceAgent', 'panel.taskSourceDelegated', 'panel.totalActions_one', 'panel.totalActions_other',
+    'panel.executedCount_one', 'panel.executedCount_other', 'panel.pendingCount_one', 'panel.pendingCount_other',
+    'panel.failedCount_one', 'panel.failedCount_other', 'panel.intervalMinutes_one', 'panel.intervalMinutes_other',
+    'panel.focusAreasLabel', 'panel.localModels', 'panel.localModel', 'panel.loadActionsFailed',
     'builtinProfile.forensicateScanner.descriptionV2',
   ];
-  const SUPERSEDED = ['action.vendorLookups'];
+  const SUPERSEDED = ['action.vendorLookups', 'panel.cycles', 'panel.exec', 'panel.proposed', 'panel.totalActions', 'panel.executedCount', 'panel.pendingCount', 'panel.failedCount'];
 
   it('German translates every added string', () => {
     for (const key of ADDED) {

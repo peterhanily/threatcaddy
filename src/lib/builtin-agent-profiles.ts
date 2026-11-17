@@ -7,6 +7,11 @@ import { DEFAULT_AGENT_POLICY } from '../types';
 import { FORENSICATE_AGENT_PROFILE } from './forensicate-tool';
 import i18n from '../i18n';
 
+/** The agent panel's name for each profile role (agent namespace). A Map: an imported profile can carry any role. */
+export const ROLE_LABEL_KEYS: ReadonlyMap<string, string> = new Map([
+  ['executive', 'panel.roleExecutive'], ['lead', 'panel.roleLead'], ['specialist', 'panel.roleSpecialist'], ['observer', 'panel.roleObserver'],
+]);
+
 export const BUILTIN_AGENT_PROFILES: AgentProfile[] = [
   {
     id: 'ap-lead-analyst',
