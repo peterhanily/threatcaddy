@@ -161,6 +161,17 @@ describe('agent hook lifecycle ownership', () => {
     expect(mocks.run).toHaveBeenCalledOnce();
   });
 
+  it('a proposal answered during the run does not leave the investigation waiting', async () => {
+    const first = folder(); mocks.folders.set(first.id, first); mocks.count.mockResolvedValue(1);
+    // The manager's list is read when the cycle ends, after the analyst answered.
+    const proposedThenAnswered: AgentCycleResult = { ...outcome, proposed: [{ id: 'answered' } as AgentAction] };
+    mocks.multi.mockResolvedValue({ deploymentResults: new Map([['dep-ap-lead-analyst', proposedThenAnswered]]), errors: [], waitingForReview: [] });
+    const { result } = renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(mocks.multi).toHaveBeenCalledOnce();
+    expect(result.current.agentStatus).toBe('idle');
+  });
+
   it('every deployed agent waiting for review leaves the investigation waiting, without an error', async () => {
     const first = folder(); mocks.folders.set(first.id, first); mocks.count.mockResolvedValue(1);
     mocks.multi.mockResolvedValue({ deploymentResults: new Map(), errors: [], waitingForReview: ['ap-threat-hunter'] });

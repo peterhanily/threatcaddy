@@ -162,10 +162,11 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
         if (!current()) return;
 
         // Per-agent status: determine folder-level status from individual results.
-        // Agents skipped while their proposal awaits review keep it waiting.
+        // The manager lists who still awaits review when the cycle ends,
+        // including this cycle's proposals the analyst has not answered.
         const results = Array.from(multiResult.deploymentResults.values());
         const succeeded = results.filter(r => !r.error);
-        const anyWaiting = multiResult.waitingForReview.length > 0 || results.some(r => r.proposed.length > 0);
+        const anyWaiting = multiResult.waitingForReview.length > 0;
         const allFailed = results.length > 0 && succeeded.length === 0;
 
         if (multiResult.errors.length > 0) {

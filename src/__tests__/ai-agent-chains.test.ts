@@ -9,7 +9,7 @@ import { db } from '../db';
 import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentPolicy, type AgentProfile, type AgentSoul, type Folder } from '../types';
 import { buildAgentToolset, runAgentCycle } from '../lib/caddy-agent';
 import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
-import { bulkApproveActions, executeApprovedAction, previewBulkApprove } from '../lib/agent-action-approval';
+import { bulkApproveActions, executeApprovedAction, previewBulkApprove, rejectAction } from '../lib/agent-action-approval';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { CROSS_CASE_READ_TOOLS, getToolActionClass } from '../lib/caddy-agent-policy';
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
@@ -350,6 +350,18 @@ describe('B-PAUSE-1 only the agent with a pending proposal pauses', () => {
     expect(result.errors).toEqual([]);
     expect(await ran()).toEqual(['ap-lead-analyst']);
     expect((await db.folders.get('S'))?.agentStatus).toBe('waiting');
+  });
+
+  it('does not leave the investigation waiting when the analyst answers the held proposal during the run', async () => {
+    await deploy('ap-threat-hunter'); await deploy('ap-lead-analyst');
+    await db.agentActions.add({ id: 'held', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'fetch_url',
+      toolInput: { url: COLLECTOR }, rationale: 'Proposed', status: 'pending', createdAt: 1 });
+    let answered: Promise<void> | undefined;
+    const result = await runMultiAgentCycle(await folder('S'), settings, true, () => { answered ??= rejectAction('held'); });
+    await answered;
+    expect(await ran()).toEqual(['ap-lead-analyst']);
+    expect(result.waitingForReview).toEqual([]);
+    expect((await db.folders.get('S'))?.agentStatus).toBe('idle');
   });
 
   it('does not mark the investigation waiting when every agent that ran failed', async () => {
