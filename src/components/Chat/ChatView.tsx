@@ -659,7 +659,9 @@ export function ChatView({
     setTimeout(() => onNavigateToEntity?.('note', noteId), 100);
   }, [activeThread, selectedFolderId, onEntitiesChanged, onNavigateToEntity]);
 
+  // A chip is model-written text: it may ask a question, never run a slash command such as /fetch.
   const handleSuggestionClick = useCallback((text: string) => {
+    if (text.trimStart().startsWith('/')) return;
     handleSend(text);
   }, [handleSend]);
 
