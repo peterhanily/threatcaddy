@@ -22,7 +22,7 @@ vi.mock('../contexts/UIModalContext', () => ({ useUIModals: () => ({ openSetting
 vi.mock('../hooks/ScreenshareContext', () => ({ useScreenshare: () => ({ maxLevel: null }) }));
 
 const renderSidebar = (agentStatus: 'running' | 'waiting' | 'paused' | 'error') => render(
-  <Sidebar collapsed={false} onToggleCollapsed={vi.fn()} noteCounts={{ total: 0, archived: 0, trashed: 0 }} taskCounts={{ total: 0 }}
+  <Sidebar collapsed={false} onToggleCollapsed={vi.fn()} noteCounts={{ total: 0, archived: 0, trashed: 0 }} taskCounts={{ todo: 0, 'in-progress': 0, done: 0, total: 0 }}
     agentStatus={agentStatus} />,
 );
 
