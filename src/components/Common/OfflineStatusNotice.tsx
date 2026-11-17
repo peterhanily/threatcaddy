@@ -50,44 +50,35 @@ const useOfflineStatus = () => useSyncExternalStore(subscribeOfflineStatus, () =
 // Standalone files do not use the hosted PWA worker, even when served over HTTP.
 const isStandalone = () => (typeof __STANDALONE__ !== 'undefined' && __STANDALONE__) || window.location.protocol === 'file:';
 
-function InstallingNotice() {
+function HostedOfflineNotice() {
   const { t } = useTranslation('common');
-  const [due, setDue] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setDue(true), OFFLINE_INSTALL_NOTICE_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, []);
-  if (!due) return null;
-  return <p data-testid="offline-notice" data-status="installing" role="status"
-    className="min-w-0 shrink-0 break-words border-b border-border-subtle bg-bg-surface px-3 py-2 text-xs text-text-secondary">
-    {t('offlineStatus.installingNotice')}
-  </p>;
-}
-
-function UnavailableNotice() {
-  const { t } = useTranslation('common');
+  const status = useOfflineStatus();
+  const [installingDue, setInstallingDue] = useState(false);
   const [dismissed, setDismissed] = useState(() => {
     try { return localStorage.getItem(UNAVAILABLE_DISMISSED_KEY) === '1'; } catch { return false; }
   });
-  if (dismissed) return null;
-  return <div data-testid="offline-notice" data-status="unavailable"
-    className="flex min-w-0 shrink-0 flex-wrap items-center gap-x-3 border-b border-border-subtle bg-bg-surface px-3 text-xs text-text-secondary">
-    <p role="status" className="min-w-0 flex-1 break-words py-2">{t('offlineStatus.unavailableNotice')}</p>
-    <button type="button" className="min-h-11 min-w-11 shrink-0 rounded px-2 text-text-primary underline focus-visible:outline-2 focus-visible:outline-accent"
+  useEffect(() => {
+    if (status !== 'installing') return;
+    const timer = setTimeout(() => setInstallingDue(true), OFFLINE_INSTALL_NOTICE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [status]);
+  const shown = status === 'installing' && installingDue ? 'installing'
+    : status === 'unavailable' && !dismissed ? 'unavailable' : undefined;
+  // One live region stays mounted: screen readers announce text put into an
+  // existing region, but often miss a region inserted together with its text.
+  return <div data-testid={shown && 'offline-notice'} data-status={shown}
+    className={shown && 'flex min-w-0 shrink-0 flex-wrap items-center gap-x-3 border-b border-border-subtle bg-bg-surface px-3 text-xs text-text-secondary'}>
+    <p role="status" className={shown && 'min-w-0 flex-1 break-words py-2'}>
+      {shown && t(shown === 'installing' ? 'offlineStatus.installingNotice' : 'offlineStatus.unavailableNotice')}
+    </p>
+    {shown === 'unavailable' && <button type="button" className="min-h-11 min-w-11 shrink-0 rounded px-2 text-text-primary underline focus-visible:outline-2 focus-visible:outline-accent"
       onClick={() => {
         try { localStorage.setItem(UNAVAILABLE_DISMISSED_KEY, '1'); } catch { /* Hide it for this page only. */ }
         setDismissed(true);
       }}>
       {t('offlineStatus.dismissNotice')}
-    </button>
+    </button>}
   </div>;
-}
-
-function HostedOfflineNotice() {
-  const status = useOfflineStatus();
-  if (status === 'installing') return <InstallingNotice />;
-  if (status === 'unavailable') return <UnavailableNotice />;
-  return null;
 }
 
 /** App shell: speaks only when the user must act (keep the tab open) or cannot rely on offline use. */

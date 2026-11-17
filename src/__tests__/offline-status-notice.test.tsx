@@ -22,35 +22,60 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
+// The shell keeps one empty live region mounted; nothing is shown or announced.
+const expectNoNotice = () => {
+  expect(screen.queryByTestId('offline-notice')).not.toBeInTheDocument();
+  expect(screen.getByRole('status')).toBeEmptyDOMElement();
+};
+
 describe('offline notice in the app shell', () => {
   it('shows nothing while checking, while offline use is not confirmed yet, or once it is installed', () => {
-    const view = render(<OfflineStatusNotice />);
-    expect(view.container).toBeEmptyDOMElement();
+    render(<OfflineStatusNotice />);
+    expectNoNotice();
     // A late or interrupted download is not a reason to tell the user this browser can't work offline.
     report('unconfirmed');
-    expect(view.container).toBeEmptyDOMElement();
+    expectNoNotice();
     report('installed');
-    expect(view.container).toBeEmptyDOMElement();
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expectNoNotice();
   });
 
   it('asks the user to keep the tab open only when a first install outlasts a short delay', () => {
     vi.useFakeTimers();
-    const view = render(<OfflineStatusNotice />);
+    render(<OfflineStatusNotice />);
     report('installing');
     act(() => vi.advanceTimersByTime(OFFLINE_INSTALL_NOTICE_DELAY_MS - 100));
     report('installed');
     act(() => vi.advanceTimersByTime(OFFLINE_INSTALL_NOTICE_DELAY_MS));
-    expect(view.container).toBeEmptyDOMElement();
+    expectNoNotice();
 
     report('installing');
     act(() => vi.advanceTimersByTime(OFFLINE_INSTALL_NOTICE_DELAY_MS - 1));
-    expect(view.container).toBeEmptyDOMElement();
+    expectNoNotice();
     act(() => vi.advanceTimersByTime(1));
     expect(screen.getByRole('status')).toHaveTextContent(INSTALLING);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     report('installed');
-    expect(view.container).toBeEmptyDOMElement();
+    expectNoNotice();
+  });
+
+  it('keeps one live region mounted so screen readers announce a notice when its text appears', () => {
+    vi.useFakeTimers();
+    render(<OfflineStatusNotice />);
+    const region = screen.getByRole('status');
+    expect(region).toBeEmptyDOMElement();
+    report('installing');
+    act(() => vi.advanceTimersByTime(OFFLINE_INSTALL_NOTICE_DELAY_MS));
+    expect(screen.getByRole('status')).toBe(region);
+    expect(region).toHaveTextContent(INSTALLING);
+    report('unavailable');
+    expect(screen.getByRole('status')).toBe(region);
+    expect(region).toHaveTextContent(UNAVAILABLE);
+    // The button is not part of the announced text.
+    const dismiss = screen.getByRole('button', { name: 'Dismiss' });
+    expect(region).not.toContainElement(dismiss);
+    fireEvent.click(dismiss);
+    expect(screen.getByRole('status')).toBe(region);
+    expectNoNotice();
   });
 
   it('says plainly when this browser cannot keep it offline and remembers the dismissal per browser', () => {
@@ -58,23 +83,23 @@ describe('offline notice in the app shell', () => {
     report('unavailable');
     expect(screen.getByRole('status')).toHaveTextContent(UNAVAILABLE);
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
-    expect(first.container).toBeEmptyDOMElement();
+    expectNoNotice();
     expect(localStorage.getItem(DISMISSED_KEY)).toBe('1');
     first.unmount();
 
-    const reopened = render(<OfflineStatusNotice />);
+    render(<OfflineStatusNotice />);
     report('unavailable');
-    expect(reopened.container).toBeEmptyDOMElement();
+    expectNoNotice();
   });
 
   it('still shows and dismisses the note when browser storage is blocked', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new DOMException('Denied', 'SecurityError'); });
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new DOMException('Denied', 'SecurityError'); });
-    const view = render(<OfflineStatusNotice />);
+    render(<OfflineStatusNotice />);
     report('unavailable');
     expect(screen.getByRole('status')).toHaveTextContent(UNAVAILABLE);
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
-    expect(view.container).toBeEmptyDOMElement();
+    expectNoNotice();
   });
 
   it('shares one observer with the Settings row and disposes it with the last view', () => {
@@ -102,7 +127,7 @@ describe('offline notice in the app shell', () => {
     expect(mocks.observe).toHaveBeenCalledTimes(2);
     expect(screen.getByRole('status')).toHaveTextContent(UNAVAILABLE);
     report('installed');
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expectNoNotice();
   });
 });
 
