@@ -99,6 +99,29 @@ describe('A-REACH-2 by-id scope', () => {
   it('an unresolved id gives no target', async () => {
     expect(await reach('update_note', { id: 'missing' }, 'S')).toMatchObject({ crossWrite: false, hidden: false, targetFolderIds: [] });
   });
+
+  // Executors coerce ids with String(value || ''), so ['P-note'] and [['P-note']] reach the row 'P-note'.
+  const P = ids('P');
+  it.each([
+    ['read_note', { id: [P.note] }], ['read_task', { id: [[P.task]] }], ['read_ioc', { id: [P.ioc] }],
+    ['update_note', { id: [P.note] }], ['update_task', { id: [P.task] }], ['update_ioc', { id: [P.ioc] }],
+    ['review_completed_task', { taskId: [P.task] }], ['enrich_ioc', { iocId: [P.ioc] }],
+    ['delete_note_folder', { folderId: [P.note] }], ['move_to_folder', { noteId: [P.note] }],
+    ['link_entities', { links: [{ sourceType: 'note', sourceId: [ids('S').note], targetType: 'note', targetId: [P.note] }] }],
+    ['create_in_investigation', { investigationId: ['P'], entityType: 'note', data: {} }],
+    ['create_in_investigation', { investigationName: ['Private case'], entityType: 'note', data: {} }],
+  ] as Array<[string, Record<string, unknown>]>)('%s with an array id resolves the row the executor will reach', async (name, input) => {
+    const result = await reach(name, input, 'S');
+    expect(result.targetFolderIds).toEqual(['P']);
+    expect(result.crossRead || result.crossWrite).toBe(true);
+  });
+
+  it('array and number ids reach local-only rows too', async () => {
+    expect((await reach('read_note', { id: [ids('L').note] }, 'S')).hidden).toBe(true);
+    expect((await reach('update_task', { id: [ids('L').task] }, 'S')).hidden).toBe(true);
+    await db.notes.add({ id: '4242', folderId: 'L', title: 'n', content: '', tags: [], pinned: false, archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
+    expect((await reach('read_note', { id: 4242 }, 'S')).hidden).toBe(true);
+  });
 });
 
 describe('A-REACH-3 dynamic tools', () => {

@@ -46,8 +46,10 @@ const UPDATE_BY_ID = new Map<string, 'notes' | 'tasks' | 'standaloneIOCs' | 'tim
 const LINK_TABLE = new Map<string, 'notes' | 'tasks' | 'timelineEvents'>([['note', 'notes'], ['task', 'tasks'], ['timeline-event', 'timelineEvents']]);
 
 const text = (value: unknown) => typeof value === 'string' ? value : '';
+/** The executors' coercion, String(input.x || ''): ['id'], [['id']] and 42 reach the rows 'id' and '42'. */
+const arg = (value: unknown) => String(value || '');
 const getRow = async (table: 'notes' | 'tasks' | 'standaloneIOCs' | 'timelineEvents', id: unknown): Promise<EntityRow> =>
-  text(id) ? await db.table(table).get(text(id)) as EntityRow : undefined;
+  arg(id) ? await db.table(table).get(arg(id)) as EntityRow : undefined;
 
 /** Exact, case-insensitive name, as executeCreateInInvestigation resolves it. */
 async function findInvestigationByExactName(name: string) {
@@ -76,11 +78,11 @@ async function resolveTargets(name: string, input: Record<string, unknown>): Pro
       if (targetTable) rows.push(await getRow(targetTable, targetId));
     }
   } else if (name === 'create_in_investigation') {
-    const folder = text(input.investigationId) ? await db.folders.get(text(input.investigationId))
-      : await findInvestigationByExactName(text(input.investigationName));
+    const folder = arg(input.investigationId) ? await db.folders.get(arg(input.investigationId))
+      : await findInvestigationByExactName(arg(input.investigationName));
     if (folder) folders.push(folder.id);
   } else if (name === 'get_investigation_details') {
-    const folder = text(input.id) ? await db.folders.get(text(input.id)) : await findInvestigationByExactName(text(input.name));
+    const folder = arg(input.id) ? await db.folders.get(arg(input.id)) : await findInvestigationByExactName(arg(input.name));
     if (folder) folders.push(folder.id);
   } else if (name === 'compare_investigations' && Array.isArray(input.investigationIds)) {
     for (const id of input.investigationIds as unknown[]) if (text(id) && await db.folders.get(text(id))) folders.push(text(id));
@@ -93,7 +95,7 @@ function hostOf(url: string): string | undefined {
 }
 
 async function enrichDestinations(input: Record<string, unknown>, homeFolderId: string | undefined): Promise<string[]> {
-  const ioc = text(input.iocId) ? await db.standaloneIOCs.get(text(input.iocId)) : undefined;
+  const ioc = arg(input.iocId) ? await db.standaloneIOCs.get(arg(input.iocId)) : undefined;
   if (!ioc) return [];
   const templates = new Map([...await db.integrationTemplates.toArray(), ...BUILTIN_INTEGRATIONS].map(t => [t.id, t]));
   const destinations: string[] = [];
@@ -150,7 +152,7 @@ export async function classifyToolCall(call: ToolUseBlock, ctx: { homeFolderId?:
   let egress: EgressKind = 'none';
   let destinations: string[] = [];
   if (name === 'fetch_url') {
-    const url = text(input.url);
+    const url = arg(input.url);
     const host = hostOf(url);
     egress = isTrustedFetchUrl(url) ? 'trusted-fetch' : 'open-fetch';
     destinations = [host ?? url.slice(0, 200)];
