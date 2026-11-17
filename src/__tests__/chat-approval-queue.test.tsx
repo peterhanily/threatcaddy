@@ -3,7 +3,7 @@
  * investigation, queues one card per call, and only its approve handler turns
  * a card into an approval. Real tools, decision table and dispatcher.
  */
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
@@ -13,6 +13,9 @@ import { ChatView } from '../components/Chat/ChatView';
 import { discardAllComposerDrafts } from '../lib/chat-composer-drafts';
 import { canary, ids, seedAIWorkspace } from './helpers/ai-workspace';
 import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
+
+// Each card waits on Dexie reads (binding, reach); allow for a loaded full-suite run.
+configure({ asyncUtilTimeout: 5000 });
 
 type ToolHandler = (toolUse: ToolUseBlock, signal: AbortSignal) => Promise<ToolExecutionResult>;
 const state = vi.hoisted(() => ({
@@ -85,8 +88,10 @@ describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
     expect(queryCard()).toBeNull();
 
     const search = start(handler, call('search_across_investigations', { query: 'CANARY' }));
-    expect(within(await card()).getByText('Read other investigations?')).toBeInTheDocument();
-    expect(within(await card()).getByText(/syncs to the members of "Shared case"/)).toBeInTheDocument();
+    const shown = await card();
+    expect(within(shown).getByText('Read other investigations?')).toBeInTheDocument();
+    // Investigation names are looked up after the card appears.
+    expect(await within(shown).findByText(/syncs to the members of "Shared case"/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /approve/i }));
     const result = await search;
     expect(result.isError).toBe(false);
