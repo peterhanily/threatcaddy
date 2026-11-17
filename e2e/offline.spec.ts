@@ -6,6 +6,7 @@ const INSTALLING_NOTICE = 'ThreatCaddy is still saving itself for offline use. K
 const UNAVAILABLE_NOTICE = "This browser can't keep ThreatCaddy available offline. It still works online, and your investigations stay saved in this browser either way.";
 const INSTALLED_SETTING = 'ThreatCaddy opens in this browser without an internet connection; team sync, AI and other online services still need one.';
 const UNAVAILABLE_SETTING = "This browser can't keep ThreatCaddy available offline, but it still works online.";
+const UNCONFIRMED_SETTING = "Offline use isn't confirmed in this browser yet. ThreatCaddy still works online and tries again next time you open it.";
 
 /** The app shell stays silent unless the user must act; Settings > General always reports the status. */
 async function offlineSetting(page: Page) {
@@ -20,20 +21,23 @@ const activeWorkerState = (page: Page) =>
 
 test('failed first installation says so plainly, remembers dismissal and keeps saved content', async ({ page }, testInfo) => {
   test.setTimeout(90_000);
-  const { url, stop, serviceWorkerRequestCount } = await startOfflineOrigin({ serviceWorkerResponse: 'unavailable' });
+  // The worker really starts installing, then its download fails.
+  const { url, stop, failPrecache, precacheRequestCount } = await startOfflineOrigin({ precacheResponse: 'deferred' });
   try {
     await page.goto(url);
     await dismissInitialOverlays(page);
     const notice = page.getByTestId('offline-notice');
-    await expect.poll(serviceWorkerRequestCount).toBeGreaterThan(0);
+    await expect.poll(precacheRequestCount).toBeGreaterThan(0);
     await navigateToView(page, 'Notes');
     await createQuickNote(page);
     await page.getByPlaceholder('Note title...').fill('Saved before offline installation');
     await page.getByPlaceholder('Start writing in markdown...').fill('This fictional local note is not dependent on an installed PWA.');
     await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible();
-    await expect(notice).toHaveAttribute('data-status', 'unavailable', { timeout: 20_000 });
+    await expect(notice).toHaveAttribute('data-status', 'installing', { timeout: 10_000 });
+    failPrecache();
+    // The keep-this-tab-open notice turns into the failure note at once instead of vanishing.
+    await expect(notice).toHaveAttribute('data-status', 'unavailable', { timeout: 5_000 });
     await expect(notice.getByRole('status')).toHaveText(UNAVAILABLE_NOTICE);
-    expect(await page.evaluate(() => caches.keys())).toEqual([]);
     expect(await activeWorkerState(page)).toBeNull();
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(notice.getByRole('status')).toBeVisible();
@@ -48,11 +52,31 @@ test('failed first installation says so plainly, remembers dismissal and keeps s
     await page.reload();
     await expect(page.getByPlaceholder('Note title...')).toHaveValue('Saved before offline installation');
     await expect(page.getByPlaceholder('Start writing in markdown...')).toHaveValue('This fictional local note is not dependent on an installed PWA.');
-    // The dismissed note stays hidden once the status is known again; Settings still states it.
+    // The reopened page tries again and fails again: the dismissed note stays hidden; Settings still states it.
+    await expect.poll(precacheRequestCount).toBe(2);
     const row = await offlineSetting(page);
-    await expect(row).toHaveAttribute('data-status', 'unavailable', { timeout: 20_000 });
+    await expect(row).toHaveAttribute('data-status', 'installing', { timeout: 10_000 });
+    failPrecache();
+    await expect(row).toHaveAttribute('data-status', 'unavailable', { timeout: 5_000 });
     await expect(row.getByRole('status')).toHaveText(UNAVAILABLE_SETTING);
     await expect(notice).toHaveCount(0);
+  } finally { await stop(); }
+});
+
+test('unreachable offline download stays out of the way and Settings says it is not confirmed', async ({ page }) => {
+  test.setTimeout(60_000);
+  const { url, stop, serviceWorkerRequestCount } = await startOfflineOrigin({ serviceWorkerResponse: 'unavailable' });
+  try {
+    await page.goto(url);
+    await dismissInitialOverlays(page);
+    await expect.poll(serviceWorkerRequestCount).toBeGreaterThan(0);
+    // A failed and a slow download look the same to the page; neither means this browser can't work offline.
+    const row = await offlineSetting(page);
+    await expect(row).toHaveAttribute('data-status', 'unconfirmed', { timeout: 20_000 });
+    await expect(row.getByRole('status')).toHaveText(UNCONFIRMED_SETTING);
+    await expect(page.getByTestId('offline-notice')).toHaveCount(0);
+    expect(await page.evaluate(() => caches.keys())).toEqual([]);
+    expect(await activeWorkerState(page)).toBeNull();
   } finally { await stop(); }
 });
 
@@ -80,7 +104,7 @@ test('slow first installation asks to keep the tab open, then disappears when in
   } finally { await stop(); }
 });
 
-test('late real worker installation clears the notice without reloading the app', async ({ page }, testInfo) => {
+test('late real worker installation is confirmed without reloading the app', async ({ page }, testInfo) => {
   test.setTimeout(60_000);
   const { url, stop, releaseServiceWorker, serviceWorkerRequestCount } = await startOfflineOrigin({ serviceWorkerResponse: 'deferred' });
   try {
@@ -89,11 +113,14 @@ test('late real worker installation clears the notice without reloading the app'
     await dismissInitialOverlays(page);
     const notice = page.getByTestId('offline-notice');
     await expect.poll(serviceWorkerRequestCount).toBeGreaterThan(0);
-    await expect(notice).toHaveAttribute('data-status', 'unavailable', { timeout: 20_000 });
+    const row = await offlineSetting(page);
+    // Still downloading after the observer stops waiting: not confirmed, and no "can't" note.
+    await expect(row).toHaveAttribute('data-status', 'unconfirmed', { timeout: 20_000 });
+    await expect(row.getByRole('status')).toHaveText(UNCONFIRMED_SETTING);
+    await expect(notice).toHaveCount(0);
     expect(await page.evaluate(() => caches.keys())).toEqual([]);
     const documentStarted = await page.evaluate(() => performance.timeOrigin);
     releaseServiceWorker();
-    const row = await offlineSetting(page);
     await expect(row).toHaveAttribute('data-status', 'installed', { timeout: 20_000 });
     await expect(row.getByRole('status')).toHaveText(INSTALLED_SETTING);
     expect(await activeWorkerState(page)).toBe('activated');

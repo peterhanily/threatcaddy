@@ -9,7 +9,8 @@ export async function startOfflineOrigin(options: {
   outputDir?: string;
   basePath?: string;
   serviceWorkerResponse?: 'unavailable' | 'deferred';
-  /** Hold the worker's precache download of index.html so a real install stays running. */
+  /** Hold the worker's precache download of index.html so a real install stays running
+   * until releasePrecache() lets it finish or failPrecache() fails the held downloads. */
   precacheResponse?: 'deferred';
 } = {}) {
   const root = resolve(options.outputDir ?? 'dist');
@@ -23,8 +24,12 @@ export async function startOfflineOrigin(options: {
   let releaseServiceWorker!: () => void;
   const serviceWorkerGate = new Promise<void>(resolve => { releaseServiceWorker = resolve; });
   let precacheRequests = 0;
-  let releasePrecache!: () => void;
-  const precacheGate = new Promise<void>(resolve => { releasePrecache = resolve; });
+  let precacheReleased = false;
+  const heldPrecache = new Set<(fail: boolean) => void>();
+  const settlePrecache = (fail: boolean) => { for (const settle of heldPrecache) settle(fail); heldPrecache.clear(); };
+  const releasePrecache = () => { precacheReleased = true; settlePrecache(false); };
+  // Later downloads (for example after a reload) are held again until the next call.
+  const failPrecache = () => settlePrecache(true);
   const server = createServer(async (req, res) => {
     try {
       const pathname = decodeURIComponent(new URL(req.url ?? '/', 'http://fixture.invalid').pathname);
@@ -32,8 +37,9 @@ export async function startOfflineOrigin(options: {
       // Only the worker's precache names index.html; page navigations request the directory.
       if (options.precacheResponse === 'deferred' && pathname.slice(basePath.length) === 'index.html') {
         precacheRequests += 1;
-        await precacheGate;
+        const fail = !precacheReleased && await new Promise<boolean>(settle => heldPrecache.add(settle));
         if (res.destroyed) return;
+        if (fail) { res.writeHead(503, { 'Cache-Control': 'no-store' }).end(); return; }
       }
       const relative = pathname.slice(basePath.length) || 'index.html';
       if (relative === 'sw.js') {
@@ -64,6 +70,6 @@ export async function startOfflineOrigin(options: {
     server.closeAllConnections();
     await stopped;
   };
-  return { origin, basePath, url: origin + basePath, stop, releaseServiceWorker, releasePrecache,
+  return { origin, basePath, url: origin + basePath, stop, releaseServiceWorker, releasePrecache, failPrecache,
     serviceWorkerRequestCount: () => serviceWorkerRequests, precacheRequestCount: () => precacheRequests };
 }
