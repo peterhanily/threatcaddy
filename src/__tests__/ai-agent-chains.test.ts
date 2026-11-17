@@ -433,6 +433,31 @@ describe('B-PAUSE-1 only the agent with a pending proposal pauses', () => {
     expect((await db.agentDeployments.get('dep-ap-lead-analyst'))?.metrics?.cyclesRun).toBe(1);
   });
 
+  it('a manual run of an agent waiting on its own question does not ask it again', async () => {
+    egress.restore();
+    egress = installEgressSpy(HEAD_BRIDGE_CAPS.filter(cap => cap !== 'notification_ack'));
+    await deploy('ap-lead-analyst');
+    const ask = (question: string) => ({ name: 'ask_human', input: { question } });
+    scriptedLLM.script({ toolCalls: [ask('Which host was patient zero?')] });
+    await runMultiAgentCycle(await folder('S'), settings, true);
+    // The same question from another agent is that agent's own.
+    await db.agentActions.add({ id: 'hunter-question', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'ask_human',
+      toolInput: { question: 'Was the backup server touched?' }, rationale: 'Asked', status: 'pending', createdAt: 1 });
+    scriptedLLM.reset();
+    scriptedLLM.script({ toolCalls: [ask('Which host was patient zero?'), ask('Was the backup server touched?')] });
+    const result = await runMultiAgentCycle(await folder('S'), settings, true, undefined, undefined, { manual: true });
+    expect(result.errors).toEqual([]);
+    const questions = (await db.agentActions.where('[investigationId+status]').equals(['S', 'pending']).toArray())
+      .map(action => `${action.agentConfigId}: ${action.toolInput.question}`);
+    expect(questions.sort()).toEqual([
+      'ap-lead-analyst: Was the backup server touched?',
+      'ap-lead-analyst: Which host was patient zero?',
+      'ap-threat-hunter: Was the backup server touched?',
+    ]);
+    expect((await db.notes.where('folderId').equals('S').toArray()).filter(note => note.tags.includes('agent-question'))).toHaveLength(2);
+    expect(String(toolResultTurns()[0][0].content)).toContain('already_pending');
+  });
+
   it('every agent paused leaves the investigation waiting without an error', async () => {
     await deploy('ap-threat-hunter');
     await db.folders.update('S', { agentStatus: 'idle' });

@@ -1082,6 +1082,16 @@ async function executeAskHuman(inp: Record<string, unknown>, folderId?: string, 
   const options = String(inp.options || '');
   if (!question) return JSON.stringify({ error: 'question is required' });
 
+  // A re-run (a manual Run also runs a waiting agent) answers a repeat of this
+  // agent's pending question with that question, not a second row and note.
+  const asked = await db.agentActions
+    .where('[investigationId+status]').equals([folderId || '', 'pending'])
+    .filter(a => a.toolName === 'ask_human' && a.agentConfigId === profileId && a.toolInput.question === question)
+    .first();
+  if (asked) {
+    return JSON.stringify({ status: 'already_pending', actionId: asked.id, message: 'This question is already waiting for the human operator.' });
+  }
+
   // Check if there's already a pending question for this investigation
   if (folderId) {
     const folderData = await db.folders.get(folderId);
