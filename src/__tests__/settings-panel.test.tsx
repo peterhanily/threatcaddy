@@ -435,7 +435,7 @@ describe('SettingsPanel: where AI data goes', () => {
     delete document.documentElement.dataset.tcBridgeCaps;
     expect(await within(section()).findByText('Web fetch needs the ThreatCaddy browser extension.')).toBeInTheDocument();
     // The bridge that answers now is store 1.1.1, and the new check's ping has not reached it yet.
-    window.removeEventListener('message', bridges!);
+    if (bridges) window.removeEventListener('message', bridges);
     const post = answerPing(STORE_1_1_1_CAPS);
     const held: unknown[] = [];
     post.mockImplementation((message: unknown) => { if ((message as { type?: string })?.type === 'TC_EXTENSION_PING') held.push(message); else deliver(message); });
