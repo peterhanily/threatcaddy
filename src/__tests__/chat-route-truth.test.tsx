@@ -14,6 +14,7 @@ import { workspaceStorageKey } from '../lib/workspace-profiles';
 import type { ChatLoopInfo } from '../lib/chat-loop';
 import i18n from '../i18n';
 import enSettings from '../../public/locales/en/settings.json';
+import enChat from '../../public/locales/en/chat.json';
 import deChat from '../../public/locales/de/chat.json';
 
 const state = vi.hoisted(() => ({
@@ -292,6 +293,10 @@ describe('chat routes where Settings says', () => {
         deChat.loop.noneToStop,
       ]);
       expect(deChat.loop.started).toContain('`{{id}}`');
+      // The expectations come from the German file, so a value left in English would pass them.
+      for (const key of ['started', 'stopHint', 'stopped_one', 'stopped_other', 'noneToStop'] as const) {
+        expect(deChat.loop[key], key).not.toBe(enChat.loop[key]);
+      }
     } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
   });
 

@@ -117,8 +117,13 @@ test('an unfiled thread\'s write card says the change lands outside any investig
 test('the light theme\'s Approve label is readable at rest and on hover', async ({ page, context, baseURL }) => {
   const { card, external, errors } = await openWriteCard(page, context, baseURL, { theme: 'light' });
   const approve = card.getByRole('button', { name: 'Approve', exact: true });
+  const background = () => approve.evaluate(element => getComputedStyle(element).backgroundColor);
   expect(await contrastOf(approve)).toBeGreaterThanOrEqual(4.5);
+  const atRest = await background();
   await approve.hover();
+  // The hover colour arrives through a 150 ms transition: measure it once the transition has finished.
+  await approve.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
+  expect(await background()).not.toBe(atRest);
   expect(await contrastOf(approve)).toBeGreaterThanOrEqual(4.5);
   expect(external).toEqual([]);
   expect(errors).toEqual([]);
