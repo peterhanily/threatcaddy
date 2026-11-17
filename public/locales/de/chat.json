@@ -192,6 +192,11 @@
     "invalidCommand": "Dieser CTI-Befehl konnte nicht ausgeführt werden:",
     "noSourcesV2": "Keine CTI-Quellen verfügbar. Benannte Agent-Hosts können in dieser Version nicht mehr konfiguriert werden."
   },
+  "fetch": {
+    "createdNote": "Notiz **{{title}}** aus {{url}} erstellt",
+    "failed": "URL konnte nicht abgerufen werden: {{error}}",
+    "unknownError": "Unbekannter Fehler"
+  },
   "input.serverStatus": "Route über den Teamserver",
   "input.serverModelsHelp": "Verfügbare Anbieter und Modelle hängen von der Konfiguration Ihres Teamservers ab.",
   "input.modelLabel": "KI-Modell"

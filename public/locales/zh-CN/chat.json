@@ -192,6 +192,11 @@
     "invalidCommand": "无法运行该 CTI 命令:",
     "noSourcesV2": "没有可用的 CTI 源。此版本中已无法再配置具名代理主机。"
   },
+  "fetch": {
+    "createdNote": "已从 {{url}} 创建笔记 **{{title}}**",
+    "failed": "获取 URL 失败：{{error}}",
+    "unknownError": "未知错误"
+  },
   "input.serverStatus": "团队服务器通道",
   "input.serverModelsHelp": "可用的提供商和模型取决于团队服务器配置。",
   "input.modelLabel": "AI 模型"

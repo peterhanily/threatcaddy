@@ -192,6 +192,11 @@
     "invalidCommand": "その CTI コマンドは実行できませんでした:",
     "noSourcesV2": "利用できる CTI ソースがありません。このバージョンでは名前付きエージェントホストを設定できなくなりました。"
   },
+  "fetch": {
+    "createdNote": "{{url}} からノート **{{title}}** を作成しました",
+    "failed": "URL を取得できませんでした: {{error}}",
+    "unknownError": "不明なエラー"
+  },
   "input.serverStatus": "チームサーバー経由",
   "input.serverModelsHelp": "利用できるプロバイダーとモデルはチームサーバーの設定によって異なります。",
   "input.modelLabel": "AI モデル"

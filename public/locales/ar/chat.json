@@ -204,6 +204,11 @@
     "invalidCommand": "تعذّر تشغيل أمر CTI هذا:",
     "noSourcesV2": "لا توجد مصادر CTI متاحة. لم يعد من الممكن تكوين مضيفي الوكلاء المسمّين في هذا الإصدار."
   },
+  "fetch": {
+    "createdNote": "تم إنشاء الملاحظة **{{title}}** من {{url}}",
+    "failed": "تعذّر جلب URL: {{error}}",
+    "unknownError": "خطأ غير معروف"
+  },
   "input.serverStatus": "مسار خادم الفريق",
   "input.serverModelsHelp": "تعتمد الجهات المزوّدة والنماذج المتاحة على إعدادات خادم فريقك.",
   "input.modelLabel": "نموذج الذكاء الاصطناعي"

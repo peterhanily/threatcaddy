@@ -6,6 +6,11 @@
     "invalidCommand": "That CTI command couldn't be run:",
     "noSourcesV2": "No CTI sources are available. Named agent hosts are no longer configurable in this version."
   },
+  "fetch": {
+    "createdNote": "Created note **{{title}}** from {{url}}",
+    "failed": "Failed to fetch URL: {{error}}",
+    "unknownError": "Unknown error"
+  },
   "view": {
     "newChat": "New Chat",
     "newFolder": "New investigation",

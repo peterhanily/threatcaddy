@@ -198,6 +198,11 @@
     "invalidCommand": "Nie udało się wykonać tego polecenia CTI:",
     "noSourcesV2": "Brak dostępnych źródeł CTI. Nazwanych hostów agentów nie można już konfigurować w tej wersji."
   },
+  "fetch": {
+    "createdNote": "Utworzono notatkę **{{title}}** z {{url}}",
+    "failed": "Nie udało się pobrać URL: {{error}}",
+    "unknownError": "Nieznany błąd"
+  },
   "input.serverStatus": "Trasa przez serwer zespołu",
   "input.serverModelsHelp": "Dostępni dostawcy i modele zależą od konfiguracji serwera zespołu.",
   "input.modelLabel": "Model AI"

@@ -192,6 +192,11 @@
     "invalidCommand": "Không thể chạy lệnh CTI đó:",
     "noSourcesV2": "Không có nguồn CTI nào khả dụng. Không thể cấu hình agent host có tên trong phiên bản này nữa."
   },
+  "fetch": {
+    "createdNote": "Đã tạo ghi chú **{{title}}** từ {{url}}",
+    "failed": "Không thể lấy URL: {{error}}",
+    "unknownError": "Lỗi không xác định"
+  },
   "input.serverStatus": "Kênh máy chủ nhóm",
   "input.serverModelsHelp": "Nhà cung cấp và mô hình khả dụng phụ thuộc vào cấu hình máy chủ nhóm.",
   "input.modelLabel": "Mô hình AI"

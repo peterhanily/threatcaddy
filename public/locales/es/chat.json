@@ -195,6 +195,11 @@
     "invalidCommand": "No se pudo ejecutar ese comando de CTI:",
     "noSourcesV2": "No hay fuentes de CTI disponibles. Los Agent Hosts con nombre ya no se pueden configurar en esta versión."
   },
+  "fetch": {
+    "createdNote": "Nota **{{title}}** creada a partir de {{url}}",
+    "failed": "No se pudo obtener la URL: {{error}}",
+    "unknownError": "Error desconocido"
+  },
   "input.serverStatus": "Ruta del servidor del equipo",
   "input.serverModelsHelp": "Los proveedores y modelos disponibles dependen de la configuración del servidor de su equipo.",
   "input.modelLabel": "Modelo de IA"

@@ -366,7 +366,7 @@ export function ChatView({
           const confirmMsg: ChatMessage = {
             id: nanoid(),
             role: 'assistant',
-            content: `Created note **${title}** from ${url}`,
+            content: t('fetch.createdNote', { title, url }),
             createdAt: Date.now(),
           };
           await onAddMessage(activeThread.id, confirmMsg);
@@ -375,7 +375,7 @@ export function ChatView({
           const errorMsg: ChatMessage = {
             id: nanoid(),
             role: 'assistant',
-            content: `Failed to fetch URL: ${result.error || 'Unknown error'}`,
+            content: t('fetch.failed', { error: result.error || t('fetch.unknownError') }),
             createdAt: Date.now(),
           };
           await onAddMessage(activeThread.id, errorMsg);
@@ -384,7 +384,7 @@ export function ChatView({
         const errorMsg: ChatMessage = {
           id: nanoid(),
           role: 'assistant',
-          content: `Failed to fetch URL: ${(err as Error).message || String(err)}`,
+          content: t('fetch.failed', { error: (err as Error).message || String(err) }),
           createdAt: Date.now(),
         };
         await onAddMessage(activeThread.id, errorMsg);

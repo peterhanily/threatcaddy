@@ -7,6 +7,8 @@ import { act, cleanup, configure, fireEvent, render, screen, waitFor, within } f
 import type { ComponentType } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
+import i18n from '../i18n';
+import deChat from '../../public/locales/de/chat.json';
 import type { ChatThread, Folder, Settings, ToolUseBlock } from '../types';
 import type { ToolExecutionResult } from '../lib/llm-tool-execution';
 import type { ApprovalItem } from '../lib/chat-tool-executor';
@@ -58,7 +60,7 @@ const errorOf = (result: ToolExecutionResult) => String(JSON.parse(result.result
 function renderChat(threads: ChatThread[]) {
   const props = { settings, onCreateThread: vi.fn(), onUpdateThread: vi.fn(), onAddMessage: vi.fn().mockResolvedValue(undefined), onTrashThread: vi.fn() };
   const view = render(<ChatView threads={threads} {...props} />);
-  return { rerender: () => view.rerender(<ChatView threads={threads} {...props} />) };
+  return { props, rerender: () => view.rerender(<ChatView threads={threads} {...props} />) };
 }
 async function sendAndGetHandler(): Promise<ToolHandler> {
   await act(async () => { await state.input.onSend('Look into it'); });
@@ -121,6 +123,23 @@ describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
     expect(egress.fetchUrlPosts()).toEqual(['https://www.cisa.gov/advisory']);
     expect(await db.notes.where('title').equals('Fixture page').toArray()).toEqual([expect.objectContaining({ folderId: 'S' })]);
     expect(state.send).not.toHaveBeenCalled();
+  });
+
+  it('/fetch reports in the analyst\'s language', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'chat', deChat, true, true);
+    await act(async () => { await i18n.changeLanguage('de'); });
+    try {
+      const { props } = renderChat([makeThread('thread', 'S')]);
+      await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/advisory'); });
+      await act(async () => { await state.input.onSend('/fetch https://intranet.local/x'); });
+      const replies = props.onAddMessage.mock.calls.map(([, message]) => message).filter(message => message.role === 'assistant');
+      expect(replies.map(message => message.content)).toEqual([
+        'Notiz **Fixture page** aus https://www.cisa.gov/advisory erstellt',
+        `URL konnte nicht abgerufen werden: ${i18n.t('fetch.privateTarget', { ns: 'integrations' })}`,
+      ]);
+      expect(egress.fetchUrlPosts()).toEqual(['https://www.cisa.gov/advisory']);
+    } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
   });
 
   it('Export as note files the note in the thread\'s investigation from the global view', async () => {
