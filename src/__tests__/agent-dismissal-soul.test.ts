@@ -6,7 +6,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
-import { DEFAULT_SETTINGS, type AgentAction, type AgentSoul, type Folder } from '../types';
+import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentAction, type AgentSoul, type Folder } from '../types';
 import { executeApprovedAction } from '../lib/agent-action-approval';
 import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
@@ -59,7 +59,7 @@ describe('an approved dismissal', () => {
   it('keeps earlier lessons and weaknesses as they were', async () => {
     const soul: AgentSoul = { identity: 'Hunts with hypotheses.', lessons: ['Check DNS first.'], strengths: [], weaknesses: ['Slow on packers'], updatedAt: 1,
       lifetimeMetrics: { investigationsWorked: 3, totalCycles: 9, totalToolCalls: 40, tasksCompleted: 2, tasksRejected: 0, meetingsAttended: 0, performanceScore: 61 } };
-    await db.agentProfiles.put({ id: 'ap-threat-hunter', name: 'Threat Hunter', role: 'specialist', systemPrompt: '', soul, source: 'builtin', createdAt: 1, updatedAt: 1 });
+    await db.agentProfiles.put({ id: 'ap-threat-hunter', name: 'Threat Hunter', role: 'specialist', systemPrompt: '', policy: DEFAULT_AGENT_POLICY, soul, source: 'builtin', createdAt: 1, updatedAt: 1 });
     await approveDismissal();
     const after = (await db.agentProfiles.get('ap-threat-hunter'))?.soul as AgentSoul;
     expect(after.lessons).toEqual([expect.stringMatching(LESSON), 'Check DNS first.']);

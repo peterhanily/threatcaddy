@@ -60,7 +60,7 @@ describe('a supervisor proposal in another investigation', () => {
     expect(JSON.stringify(row)).not.toContain(LOCAL);
 
     const own = await findSupervisorFolder();
-    const audit = await db.chatThreads.where('folderId').equals(own!.id).toArray();
+    const audit = await db.chatThreads.where('folderId').equals(String(own?.id)).toArray();
     expect(JSON.stringify(audit)).toContain(LOCAL);
   });
 
@@ -71,7 +71,7 @@ describe('a supervisor proposal in another investigation', () => {
     );
     await runSupervisorCycle(settings, true);
     const own = await findSupervisorFolder();
-    const [row] = await db.agentActions.where('investigationId').equals(own!.id).toArray();
+    const [row] = await db.agentActions.where('investigationId').equals(String(own?.id)).toArray();
     expect(row).toMatchObject({ toolName: 'create_note', status: 'pending' });
     expect(row.rationale).toContain(LOCAL);
   });
