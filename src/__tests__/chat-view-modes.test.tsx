@@ -83,7 +83,8 @@ const ASK_TITLE = 'CaddyAI asks before each change, web page, vendor lookup, ski
   + 'from an investigation that can sync. Click to turn on YOLO: changes and built-in vendor lookups then run without asking, except changes to '
   + 'other investigations or to agents.';
 const YOLO_TITLE = 'YOLO is on: changes and built-in vendor lookups run without asking. Web pages, skills, other integrations, and changes to other '
-  + 'investigations or to agents still need your approval, as does reading other investigations from an investigation that can sync.';
+  + 'investigations or to agents still need your approval, as does reading other investigations from an investigation that can sync. '
+  + 'A vendor lookup skips other integrations instead of asking; turn YOLO off to approve them.';
 // Plan refuses every change and every call that leaves ThreatCaddy, whatever the switch says (decision table row 2).
 const IN_PLAN = 'In Plan mode CaddyAI only reads; the Ask/YOLO switch applies only in Act mode. ';
 

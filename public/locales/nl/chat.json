@@ -76,7 +76,7 @@
     "planTitleV2": "Planmodus: CaddyAI leest alleen en beschrijft al het andere als plan. In een onderzoek leest het alleen dat onderzoek; buiten elk onderzoek kan het ze allemaal lezen.",
     "switchedToPlanV2": "Overgeschakeld naar planmodus. CaddyAI leest alleen en beschrijft al het andere als plan.",
     "askLabel": "Vragen",
-    "yoloOnTitleV2": "YOLO staat aan: wijzigingen en ingebouwde leveranciersopzoekingen worden uitgevoerd zonder te vragen. Webpagina's, skills, andere integraties en wijzigingen in andere onderzoeken of aan agents hebben nog steeds uw goedkeuring nodig, net als het lezen van andere onderzoeken vanuit een onderzoek dat kan synchroniseren.",
+    "yoloOnTitleV2": "YOLO staat aan: wijzigingen en ingebouwde leveranciersopzoekingen worden uitgevoerd zonder te vragen. Webpagina's, skills, andere integraties en wijzigingen in andere onderzoeken of aan agents hebben nog steeds uw goedkeuring nodig, net als het lezen van andere onderzoeken vanuit een onderzoek dat kan synchroniseren. Een leveranciersopzoeking slaat andere integraties over in plaats van te vragen; zet YOLO uit om ze goed te keuren.",
     "yoloOffTitleV2": "CaddyAI vraagt vóór elke wijziging, webpagina, leveranciersopzoeking, skill of andere integratie, en voordat andere onderzoeken worden gelezen vanuit een onderzoek dat kan synchroniseren. Klik om YOLO in te schakelen: wijzigingen en ingebouwde leveranciersopzoekingen worden dan uitgevoerd zonder te vragen, behalve wijzigingen in andere onderzoeken of aan agents.",
     "yoloInPlanTitle": "In de planmodus leest CaddyAI alleen; de schakelaar Vragen/YOLO geldt alleen in de actiemodus. {{setting}}"
   },

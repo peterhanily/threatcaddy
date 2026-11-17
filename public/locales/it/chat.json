@@ -77,7 +77,7 @@
     "planTitleV2": "Modalità piano: CaddyAI si limita a leggere e descrive tutto il resto come un piano. In un'indagine legge solo quell'indagine; fuori da qualsiasi indagine può leggerle tutte.",
     "switchedToPlanV2": "Passato a modalità piano. CaddyAI si limita a leggere e descrive tutto il resto come un piano.",
     "askLabel": "Chiedi",
-    "yoloOnTitleV2": "YOLO attivo: le modifiche e le ricerche integrate presso i fornitori vengono eseguite senza chiedere. Pagine web, skill, altre integrazioni e modifiche ad altre indagini o agli agenti richiedono comunque la tua approvazione, così come la lettura di altre indagini da un'indagine sincronizzabile.",
+    "yoloOnTitleV2": "YOLO attivo: le modifiche e le ricerche integrate presso i fornitori vengono eseguite senza chiedere. Pagine web, skill, altre integrazioni e modifiche ad altre indagini o agli agenti richiedono comunque la tua approvazione, così come la lettura di altre indagini da un'indagine sincronizzabile. Una ricerca presso i fornitori salta le altre integrazioni invece di chiedere; disattiva YOLO per approvarle.",
     "yoloOffTitleV2": "CaddyAI chiede prima di ogni modifica, pagina web, ricerca presso i fornitori, skill o altra integrazione, e prima di leggere altre indagini da un'indagine sincronizzabile. Clicca per attivare YOLO: le modifiche e le ricerche integrate presso i fornitori verranno poi eseguite senza chiedere, tranne le modifiche ad altre indagini o agli agenti.",
     "yoloInPlanTitle": "In modalità piano CaddyAI si limita a leggere; il selettore Chiedi/YOLO vale solo in modalità azione. {{setting}}"
   },
