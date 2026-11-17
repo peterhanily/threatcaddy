@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "אירועים השבוע",
   "metrics.aiChats": "צ'אטים AI",
   "metrics.graphNodes": "צמתי גרף",
+  "dashboard.analystModeBanner": "מצב אנליסט — מותאם למחשב שולחני",
   "dashboard.backToExecView": "חזרה לתצוגת הנהלה",
   "dashboard.switchToLight": "מעבר לערכת נושא בהירה",
   "dashboard.switchToDark": "מעבר לערכת נושא כהה",

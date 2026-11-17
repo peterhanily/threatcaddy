@@ -1593,7 +1593,7 @@ const AppInner = memo(function AppInner({
       {/* Analyst mode banner on mobile */}
       {isMobile && forceAnalystMode && (
         <div className="bg-accent/10 border-b border-accent/20 px-3 py-2 flex items-center justify-between text-xs shrink-0">
-          <span className="text-text-secondary">Analyst Mode — optimized for desktop</span>
+          <span className="text-text-secondary">{tExec('dashboard.analystModeBanner')}</span>
           <button
             onClick={() => setForceAnalystMode(false)}
             className="text-accent font-medium ms-2 whitespace-nowrap"
@@ -1684,7 +1684,7 @@ const AppInner = memo(function AppInner({
         {screenshareViewHidden && (
           <div role="status" className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-text-secondary">
             <p>This view is hidden while screensharing.</p>
-            <button className="rounded border border-border-medium px-3 py-2 hover:bg-bg-hover" onClick={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); closeSettings(); navigateTo('investigations'); }}>Browse visible investigations</button>
+            <button className="rounded border border-border-medium px-3 py-2 hover:bg-bg-hover" onClick={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); closeSettings(); navigateTo('investigations'); }}>{tCommon('screenshare.browseVisible')}</button>
           </div>
         )}
         <div hidden={screenshareViewHidden} inert={screenshareViewHidden} aria-hidden={screenshareViewHidden || undefined} style={screenshareViewHidden ? { display: 'none' } : undefined} className="flex flex-1 flex-col overflow-hidden">

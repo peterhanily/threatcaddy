@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "今週のイベント",
   "metrics.aiChats": "AIチャット",
   "metrics.graphNodes": "グラフノード",
+  "dashboard.analystModeBanner": "アナリストモード — デスクトップ向けに最適化",
   "dashboard.backToExecView": "エグゼクティブビューに戻る",
   "dashboard.switchToLight": "ライトテーマに切り替え",
   "dashboard.switchToDark": "ダークテーマに切り替え",

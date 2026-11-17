@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "이번 주 이벤트",
   "metrics.aiChats": "AI 채팅",
   "metrics.graphNodes": "그래프 노드",
+  "dashboard.analystModeBanner": "분석가 모드 — 데스크톱에 최적화됨",
   "dashboard.backToExecView": "경영진 뷰로 돌아가기",
   "dashboard.switchToLight": "밝은 테마로 전환",
   "dashboard.switchToDark": "어두운 테마로 전환",

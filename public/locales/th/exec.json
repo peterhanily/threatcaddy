@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "เหตุการณ์สัปดาห์นี้",
   "metrics.aiChats": "แชท AI",
   "metrics.graphNodes": "โหนดกราฟ",
+  "dashboard.analystModeBanner": "โหมดนักวิเคราะห์ — ปรับให้เหมาะกับเดสก์ท็อป",
   "dashboard.backToExecView": "กลับสู่มุมมองผู้บริหาร",
   "dashboard.switchToLight": "เปลี่ยนเป็นธีมสว่าง",
   "dashboard.switchToDark": "เปลี่ยนเป็นธีมมืด",

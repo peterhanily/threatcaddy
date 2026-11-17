@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "رویدادهای این هفته",
   "metrics.aiChats": "چت‌های AI",
   "metrics.graphNodes": "گره‌های گراف",
+  "dashboard.analystModeBanner": "حالت تحلیلگر — بهینه‌شده برای دسکتاپ",
   "dashboard.backToExecView": "بازگشت به نمای اجرایی",
   "dashboard.switchToLight": "تغییر به پوستهٔ روشن",
   "dashboard.switchToDark": "تغییر به پوستهٔ تیره",

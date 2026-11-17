@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "Kejadian Minggu Ini",
   "metrics.aiChats": "Obrolan AI",
   "metrics.graphNodes": "Node Graf",
+  "dashboard.analystModeBanner": "Mode Analis — dioptimalkan untuk desktop",
   "dashboard.backToExecView": "Kembali ke Tampilan Eksekutif",
   "dashboard.switchToLight": "Beralih ke tema terang",
   "dashboard.switchToDark": "Beralih ke tema gelap",

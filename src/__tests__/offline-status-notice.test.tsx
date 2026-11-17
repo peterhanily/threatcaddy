@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { OfflineBackupNote, OfflineStatusNotice, OfflineUseSetting, OFFLINE_INSTALL_NOTICE_DELAY_MS } from '../components/Common/OfflineStatusNotice';
 import type { observeOfflineStatus, OfflineStatus } from '../lib/offline-status';
 import commonEn from '../../public/locales/en/common.json';
+import settingsEn from '../../public/locales/en/settings.json';
 
 const mocks = vi.hoisted(() => ({ observe: vi.fn(), stop: vi.fn(), onChange: (() => {}) as (status: OfflineStatus) => void }));
 vi.mock('../lib/offline-status', async importOriginal => ({
@@ -12,7 +13,7 @@ type ObserveOptions = Parameters<typeof observeOfflineStatus>[0];
 const DISMISSED_KEY = 'threatcaddy-offline-unavailable-dismissed';
 const INSTALLING = 'ThreatCaddy is still saving itself for offline use. Keep this tab open.';
 const FAILED = "ThreatCaddy couldn't finish saving itself for offline use. It still works online and will try again next time you open it.";
-const UNAVAILABLE = "This browser can't keep ThreatCaddy available offline. It still works online. To keep a copy of your investigations, save a backup from Settings → Data.";
+const UNAVAILABLE = "This browser can't keep ThreatCaddy available offline. It still works online. To keep a copy of your investigations, export a JSON backup from Settings → Data.";
 const report = (status: OfflineStatus) => act(() => mocks.onChange(status));
 beforeEach(() => {
   // The status is shared for the page; start every test from an unknown status.
@@ -192,6 +193,16 @@ describe('offline use in Settings', () => {
   it('puts the not-a-backup guidance in plain words for the Data tab', () => {
     render(<OfflineBackupNote />);
     expect(screen.getByText(/^Offline use is not a backup\. .*Export a JSON backup regularly and keep the file somewhere safe\.$/)).toBeInTheDocument();
+  });
+
+  // Settings → Data has an 'Export JSON Backup' button and no 'save' control.
+  it('names the backup control Settings → Data really has', () => {
+    const control = (settingsEn as Record<string, string>)['data.exportJSON'];
+    expect(control).toBe('Export JSON Backup');
+    for (const key of ['offlineStatus.unavailableNotice', 'offlineStatus.backupNote']) {
+      expect((commonEn as Record<string, string>)[key].toLowerCase()).toContain('export a json backup');
+    }
+    expect((commonEn as Record<string, string>)['offlineStatus.unavailableNotice']).not.toMatch(/save a backup/i);
   });
 
   it('uses no technical jargon in any offline text', () => {
