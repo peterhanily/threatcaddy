@@ -68,7 +68,8 @@ export async function fetchHostSkills(host: AgentHost, signal?: AbortSignal): Pr
         typeof (s as AgentHostSkill).description === 'string'
     ).map(s => ({
       name: s.name,
-      description: s.description.substring(0, 500),
+      // eslint-disable-next-line no-control-regex -- intentional: strip control chars from host-authored text
+      description: s.description.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200),
       parameters: s.parameters || { type: 'object' as const, properties: {}, required: [] },
       actionClass: normalizeHostActionClass(s.actionClass),
     }));
@@ -164,10 +165,19 @@ export async function executeHostSkill(
   const hosts: AgentHost[] = s.agentHosts || [];
   const host = hosts.find(h => h.name === hostName);
 
-  if (!host) return JSON.stringify({ error: `Agent host not found: ${hostName}. Configure in Settings > AI > Agent Hosts.` });
+  if (!host) return JSON.stringify({ error: `Agent host not found: ${hostName}. Named agent hosts can no longer be configured; remove it in Settings → AI.` });
   if (!host.enabled) return JSON.stringify({ error: `Agent host "${host.displayName}" is disabled.` });
+  if (!isHttpsOrLoopback(host.url)) return JSON.stringify({ error: `Agent host "${host.displayName}" must use https (plain http only on localhost).` });
 
   return await callHostExecute(host.url, host.apiKey, skillName, input, host.displayName, signal);
+}
+
+/** Named hosts receive investigation data: https, or plain http only to this machine. */
+function isHttpsOrLoopback(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    return url.protocol === 'https:' || (url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname));
+  } catch { return false; }
 }
 
 /** Shared POST /execute call for both local and named hosts. */
