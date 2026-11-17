@@ -80,6 +80,23 @@ describe('bounded serialized chat schedules', () => {
     expect(sendViaExtension).toHaveBeenCalledOnce();
   });
 
+  it('a run with no route clears the backoff of an earlier failed model request', async () => {
+    const transport = vi.fn<() => Promise<LoopTransport>>()
+      .mockResolvedValueOnce({ useServerProxy: false, apiKey: 'local', endpoint: opts.endpoint })
+      .mockResolvedValueOnce({ error: 'No AI route is available.' })
+      .mockResolvedValue({ useServerProxy: false, apiKey: 'local', endpoint: opts.endpoint });
+    startLoop({ ...opts, transport });
+    await vi.advanceTimersByTimeAsync(0);
+    localCall()[1].onError('Provider unavailable');
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(transport).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(transport).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(transport).toHaveBeenCalledTimes(3);
+    expect(sendDirectToLocal).toHaveBeenCalledTimes(2);
+  });
+
   it('a run with a failed model request still backs off', async () => {
     startLoop(opts);
     localCall()[1].onError('Provider unavailable');
