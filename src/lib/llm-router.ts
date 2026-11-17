@@ -4,6 +4,7 @@ import { postMessageOrigin } from './utils';
 import { streamLLMChat } from './server-api';
 import { assertConfiguredConnection } from './connection-policy';
 import { cancellableRequest } from './request-cancellation';
+import { decodeBlocks, encodeRequest } from './tool-name-alias';
 
 export type LLMRoutingMode = 'extension' | 'server' | 'auto';
 export interface LLMRouteRequest {
@@ -54,11 +55,12 @@ export function sendDirectToLocal(request: LLMRouteRequest, callbacks: LLMRouteC
     let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
     try {
       if (lifecycle.signal.aborted) return;
+      const { req: encoded, decode } = encodeRequest(request);
       const endpoint = new URL((request.endpoint || 'http://localhost:11434/v1').replace(/\/+$/, '') + '/chat/completions');
       if (!['http:', 'https:'].includes(endpoint.protocol)) throw new Error('Local endpoint must use http or https');
       assertConfiguredConnection(endpoint.href);
-      const body: Record<string, unknown> = { model: request.model, stream: true, messages: toOpenAIMessages(request) };
-      if (request.tools?.length) body.tools = (request.tools as { name: string; description: string; input_schema: unknown }[]).map(tool => ({ type: 'function', function: { name: tool.name, description: tool.description, parameters: tool.input_schema } }));
+      const body: Record<string, unknown> = { model: request.model, stream: true, messages: toOpenAIMessages(encoded) };
+      if (encoded.tools?.length) body.tools = (encoded.tools as { name: string; description: string; input_schema: unknown }[]).map(tool => ({ type: 'function', function: { name: tool.name, description: tool.description, parameters: tool.input_schema } }));
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (request.apiKey && request.apiKey !== 'local') headers.Authorization = `Bearer ${request.apiKey}`;
       const response = await fetch(endpoint.href, { method: 'POST', headers, body: JSON.stringify(body), signal: lifecycle.signal });
@@ -117,7 +119,7 @@ export function sendDirectToLocal(request: LLMRouteRequest, callbacks: LLMRouteC
           const input = JSON.parse(call.arguments);
           if (!call.id || ids.has(call.id) || !call.name || !input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Incomplete or invalid tool call.');
           ids.add(call.id);
-          blocks.push({ type: 'tool_use', id: call.id, name: call.name, input });
+          blocks.push({ type: 'tool_use', id: call.id, name: decode(call.name), input });
         }
       }
       if (!lifecycle.signal.aborted) callbacks.onDone(stopReason === 'tool_calls' ? 'tool_use' : stopReason === 'stop' ? 'end_turn' : stopReason, blocks, usage);
@@ -139,6 +141,8 @@ export function resolveRoutingMode(mode: LLMRoutingMode | undefined, extensionAv
 
 export function sendViaExtension(request: LLMRouteRequest, callbacks: LLMRouteCallbacks, signal?: AbortSignal): string {
   const requestId = nanoid();
+  let encoded: ReturnType<typeof encodeRequest<LLMRouteRequest>>;
+  try { encoded = encodeRequest(request); } catch (error) { callbacks.onError(error instanceof Error ? error.message : 'Invalid tool names.'); return requestId; }
   const lifecycle = cancellableRequest(signal);
   const cleanup = () => { window.removeEventListener('message', handler); lifecycle.signal.removeEventListener('abort', abort); lifecycle.dispose(); };
   const abort = () => { cleanup(); window.postMessage({ type: 'TC_LLM_ABORT', requestId }, postMessageOrigin()); };
@@ -151,29 +155,31 @@ export function sendViaExtension(request: LLMRouteRequest, callbacks: LLMRouteCa
       if (chars > MAX_RESPONSE_BYTES) { lifecycle.controller.abort(); callbacks.onError('Provider response exceeded the size limit.'); return; }
       callbacks.onChunk(event.data.content);
     } else if (event.data.type === 'TC_LLM_DONE') {
-      cleanup(); callbacks.onDone(event.data.stopReason || 'end_turn', event.data.contentBlocks || [], event.data.usage);
+      cleanup(); callbacks.onDone(event.data.stopReason || 'end_turn', decodeBlocks(event.data.contentBlocks || [], encoded.decode), event.data.usage);
     } else if (event.data.type === 'TC_LLM_ERROR') { cleanup(); callbacks.onError(event.data.error); }
   }
   if (lifecycle.signal.aborted) { cleanup(); return requestId; }
   window.addEventListener('message', handler);
   lifecycle.signal.addEventListener('abort', abort, { once: true });
-  window.postMessage({ type: 'TC_LLM_REQUEST', requestId, payload: request }, postMessageOrigin());
+  window.postMessage({ type: 'TC_LLM_REQUEST', requestId, payload: encoded.req }, postMessageOrigin());
   return requestId;
 }
 
 export function sendViaServer(request: LLMRouteRequest, callbacks: LLMRouteCallbacks, signal?: AbortSignal): string {
   const requestId = nanoid();
+  let encoded: ReturnType<typeof encodeRequest<LLMRouteRequest>>;
+  try { encoded = encodeRequest(request); } catch (error) { callbacks.onError(error instanceof Error ? error.message : 'Invalid tool names.'); return requestId; }
   const lifecycle = cancellableRequest(signal);
   let text = '';
   if (lifecycle.signal.aborted) { lifecycle.dispose(); return requestId; }
-  streamLLMChat({ provider: request.provider, model: request.model, messages: request.messages as { role: string; content: string }[], systemPrompt: request.systemPrompt, tools: request.tools },
+  streamLLMChat({ provider: request.provider, model: request.model, messages: encoded.req.messages as { role: string; content: string }[], systemPrompt: request.systemPrompt, tools: encoded.req.tools },
     chunk => {
       if (lifecycle.signal.aborted) return;
       text += chunk;
       if (text.length > MAX_RESPONSE_BYTES) { lifecycle.controller.abort(); lifecycle.dispose(); callbacks.onError('Provider response exceeded the size limit.'); return; }
       callbacks.onChunk(chunk);
     },
-    (reason, blocks, usage) => { lifecycle.dispose(); if (!lifecycle.signal.aborted) callbacks.onDone(reason, blocks?.length ? blocks : text ? [{ type: 'text', text }] : [], usage); },
+    (reason, blocks, usage) => { lifecycle.dispose(); if (!lifecycle.signal.aborted) callbacks.onDone(reason, blocks?.length ? decodeBlocks(blocks, encoded.decode) : text ? [{ type: 'text', text }] : [], usage); },
     error => { lifecycle.dispose(); if (!lifecycle.signal.aborted) callbacks.onError(error); }, lifecycle.signal);
   lifecycle.signal.addEventListener('abort', lifecycle.dispose, { once: true });
   return requestId;
