@@ -575,18 +575,14 @@ async function executeReviewCompletedTask(
   });
 }
 
-/** Inject review feedback into the responsible agent's working memory so it learns from mistakes. */
-async function injectAgentFeedback(task: { title: string; createdBy?: string }, folderId: string | undefined, feedback: string, quality: string): Promise<void> {
-  if (!folderId || !task.createdBy?.startsWith('agent:')) return;
+/** Inject review feedback into the working memory of the agent the task was
+ * delegated to, so it learns from mistakes. createdBy is a display label, not an id. */
+async function injectAgentFeedback(task: { title: string; assignedDeploymentId?: string }, folderId: string | undefined, feedback: string, quality: string): Promise<void> {
+  if (!folderId || !task.assignedDeploymentId) return;
   try {
-    const profileId = task.createdBy.replace('agent:', '');
-    const deployment = await db.agentDeployments
-      .where('investigationId')
-      .equals(folderId)
-      .filter(d => d.profileId === profileId)
-      .first();
+    const deployment = await db.agentDeployments.get(task.assignedDeploymentId);
 
-    if (deployment?.threadId) {
+    if (deployment?.investigationId === folderId && deployment.threadId) {
       await db.chatThreads.where('id').equals(deployment.threadId).modify((thread: { contextSummary?: string }) => {
         const existing = thread.contextSummary || '';
         const feedbackLine = `[FEEDBACK/${quality}] Task "${task.title}": ${feedback}`;

@@ -333,6 +333,24 @@ describe('A-GATE-6 review and escalation scope', () => {
     expect(result.isError).toBe(true);
     expect((await db.tasks.get(ids('S').task))?.status).toBe('todo');
   });
+
+  it('sends a rejection to the working memory of the agent the task was delegated to', async () => {
+    const thread = (id: string, folderId: string) => db.chatThreads.add({ id, title: id, messages: [], model: '', provider: 'anthropic', folderId, tags: [], archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
+    await thread('th-thread', 'S'); await thread('p-thread', 'P');
+    await db.agentDeployments.bulkAdd([
+      { id: 'th', investigationId: 'S', profileId: 'ap-threat-hunter', threadId: 'th-thread', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 },
+      { id: 'p-th', investigationId: 'P', profileId: 'ap-threat-hunter', threadId: 'p-thread', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 },
+    ]);
+    // createdBy is a display label, not a profile id.
+    await db.tasks.update(ids('S').task, { assignedDeploymentId: 'th', createdBy: 'agent:🔍 Threat Hunter (Analyst)' });
+    expect((await execTool(review(ids('S').task), 'S', { surface: 'agent', agentContext: {} })).isError).toBe(false);
+    expect((await db.chatThreads.get('th-thread'))?.contextSummary).toBe('[FEEDBACK/needs-redo] Task "Shared case task": Add the DNS resolution history for the domain.\n\nRedo it');
+    // A deployment in another investigation never receives this investigation's feedback.
+    await db.tasks.update(ids('S').task, { assignedDeploymentId: 'p-th' });
+    const again = call('review_completed_task', { taskId: ids('S').task, quality: 'needs-redo', feedback: 'Redo it', requestedDelta: 'List the registry run keys on each host.' });
+    expect((await execTool(again, 'S', { surface: 'agent', agentContext: {} })).isError).toBe(false);
+    expect((await db.chatThreads.get('p-thread'))?.contextSummary).toBeUndefined();
+  });
 });
 
 describe('A-GATE-7 agent configuration tools', () => {
