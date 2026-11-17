@@ -218,6 +218,16 @@ describe('chat routes where Settings says', () => {
     expect(state.stopAllForThread).toHaveBeenCalledExactlyOnceWith('thread');
   });
 
+  it('/fetch calls no model, so it saves the page in a thread over its token budget', async () => {
+    const spent: ChatMessage = { ...message('m1', 'assistant'), tokenCount: { input: 900, output: 200 } };
+    renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'auto', llmTokenBudget: 1000 }, makeThread('anthropic', [spent]));
+    announceExtension();
+    await act(async () => { await state.input.onSend('/fetch https://example.test/report'); });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(fetchViaExtensionBridge).toHaveBeenCalledExactlyOnceWith('https://example.test/report');
+    expect(extensionRequests).toEqual([]);
+  });
+
   it('a loop retrying after an error says so in the analyst’s language, with the reason on hover', async () => {
     state.loops = [{ id: 'loop', threadId: 'thread', prompt: 'Check the feed', intervalMs: 30_000, status: 'running', runCount: 0, error: 'Synthetic reason' }];
     for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);

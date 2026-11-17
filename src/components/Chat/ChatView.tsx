@@ -285,7 +285,7 @@ export function ChatView({
     // must NOT be gated behind the LLM route / API-key / token-budget checks below.
     const isDirectCtiCommand = parseCtiSlashCommand(text) !== null;
     // /fetch <url> saves a page through the extension and /stoploop stops schedules; neither calls a model,
-    // so the AI route and API key do not gate them.
+    // so the AI route, API key and token budget do not gate them.
     const isFetchCommand = /^\/fetch\s+https?:\/\/\S+$/i.test(text);
     const isStopLoopCommand = /^\/stoploop$/i.test(text);
 
@@ -299,7 +299,7 @@ export function ChatView({
     const { useServerProxy, apiKey } = transport;
 
     // Hard token budget cap — prevent sending when over budget
-    if (!isDirectCtiCommand && !isStopLoopCommand && settings.llmTokenBudget && currentTokenTotal > settings.llmTokenBudget) {
+    if (!isDirectCtiCommand && !isFetchCommand && !isStopLoopCommand && settings.llmTokenBudget && currentTokenTotal > settings.llmTokenBudget) {
       setLocalError(t('view.errorOverBudget', `Token budget exceeded (${currentTokenTotal.toLocaleString()} / ${settings.llmTokenBudget.toLocaleString()}). Start a new thread or increase the budget in Settings > AI.`));
       return;
     }
