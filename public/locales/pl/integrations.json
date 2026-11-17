@@ -5,7 +5,7 @@
   "team.installedDisabledNoDomains": "Integracja {{name}} została zainstalowana jako wyłączona. Nie wysyła żadnych żądań sieciowych. Sprawdź ją, a następnie włącz na karcie Zainstalowane.",
   "fetch.privateTarget": "Można pobierać tylko publiczne adresy http(s) bez danych logowania. Miejsca docelowe prywatne, lokalne i podane jako dosłowny adres IP są niedozwolone.",
   "fetch.tooLong": "Nie można pobierać adresów dłuższych niż 2048 znaków. Skróć adres URL i spróbuj ponownie.",
-  "fetch.updateExtension": "Aby korzystać z pobierania stron, zainstaluj lub zaktualizuj rozszerzenie ThreatCaddy do wersji 1.1.3 lub nowszej i zatwierdź w nim tę aplikację.",
+  "fetch.updateExtension": "Pobieranie stron wymaga rozszerzenia ThreatCaddy w wersji 1.1.3 lub nowszej, zatwierdzonego dla tej aplikacji. Zostaw zainstalowane tylko najnowsze rozszerzenie ThreatCaddy, a następnie załaduj stronę ponownie.",
   "fetch.bridgeTimeout": "Upłynął limit czasu mostu rozszerzenia. Upewnij się, że rozszerzenie ThreatCaddy jest zainstalowane, a strona została ponownie załadowana po instalacji.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "Sprawdzanie adresu IP w VirusTotal: reputacja, geolokalizacja i statystyki analizy.",

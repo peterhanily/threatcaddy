@@ -62,7 +62,7 @@
   "detail.cloudSyncLabel": "Sinkronisasi Cloud",
   "detail.keepLocalLabel": "Simpan di perangkat ini",
   "detail.localOnly": "Lokal saja",
-  "detail.localOnlyDescV2": "Tidak pernah disinkronkan ke server tim. AI yang bekerja di investigasi yang dapat disinkronkan tidak dapat melihatnya.",
+  "detail.localOnlyDescV2": "Tidak pernah disinkronkan ke server tim. AI yang bekerja di investigasi yang dapat disinkronkan tidak dapat melihatnya. Permintaan AI yang menyertakan kontennya tetap mengikuti rute yang ditampilkan di Pengaturan → AI, yang bisa berupa server tim.",
   "detail.syncedToServer": "Tersinkron ke server",
   "detail.syncedToServerDesc": "Kolom bersama disinkronkan ke server. Simpan cadangan terpisah untuk detail khusus perangkat.",
   "detail.exportInvestigation": "Ekspor Investigasi",

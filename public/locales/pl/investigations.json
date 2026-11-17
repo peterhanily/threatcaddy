@@ -62,7 +62,7 @@
   "detail.cloudSyncLabel": "Synchronizacja z chmurą",
   "detail.keepLocalLabel": "Zachowaj na tym urządzeniu",
   "detail.localOnly": "Tylko lokalnie",
-  "detail.localOnlyDescV2": "Nigdy nie jest synchronizowane z serwerem zespołu. AI pracująca w dochodzeniach, które mogą być synchronizowane, nie może go zobaczyć.",
+  "detail.localOnlyDescV2": "Nigdy nie jest synchronizowane z serwerem zespołu. AI pracująca w dochodzeniach, które mogą być synchronizowane, nie może go zobaczyć. Żądania AI zawierające jego treść nadal idą trasą pokazaną w Ustawienia → AI, która może prowadzić przez serwer zespołu.",
   "detail.syncedToServer": "Zsynchronizowane z serwerem",
   "detail.syncedToServerDesc": "Wspólne pola są synchronizowane z serwerem. Zachowaj osobną kopię szczegółów zapisanych tylko na urządzeniu.",
   "detail.exportInvestigation": "Eksportuj dochodzenie",

@@ -297,7 +297,27 @@ describe('SettingsPanel: where AI data goes', () => {
     serverUrl: 'https://team.example', accessToken: 'synthetic-access', refreshToken: 'synthetic-refresh',
     user: { id: 'user-1', email: 'analyst@example.test', displayName: 'Analyst' },
   }));
-  afterEach(() => { localStorage.clear(); delete document.documentElement.dataset.tcBridgeCaps; });
+  const GUARDED_CAPS = 'llm_streaming,fetch_url,clip_import,clip_import_ack_v2,proxy_fetch';
+  const STORE_1_1_1_CAPS = 'llm_streaming,fetch_url,clip_import,proxy_fetch';
+  /** As in a browser, a posted message reaches the window's listeners on a later task. */
+  const deliver = (data: unknown) => setTimeout(() => window.dispatchEvent(new MessageEvent('message', { source: window, data })), 0);
+  let bridges: ((event: MessageEvent) => void) | undefined;
+  /** Extension bridges that answer TC_EXTENSION_PING from their listener; only a bridge that owns the page's listeners answers. */
+  const answerPing = (...replies: string[]) => {
+    bridges = event => {
+      if (event.source !== window || event.data?.type !== 'TC_EXTENSION_PING') return;
+      for (const caps of replies) deliver({ type: 'TC_EXTENSION_READY', protocolVersion: 1, capabilities: caps.split(',') });
+    };
+    window.addEventListener('message', bridges);
+    return vi.spyOn(window, 'postMessage').mockImplementation((message: unknown) => { deliver(message); });
+  };
+  const section = () => screen.getByRole('region', { name: 'Where AI data goes' });
+  const lines = () => Array.from(section().querySelectorAll('p'), line => line.textContent);
+  afterEach(() => {
+    localStorage.clear(); delete document.documentElement.dataset.tcBridgeCaps; vi.restoreAllMocks();
+    if (bridges) window.removeEventListener('message', bridges);
+    bridges = undefined;
+  });
 
   it('D-ROUTE-4: shows Auto when no routing mode was chosen', () => {
     renderAI();
@@ -320,9 +340,9 @@ describe('SettingsPanel: where AI data goes', () => {
 
   it('describes local, extension and unavailable routes truthfully', () => {
     const view = renderAI({ llmDefaultProvider: 'local', llmLocalEndpoint: 'http://localhost:11434/v1' });
-    expect(screen.getByText(/your local model at localhost:11434/)).toBeInTheDocument();
+    expect(screen.getByText('Requests to your local model go straight to it at localhost:11434.')).toBeInTheDocument();
     view.unmount();
-    document.documentElement.dataset.tcBridgeCaps = 'llm_streaming,fetch_url,clip_import,clip_import_ack_v2,proxy_fetch';
+    document.documentElement.dataset.tcBridgeCaps = GUARDED_CAPS;
     const extension = renderAI({ serverUrl: 'https://team.example' });
     expect(screen.getByText(/from the browser extension straight to your AI provider/)).toBeInTheDocument();
     extension.unmount();
@@ -332,21 +352,74 @@ describe('SettingsPanel: where AI data goes', () => {
     expect(screen.getByText(/set to Browser Extension, but the extension is not available/)).toBeInTheDocument();
   });
 
+  // IR3: the line used to describe only the default provider, so it said prompts stay local while a
+  // Claude thread went through the team server.
+  it('names the team server for cloud models when the default model is local', () => {
+    signIn();
+    renderAI({ llmDefaultProvider: 'local', llmLocalEndpoint: 'http://localhost:11434/v1', llmAnthropicApiKey: 'sk-ant-synthetic', llmRoutingMode: 'auto' });
+    expect(lines().slice(0, 2)).toEqual([
+      'Requests to your local model go straight to it at localhost:11434.',
+      'Requests to cloud models go through the team server at team.example. Its operator can read your prompts, the investigation content the AI reads and tool results.',
+    ]);
+  });
+
+  it('describes the local model and the cloud route whichever model is the default', () => {
+    const local = { llmLocalEndpoint: 'http://localhost:11434/v1' };
+    const routeLines = (settings: Partial<Settings>) => { const view = renderAI({ ...local, ...settings }); const found = lines().slice(0, 2); view.unmount(); return found; };
+    const localLine = 'Requests to your local model go straight to it at localhost:11434.';
+    expect(routeLines({ llmDefaultProvider: 'anthropic' })).toEqual([localLine,
+      'Cloud models have no route. Install the browser extension or sign in to a team server to use them.']);
+    expect(routeLines({ llmDefaultProvider: 'local', llmRoutingMode: 'server' })).toEqual([localLine,
+      'Routing is set to Team Server Proxy, but you are not signed in to a team server, so requests to cloud models will fail.']);
+    expect(routeLines({ llmDefaultProvider: 'local', llmRoutingMode: 'extension' })).toEqual([localLine,
+      'Routing is set to Browser Extension, but the extension is not available, so requests to cloud models will fail.']);
+    document.documentElement.dataset.tcBridgeCaps = GUARDED_CAPS;
+    expect(routeLines({ llmDefaultProvider: 'local' })).toEqual([localLine,
+      'Requests to cloud models go from the browser extension straight to the provider, using the API key saved on this device.']);
+  });
+
+  it('keeps one route line when no local model endpoint is set, even with a local default model', () => {
+    signIn();
+    renderAI({ llmDefaultProvider: 'local', llmLocalEndpoint: '  ' });
+    expect(screen.queryByText(/local model go/)).not.toBeInTheDocument();
+    expect(lines()[0]).toBe('Model requests go through the team server at team.example. Its operator can read your prompts, the investigation content the AI reads and tool results.');
+    expect(lines()[1]).toBe('Web fetch needs the ThreatCaddy browser extension.');
+  });
+
+  const FETCH_UPDATE = 'Web fetch: unavailable. It needs the ThreatCaddy extension 1.1.3 or later, approved for this app. '
+    + 'Keep only the newest ThreatCaddy extension installed, then reload the page.';
+  const FETCH_AVAILABLE = 'Web fetch: available. The extension opens only public web addresses.';
+
   it.each([
-    [undefined, 'Web fetch needs the ThreatCaddy browser extension.'],
-    ['llm_streaming,fetch_url,clip_import,proxy_fetch', 'Update the extension to use web fetch.'],
-    ['llm_streaming,fetch_url,clip_import,clip_import_ack_v2,proxy_fetch', 'Web fetch: available. The extension opens only public web addresses.'],
-  ])('reports web fetch status for bridge capabilities %s', (caps, text) => {
+    [undefined, [], 'Web fetch needs the ThreatCaddy browser extension.'],
+    [STORE_1_1_1_CAPS, [STORE_1_1_1_CAPS], FETCH_UPDATE],
+    [GUARDED_CAPS, [GUARDED_CAPS], FETCH_AVAILABLE],
+  ])('reports web fetch status for bridge capabilities %s', async (caps, replies, text) => {
     if (caps) document.documentElement.dataset.tcBridgeCaps = caps;
+    answerPing(...replies);
     renderAI();
-    expect(screen.getByText(text)).toBeInTheDocument();
+    expect(await within(section()).findByText(text)).toBeInTheDocument();
+  });
+
+  it.each([
+    ['store 1.1.1 answers although the page shows guarded capabilities', [STORE_1_1_1_CAPS]],
+    ['no bridge answers, as after the only extension updates without a page reload', []],
+    ['one of two answering bridges is old', [GUARDED_CAPS, STORE_1_1_1_CAPS]],
+  ])('asks the bridge, as web fetch does, and shows the update line when %s', async (_case, replies) => {
+    document.documentElement.dataset.tcBridgeCaps = GUARDED_CAPS;
+    const post = answerPing(...replies);
+    renderAI();
+    expect(await within(section()).findByText(FETCH_UPDATE, {}, { timeout: 2000 })).toBeInTheDocument();
+    expect(screen.queryByText(FETCH_AVAILABLE)).not.toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith(expect.objectContaining({ type: 'TC_EXTENSION_PING' }), expect.anything());
   });
 
   it('updates the route and web fetch lines when the extension publishes or withdraws its capabilities', async () => {
+    answerPing(GUARDED_CAPS);
     renderAI();
     expect(screen.getByText('Web fetch needs the ThreatCaddy browser extension.')).toBeInTheDocument();
-    document.documentElement.dataset.tcBridgeCaps = 'llm_streaming,fetch_url,clip_import,clip_import_ack_v2,proxy_fetch';
-    expect(await screen.findByText('Web fetch: available. The extension opens only public web addresses.')).toBeInTheDocument();
+    document.documentElement.dataset.tcBridgeCaps = GUARDED_CAPS;
+    expect(await screen.findByText(FETCH_AVAILABLE)).toBeInTheDocument();
     expect(screen.getByText(/from the browser extension straight to your AI provider/)).toBeInTheDocument();
     delete document.documentElement.dataset.tcBridgeCaps;
     expect(await screen.findByText('Web fetch needs the ThreatCaddy browser extension.')).toBeInTheDocument();
@@ -367,6 +440,15 @@ describe('SettingsPanel: where AI data goes', () => {
     expect(screen.queryByRole('textbox', { name: /host/i })).not.toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Remove agent host SOC One' }));
     expect(onUpdateSettings).toHaveBeenCalledExactlyOnceWith({ agentHosts: [keep] });
+  });
+
+  it('marks hosts on plain http away from this computer as unused, since every call to them is refused', () => {
+    const host = (id: string, url: string) => ({ id, name: id, displayName: `Host ${id}`, url, enabled: true, skills: [] });
+    renderAI({ agentHosts: [host('lab', 'http://10.0.0.5:8080'), host('soc', 'https://soc.example'), host('loop', 'http://localhost:8080')] });
+    const row = (url: string) => screen.getByText(url).closest('li') as HTMLElement;
+    expect(within(row('http://10.0.0.5:8080')).getByText('Not used: needs https')).toBeInTheDocument();
+    expect(within(row('https://soc.example')).queryByText('Not used: needs https')).not.toBeInTheDocument();
+    expect(within(row('http://localhost:8080')).queryByText('Not used: needs https')).not.toBeInTheDocument();
   });
 
   it('hides the agent host list when none are configured', () => {

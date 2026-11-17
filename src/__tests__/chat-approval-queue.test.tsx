@@ -140,8 +140,10 @@ describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
       addNote.mockRejectedValueOnce(new Error('Synthetic storage failure'));
       await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/second'); });
       // The extension can fail a page without saying why.
-      vi.mocked(window.postMessage).mockImplementationOnce((message: unknown) => {
+      const bridge = vi.mocked(window.postMessage).getMockImplementation();
+      vi.mocked(window.postMessage).mockImplementation((message: unknown, ...rest: unknown[]) => {
         const request = message as { type: string; requestId: string; url: string };
+        if (request.type !== 'TC_FETCH_URL') return (bridge as (...args: unknown[]) => void)(message, ...rest);
         egress.posts.push(request);
         setTimeout(() => window.dispatchEvent(new MessageEvent('message', {
           source: window, data: { type: 'TC_FETCH_URL_RESULT', requestId: request.requestId, success: false } })), 0);

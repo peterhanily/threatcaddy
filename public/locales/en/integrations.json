@@ -5,7 +5,7 @@
   "team.installedDisabledNoDomains": "{{name}} was installed disabled. It makes no web requests. Review it, then enable it on the Installed tab.",
   "fetch.privateTarget": "Only public http(s) addresses without credentials can be fetched. Private, local and literal-IP destinations are not allowed.",
   "fetch.tooLong": "Addresses longer than 2048 characters cannot be fetched. Shorten the URL and try again.",
-  "fetch.updateExtension": "Install or update the ThreatCaddy extension to 1.1.3 or later, and approve this app in it, to use web fetch.",
+  "fetch.updateExtension": "Web fetch needs the ThreatCaddy extension 1.1.3 or later, approved for this app. Keep only the newest ThreatCaddy extension installed, then reload the page.",
   "fetch.bridgeTimeout": "Extension bridge timed out. Make sure the ThreatCaddy extension is installed and the page has been reloaded after installation.",
   "config.selectPlaceholder": "Select...",
   "config.togglePassword": "Show or hide {{label}}",

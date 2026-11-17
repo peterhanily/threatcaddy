@@ -62,7 +62,7 @@
   "detail.cloudSyncLabel": "Đồng bộ đám mây",
   "detail.keepLocalLabel": "Giữ trên thiết bị này",
   "detail.localOnly": "Chỉ cục bộ",
-  "detail.localOnlyDescV2": "Không bao giờ đồng bộ với máy chủ nhóm. AI làm việc trong các cuộc điều tra có thể đồng bộ sẽ không thấy được.",
+  "detail.localOnlyDescV2": "Không bao giờ đồng bộ với máy chủ nhóm. AI làm việc trong các cuộc điều tra có thể đồng bộ sẽ không thấy được. Các yêu cầu AI có chứa nội dung của cuộc điều tra này vẫn đi theo tuyến hiển thị trong Cài đặt → AI, có thể là máy chủ nhóm.",
   "detail.syncedToServer": "Đã đồng bộ với máy chủ",
   "detail.syncedToServerDesc": "Các trường dùng chung được đồng bộ với máy chủ. Giữ bản sao lưu riêng cho chi tiết chỉ có trên thiết bị.",
   "detail.exportInvestigation": "Xuất điều tra",

@@ -22,6 +22,14 @@ describe('D-HOSTS-2 named agent hosts need https unless loopback', () => {
     expect(fetch).toHaveBeenCalledExactlyOnceWith(`${url}/execute`, expect.objectContaining({ method: 'POST' }));
   });
 
+  it('offers the model no skills of a host it would refuse to call', () => {
+    const skills = [{ name: 'scan', description: 'Scan', parameters: { type: 'object' as const, properties: {}, required: [] } }];
+    const named = (name: string, url: string): AgentHost => ({ id: name, name, displayName: name, url, enabled: true, skills });
+    const tools = getHostToolDefinitions({ ...DEFAULT_SETTINGS, agentHosts: [named('lab', 'http://10.0.0.5:8080'), named('soc', 'https://soc.example'),
+      named('loop', 'http://127.0.0.1:8080'), named('plain', 'http://soc.example'), named('bad', 'not a url')] });
+    expect(tools.map(tool => tool.name)).toEqual(['host:soc:scan', 'host:loop:scan']);
+  });
+
   it('explains that a missing named host can no longer be configured', async () => {
     const fetch = stubFetch();
     expect(JSON.parse(await executeHostSkill('host:gone:scan', {}, DEFAULT_SETTINGS)).error)

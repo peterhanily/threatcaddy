@@ -62,7 +62,7 @@
   "detail.cloudSyncLabel": "Synchronisation cloud",
   "detail.keepLocalLabel": "Conserver sur cet appareil",
   "detail.localOnly": "Local uniquement",
-  "detail.localOnlyDescV2": "Jamais synchronisée avec un serveur d'équipe. L'IA qui travaille dans des enquêtes synchronisables ne peut pas la voir.",
+  "detail.localOnlyDescV2": "Jamais synchronisée avec un serveur d'équipe. L'IA qui travaille dans des enquêtes synchronisables ne peut pas la voir. Les requêtes d'IA qui incluent son contenu suivent toujours la route indiquée dans Paramètres → IA, qui peut passer par le serveur d'équipe.",
   "detail.syncedToServer": "Synchronisée avec le serveur",
   "detail.syncedToServerDesc": "Les champs partagés sont synchronisés avec le serveur. Sauvegardez séparément les détails propres à cet appareil.",
   "detail.exportInvestigation": "Exporter l'enquête",

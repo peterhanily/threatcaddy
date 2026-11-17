@@ -62,7 +62,7 @@
   "detail.cloudSyncLabel": "Sincronização na nuvem",
   "detail.keepLocalLabel": "Manter neste dispositivo",
   "detail.localOnly": "Somente local",
-  "detail.localOnlyDescV2": "Nunca sincroniza com um servidor de equipe. A IA que trabalha em investigações que podem sincronizar não consegue vê-la.",
+  "detail.localOnlyDescV2": "Nunca sincroniza com um servidor de equipe. A IA que trabalha em investigações que podem sincronizar não consegue vê-la. As solicitações de IA que incluem o conteúdo dela ainda seguem a rota mostrada em Configurações → IA, que pode ser o servidor de equipe.",
   "detail.syncedToServer": "Sincronizada com o servidor",
   "detail.syncedToServerDesc": "Os campos compartilhados são sincronizados com o servidor. Mantenha um backup separado dos detalhes exclusivos do dispositivo.",
   "detail.exportInvestigation": "Exportar investigação",
