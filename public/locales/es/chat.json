@@ -22,7 +22,7 @@
     "badgeMeeting": "reunión",
     "planMode": "Planificar",
     "actMode": "Actuar",
-    "actModeTitle": "Modo Acción: la IA ejecuta acciones con aprobación",
+    "actModeTitleV2": "Modo Acción: CaddyAI puede hacer cambios y usar herramientas. El interruptor Preguntar/YOLO define qué necesita su aprobación.",
     "yoloLabel": "YOLO",
     "tokSuffix": "tok",
     "tokenTotal": "Total de tokens: {{total}}",
@@ -53,8 +53,8 @@
     "restoreLabel": "Restaurar",
     "approve": "Aprobar",
     "reject": "Rechazar",
-    "switchedToAct": "Cambiado a modo Acción — la IA ejecuta con aprobación",
-    "switchedToActMessage": "Cambiado a **modo Acción**. Envíe \"ejecutar el plan\" para ejecutar las acciones propuestas con control de aprobación, o continúe la conversación.",
+    "switchedToActV2": "Cambiado a modo Acción. El interruptor Preguntar/YOLO define qué necesita su aprobación.",
+    "switchedToActMessageV2": "Cambiado a **modo Acción**. Envíe \"ejecutar el plan\" para ejecutar las acciones propuestas, o continúe la conversación. El interruptor Preguntar/YOLO define qué acciones necesitan su aprobación.",
     "errorCreateThread": "No se pudo crear el hilo de conversación. Intente recargar la página.",
     "settingsAiLlm": "Configuración → IA/LLM",
     "errorNoLocalEndpoint": "No hay punto de conexión LLM local configurado. Agréguelo en Configuración → IA/LLM.",
@@ -74,11 +74,11 @@
     "loopCount_many": "{{count}} bucles"
   },
   "mode": {
-    "planTitle": "Modo Planificación: CaddyAI solo lee esta investigación y describe todo lo demás como un plan",
-    "switchedToPlan": "Cambiado a modo Planificación. CaddyAI solo lee esta investigación y describe todo lo demás como un plan",
+    "planTitleV2": "Modo Planificación: CaddyAI solo lee y describe todo lo demás como un plan. En una investigación solo lee esa investigación; fuera de cualquier investigación puede leerlas todas.",
+    "switchedToPlanV2": "Cambiado a modo Planificación. CaddyAI solo lee y describe todo lo demás como un plan.",
     "askLabel": "Preguntar",
-    "yoloOnTitle": "YOLO activado: aprueba automáticamente los cambios dentro de esta investigación y las consultas integradas a proveedores. Sigue preguntando antes de abrir páginas web, leer o modificar otras investigaciones, usar habilidades o cambiar agentes.",
-    "yoloOffTitle": "CaddyAI pregunta antes de cada cambio. Haz clic para activar YOLO: aprueba automáticamente los cambios dentro de esta investigación y las consultas integradas a proveedores, y sigue preguntando antes de abrir páginas web, leer o modificar otras investigaciones, usar habilidades o cambiar agentes."
+    "yoloOnTitleV2": "YOLO activado: los cambios y las consultas integradas a proveedores se ejecutan sin preguntar. Las páginas web, las habilidades, otras integraciones y los cambios en otras investigaciones o en los agentes siguen necesitando su aprobación, igual que leer otras investigaciones desde una investigación que puede sincronizarse.",
+    "yoloOffTitleV2": "CaddyAI pregunta antes de cada cambio, página web, consulta a proveedores, habilidad u otra integración, y antes de leer otras investigaciones desde una investigación que puede sincronizarse. Haga clic para activar YOLO: los cambios y las consultas integradas a proveedores pasarán a ejecutarse sin preguntar, salvo los cambios en otras investigaciones o en los agentes."
   },
   "approval": {
     "position": "{{index}} de {{total}}",

@@ -22,7 +22,7 @@
     "badgeMeeting": "réunion",
     "planMode": "Planifier",
     "actMode": "Agir",
-    "actModeTitle": "Mode Action : l'IA exécute les actions avec approbation",
+    "actModeTitleV2": "Mode Action : CaddyAI peut apporter des modifications et utiliser des outils. Le sélecteur Demander/YOLO définit ce qui nécessite votre approbation.",
     "yoloLabel": "YOLO",
     "tokSuffix": "tok",
     "tokenTotal": "Total tokens : {{total}}",
@@ -53,8 +53,8 @@
     "restoreLabel": "Restaurer",
     "approve": "Approuver",
     "reject": "Rejeter",
-    "switchedToAct": "Basculé en mode Action — l'IA exécute avec approbation",
-    "switchedToActMessage": "Basculé en **mode Action**. Envoyez « exécuter le plan » pour lancer les actions proposées avec contrôle d'approbation, ou continuez la conversation.",
+    "switchedToActV2": "Basculé en mode Action. Le sélecteur Demander/YOLO définit ce qui nécessite votre approbation.",
+    "switchedToActMessageV2": "Basculé en **mode Action**. Envoyez « exécuter le plan » pour lancer les actions proposées, ou continuez la conversation. Le sélecteur Demander/YOLO définit quelles actions nécessitent votre approbation.",
     "errorCreateThread": "Impossible de créer le fil de discussion. Essayez de recharger la page.",
     "settingsAiLlm": "Paramètres → IA/LLM",
     "errorNoLocalEndpoint": "Aucun point de terminaison LLM local configuré. Ajoutez-en un dans Paramètres → IA/LLM.",
@@ -74,11 +74,11 @@
     "loopCount_many": "{{count}} boucles"
   },
   "mode": {
-    "planTitle": "Mode Planification : CaddyAI lit uniquement cette enquête et décrit tout le reste sous forme de plan",
-    "switchedToPlan": "Basculé en mode Planification. CaddyAI lit uniquement cette enquête et décrit tout le reste sous forme de plan",
+    "planTitleV2": "Mode Planification : CaddyAI se contente de lire et décrit tout le reste sous forme de plan. Dans une enquête, il ne lit que cette enquête ; hors de toute enquête, il peut toutes les lire.",
+    "switchedToPlanV2": "Basculé en mode Planification. CaddyAI se contente de lire et décrit tout le reste sous forme de plan.",
     "askLabel": "Demander",
-    "yoloOnTitle": "YOLO activé : approuve automatiquement les modifications dans cette enquête et les recherches intégrées auprès des fournisseurs. Demande toujours avant d'ouvrir des pages web, de lire ou de modifier d'autres enquêtes, d'utiliser des compétences ou de modifier des agents.",
-    "yoloOffTitle": "CaddyAI demande avant chaque modification. Cliquez pour activer YOLO : approuve automatiquement les modifications dans cette enquête et les recherches intégrées auprès des fournisseurs, et demande toujours avant d'ouvrir des pages web, de lire ou de modifier d'autres enquêtes, d'utiliser des compétences ou de modifier des agents."
+    "yoloOnTitleV2": "YOLO activé : les modifications et les recherches intégrées auprès des fournisseurs s'exécutent sans demander. Les pages web, les compétences, les autres intégrations et les modifications d'autres enquêtes ou des agents nécessitent toujours votre approbation, tout comme la lecture d'autres enquêtes depuis une enquête synchronisable.",
+    "yoloOffTitleV2": "CaddyAI demande avant chaque modification, page web, recherche auprès des fournisseurs, compétence ou autre intégration, et avant de lire d'autres enquêtes depuis une enquête synchronisable. Cliquez pour activer YOLO : les modifications et les recherches intégrées auprès des fournisseurs s'exécutent alors sans demander, sauf les modifications d'autres enquêtes ou des agents."
   },
   "approval": {
     "position": "{{index}} sur {{total}}",

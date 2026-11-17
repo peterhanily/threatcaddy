@@ -22,7 +22,7 @@
     "badgeMeeting": "rapat",
     "planMode": "Rencana",
     "actMode": "Aksi",
-    "actModeTitle": "Mode aksi: AI mengeksekusi tindakan dengan persetujuan",
+    "actModeTitleV2": "Mode aksi: CaddyAI dapat membuat perubahan dan menggunakan alat. Sakelar Tanya/YOLO menentukan apa yang memerlukan persetujuan Anda.",
     "yoloLabel": "YOLO",
     "tokSuffix": "tok",
     "tokenTotal": "Total token: {{total}}",
@@ -53,8 +53,8 @@
     "restoreLabel": "Pulihkan",
     "approve": "Setujui",
     "reject": "Tolak",
-    "switchedToAct": "Beralih ke mode aksi — AI akan mengeksekusi dengan persetujuan",
-    "switchedToActMessage": "Beralih ke **mode aksi**. Kirim \"eksekusi rencana\" untuk menjalankan tindakan yang diusulkan dengan gerbang persetujuan, atau lanjutkan percakapan.",
+    "switchedToActV2": "Beralih ke mode aksi. Sakelar Tanya/YOLO menentukan apa yang memerlukan persetujuan Anda.",
+    "switchedToActMessageV2": "Beralih ke **mode aksi**. Kirim \"eksekusi rencana\" untuk menjalankan tindakan yang diusulkan, atau lanjutkan percakapan. Sakelar Tanya/YOLO menentukan tindakan mana yang memerlukan persetujuan Anda.",
     "errorCreateThread": "Gagal membuat utas obrolan. Coba segarkan halaman.",
     "settingsAiLlm": "Pengaturan → AI/LLM",
     "errorNoLocalEndpoint": "Tidak ada endpoint LLM lokal yang dikonfigurasi. Tambahkan di Pengaturan → AI/LLM.",
@@ -73,11 +73,11 @@
     "onboardingDismiss": "Mengerti"
   },
   "mode": {
-    "planTitle": "Mode rencana: CaddyAI hanya membaca investigasi ini dan menjelaskan hal lain sebagai rencana",
-    "switchedToPlan": "Beralih ke mode rencana. CaddyAI hanya membaca investigasi ini dan menjelaskan hal lain sebagai rencana",
+    "planTitleV2": "Mode rencana: CaddyAI hanya membaca dan menjelaskan hal lain sebagai rencana. Di dalam investigasi, ia hanya membaca investigasi itu; di luar investigasi mana pun, ia dapat membaca semuanya.",
+    "switchedToPlanV2": "Beralih ke mode rencana. CaddyAI hanya membaca dan menjelaskan hal lain sebagai rencana.",
     "askLabel": "Tanya",
-    "yoloOnTitle": "YOLO aktif: menyetujui otomatis perubahan di dalam investigasi ini dan pencarian vendor bawaan. Tetap bertanya sebelum membuka halaman web, membaca atau menulis investigasi lain, menggunakan skill, atau mengubah agen.",
-    "yoloOffTitle": "CaddyAI bertanya sebelum setiap perubahan. Klik untuk mengaktifkan YOLO: menyetujui otomatis perubahan di dalam investigasi ini dan pencarian vendor bawaan, dan tetap bertanya sebelum membuka halaman web, membaca atau menulis investigasi lain, menggunakan skill, atau mengubah agen."
+    "yoloOnTitleV2": "YOLO aktif: perubahan dan pencarian vendor bawaan berjalan tanpa bertanya. Halaman web, skill, integrasi lain, serta perubahan pada investigasi lain atau agen tetap memerlukan persetujuan Anda, begitu juga membaca investigasi lain dari investigasi yang dapat disinkronkan.",
+    "yoloOffTitleV2": "CaddyAI bertanya sebelum setiap perubahan, halaman web, pencarian vendor, skill, atau integrasi lain, dan sebelum membaca investigasi lain dari investigasi yang dapat disinkronkan. Klik untuk mengaktifkan YOLO: perubahan dan pencarian vendor bawaan lalu berjalan tanpa bertanya, kecuali perubahan pada investigasi lain atau agen."
   },
   "approval": {
     "position": "{{index}} dari {{total}}",

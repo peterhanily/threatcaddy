@@ -22,7 +22,7 @@
     "badgeMeeting": "riunione",
     "planMode": "Piano",
     "actMode": "Azione",
-    "actModeTitle": "Modalità azione: l'AI esegue azioni con approvazione",
+    "actModeTitleV2": "Modalità azione: CaddyAI può apportare modifiche e usare strumenti. Il selettore Chiedi/YOLO stabilisce cosa richiede la tua approvazione.",
     "yoloLabel": "YOLO",
     "tokSuffix": "tok",
     "tokenTotal": "Token totali: {{total}}",
@@ -53,8 +53,8 @@
     "restoreLabel": "Ripristina",
     "approve": "Approva",
     "reject": "Rifiuta",
-    "switchedToAct": "Passato a modalità azione — l'AI eseguirà con approvazione",
-    "switchedToActMessage": "Passato a **modalità azione**. Invia \"esegui piano\" per eseguire le azioni proposte con gate di approvazione, o continua la conversazione.",
+    "switchedToActV2": "Passato a modalità azione. Il selettore Chiedi/YOLO stabilisce cosa richiede la tua approvazione.",
+    "switchedToActMessageV2": "Passato a **modalità azione**. Invia \"esegui piano\" per eseguire le azioni proposte, o continua la conversazione. Il selettore Chiedi/YOLO stabilisce quali azioni richiedono la tua approvazione.",
     "errorCreateThread": "Impossibile creare il thread di chat. Prova ad aggiornare la pagina.",
     "settingsAiLlm": "Impostazioni → AI/LLM",
     "errorNoLocalEndpoint": "Nessun endpoint LLM locale configurato. Aggiungine uno in Impostazioni → AI/LLM.",
@@ -74,11 +74,11 @@
     "loopCount_many": "{{count}} loop"
   },
   "mode": {
-    "planTitle": "Modalità piano: CaddyAI legge solo questa indagine e descrive tutto il resto come un piano",
-    "switchedToPlan": "Passato a modalità piano. CaddyAI legge solo questa indagine e descrive tutto il resto come un piano",
+    "planTitleV2": "Modalità piano: CaddyAI si limita a leggere e descrive tutto il resto come un piano. In un'indagine legge solo quell'indagine; fuori da qualsiasi indagine può leggerle tutte.",
+    "switchedToPlanV2": "Passato a modalità piano. CaddyAI si limita a leggere e descrive tutto il resto come un piano.",
     "askLabel": "Chiedi",
-    "yoloOnTitle": "YOLO attivo: approva automaticamente le modifiche all'interno di questa indagine e le ricerche integrate presso i fornitori. Chiede comunque prima di aprire pagine web, leggere o scrivere altre indagini, usare skill o modificare agenti.",
-    "yoloOffTitle": "CaddyAI chiede prima di ogni modifica. Clicca per attivare YOLO: approva automaticamente le modifiche all'interno di questa indagine e le ricerche integrate presso i fornitori, e chiede comunque prima di aprire pagine web, leggere o scrivere altre indagini, usare skill o modificare agenti."
+    "yoloOnTitleV2": "YOLO attivo: le modifiche e le ricerche integrate presso i fornitori vengono eseguite senza chiedere. Pagine web, skill, altre integrazioni e modifiche ad altre indagini o agli agenti richiedono comunque la tua approvazione, così come la lettura di altre indagini da un'indagine sincronizzabile.",
+    "yoloOffTitleV2": "CaddyAI chiede prima di ogni modifica, pagina web, ricerca presso i fornitori, skill o altra integrazione, e prima di leggere altre indagini da un'indagine sincronizzabile. Clicca per attivare YOLO: le modifiche e le ricerche integrate presso i fornitori verranno poi eseguite senza chiedere, tranne le modifiche ad altre indagini o agli agenti."
   },
   "approval": {
     "position": "{{index}} di {{total}}",
