@@ -16,7 +16,7 @@ import enSettings from '../../public/locales/en/settings.json';
 const state = vi.hoisted(() => ({
   signedIn: false,
   folder: { id: 'case', name: 'Case', order: 0, createdAt: 1 } as Folder,
-  input: { onSend: async () => {} } as { onSend: (text: string) => Promise<void> },
+  input: { onSend: async () => {} } as { onSend: (text: string) => Promise<void>; route?: string },
 }));
 const { answer } = vi.hoisted(() => ({
   answer: (_request: unknown, callbacks: LLMRouteCallbacks) => { callbacks.onChunk('Answer.'); callbacks.onDone('end_turn', [{ type: 'text', text: 'Answer.' }]); return 'request'; },
@@ -114,6 +114,7 @@ describe('chat routes where Settings says', () => {
     signIn();
     renderChat({ llmRoutingMode: 'auto', serverUrl: 'https://team.example', llmLocalEndpoint: 'http://localhost:11434/v1', llmLocalModelName: 'llama3',
       llmLocalApiKey: 'synthetic-local-key' }, makeThread('local'));
+    expect(state.input.route).toBe('local-direct');
     await act(async () => { await state.input.onSend('What happened?'); });
     expect(sendDirectToLocal).toHaveBeenCalledOnce();
     expect(vi.mocked(sendDirectToLocal).mock.calls[0][0]).toMatchObject({ apiKey: 'synthetic-local-key', endpoint: 'http://localhost:11434/v1' });
@@ -145,6 +146,7 @@ describe('chat routes where Settings says', () => {
   it('explicit Team Server routing while signed out: a prompt is still refused with the reason', async () => {
     renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'server' });
     announceExtension();
+    expect(state.input.route).toBe('unavailable');
     await act(async () => { await state.input.onSend('Fetch https://example.test/report and summarise it'); });
     expect(screen.getByRole('alert')).toHaveTextContent(enSettings['ai.dataFlow.errorNoServer']);
     expect(sendViaServer).not.toHaveBeenCalled();

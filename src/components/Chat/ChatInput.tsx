@@ -5,6 +5,7 @@ import { beginComposerSubmission, finishComposerSubmission } from '../../lib/cha
 import { Send, Square, Wifi, WifiOff, Globe, Search, FileText, CheckSquare, Shield, BarChart3, Clock, Network, ClipboardList, Zap, Link2, AlertTriangle, Terminal, RefreshCw, StopCircle, Wrench, ImagePlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { LLMProvider } from '../../types';
+import type { LLMRoute } from '../../lib/llm-router';
 import { MODELS as STATIC_MODELS } from '../../lib/models';
 import { cn } from '../../lib/utils';
 import { MENTION_CATEGORIES, type MentionSuggestion } from '../../lib/chat-mentions';
@@ -33,6 +34,8 @@ interface ChatInputProps {
   extensionAvailable: boolean;
   /** The selected route uses an authenticated team server, not local API keys. */
   serverRoute?: boolean;
+  /** Where this thread's prompts go, as Settings → AI resolves it. The status shows it when given. */
+  route?: LLMRoute['route'];
   provider?: LLMProvider;
   model: string;
   onModelChange: (model: string, provider: LLMProvider) => void;
@@ -50,9 +53,11 @@ interface ChatInputProps {
   draftScope?: string;
 }
 
-export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, serverRoute = false, provider, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId, customCommands, onImageAttach, attachedImages, onClearImages, readingImages, draftScope }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, serverRoute = false, route, provider, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId, customCommands, onImageAttach, attachedImages, onClearImages, readingImages, draftScope }: ChatInputProps) {
   const { t } = useTranslation('chat');
   const canSend = serverRoute || extensionAvailable || (!!localModelName && (!provider || provider === 'local'));
+  // CTI commands and /fetch need no AI route, so an unavailable route changes only the status.
+  const routeLive = route ? route !== 'unavailable' : canSend;
   const MODELS = useMemo(() => {
     let models = [...STATIC_MODELS];
     if (localModelName) {
@@ -315,10 +320,10 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
         <div className="flex-1" />
         <div className={cn(
           'flex items-center gap-1 text-[10px]',
-          canSend ? 'text-accent-green' : 'text-text-muted'
+          routeLive ? 'text-accent-green' : 'text-text-muted'
         )}>
-          {canSend ? <Wifi size={10} /> : <WifiOff size={10} />}
-          {serverRoute ? t('input.serverStatus') : extensionAvailable ? t('input.extensionStatus') : canSend && localModelName ? t('input.localLlmStatus') : t('input.noConnection')}
+          {routeLive ? <Wifi size={10} /> : <WifiOff size={10} />}
+          {route === 'unavailable' ? t('input.noConnection') : route === 'local-direct' ? t('input.localLlmStatus') : serverRoute ? t('input.serverStatus') : extensionAvailable ? t('input.extensionStatus') : canSend && localModelName ? t('input.localLlmStatus') : t('input.noConnection')}
         </div>
       </div>
       {serverRoute && <p className="text-[10px] text-text-muted">{t('input.serverModelsHelp')}</p>}

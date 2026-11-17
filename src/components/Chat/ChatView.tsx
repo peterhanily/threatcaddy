@@ -100,6 +100,7 @@ export function ChatView({
   const serverSession = hasServerSession();
   // Where cloud models go; a local model with an endpoint is always called directly.
   const cloudRoute = resolveRoute(settings, { extensionAvailable, serverSession }).route;
+  const localRoute = resolveRoute(settings, { extensionAvailable, serverSession, provider: 'local' }).route;
   const hasLocalLLM = !!settings.llmLocalEndpoint?.trim();
   const canChat = extensionAvailable || serverSession || hasLocalLLM;
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1308,6 +1309,7 @@ export function ChatView({
                 isStreaming={isStreaming}
                 extensionAvailable={extensionAvailable}
                 serverRoute={cloudRoute === 'server'}
+                route={activeThread.provider === 'local' ? localRoute : cloudRoute}
                 provider={activeThread.provider}
                 model={activeThread.model}
                 onModelChange={handleModelChange}

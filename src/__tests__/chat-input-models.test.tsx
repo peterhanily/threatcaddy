@@ -152,6 +152,17 @@ describe('ChatInput', () => {
     expect(screen.getByText('Extension')).toBeInTheDocument();
   });
 
+  it('shows the route the send takes, not the extension, when the thread goes elsewhere', () => {
+    const view = render(<ChatInput {...defaultProps} extensionAvailable route="unavailable" />);
+    expect(screen.getByText('No connection')).toBeInTheDocument();
+    expect(screen.queryByText('Extension')).not.toBeInTheDocument();
+    // CTI commands and /fetch need no AI route, so the composer stays usable.
+    expect(screen.getByRole('textbox')).toBeEnabled();
+    view.rerender(<ChatInput {...defaultProps} extensionAvailable route="local-direct" provider="local" model="synthetic-local" localModelName="synthetic-local" />);
+    expect(screen.getByText('Local LLM')).toBeInTheDocument();
+    expect(screen.queryByText('Extension')).not.toBeInTheDocument();
+  });
+
   it('shows no extension indicator', () => {
     render(<ChatInput {...defaultProps} extensionAvailable={false} />);
     expect(screen.getByText('No connection')).toBeInTheDocument();
