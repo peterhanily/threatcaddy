@@ -1261,11 +1261,11 @@ export function ChatView({
 
             {/* Tool approval card: the head of this thread's queue. Outside the list, whose
                 footer remounts on every render, so the card keeps its state and focus. On a short
-                window the card scrolls within itself, so the composer and its buttons stay reachable. */}
+                window the card scrolls within itself, so the composer and its buttons stay reachable.
+                Keyed by the card, so the next queued card starts at its title, not where the last one was scrolled. */}
             {headApproval && (
-              <div className="px-4 min-h-0 max-h-[40vh] overflow-y-auto">
+              <div key={headApproval.id} className="px-4 min-h-0 max-h-[40vh] overflow-y-auto">
                 <ChatApprovalCard
-                  key={headApproval.id}
                   item={headApproval.item}
                   index={1}
                   total={visibleApprovals.length}
