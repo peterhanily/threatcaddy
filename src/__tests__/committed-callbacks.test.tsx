@@ -26,7 +26,7 @@ beforeEach(async () => {
   vi.stubGlobal('ResizeObserver', class { observe = vi.fn(); disconnect = vi.fn(); });
   vi.clearAllMocks(); mocks.handlers.clear();
   mocks.cycle.mockResolvedValue({ autoExecuted: [], proposed: [], threadId: 'thread' });
-  mocks.meeting.mockResolvedValue(undefined);
+  mocks.meeting.mockResolvedValue({ meetingId: 'meeting', threadId: 'thread', roundsCompleted: 1 });
   await Promise.all([db.folders.clear(), db.notes.clear(), db.agentDeployments.clear(), db.agentMeetings.clear()]);
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -73,5 +73,17 @@ describe('committed callback bindings', () => {
     await waitFor(async () => expect((await db.notes.get('request'))?.trashed).toBe(true));
     const saved = await db.notes.get('request');
     expect(saved?.trashedAt).toBe(saved?.updatedAt);
+  });
+
+  it('keeps a meeting request pending when the meeting could not run', async () => {
+    mocks.meeting.mockResolvedValue({ meetingId: '', threadId: '', roundsCompleted: 0, error: 'LLM routing is set to Browser Extension, but the extension is not available.' });
+    await db.notes.add({ id: 'request', folderId: 'one', title: 'Meeting Request: Review', content: '**Agenda:** Review', tags: ['meeting-request'],
+      pinned: false, trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+    const deployments = ['a', 'b'].map(id => ({ id, investigationId: 'one', profileId: id, status: 'idle', order: 0, createdAt: 1, updatedAt: 1 } as AgentDeployment));
+    render(<AgentMeetingPanel folder={folder('one')} deployments={deployments} settings={DEFAULT_SETTINGS} extensionAvailable={false} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'meeting.run' }));
+    await waitFor(() => expect(mocks.meeting).toHaveBeenCalledOnce());
+    expect(await screen.findByRole('button', { name: 'meeting.run' })).toBeEnabled();
+    expect((await db.notes.get('request'))?.trashed).toBe(false);
   });
 });

@@ -104,12 +104,14 @@ export function AgentMeetingPanel({
     const reqAgenda = parseAgendaFromNote(req);
     setRunning(true);
     try {
-      await runAgentMeeting(
+      const result = await runAgentMeeting(
         folder, deployments, settings, extensionAvailable,
         reqAgenda, undefined,
         (speaker, status) => setProgress(`${speaker}: ${status}`),
         reqPurpose,
       );
+      // A meeting that could not run (no LLM route, no key) leaves the request pending.
+      if (result.error) return;
       // Trash the request note so it doesn't linger as pending.
       const trashedAt = Date.now();
       await db.notes.update(req.id, { trashed: true, trashedAt, updatedAt: trashedAt });
