@@ -87,6 +87,14 @@ describe('C-CHAT-8 CTI slash commands', () => {
     expect(state.executeHostSkill).not.toHaveBeenCalled();
   });
 
+  // Only a host named 'cti' serves /cti, so another plain-http host must not be blamed.
+  it('keep the general answer when only a host not named cti is on plain http', async () => {
+    const other = { ...ctiHost('http://192.168.1.50'), id: 'soc1', name: 'soc1', displayName: 'SOC 1' };
+    const messages = await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [other] } as Settings);
+    expect(messages.at(-1)).toEqual(expect.objectContaining({ role: 'assistant', content: NO_SOURCES }));
+    expect(state.executeHostSkill).not.toHaveBeenCalled();
+  });
+
   it('still run the sources of a CTI host on plain http to this computer', async () => {
     state.executeHostSkill.mockResolvedValue(JSON.stringify({ ok: true }));
     await runCommand({ llmAnthropicApiKey: 'synthetic-unit-test-only', agentHosts: [ctiHost('http://localhost:8080')] } as Settings);
