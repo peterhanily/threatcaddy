@@ -89,6 +89,20 @@ describe('bounded serialized chat schedules', () => {
     expect(sendDirectToLocal).toHaveBeenCalledTimes(2);
   });
 
+  it('each run uses the local endpoint resolved for it, not the one the loop started with', async () => {
+    const moved = 'http://localhost:11435/v1';
+    const transport = vi.fn<() => Promise<LoopTransport>>()
+      .mockResolvedValueOnce({ useServerProxy: false, apiKey: 'local', endpoint: opts.endpoint })
+      .mockResolvedValueOnce({ useServerProxy: false, apiKey: 'local', endpoint: moved });
+    startLoop({ ...opts, transport });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(localCall()[0]).toMatchObject({ endpoint: opts.endpoint });
+    localCall()[1].onDone('end_turn', [{ type: 'text', text: 'First' }]);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(sendDirectToLocal).toHaveBeenCalledTimes(2);
+    expect(localCall()[0]).toMatchObject({ endpoint: moved });
+  });
+
   it('a loop stopped while its route resolves sends nothing', async () => {
     let resolve!: (transport: LoopTransport) => void;
     const id = startLoop({ ...opts, transport: () => new Promise(done => { resolve = done; }) });

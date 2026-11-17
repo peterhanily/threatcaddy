@@ -182,6 +182,26 @@ describe('chat routes where Settings says', () => {
     expect(extensionRequests).toEqual([]);
   });
 
+  it.each(helpers)('explicit Team Server routing: the chat %s posts no TC_LLM_REQUEST', async (_name, helper, earlier) => {
+    // The real helpers, so a call to one would reach the extension double.
+    const actual = await vi.importActual<typeof import('../lib/chat-utils')>('../lib/chat-utils');
+    vi.mocked(generateChatTitle).mockImplementation(actual.generateChatTitle);
+    vi.mocked(summarizeConversation).mockImplementation(actual.summarizeConversation);
+    try {
+      signIn();
+      renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'server', llmMaxContextMessages: 2 }, makeThread('anthropic', [...earlier]));
+      announceExtension();
+      await act(async () => { await state.input.onSend('What happened?'); });
+      await waitFor(() => expect(onAddMessage).toHaveBeenCalledWith('thread', expect.objectContaining({ role: 'assistant', content: 'Answer.' })));
+      expect(sendViaServer).toHaveBeenCalledOnce();
+      expect(helper).not.toHaveBeenCalled();
+      expect(extensionRequests).toEqual([]);
+    } finally {
+      vi.mocked(generateChatTitle).mockResolvedValue(null);
+      vi.mocked(summarizeConversation).mockResolvedValue(null);
+    }
+  });
+
   it.each(helpers)('through the extension, the chat %s still runs', async (_name, helper, earlier) => {
     renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'auto', serverUrl: 'https://team.example', llmMaxContextMessages: 2 },
       makeThread('anthropic', [...earlier]));
