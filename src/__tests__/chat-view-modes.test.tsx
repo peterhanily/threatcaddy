@@ -151,7 +151,10 @@ describe('mode copy', () => {
     expect(screen.getByRole('button', { name: deChat.view.planMode }).title).toBe(deChat.mode.planTitleV2);
     expect(screen.getByRole('button', { name: deChat.mode.askLabel }).title)
       .toBe(deChat.mode.yoloInPlanTitle.replace('{{setting}}', deChat.mode.yoloOffTitleV2));
-    expect([deChat.view.actModeTitleV2, deChat.mode.yoloOffTitleV2, deChat.mode.yoloOnTitleV2, deChat.mode.planTitleV2])
-      .not.toEqual(expect.arrayContaining([ACT_TITLE, ASK_TITLE, YOLO_TITLE, PLAN_TITLE]));
+    expect(deChat.view.actModeTitleV2).not.toBe(ACT_TITLE);
+    expect(deChat.mode.yoloOffTitleV2).not.toBe(ASK_TITLE);
+    expect(deChat.mode.yoloOnTitleV2).not.toBe(YOLO_TITLE);
+    expect(deChat.mode.planTitleV2).not.toBe(PLAN_TITLE);
+    expect(deChat.mode.yoloInPlanTitle).not.toBe(`${IN_PLAN}{{setting}}`);
   }));
 });
