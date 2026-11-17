@@ -75,6 +75,13 @@ describe('A-GATE-1 an exit needs an unforgeable, single-use, call-bound approval
     expect(egress.fetchUrlPosts()).toEqual([]);
   });
 
+  it('a stored IOC whose value is not a string does not block a trusted fetch', async () => {
+    await db.standaloneIOCs.add({ id: 'bad-ioc', folderId: 'S', type: 'domain', value: 42 as unknown as string, confidence: 'medium', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+    const nvd = call('fetch_url', { url: 'https://nvd.nist.gov/vuln/detail/CVE-2024-0001' });
+    expect((await dispatch(nvd, 'S', 'agent', undefined, { profileId: 'ap-threat-hunter' })).isError).toBe(false);
+    expect(egress.fetchUrlPosts()).toEqual(['https://nvd.nist.gov/vuln/detail/CVE-2024-0001']);
+  });
+
   it('refuses a JavaScript caller that declares no surface', async () => {
     const approval = mintHumanApproval(fetchCall, 'S', 'chat-card');
     const legacy = { allowedTools: ALL_STATIC_TOOLS, approval } as unknown as Parameters<typeof executeTool>[3];

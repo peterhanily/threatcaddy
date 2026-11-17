@@ -112,9 +112,10 @@ async function enrichDestinations(input: Record<string, unknown>, homeFolderId: 
 async function hostIsHomeIOC(host: string, homeFolderId: string | undefined): Promise<boolean> {
   if (!homeFolderId) return false;
   const iocs = await db.standaloneIOCs.where('folderId').equals(homeFolderId).toArray();
+  // Display-only: a stored value that is not a string (bad import or sync row) matches nothing.
   return iocs.some(ioc => {
     if (ioc.trashed) return false;
-    const value = ioc.type === 'url' ? hostOf(ioc.value) : ['domain', 'ipv4', 'ipv6'].includes(ioc.type) ? ioc.value.trim().toLowerCase().replace(/\.$/, '') : undefined;
+    const value = ioc.type === 'url' ? hostOf(text(ioc.value)) : ['domain', 'ipv4', 'ipv6'].includes(ioc.type) ? text(ioc.value).trim().toLowerCase().replace(/\.$/, '') : undefined;
     return !!value && (value === host || `[${value}]` === host);
   });
 }
