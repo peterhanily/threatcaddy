@@ -156,6 +156,37 @@ describe('accent foreground utilities', () => {
   });
 });
 
+describe('light-theme emerald text', () => {
+  // Tailwind 4 emerald-500 and amber-500 in sRGB. The chat approval card's Approve label is
+  // text-emerald-400 on bg-emerald-500/20 (/30 on hover), inside the card's bg-amber-500/5.
+  const emerald500 = '#00bc7d';
+  const amber500 = '#fe9a00';
+  const rgb = (hex: string) => [1, 3, 5].map(offset => parseInt(hex.slice(offset, offset + 2), 16));
+  const over = (base: string, top: string, alpha: number) =>
+    `#${rgb(base).map((value, i) => Math.round(value * (1 - alpha) + rgb(top)[i] * alpha).toString(16).padStart(2, '0')).join('')}`;
+
+  for (const scheme of COLOR_SCHEMES) {
+    it(`${scheme.id} light: the approval card's Approve label reaches 4.5:1 at rest and on hover`, () => {
+      const color = lightRemap('.text-emerald-400', 'color');
+      const token = (name: string) => scheme.light[name] ?? defaults.light[name];
+      // The card sits on a page, panel or raised surface, never on a row's --color-bg-hover fill.
+      const cardSurfaces = surfaces.filter(name => name !== '--color-bg-hover');
+      const backgrounds = Object.entries(grays.light).filter(([name]) => !name.startsWith('border-'));
+      const against = { ...Object.fromEntries(cardSurfaces.map(name => [name, token(name)])), ...Object.fromEntries(backgrounds) };
+      for (const [surface, background] of Object.entries(against)) {
+        for (const alpha of [0.2, 0.3]) {
+          const fill = over(over(background, amber500, 0.05), emerald500, alpha);
+          expect(contrast(color, fill), `${color} on ${surface} ${background} + emerald-500/${alpha * 100}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    });
+  }
+
+  it('leaves the dark theme\'s emerald text alone', () => {
+    expect([...css.matchAll(/^([^{}\n]*)\.text-emerald-400\s*\{/gm)].map(match => match[1].trim())).toEqual(['.light']);
+  });
+});
+
 describe('light-theme amber text', () => {
   // Tailwind's amber 100-500 is 1.06-2.04:1 on light surfaces, so every plain
   // text-amber-N utility in the app needs a .light remap.
