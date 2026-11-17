@@ -116,11 +116,11 @@ export function executeExtractIOCs(input: Record<string, unknown>): string {
 
 const PRIVATE_HOST_SUFFIXES = ['.localhost', '.local', '.internal', '.home', '.lan'];
 
-/** Mirrors the extension's publicFetchURL (extension/src/background.js), plus an href bound. */
+/** Mirrors the extension's publicFetchURL (extension/src/background.js). The href bound is checked separately. */
 export function isPublicFetchURL(value: string): boolean {
   let url: URL;
   try { url = new URL(value); } catch { return false; }
-  if (url.href.length > 2048 || !['http:', 'https:'].includes(url.protocol) || url.username || url.password) return false;
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return false;
   const host = url.hostname.toLowerCase().replace(/\.$/, '');
   return host.includes('.') && !host.includes(':') && !/^[\d.]+$/.test(host)
     && !PRIVATE_HOST_SUFFIXES.some(suffix => host.endsWith(suffix));
@@ -134,19 +134,20 @@ function hasGuardedBridgeFetch(): boolean {
 }
 
 /** `/fetch` shows this text to the analyst, so it is translated. Hosted builds load the namespace lazily. */
-async function fetchRefusal(key: 'fetch.privateTarget' | 'fetch.updateExtension'): Promise<{ success: false; error: string }> {
+async function fetchRefusal(key: 'fetch.privateTarget' | 'fetch.tooLong' | 'fetch.updateExtension' | 'fetch.bridgeTimeout'): Promise<{ success: false; error: string }> {
   await i18n.loadNamespaces('integrations');
   return { success: false, error: i18n.t(key, { ns: 'integrations' }) };
 }
 
 export function fetchViaExtensionBridge(url: string): Promise<{ success: boolean; title?: string; content?: string; error?: string }> {
   if (!isPublicFetchURL(url)) return fetchRefusal('fetch.privateTarget');
+  if (new URL(url).href.length > 2048) return fetchRefusal('fetch.tooLong');
   if (!hasGuardedBridgeFetch()) return fetchRefusal('fetch.updateExtension');
   const requestId = Math.random().toString(36).slice(2);
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {
       window.removeEventListener('message', handler);
-      resolve({ success: false, error: 'Extension bridge timed out. Make sure the ThreatCaddy extension is installed and the page has been reloaded after installation.' });
+      resolve(fetchRefusal('fetch.bridgeTimeout'));
     }, 20000);
 
     function handler(event: MessageEvent) {

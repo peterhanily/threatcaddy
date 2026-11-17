@@ -276,4 +276,44 @@ describe('bridge.js protocol and extension validity', () => {
     delete bridge.context.chrome
     expect(bridge.context.isExtensionValid()).toBe(false)
   })
+
+  it('re-checks approval and re-announces when the same extension injects the bridge again', async () => {
+    // Static content script plus executeScript: one isolated world, so the globals persist.
+    bridge.context.window.postMessage.mockClear()
+    new Script(readFileSync(resolve(import.meta.dirname, '../bridge.js'), 'utf8')).runInContext(bridge.context)
+    await vi.waitFor(() => expect(bridge.context.window.postMessage)
+      .toHaveBeenCalledExactlyOnceWith(bridge.context.readyPayload(), 'https://threatcaddy.com'))
+    expect(bridge.context.document.documentElement.dataset.tcBridgeCaps).toBe(bridge.context.TC_CAPABILITIES.join(','))
+    expect(bridge.messageListeners).toHaveLength(2)
+  })
+})
+
+describe('bridge.js with two installed ThreatCaddy extensions', () => {
+  // Each extension's content scripts run in their own isolated world: they share the page DOM and window
+  // messages, not globals. Store 1.1.1 (66ec58f4 bridge.js) claims the bridge, publishes its capabilities and
+  // relays TC_FETCH_URL to a background that follows redirects and has no host filter.
+  const STORE_1_1_1_CAPS = 'llm_streaming,fetch_url,clip_import,proxy_fetch'
+  const STORE_1_1_1_BRIDGE = `
+    var TC_CAPABILITIES = ['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch'];
+    if (!document.documentElement.dataset.tcBridgeLoaded) {
+      document.documentElement.dataset.tcBridgeLoaded = '1';
+      document.documentElement.dataset.tcBridgeCaps = TC_CAPABILITIES.join(',');
+      var ports = new Map();
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'TC_FETCH_URL') chrome.runtime.sendMessage({ type: 'FETCH_URL', url: event.data.url }, function () {});
+      });
+    }`
+
+  it('leaves the capabilities alone when another extension loaded the bridge first', async () => {
+    const page = document.implementation.createHTMLDocument('Two extensions')
+    const pageWindow = { location: new URL('https://threatcaddy.com/'), postMessage: vi.fn(), addEventListener: vi.fn() }
+    new Script(STORE_1_1_1_BRIDGE).runInContext(createContext({ chrome: chromeStub(), document: page, window: pageWindow }))
+    expect(page.documentElement.dataset.tcBridgeCaps).toBe(STORE_1_1_1_CAPS)
+
+    // A sideloaded, approved HEAD build injects second and has no TC_FETCH_URL listener of its own.
+    executeSource('bridge.js', { document: page, window: pageWindow })
+    await new Promise(done => setTimeout(done, 0))
+    expect(page.documentElement.dataset.tcBridgeCaps).toBe(STORE_1_1_1_CAPS)
+    expect(pageWindow.postMessage).not.toHaveBeenCalled()
+  })
 })
