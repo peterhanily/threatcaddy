@@ -13,10 +13,43 @@ interface State {
   error: Error | null;
   componentStack: string | null;
   copied: boolean;
+  reloading: boolean;
+}
+
+// After an update the new service worker removes the old build's chunks, so a view this tab had not
+// loaded yet fails to import. A boundary catches that failure, so public/chunk-reload-guard.js never
+// sees it. Both use the guard's message patterns and its sessionStorage claim, so between them a
+// session reloads at most once for a missing chunk; the guard releases only its own boot claim ('1').
+const CHUNK_RELOAD_KEY = 'tc_chunk_reload';
+const VIEW_RELOAD_CLAIM = 'view';
+const CHUNK_FAILURE_PATTERNS = [
+  'ChunkLoadError',
+  'Loading chunk',
+  'dynamically imported module',
+  'Failed to fetch dynamically imported module',
+  'Importing a module script failed',
+  'error loading dynamically imported module',
+  'Failed to load module script',
+];
+
+function isChunkLoadFailure(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return CHUNK_FAILURE_PATTERNS.some(pattern => message.includes(pattern));
+}
+
+/** Takes the session's one chunk reload; false when it is used or session storage is unavailable. */
+function claimChunkReload(): boolean {
+  try {
+    if (sessionStorage.getItem(CHUNK_RELOAD_KEY)) return false;
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, VIEW_RELOAD_CLAIM);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
-  state: State = { hasError: false, error: null, componentStack: null, copied: false };
+  state: State = { hasError: false, error: null, componentStack: null, copied: false, reloading: false };
   private copyTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   componentWillUnmount() {
@@ -42,6 +75,14 @@ export class ErrorBoundary extends React.Component<Props, State> {
       url: window.location.href,
       timestamp: new Date().toISOString(),
     });
+
+    if (isChunkLoadFailure(error) && claimChunkReload()) {
+      this.setState({ reloading: true });
+      // Cache-busting, as the guard does, so the browser fetches the new page.
+      const url = new URL(window.location.href);
+      url.searchParams.set('_r', Date.now().toString());
+      window.location.replace(url.toString());
+    }
   }
 
   private getErrorDetails(): string {
@@ -85,6 +126,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   };
 
   render() {
+    if (this.state.reloading) return <ReloadingNotice />;
     if (this.state.hasError) {
       return (
         <ErrorFallback
@@ -97,6 +139,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
     }
     return this.props.children;
   }
+}
+
+function ReloadingNotice() {
+  const { t } = useTranslation('common');
+  return <div role="status" className="flex flex-1 items-center justify-center h-full p-8 text-gray-500">{t('loading')}</div>;
 }
 
 interface ErrorFallbackProps {

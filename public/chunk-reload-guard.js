@@ -49,6 +49,8 @@
     if (isChunkFailure(reason && reason.message ? reason.message : reason) && shouldReload()) reload();
   });
 
-  // Clear guard after successful boot so future deploys can trigger reload
-  setTimeout(function () { sessionStorage.removeItem(KEY); }, 8000);
+  // Clear guard after successful boot so future deploys can trigger reload.
+  // ErrorBoundary shares KEY for views that fail to load later; its claim
+  // ('view') lasts for the session, so the two can never reload in a loop.
+  setTimeout(function () { if (sessionStorage.getItem(KEY) === '1') sessionStorage.removeItem(KEY); }, 8000);
 })();
