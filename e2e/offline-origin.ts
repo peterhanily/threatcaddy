@@ -9,6 +9,8 @@ export async function startOfflineOrigin(options: {
   outputDir?: string;
   basePath?: string;
   serviceWorkerResponse?: 'unavailable' | 'deferred';
+  /** Hold the worker's precache download of index.html so a real install stays running. */
+  precacheResponse?: 'deferred';
 } = {}) {
   const root = resolve(options.outputDir ?? 'dist');
   const requestedPath = options.basePath ?? '/';
@@ -20,10 +22,19 @@ export async function startOfflineOrigin(options: {
   let serviceWorkerRequests = 0;
   let releaseServiceWorker!: () => void;
   const serviceWorkerGate = new Promise<void>(resolve => { releaseServiceWorker = resolve; });
+  let precacheRequests = 0;
+  let releasePrecache!: () => void;
+  const precacheGate = new Promise<void>(resolve => { releasePrecache = resolve; });
   const server = createServer(async (req, res) => {
     try {
       const pathname = decodeURIComponent(new URL(req.url ?? '/', 'http://fixture.invalid').pathname);
       if (!pathname.startsWith(basePath)) { res.writeHead(404).end(); return; }
+      // Only the worker's precache names index.html; page navigations request the directory.
+      if (options.precacheResponse === 'deferred' && pathname.slice(basePath.length) === 'index.html') {
+        precacheRequests += 1;
+        await precacheGate;
+        if (res.destroyed) return;
+      }
       const relative = pathname.slice(basePath.length) || 'index.html';
       if (relative === 'sw.js') {
         serviceWorkerRequests += 1;
@@ -47,11 +58,12 @@ export async function startOfflineOrigin(options: {
   const origin = 'http://127.0.0.1:' + address.port;
   const stop = async () => {
     releaseServiceWorker();
+    releasePrecache();
     if (!server.listening) return;
     const stopped = new Promise<void>((accept, reject) => server.close(error => error ? reject(error) : accept()));
     server.closeAllConnections();
     await stopped;
   };
-  return { origin, basePath, url: origin + basePath, stop, releaseServiceWorker,
-    serviceWorkerRequestCount: () => serviceWorkerRequests };
+  return { origin, basePath, url: origin + basePath, stop, releaseServiceWorker, releasePrecache,
+    serviceWorkerRequestCount: () => serviceWorkerRequests, precacheRequestCount: () => precacheRequests };
 }
