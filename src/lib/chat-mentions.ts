@@ -87,8 +87,11 @@ export async function searchMentions(
   if (type === 'investigation') {
     let folders = await db.folders.toArray();
     if (await isShareableFolder(folderId)) {
-      const hidden = await Promise.all(folders.map(f => isFolderLocalOnly(f)));
-      folders = folders.filter((_, i) => !hidden[i]);
+      // isFolderLocalOnly for every folder, with the persisted markers (keys JSON.stringify(['localOnly', id])) read once:
+      // this runs on each keystroke.
+      const markers = await db.table('_syncMeta').where('key').startsWith('["localOnly",').toArray();
+      const marked = new Set(markers.filter(row => row.value === true).map(row => row.key as string));
+      folders = folders.filter(f => !f.localOnly && !marked.has(JSON.stringify(['localOnly', f.id])));
     }
     if (q) folders = folders.filter(f => f.name.toLowerCase().includes(q));
     folders.sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
