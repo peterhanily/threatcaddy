@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db';
-import { DEFAULT_AGENT_POLICY, type Folder, type ToolUseBlock } from '../types';
-import { getToolActionClass, shouldAutoApprove } from '../lib/caddy-agent-policy';
+import { DEFAULT_AGENT_POLICY, type AgentPolicy, type Folder, type ToolUseBlock } from '../types';
+import { getToolActionClass, resolveEffectivePolicy, shouldAutoApprove } from '../lib/caddy-agent-policy';
+import { loadAgentPolicy } from '../lib/agent-profile-resolver';
 import { getHostSkillActionClass } from '../lib/agent-hosts';
 import { isWriteTool } from '../lib/llm-tool-defs';
 import { executeTool } from '../lib/llm-tools';
@@ -18,6 +19,49 @@ const folder = (id: string, policy?: Folder['agentPolicy']): Folder => ({ id, na
 beforeEach(async () => {
   localStorage.removeItem('threatcaddy-settings');
   await Promise.all([db.notes.clear(), db.tasks.clear(), db.standaloneIOCs.clear(), db.folders.clear(), db.agentActions.clear()]);
+});
+
+describe('A-POL-1 effective agent policy', () => {
+  const FLAGS = ['autoApproveReads', 'autoApproveEnrich', 'autoApproveFetch', 'autoApproveCreate', 'autoApproveModify'] as const;
+  const policyWith = (value: boolean): AgentPolicy => ({ ...DEFAULT_AGENT_POLICY, ...Object.fromEntries(FLAGS.map(flag => [flag, value])) });
+
+  for (const flag of FLAGS) {
+    for (const base of [true, false]) {
+      for (const folderFlag of [undefined, true, false]) {
+        for (const override of [undefined, true, false]) {
+          it(`${flag}: profile ${base}, investigation ${folderFlag ?? 'unset'}, override ${override ?? 'unset'}`, () => {
+            const folderPolicy = folderFlag === undefined ? undefined : policyWith(folderFlag);
+            const effective = resolveEffectivePolicy(folderPolicy, policyWith(base), override === undefined ? undefined : { [flag]: override }, true);
+            expect(effective[flag]).toBe(base && folderFlag !== false && override !== false);
+          });
+        }
+      }
+    }
+  }
+
+  it('uses the investigation policy, then the default, when no profile applies', () => {
+    expect(resolveEffectivePolicy(undefined, undefined, undefined, false)).toEqual(DEFAULT_AGENT_POLICY);
+    expect(resolveEffectivePolicy(policyWith(true), policyWith(false), undefined, false).autoApproveCreate).toBe(true);
+    expect(resolveEffectivePolicy(policyWith(false), undefined, { autoApproveReads: true }, false).autoApproveReads).toBe(false);
+  });
+
+  it('keeps the Enrich fallback for policies saved before Fetch existed', () => {
+    const old = { ...DEFAULT_AGENT_POLICY, autoApproveEnrich: false, autoApproveFetch: undefined } as unknown as AgentPolicy;
+    expect(resolveEffectivePolicy(undefined, old, undefined, true).autoApproveFetch).toBe(false);
+    expect(resolveEffectivePolicy(old, policyWith(true), undefined, true).autoApproveFetch).toBe(false);
+  });
+
+  it('keeps the existing precedence for settings that are not approval flags', () => {
+    const effective = resolveEffectivePolicy({ ...DEFAULT_AGENT_POLICY, intervalMinutes: 30, verbosity: 10 },
+      { ...DEFAULT_AGENT_POLICY, intervalMinutes: 15 }, { intervalMinutes: 7 }, true);
+    expect(effective).toMatchObject({ intervalMinutes: 7, verbosity: 10 });
+  });
+
+  it('caps a deployed Threat Hunter by the investigation fetch setting', async () => {
+    await db.folders.add(folder('case', { ...DEFAULT_AGENT_POLICY, autoApproveFetch: false }));
+    expect((await loadAgentPolicy('case', { profileId: 'ap-threat-hunter' })).autoApproveFetch).toBe(false);
+    expect((await loadAgentPolicy(undefined, { profileId: 'ap-threat-hunter' })).autoApproveFetch).toBe(true);
+  });
 });
 
 describe('dynamic tool effect classification', () => {
