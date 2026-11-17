@@ -50,7 +50,7 @@ test('failed first installation says it will try again, remembers dismissal and 
     const dismiss = notice.getByRole('button', { name: 'Dismiss', exact: true });
     await expect(dismiss).toBeVisible();
     expect((await dismiss.boundingBox())?.height).toBeGreaterThanOrEqual(44);
-    await page.screenshot({ path: testInfo.outputPath('offline-installation-unavailable-mobile.png'), animations: 'disabled' });
+    await page.screenshot({ path: testInfo.outputPath('offline-installation-failed-mobile.png'), animations: 'disabled' });
     await dismiss.click();
     await expect(notice).toHaveCount(0);
     expect(await page.evaluate(() => localStorage.getItem('threatcaddy-offline-unavailable-dismissed'))).toBe('1');
