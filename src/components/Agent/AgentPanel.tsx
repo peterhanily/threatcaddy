@@ -7,8 +7,12 @@ import type { AgentAction, AgentPolicy, AgentProfile, AgentDeployment, Folder, A
 import { DEFAULT_AGENT_POLICY } from '../../types';
 import { cn, formatDate, postMessageOrigin } from '../../lib/utils';
 import { db } from '../../db';
-import { executeApprovedAction, rejectAction, bulkApproveActions } from '../../lib/agent-action-approval';
+import { executeApprovedAction, rejectAction, bulkApproveActions, previewBulkApprove } from '../../lib/agent-action-approval';
 import { acknowledgeReconciliation } from '../../lib/agent-handoff';
+import { loadAgentPolicy } from '../../lib/agent-profile-resolver';
+import { CROSS_CASE_READ_TOOLS, resolveEffectivePolicy } from '../../lib/caddy-agent-policy';
+import { isShareableFolder } from '../../lib/ai-scope';
+import { workspaceStorageKey } from '../../lib/workspace-profiles';
 import { AgentActionCard } from './AgentActionCard';
 import { AgentProfilePicker } from './AgentProfilePicker';
 import { AgentMeetingPanel } from './AgentMeetingPanel';
@@ -17,6 +21,15 @@ import { BUILTIN_AGENT_PROFILES } from '../../lib/builtin-agent-profiles';
 import { formatUSD } from '../../lib/model-pricing';
 
 const ACTION_PAGE_SIZE = 100;
+
+/** The auto-approve flags, as the policy editor and the "asks before" lines name them. */
+const POLICY_TOGGLES: { key: 'autoApproveReads' | 'autoApproveEnrich' | 'autoApproveFetch' | 'autoApproveCreate' | 'autoApproveModify'; labelKey: string; descriptionKey: string }[] = [
+  { key: 'autoApproveReads', labelKey: 'panel.reads', descriptionKey: 'panel.readsDesc' },
+  { key: 'autoApproveEnrich', labelKey: 'panel.enrich', descriptionKey: 'panel.enrichDescV2' },
+  { key: 'autoApproveFetch', labelKey: 'panel.fetch', descriptionKey: 'panel.fetchDescV2' },
+  { key: 'autoApproveCreate', labelKey: 'panel.create', descriptionKey: 'panel.createDesc' },
+  { key: 'autoApproveModify', labelKey: 'panel.modify', descriptionKey: 'panel.modifyDesc' },
+];
 
 interface AgentPanelProps {
   folder: Folder;
@@ -66,7 +79,8 @@ function InvestigationAgentPanel({
   const [localError, setLocalError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'executed' | 'rejected'>('all');
   const [showSettings, setShowSettings] = useState(false);
-  const [confirmBulk, setConfirmBulk] = useState(false);
+  /** What "Approve all" would run, and what it leaves for individual review. */
+  const [confirmBulk, setConfirmBulk] = useState<{ routine: number; review: number } | null>(null);
   const [showProfilePicker, setShowProfilePicker] = useState(false);
   const [activeTab, setActiveTab] = useState<'inbox' | 'agents' | 'tasks' | 'logs'>('inbox');
   /** Client-side set of deployment IDs where the analyst has dismissed the
@@ -106,6 +120,33 @@ function InvestigationAgentPanel({
   }, []);
 
   const error = agentError || localError;
+
+  // Cross-case tools are offered only in a local-only home.
+  const [homeShareable, setHomeShareable] = useState(false);
+  useEffect(() => {
+    let active = true;
+    isShareableFolder(folder.id).then(shareable => { if (active) setHomeShareable(shareable); }).catch(() => { /* Informational only. */ });
+    return () => { active = false; };
+  }, [folder.id, folder.localOnly]);
+
+  // A one-time notice when this investigation's explicit policy lowers a
+  // deployed builtin's own auto-approve flags (its policy is a ceiling).
+  const policyLowersBuiltin = !!folder.agentPolicy && deployments.some(d => {
+    const builtin = BUILTIN_AGENT_PROFILES.find(p => p.id === d.profileId);
+    if (!builtin) return false;
+    const own = resolveEffectivePolicy(undefined, builtin.policy, undefined, true);
+    const limited = resolveEffectivePolicy(folder.agentPolicy, builtin.policy, undefined, true);
+    return POLICY_TOGGLES.some(({ key }) => own[key] && !limited[key]);
+  });
+  const ceilingNoticeKey = workspaceStorageKey(`threatcaddy-agent-ceiling-notice:${folder.id}`);
+  const [ceilingNoticeDismissed, setCeilingNoticeDismissed] = useState(() => {
+    try { return localStorage.getItem(ceilingNoticeKey) === '1'; } catch { return false; }
+  });
+  const dismissCeilingNotice = () => {
+    setCeilingNoticeDismissed(true);
+    try { localStorage.setItem(ceilingNoticeKey, '1'); } catch { /* The notice shows again next time. */ }
+  };
+  const profileFor = (id: string) => profiles.find(pr => pr.id === id) || BUILTIN_AGENT_PROFILES.find(pr => pr.id === id);
 
   // Check if LLM is configured
   const hasApiKey = !!(
@@ -210,8 +251,17 @@ function InvestigationAgentPanel({
     }
   };
 
+  const openBulkConfirm = async () => {
+    try {
+      const preview = await previewBulkApprove(folder.id);
+      if (mounted.current) setConfirmBulk(preview);
+    } catch (err) {
+      if (mounted.current) setLocalError(t('panel.bulkApproveFailed', { message: (err as Error).message }));
+    }
+  };
+
   const handleBulkApprove = async () => {
-    setConfirmBulk(false);
+    setConfirmBulk(null);
     try {
       const result = await bulkApproveActions(folder.id);
       if (result.failed > 0) {
@@ -230,6 +280,13 @@ function InvestigationAgentPanel({
 
   const pendingCount = actions.filter(a => a.status === 'pending').length;
   const displayStatus = agentStatus || folder.agentStatus;
+  // Only the agent with a pending proposal pauses; name each one.
+  const deployedProfileIds = new Set(deployments.map(d => d.profileId));
+  const waitingAgents = [...new Set(actions
+    .filter(a => a.status === 'pending' && a.agentConfigId && deployedProfileIds.has(a.agentConfigId))
+    .map(a => a.agentConfigId as string))]
+    .map(id => profileFor(id)?.name)
+    .filter((name): name is string => !!name);
 
   const filteredActions = filter === 'all'
     ? actions
@@ -355,7 +412,15 @@ function InvestigationAgentPanel({
 
       {/* Policy editor (collapsible) */}
       {showSettings && (
-        <PolicyEditor folder={folder} settings={settings} onFolderChanged={onFolderChanged} />
+        <PolicyEditor folder={folder} settings={settings} onFolderChanged={onFolderChanged} deployments={deployments} profiles={profiles} />
+      )}
+
+      {policyLowersBuiltin && !ceilingNoticeDismissed && (
+        <div className="flex items-start gap-2 px-4 py-2 bg-accent-amber/10 text-accent-amber text-xs border-b border-accent-amber/20 shrink-0" role="status">
+          <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+          <span className="flex-1">{t('panel.policyLowersNotice')}</span>
+          <button onClick={dismissCeilingNotice} className="hover:text-text-primary shrink-0" aria-label={t('panel.dismissNotice')}><X size={12} /></button>
+        </div>
       )}
 
       {/* Error banner */}
@@ -407,6 +472,11 @@ function InvestigationAgentPanel({
       {/* ═══ TAB: Inbox ═══ */}
       {activeTab === 'inbox' && (
         <div className="flex-1 flex flex-col min-h-0">
+          {waitingAgents.map(name => (
+            <div key={name} className="px-4 py-1.5 text-[11px] text-accent-amber bg-accent-amber/5 border-b border-border-subtle shrink-0" role="status">
+              {t('panel.pausedForReview', { agent: name })}
+            </div>
+          ))}
           {/* Live streaming display */}
           {agentRunning && agentStreamingContent && (
             <div className="px-4 py-2 border-b border-accent-blue/20 bg-accent-blue/5 max-h-32 overflow-auto shrink-0">
@@ -429,12 +499,13 @@ function InvestigationAgentPanel({
             </div>
             {pendingCount > 0 && (confirmBulk ? (
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px] text-text-muted">Execute {pendingCount}?</span>
-                <button onClick={handleBulkApprove} className="text-[9px] text-accent-green px-1 rounded hover:bg-accent-green/10">Yes</button>
-                <button onClick={() => setConfirmBulk(false)} className="text-[9px] text-text-muted px-1 rounded hover:bg-surface-raised">No</button>
+                <span className="text-[9px] text-text-muted">{t('panel.executePending', { count: confirmBulk.routine })}</span>
+                {confirmBulk.review > 0 && <span className="text-[9px] text-accent-amber">{t('panel.leftForReview', { count: confirmBulk.review })}</span>}
+                <button onClick={handleBulkApprove} disabled={confirmBulk.routine === 0} className="text-[9px] text-accent-green px-1 rounded hover:bg-accent-green/10 disabled:opacity-50">{t('common:yes')}</button>
+                <button onClick={() => setConfirmBulk(null)} className="text-[9px] text-text-muted px-1 rounded hover:bg-surface-raised">{t('common:no')}</button>
               </div>
             ) : (
-              <button onClick={() => setConfirmBulk(true)} className="flex items-center gap-1 text-[10px] text-accent-green hover:bg-accent-green/10 px-1.5 py-0.5 rounded">
+              <button onClick={() => void openBulkConfirm()} className="flex items-center gap-1 text-[10px] text-accent-green hover:bg-accent-green/10 px-1.5 py-0.5 rounded">
                 <CheckCheck size={10} /> {t('panel.approveAll')}
               </button>
             ))}
@@ -486,6 +557,9 @@ function InvestigationAgentPanel({
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium text-text-primary">{p.name}</div>
                         <div className="text-[10px] text-text-muted">{p.role}{d.supervisorDeploymentId ? ' · supervised' : ''}</div>
+                        {homeShareable && p.allowedTools?.some(name => CROSS_CASE_READ_TOOLS.has(name)) && (
+                          <div className="text-[9px] text-accent-amber mt-0.5">{t('panel.crossCaseOff')}</div>
+                        )}
                         {d.metrics && d.metrics.cyclesRun > 0 && (() => {
                           const m = d.metrics;
                           const topTool = m.toolCallHistogram
@@ -667,12 +741,32 @@ function InvestigationAgentPanel({
 
 // ── Policy Editor ────────────────────────────────────────────────────────
 
-function PolicyEditor({ folder, settings, onFolderChanged }: { folder: Folder; settings: Settings; onFolderChanged?: () => void }) {
+function PolicyEditor({ folder, settings, onFolderChanged, deployments, profiles }: {
+  folder: Folder; settings: Settings; onFolderChanged?: () => void; deployments: AgentDeployment[]; profiles: AgentProfile[];
+}) {
   const { t } = useTranslation('agent');
   // Local state for immediate visual feedback
   const [localPolicy, setLocalPolicy] = useState<AgentPolicy>(folder.agentPolicy ?? DEFAULT_AGENT_POLICY);
   const [focusText, setFocusText] = useState(localPolicy.focusAreas?.join(', ') ?? '');
   const [showFocus, setShowFocus] = useState(!!localPolicy.focusAreas?.length);
+  /** What each deployed agent asks before doing, from the policy the dispatcher uses. */
+  const [asksBefore, setAsksBefore] = useState<{ id: string; agent: string; actions: string }[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const lines: { id: string; agent: string; actions: string }[] = [];
+      for (const deployment of deployments) {
+        const profile = profiles.find(p => p.id === deployment.profileId) || BUILTIN_AGENT_PROFILES.find(p => p.id === deployment.profileId);
+        if (!profile) continue;
+        const policy = await loadAgentPolicy(folder.id, { profileId: deployment.profileId, deploymentId: deployment.id });
+        const asks = POLICY_TOGGLES.filter(({ key }) => !policy[key]).map(({ labelKey }) => t(labelKey));
+        if (asks.length > 0) lines.push({ id: deployment.id, agent: profile.name, actions: asks.join(', ') });
+      }
+      if (active) setAsksBefore(lines);
+    })().catch(() => { /* Informational only. */ });
+    return () => { active = false; };
+  }, [folder.id, folder.agentPolicy, deployments, profiles, t]);
 
   // Sync from folder prop when it changes externally
   useEffect(() => {
@@ -702,25 +796,20 @@ function PolicyEditor({ folder, settings, onFolderChanged }: { folder: Folder; s
     await updatePolicy({ focusAreas: areas.length > 0 ? areas : undefined });
   };
 
-  const toggles: { key: keyof AgentPolicy; label: string; description: string }[] = [
-    { key: 'autoApproveReads', label: 'Reads', description: 'Search, list, read entities' },
-    { key: 'autoApproveEnrich', label: 'Enrich', description: 'Extract IOCs, analyze data' },
-    { key: 'autoApproveFetch', label: 'Fetch', description: 'Web requests, OSINT lookups' },
-    { key: 'autoApproveCreate', label: 'Create', description: 'New notes, tasks, IOCs' },
-    { key: 'autoApproveModify', label: 'Modify', description: 'Update existing entities' },
-  ];
+  const toggles = POLICY_TOGGLES.map(({ key, labelKey, descriptionKey }) => ({ key, label: t(labelKey), description: t(descriptionKey) }));
 
   return (
     <div className="px-4 py-3 border-b border-border-subtle bg-surface-raised/50 space-y-3">
       <div className="text-[11px] font-medium text-text-secondary uppercase tracking-wide">{t('panel.autoApprovePolicy')}</div>
+      <p className="text-[10px] text-text-muted">{t('panel.policyCeilingNote')}</p>
 
-      <div className="grid grid-cols-2 gap-2" role="group" aria-label="Auto-approve settings">
+      <div className="grid grid-cols-2 gap-2" role="group" aria-label={t('panel.autoApprovePolicy')}>
         {toggles.map(({ key, label, description }) => (
           <button
             key={key}
             role="checkbox"
             aria-checked={!!localPolicy[key]}
-            aria-label={`Auto-approve ${label}: ${description}`}
+            aria-label={t('panel.autoApproveLabel', { label, description })}
             onClick={() => updatePolicy({ [key]: !localPolicy[key] })}
             className={cn(
               'flex items-center gap-2 text-start px-2 py-1.5 rounded border transition-colors',
@@ -744,6 +833,14 @@ function PolicyEditor({ folder, settings, onFolderChanged }: { folder: Folder; s
           </button>
         ))}
       </div>
+
+      {asksBefore.length > 0 && (
+        <ul className="space-y-0.5">
+          {asksBefore.map(line => (
+            <li key={line.id} className="text-[10px] text-text-secondary">{t('panel.asksBefore', { agent: line.agent, actions: line.actions })}</li>
+          ))}
+        </ul>
+      )}
 
       {/* Model selector */}
       <AgentModelSelector settings={settings} policy={localPolicy} onModelChange={(model) => updatePolicy({ model })} />
