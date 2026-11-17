@@ -190,6 +190,24 @@ describe('B-CHAIN-4 a person approves the queued fetch', () => {
     expect(await db.agentDeployments.count()).toBe(1);
     expect((await db.folders.get('S'))?.agentStatus).toBe('waiting');
   });
+
+  it('approve all leaves the supervisor\'s writes into another investigation for individual review', async () => {
+    // The supervisor's home is local-only, so its proposals for P can carry L's data.
+    const supervisorRow = { threadId: 't', agentConfigId: 'caddy-supervisor', investigationId: 'P', rationale: 'Supervisor proposed action', status: 'pending' as const, createdAt: 1 };
+    await db.agentActions.bulkAdd([
+      { ...supervisorRow, id: 'sup-ioc', toolName: 'update_ioc', toolInput: { id: ids('P').ioc, analystNotes: `${canary('L')} ${canary('L2')}` } },
+      { ...supervisorRow, id: 'sup-link', toolName: 'link_entities', toolInput: { links: [{ sourceType: 'note', sourceId: ids('P').note, targetType: 'task', targetId: ids('P').task }] } },
+    ]);
+    const entities = async () => [await db.standaloneIOCs.get(ids('P').ioc), await db.notes.get(ids('P').note), await db.tasks.get(ids('P').task)];
+    const before = await entities();
+
+    expect(await previewBulkApprove('P')).toEqual({ routine: 0, review: 2 });
+    expect(await bulkApproveActions('P')).toEqual({ executed: 0, failed: 0, skipped: 2 });
+    expect((await db.agentActions.bulkGet(['sup-ioc', 'sup-link'])).map(action => action?.status)).toEqual(['pending', 'pending']);
+    expect(await entities()).toEqual(before);
+    expect(await rowsContain('P', canary('L'))).toBe(false);
+    expect(await syncQueueContains(canary('L'))).toBe(false);
+  });
 });
 
 describe('B-CHAIN-5..6 Pattern Hunter compares cases only from a local-only investigation', () => {

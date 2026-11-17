@@ -117,9 +117,11 @@ const pendingActions = (investigationId: string) => db.agentActions
   .toArray();
 
 /** "Approve all" covers routine rows only: nothing that leaves this device,
- * changes agents, reaches another investigation or came from a server. */
+ * changes agents, reaches another investigation or came from a server. A
+ * supervisor row is filed under its target, not the supervisor's home, so
+ * its reach cannot be read from the row: it always needs individual review. */
 async function isRoutineAction(action: AgentAction, settings: Settings): Promise<boolean> {
-  if (action.id.startsWith('srv:')) return false;
+  if (action.id.startsWith('srv:') || action.agentConfigId === SUPERVISOR_ACTION_PROFILE) return false;
   const call: ToolUseBlock = { type: 'tool_use', id: action.id, name: action.toolName, input: action.toolInput };
   try {
     return isRoutineReach(await classifyToolCall(call, { homeFolderId: action.investigationId, settings }));
