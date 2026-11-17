@@ -127,12 +127,18 @@ describe('D-NAMES-1 and D-NAMES-3 at every transport', () => {
     expect(await db.agentActions.where('status').equals('pending').toArray()).toEqual([expect.objectContaining({ toolName: 'local:triage', toolInput: { target: 'host-1' } })]);
   });
 
-  it('the supervisor sends provider-safe names', async () => {
+  it('the supervisor offers no dynamic tools, so it needs no aliases, and its static names are provider-safe', async () => {
     installExtension();
     await db.folders.bulkAdd([folder, { ...folder, id: 'case-2', name: 'Second synthetic case' }]);
     await runSupervisorCycle(settings, true);
     expect(requests.length).toBeGreaterThan(0);
-    for (const { payload } of requests) for (const name of outgoingNames(payload)) expect(name).toMatch(PROVIDER_SAFE);
+    for (const { payload } of requests) {
+      expect(payload.tools?.length).toBeGreaterThan(0);
+      for (const name of outgoingNames(payload)) {
+        expect(name).toMatch(PROVIDER_SAFE);
+        expect(TOOL_DEFINITIONS.some(tool => tool.name === name)).toBe(true);
+      }
+    }
   });
 
   const replayed: LLMRouteRequest = {
