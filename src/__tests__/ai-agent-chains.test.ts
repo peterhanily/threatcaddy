@@ -15,7 +15,7 @@ import { CROSS_CASE_READ_TOOLS, getToolActionClass } from '../lib/caddy-agent-po
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
 import { scriptedLLM, type ScriptedTurn } from './helpers/scripted-llm';
 import { canary, ids, rowsContain, seedAIWorkspace, syncQueueContains } from './helpers/ai-workspace';
-import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
+import { HEAD_BRIDGE_CAPS, installEgressSpy, type EgressSpy } from './helpers/egress-spy';
 
 vi.mock('../lib/llm-router', async orig => (await import('./helpers/scripted-llm')).scriptedRouter(await orig()));
 
@@ -326,6 +326,27 @@ describe('B-PAUSE-1 only the agent with a pending proposal pauses', () => {
     ]);
     await runMultiAgentCycle(await folder('S'), settings, true);
     expect(await ran()).toEqual(['ap-lead-analyst', 'ap-threat-hunter']);
+  });
+
+  it('a deployed agent\'s own question pauses that agent only, and not legacy mode', async () => {
+    // Without the notification acknowledgement, the desktop notice falls back at once.
+    egress.restore();
+    egress = installEgressSpy(HEAD_BRIDGE_CAPS.filter(cap => cap !== 'notification_ack'));
+    await deploy('ap-lead-analyst');
+    scriptedLLM.script({ toolCalls: [{ name: 'ask_human', input: { question: 'Which host was patient zero?' } }] });
+    await runMultiAgentCycle(await folder('S'), settings, true);
+    const pending = () => db.agentActions.where('[investigationId+status]').equals(['S', 'pending']).toArray();
+    expect((await pending()).map(({ toolName, agentConfigId }) => ({ toolName, agentConfigId }))).toEqual([{ toolName: 'ask_human', agentConfigId: 'ap-lead-analyst' }]);
+    // The legacy timer pauses only for rows without an agent profile (useCaddyAgent).
+    expect((await pending()).filter(action => !action.agentConfigId)).toEqual([]);
+
+    await deploy('ap-threat-hunter');
+    scriptedLLM.reset();
+    const result = await runMultiAgentCycle(await folder('S'), settings, true);
+    expect(result.waitingForReview).toEqual(['ap-lead-analyst']);
+    expect(scriptedLLM.requests).toHaveLength(1);
+    expect(await ran()).toEqual(['ap-lead-analyst', 'ap-threat-hunter']);
+    expect((await db.agentDeployments.get('dep-ap-lead-analyst'))?.metrics?.cyclesRun).toBe(1);
   });
 
   it('every agent paused leaves the investigation waiting without an error', async () => {
