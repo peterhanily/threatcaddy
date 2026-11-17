@@ -192,7 +192,10 @@ describe('agent panel review state', () => {
 
     it('the inbox filters and the automatic model choice', async () => {
       await renderPanel(await folder('S'), []);
-      expect(screen.getAllByRole('tab').map(tab => tab.textContent)).toEqual([deAgent['panel.all'], deAgent['panel.pending'], deAgent['panel.executed'], deAgent['panel.rejected']]);
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs.map(tab => tab.textContent)).toEqual(['Alle', 'Ausstehend', 'Ausgeführt', 'Abgelehnt']);
+      // CSS capitalize would title-case a multi-word label ('In Behandeling'): the translation sets the case.
+      for (const tab of tabs) expect(tab).not.toHaveClass('capitalize');
       fireEvent.click(screen.getByRole('button', { name: deAgent['panel.toggleAgentSettings'] }));
       expect(await screen.findByRole('option', { name: deAgent['panel.autoUseDefault'] })).toBeInTheDocument();
       expect(screen.queryByRole('option', { name: 'Auto (use default)' })).not.toBeInTheDocument();

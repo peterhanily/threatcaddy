@@ -533,7 +533,7 @@ function InvestigationAgentPanel({
             <div className="flex gap-1" role="tablist">
               {(['all', 'pending', 'executed', 'rejected'] as const).map(f => (
                 <button key={f} role="tab" aria-selected={filter === f} onClick={() => setFilter(f)}
-                  className={cn('text-[10px] px-1.5 py-0.5 rounded capitalize', filter === f ? 'bg-surface-raised text-text-primary font-medium' : 'text-text-muted hover:text-text-secondary')}
+                  className={cn('text-[10px] px-1.5 py-0.5 rounded', filter === f ? 'bg-surface-raised text-text-primary font-medium' : 'text-text-muted hover:text-text-secondary')}
                 >{t(`panel.${f}`)}{f === 'pending' && pendingCount > 0 && <span className="ms-0.5 text-accent-amber">({pendingCount})</span>}</button>
               ))}
             </div>
