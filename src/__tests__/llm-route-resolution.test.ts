@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { db } from '../db';
-import { DEFAULT_SETTINGS, type AgentDeployment, type Folder, type Settings } from '../types';
+import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentDeployment, type Folder, type Settings } from '../types';
 import { hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, type LLMRouteCallbacks } from '../lib/llm-router';
 import { useLLM } from '../hooks/useLLM';
 import { getAllLoops, startLoop, stopLoop } from '../lib/chat-loop';
 import { runAgentMeeting } from '../lib/caddy-agent-meeting';
-import { runAgentCycle } from '../lib/caddy-agent';
+import { resolveAgentModel, runAgentCycle } from '../lib/caddy-agent';
 import { runSupervisorCycle } from '../lib/caddy-agent-supervisor';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
 import i18n from '../i18n';
@@ -216,5 +216,15 @@ describe('D-ROUTE-5 agent cycles and the supervisor go where Settings says', () 
       expect((await meet({ llmRoutingMode: 'auto' }, false)).error).toBe(deSettings['ai.dataFlow.errorNone']);
       noModelCall();
     } finally { await i18n.changeLanguage('en'); }
+  });
+
+  it('an investigation whose agent model is the local model runs on it directly, signed out and with no extension', async () => {
+    const settings: Partial<Settings> = { llmRoutingMode: 'auto', llmLocalModelName: 'llama3', ...local };
+    await db.folders.update(folder.id, { agentPolicy: { ...DEFAULT_AGENT_POLICY, model: 'llama3' } });
+    // The AgentCaddy panel resolves its readiness with the same helper.
+    expect(resolveAgentModel({ ...base, ...settings }, 'llama3')).toEqual({ provider: 'local', model: 'llama3' });
+    expect((await cycle(settings, false)).error).toBeUndefined();
+    expect(sendDirectToLocal).toHaveBeenCalled();
+    expect(sendViaExtension).not.toHaveBeenCalled();
   });
 });
