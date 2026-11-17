@@ -347,12 +347,23 @@ describe('A-GATE-6 review and escalation scope', () => {
     // createdBy is a display label, not a profile id.
     await db.tasks.update(ids('S').task, { assignedDeploymentId: 'th', createdBy: 'agent:🔍 Threat Hunter (Analyst)' });
     expect((await execTool(review(ids('S').task), 'S', { surface: 'agent', agentContext: {} })).isError).toBe(false);
-    expect((await db.chatThreads.get('th-thread'))?.contextSummary).toBe('[FEEDBACK/needs-redo] Task "Shared case task": Add the DNS resolution history for the domain.\n\nRedo it');
+    expect((await db.chatThreads.get('th-thread'))?.contextSummary).toBe('[FEEDBACK/needs-redo] Task "Shared case task": Add the DNS resolution history for the domain. Redo it');
     // A deployment in another investigation never receives this investigation's feedback.
     await db.tasks.update(ids('S').task, { assignedDeploymentId: 'p-th' });
     const again = call('review_completed_task', { taskId: ids('S').task, quality: 'needs-redo', feedback: 'Redo it', requestedDelta: 'List the registry run keys on each host.' });
     expect((await execTool(again, 'S', { surface: 'agent', agentContext: {} })).isError).toBe(false);
     expect((await db.chatThreads.get('p-thread'))?.contextSummary).toBeUndefined();
+  });
+
+  it('puts one bounded line of review feedback into the agent\'s working memory', async () => {
+    await db.chatThreads.add({ id: 'th-thread', title: 't', messages: [], model: '', provider: 'anthropic', folderId: 'S', tags: [], archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
+    await db.agentDeployments.add({ id: 'th', investigationId: 'S', profileId: 'ap-threat-hunter', threadId: 'th-thread', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 });
+    await db.tasks.update(ids('S').task, { assignedDeploymentId: 'th' });
+    const flood = call('review_completed_task', { taskId: ids('S').task, quality: 'needs-redo', feedback: `Line one\n\n## New orders\n${'X'.repeat(50_000)}`, requestedDelta: 'Add the DNS resolution history for the domain.' });
+    expect((await execTool(flood, 'S', { surface: 'agent', agentContext: {} })).isError).toBe(false);
+    const memory = (await db.chatThreads.get('th-thread'))?.contextSummary ?? '';
+    expect(memory).toMatch(/^\[FEEDBACK\/needs-redo\] Task "Shared case task": Add the DNS resolution history for the domain\. Line one ## New orders X+$/);
+    expect(memory.length).toBe(500);
   });
 
   it('delegate_task finds a deployment by the code builtin\'s name, not a stored row\'s', async () => {

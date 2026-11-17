@@ -575,6 +575,9 @@ async function executeReviewCompletedTask(
   });
 }
 
+/** Working memory reaches the next cycle's prompt, so each review is one bounded line. */
+const MAX_FEEDBACK_LINE_CHARS = 500;
+
 /** Inject review feedback into the working memory of the agent the task was
  * delegated to, so it learns from mistakes. createdBy is a display label, not an id. */
 async function injectAgentFeedback(task: { title: string; assignedDeploymentId?: string }, folderId: string | undefined, feedback: string, quality: string): Promise<void> {
@@ -585,7 +588,7 @@ async function injectAgentFeedback(task: { title: string; assignedDeploymentId?:
     if (deployment?.investigationId === folderId && deployment.threadId) {
       await db.chatThreads.where('id').equals(deployment.threadId).modify((thread: { contextSummary?: string }) => {
         const existing = thread.contextSummary || '';
-        const feedbackLine = `[FEEDBACK/${quality}] Task "${task.title}": ${feedback}`;
+        const feedbackLine = `[FEEDBACK/${quality}] Task "${task.title}": ${feedback}`.replace(/\s+/g, ' ').trim().slice(0, MAX_FEEDBACK_LINE_CHARS);
         const lines = existing.split('\n').filter(Boolean);
         lines.push(feedbackLine);
         thread.contextSummary = lines.slice(-10).join('\n');
