@@ -1258,9 +1258,10 @@ export function ChatView({
             </div>
 
             {/* Tool approval card: the head of this thread's queue. Outside the list, whose
-                footer remounts on every render, so the card keeps its state and focus. */}
+                footer remounts on every render, so the card keeps its state and focus. On a short
+                window the card scrolls within itself, so the composer and its buttons stay reachable. */}
             {headApproval && (
-              <div className="px-4">
+              <div className="px-4 min-h-0 max-h-[40vh] overflow-y-auto">
                 <ChatApprovalCard
                   key={headApproval.id}
                   item={headApproval.item}
