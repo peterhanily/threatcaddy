@@ -55,7 +55,7 @@ describe('a sent message', () => {
       result: JSON.stringify({ count: 1 }), isError: false }]} />);
     const name = screen.getByText('search_notes');
     expect(name).toHaveAttribute('dir', 'ltr');
-    fireEvent.click(name.closest('button')!);
+    fireEvent.click(screen.getByRole('button', { name: /search_notes/ }));
     const blocks = document.querySelectorAll('pre');
     expect(blocks).toHaveLength(2);
     for (const block of blocks) expect(block).toHaveAttribute('dir', 'ltr');
