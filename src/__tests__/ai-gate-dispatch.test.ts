@@ -11,7 +11,7 @@ import { executeTool } from '../lib/llm-tools';
 import { mintHumanApproval, type HumanApproval } from '../lib/human-approval';
 import * as toolReach from '../lib/tool-reach';
 import type { ToolSurface } from '../lib/tool-reach';
-import { canary, ids, seedAIWorkspace } from './helpers/ai-workspace';
+import { canary, ids, rowsContain, seedAIWorkspace } from './helpers/ai-workspace';
 import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
 import { ALL_STATIC_TOOLS, execTool } from './helpers/tool-exec';
 
@@ -182,6 +182,13 @@ describe('A-GATE-5 writes into another investigation', () => {
     const link = call('link_entities', { links: [{ sourceType: 'note', sourceId: ids('S').note, targetType: 'note', targetId: ids('P').note }] });
     expect((await dispatch(link, 'S', 'agent', mintHumanApproval(link, 'S', 'action-queue'))).isError).toBe(true);
     expect((await db.notes.get(ids('S').note))?.linkedNoteIds ?? []).toEqual([]);
+  });
+
+  it('an approved create_in_investigation needs the exact investigation name', async () => {
+    const create = call('create_in_investigation', { investigationName: 'Priv', entityType: 'note', data: { title: 'Planted', content: canary('S') } });
+    const result = await dispatch(create, 'S', 'chat-act', mintHumanApproval(create, 'S', 'chat-card'));
+    expect(errorOf(result)).toMatch(/Investigation not found/);
+    expect(await rowsContain('P', canary('S'))).toBe(false);
   });
 });
 
@@ -361,8 +368,17 @@ describe('A-GATE-8 enrichment runs passive builtins unless a person approved', (
   });
 
   it('an agent cannot enrich another investigation\'s IOC', async () => {
+    for (const iocId of [ids('P').ioc, [ids('P').ioc]]) {
+      const enrich = call('enrich_ioc', { iocId });
+      expect((await dispatch(enrich, 'S', 'agent', mintHumanApproval(enrich, 'S', 'action-queue'))).isError).toBe(true);
+    }
+    expect(integration.run).not.toHaveBeenCalled();
+  });
+
+  it('an approved chat enrichment stays in the investigation of its IOC', async () => {
     const enrich = call('enrich_ioc', { iocId: ids('P').ioc });
-    expect((await dispatch(enrich, 'S', 'agent', mintHumanApproval(enrich, 'S', 'action-queue'))).isError).toBe(true);
+    const result = await dispatch(enrich, 'S', 'chat-act', mintHumanApproval(enrich, 'S', 'chat-card'));
+    expect(errorOf(result)).toMatch(/another investigation/i);
     expect(integration.run).not.toHaveBeenCalled();
   });
 });
