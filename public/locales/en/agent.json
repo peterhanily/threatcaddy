@@ -247,6 +247,8 @@
   "meeting.start": "Start",
   "meeting.participationInfo": "{{count}} agents will participate. Each gets {{rounds}} round(s) to contribute. Minutes are saved as a note.",
   "meeting.meetingInProgress": "Meeting in progress...",
+  "meeting.couldNotRun": "The meeting could not run: {{error}}",
+  "supervisor.couldNotRun": "The supervisor agent could not run: {{error}}",
   "meeting.deploy2Plus": "Deploy 2+ agent profiles to start a meeting.",
   "meeting.viewMinutes": "View minutes",
   "meeting.viewDiscussion": "View discussion",

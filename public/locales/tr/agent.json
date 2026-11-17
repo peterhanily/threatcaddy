@@ -227,6 +227,8 @@
   "meeting.start": "Başlat",
   "meeting.participationInfo": "{{count}} ajan katılacak. Her biri katkıda bulunmak için {{rounds}} tur hakkına sahip. Tutanaklar not olarak kaydedilir.",
   "meeting.meetingInProgress": "Toplantı devam ediyor...",
+  "meeting.couldNotRun": "Toplantı yapılamadı: {{error}}",
+  "supervisor.couldNotRun": "Süpervizör Ajan çalıştırılamadı: {{error}}",
   "meeting.deploy2Plus": "Toplantı başlatmak için 2+ ajan profili dağıtın.",
   "meeting.viewMinutes": "Tutanakları görüntüle",
   "meeting.viewDiscussion": "Tartışmayı görüntüle",

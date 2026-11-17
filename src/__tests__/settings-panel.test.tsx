@@ -311,6 +311,13 @@ describe('SettingsPanel: where AI data goes', () => {
     expect(within(section).getByText(/team server at team\.example\. Its operator can read your prompts/)).toBeInTheDocument();
   });
 
+  it('names the signed-in session’s server in a new workspace whose settings have no server URL', () => {
+    signIn();
+    renderAI();
+    const section = screen.getByRole('region', { name: 'Where AI data goes' });
+    expect(within(section).getByText(/team server at team\.example\. Its operator can read your prompts/)).toBeInTheDocument();
+  });
+
   it('describes local, extension and unavailable routes truthfully', () => {
     const view = renderAI({ llmDefaultProvider: 'local', llmLocalEndpoint: 'http://localhost:11434/v1' });
     expect(screen.getByText(/your local model at localhost:11434/)).toBeInTheDocument();
@@ -365,5 +372,24 @@ describe('SettingsPanel: where AI data goes', () => {
   it('hides the agent host list when none are configured', () => {
     renderAI();
     expect(screen.queryByText('Configured agent hosts')).not.toBeInTheDocument();
+  });
+
+  it('offers the agent bridge as a switch that is off by default and saves each change', async () => {
+    const user = userEvent.setup();
+    const onUpdateSettings = vi.fn();
+    const view = renderAI({}, onUpdateSettings);
+    const section = screen.getByRole('region', { name: 'Where AI data goes' });
+    const off = within(section).getByRole('switch', { name: 'Agent bridge' });
+    expect(off).toHaveAttribute('aria-checked', 'false');
+    expect(off).toHaveAccessibleDescription(/scripts on this page, including browser automation such as Claude Code over CDP, .*window\.threatcaddy; web fetch, the contents of other investigations and agent changes are never available through it\./);
+    await user.click(off);
+    expect(onUpdateSettings).toHaveBeenCalledExactlyOnceWith({ agentBridgeEnabled: true });
+    view.unmount();
+    onUpdateSettings.mockClear();
+    renderAI({ agentBridgeEnabled: true }, onUpdateSettings);
+    const on = screen.getByRole('switch', { name: 'Agent bridge' });
+    expect(on).toHaveAttribute('aria-checked', 'true');
+    await user.click(on);
+    expect(onUpdateSettings).toHaveBeenCalledExactlyOnceWith({ agentBridgeEnabled: false });
   });
 });

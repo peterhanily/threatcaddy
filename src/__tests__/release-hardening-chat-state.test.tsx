@@ -4,6 +4,7 @@ import type { ChatThread, Folder, Settings } from '../types';
 import { ChatView } from '../components/Chat/ChatView';
 import { ScreenshareContext } from '../hooks/ScreenshareContext';
 import { discardAllComposerDrafts } from '../lib/chat-composer-drafts';
+import { workspaceStorageKey } from '../lib/workspace-profiles';
 
 const state = vi.hoisted(() => ({
   selectedThreadId: 'thread',
@@ -47,10 +48,19 @@ const thread: ChatThread = { id: 'thread', title: 'Synthetic chat', folderId: 'a
 const settings = { llmAnthropicApiKey: 'synthetic-unit-test-only', llmRoutingMode: 'auto' } as Settings;
 const props = { threads: [thread], settings, onCreateThread: state.createThread, onUpdateThread: state.updateThread,
   onAddMessage: state.addMessage, onTrashThread: vi.fn() };
+// Chat reads the session as Settings → AI does: the stored signed-in user.
+const authKey = workspaceStorageKey('threatcaddy-auth');
+const setSignedIn = (signedIn: boolean) => {
+  state.signedIn = signedIn;
+  if (!signedIn) { localStorage.removeItem(authKey); return; }
+  localStorage.setItem(authKey, JSON.stringify({ serverUrl: 'https://server.test', accessToken: 'synthetic-access', refreshToken: 'synthetic-refresh',
+    user: { id: 'synthetic-user', email: 'analyst@example.test', displayName: 'Analyst' } }));
+};
 
 beforeEach(() => {
   discardAllComposerDrafts();
   vi.clearAllMocks();
+  localStorage.removeItem(authKey);
   state.folder = { id: 'a', name: 'Investigation A', order: 0, createdAt: 1 };
   state.serverUrl = ''; state.signedIn = false; state.extensionAvailable = true; state.commands = []; state.selectedThreadId = 'thread';
   state.addMessage.mockResolvedValue(undefined);
@@ -99,7 +109,7 @@ describe('release hardening: committed chat submission state', () => {
 
   it('uses the current route after extension availability changes', async () => {
     state.serverUrl = 'https://server.test';
-    state.signedIn = true;
+    setSignedIn(true);
     const view = render(<ChatView {...props} />);
     state.extensionAvailable = false;
     view.rerender(<ChatView {...props} />);
@@ -112,9 +122,9 @@ describe('release hardening: committed chat submission state', () => {
     state.serverUrl = 'https://server.test'; state.extensionAvailable = false;
     const view = render(<ChatView {...props} />);
     expect(state.input.serverRoute).toBe(false);
-    state.signedIn = true; view.rerender(<ChatView {...props} />);
+    setSignedIn(true); view.rerender(<ChatView {...props} />);
     expect(state.input.serverRoute).toBe(true);
-    state.signedIn = false; view.rerender(<ChatView {...props} />);
+    setSignedIn(false); view.rerender(<ChatView {...props} />);
     expect(state.input.serverRoute).toBe(false);
   });
 

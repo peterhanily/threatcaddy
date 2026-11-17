@@ -12,6 +12,7 @@ import { PlaybookManager } from './PlaybookManager';
 import { DEFAULT_SYSTEM_PROMPT } from '../../lib/llm-tools';
 import { MODELS, MODEL_PROVIDER_MAP } from '../../lib/models';
 import { hasServerSession, resolveRoute } from '../../lib/llm-router';
+import { readStoredAuth } from '../../lib/auth-storage';
 import { ExportImport } from './ExportImport';
 import { useAgentProfiles } from '../../hooks/useAgentProfiles';
 import { AgentProfileManager } from '../Agent/AgentProfileManager';
@@ -871,27 +872,47 @@ const subscribeBridgeCaps = (onChange: () => void) => {
 };
 const bridgeCapsSnapshot = () => document.documentElement.dataset.tcBridgeCaps ?? '';
 
-/** Describes the route resolveRoute picks. Call sites still on resolveRoutingMode
- * (chat, agent cycles, supervisor) can differ until they migrate to it. */
+/** Describes the route resolveRoute picks for the default provider. Chat, agent cycles,
+ * meetings and the supervisor route with the same resolver and session check. */
 function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpdateSettings: (updates: Partial<Settings>) => void }) {
   const { t } = useTranslation('settings');
   const headingId = useId();
   const caps = useSyncExternalStore(subscribeBridgeCaps, bridgeCapsSnapshot).split(',').filter(Boolean);
-  const route = resolveRoute(settings, { extensionAvailable: caps.length > 0, serverSession: hasServerSession(settings), provider: settings.llmDefaultProvider });
+  const route = resolveRoute(settings, { extensionAvailable: caps.length > 0, serverSession: hasServerSession(), provider: settings.llmDefaultProvider });
   const routeLine = route.route === 'unavailable'
     ? t(route.reason === 'no-extension' ? 'ai.dataFlow.routeNoExtension' : route.reason === 'no-server' ? 'ai.dataFlow.routeNoServer' : 'ai.dataFlow.routeNone')
     : route.route === 'local-direct' ? t('ai.dataFlow.routeLocal', { host: hostOf(settings.llmLocalEndpoint) })
-    : route.route === 'server' ? t('ai.dataFlow.routeServer', { host: hostOf(settings.serverUrl) })
+    // Server-routed requests go to the signed-in session's server.
+    : route.route === 'server' ? t('ai.dataFlow.routeServer', { host: hostOf(readStoredAuth()?.serverUrl) })
     : t('ai.dataFlow.routeExtension');
   const fetchLine = !caps.length ? t('ai.dataFlow.fetchNoExtension')
     : caps.includes('fetch_url_public_v1') || caps.includes('clip_import_ack_v2') ? t('ai.dataFlow.fetchSupported') : t('ai.dataFlow.fetchUpdate');
   const hosts = settings.agentHosts ?? [];
+  const bridgeOn = settings.agentBridgeEnabled === true;
 
   return (
     <section aria-labelledby={headingId} className="border border-gray-700 rounded-lg p-3 space-y-2">
       <h4 id={headingId} className="text-sm text-gray-300 font-medium">{t('ai.dataFlow.title')}</h4>
       <p className="text-xs text-gray-400">{routeLine}</p>
       <p className="text-xs text-gray-400">{fetchLine}</p>
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <div className="min-w-0">
+          <span id={`${headingId}-bridge`} className="text-xs text-gray-300">{t('ai.dataFlow.bridgeLabel')}</span>
+          <p id={`${headingId}-bridge-help`} className="text-[10px] text-gray-500">{t('ai.dataFlow.bridgeHelp')}</p>
+        </div>
+        <button
+          role="switch"
+          aria-checked={bridgeOn}
+          aria-labelledby={`${headingId}-bridge`}
+          aria-describedby={`${headingId}-bridge-help`}
+          onClick={() => onUpdateSettings({ agentBridgeEnabled: !bridgeOn })}
+          className="flex min-w-11 min-h-11 shrink-0 items-center justify-center rounded-lg focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          <span aria-hidden="true" className={`relative w-9 h-5 rounded-full transition-colors ${bridgeOn ? 'bg-accent' : 'bg-gray-700'}`}>
+            <span className={`absolute top-0.5 start-0.5 w-4 h-4 rounded-full bg-white transition-transform ${bridgeOn ? 'translate-x-4 rtl:-translate-x-4' : ''}`} />
+          </span>
+        </button>
+      </div>
       {hosts.length > 0 && (
         <div className="space-y-1">
           <p className="text-xs text-gray-300">{t('ai.dataFlow.hostsTitle')}</p>

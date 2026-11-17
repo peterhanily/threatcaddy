@@ -24,7 +24,7 @@ import { isShareableFolder } from './ai-scope';
 import { loadAgentPolicy } from './agent-profile-resolver';
 import { classifyToolCall, decideToolCall, type Verdict } from './tool-reach';
 import { sanitizeSoulText } from './soul-text';
-import { resolveRoutingMode, sendViaExtension, sendViaServer, sendDirectToLocal } from './llm-router';
+import { hasServerSession, resolveRoute, sendViaExtension, sendViaServer, sendDirectToLocal, unavailableRouteError } from './llm-router';
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
 import { getHostToolDefinitions } from './agent-hosts';
 import { calculateCost, tokenCount } from './model-pricing';
@@ -81,7 +81,7 @@ function getConfiguredProviderNames(settings: Settings): string[] {
   return names;
 }
 
-function resolveConfiguredProvider(settings: Settings): { resolvedProvider: LLMProvider; resolvedModel: string } {
+export function resolveConfiguredProvider(settings: Settings): { resolvedProvider: LLMProvider; resolvedModel: string } {
   // Try the user's default first
   const defaultProvider = (settings.llmDefaultProvider || 'anthropic') as LLMProvider;
   if (getApiKeyForProvider(defaultProvider, settings)) {
@@ -257,7 +257,7 @@ Score: ${soul.lifetimeMetrics.performanceScore}/100 across ${soul.lifetimeMetric
   if (localSkills.length > 0) skillParts.push(`Local Agent (${localSkills.map(s => s.name).join(', ')})`);
   for (const h of hosts) skillParts.push(`${h.displayName} (${h.skills.map(s => s.name).join(', ')})`);
   const hostBlock = skillParts.length > 0
-    ? `\nAGENT SKILLS: ${skillParts.join('; ')}. Use local:<skill> or host:<name>:<skill> tools for live system queries.`
+    ? `\nAGENT SKILLS: ${skillParts.join('; ')}. Use the tools whose description starts with [<name>] for live system queries.`
     : '';
 
   if (profile) {
@@ -522,9 +522,6 @@ async function _runAgentCycleInner(
   // The dispatcher's policy: the investigation policy is a ceiling on every
   // auto-approve flag, and deployment overrides can only turn one off.
   const policy: AgentPolicy = await loadAgentPolicy(folder.id, { profileId: profile?.id, deploymentId: deployment?.id });
-  const serverConnected = !!settings.serverUrl;
-  const routingMode = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
-  const useServerProxy = routingMode === 'server';
 
   // Resolve provider + model: policy override > global default > first configured
   let provider: LLMProvider;
@@ -541,6 +538,11 @@ async function _runAgentCycleInner(
     provider = resolvedProvider;
     model = resolvedModel;
   }
+
+  // The route Settings → AI shows: local endpoint first, strict explicit modes, a signed-in session for the server.
+  const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(), provider });
+  if (route.route === 'unavailable') return { autoExecuted: [], proposed: [], threadId: '', error: await unavailableRouteError(route.reason) };
+  const useServerProxy = route.route === 'server';
 
   if (!useServerProxy) {
     const apiKey = getApiKeyForProvider(provider, settings);

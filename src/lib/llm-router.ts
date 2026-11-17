@@ -7,9 +7,9 @@ import { cancellableRequest } from './request-cancellation';
 import { decodeBlocks, encodeRequest } from './tool-name-alias';
 import { readStoredAuth } from './auth-storage';
 import { workspaceStorageKey } from './workspace-profiles';
+import i18n from '../i18n';
 import type { LLMProvider, Settings } from '../types';
 
-export type LLMRoutingMode = 'extension' | 'server' | 'auto';
 export interface LLMRouteRequest {
   provider: string; model: string; messages: unknown[]; apiKey?: string;
   systemPrompt?: string; tools?: unknown[]; endpoint?: string;
@@ -136,15 +136,10 @@ export function sendDirectToLocal(request: LLMRouteRequest, callbacks: LLMRouteC
   return requestId;
 }
 
-export function resolveRoutingMode(mode: LLMRoutingMode | undefined, extensionAvailable: boolean, serverConnected: boolean): 'extension' | 'server' {
-  if (mode === 'server') return serverConnected ? 'server' : 'extension';
-  if (mode === 'extension') return extensionAvailable ? 'extension' : 'server';
-  return serverConnected ? 'server' : 'extension';
-}
-
-/** A configured team server and a stored signed-in user. A server URL alone is not a session. */
-export function hasServerSession(settings: Settings): boolean {
-  return !!settings.serverUrl?.trim() && !!readStoredAuth(workspaceStorageKey('threatcaddy-auth'));
+/** A stored signed-in user; server-routed requests go to that session's server. A server URL in
+ * Settings alone is not a session, and a first sign-in opens a workspace whose settings have none. */
+export function hasServerSession(): boolean {
+  return !!readStoredAuth(workspaceStorageKey('threatcaddy-auth'));
 }
 
 export type LLMRoute = { route: 'local-direct' | 'extension' | 'server' } | { route: 'unavailable'; reason: 'no-extension' | 'no-server' | 'none' };
@@ -161,11 +156,16 @@ export function resolveRoute(settings: Settings, env: { extensionAvailable: bool
 }
 
 const UNAVAILABLE_ROUTE_ERRORS = {
-  'no-extension': 'LLM routing is set to Browser Extension, but the extension is not available.',
-  'no-server': 'LLM routing is set to Team Server, but you are not signed in to a team server.',
-  none: 'No LLM route is available: install the browser extension, sign in to a team server, or configure a local model.',
+  'no-extension': 'ai.dataFlow.errorNoExtension',
+  'no-server': 'ai.dataFlow.errorNoServer',
+  none: 'ai.dataFlow.errorNone',
 } as const;
-export const unavailableRouteError = (reason: keyof typeof UNAVAILABLE_ROUTE_ERRORS) => UNAVAILABLE_ROUTE_ERRORS[reason];
+/** Chat, agents, meetings and the supervisor show this to the analyst, so it is translated.
+ * Hosted builds load the namespace lazily. */
+export async function unavailableRouteError(reason: keyof typeof UNAVAILABLE_ROUTE_ERRORS): Promise<string> {
+  await i18n.loadNamespaces('settings');
+  return i18n.t(UNAVAILABLE_ROUTE_ERRORS[reason], { ns: 'settings' });
+}
 
 export function sendViaExtension(request: LLMRouteRequest, callbacks: LLMRouteCallbacks, signal?: AbortSignal): string {
   const requestId = nanoid();

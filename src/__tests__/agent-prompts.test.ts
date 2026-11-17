@@ -71,6 +71,21 @@ describe('lean agent prompts', () => {
     }
   });
 
+  it('points at agent skills the way the model receives them, not by internal tool names', async () => {
+    const skill = (name: string) => ({ name, description: `Synthetic ${name}`, parameters: { type: 'object' as const, properties: {}, required: [] } });
+    const withSkills = { ...settings, llmLocalEndpoint: 'http://localhost:11434/v1', llmLocalSkills: [skill('triage')],
+      agentHosts: [{ id: 'h1', name: 'soc1', displayName: 'SOC One', url: 'https://soc1.example', enabled: true, skills: [skill('isolate')] }] };
+    scriptedLLM.reset();
+    await runAgentCycle(await db.folders.get('S') as Folder, withSkills, true);
+    const [request] = scriptedLLM.requests;
+    const systemPrompt = request.systemPrompt ?? '';
+    expect(systemPrompt).toContain('AGENT SKILLS: Local Agent (triage); SOC One (isolate). Use the tools whose description starts with [<name>] for live system queries.');
+    // Tool names are aliased in transit (local__triage, host__soc1__isolate); the descriptions keep these labels.
+    expect(systemPrompt).not.toMatch(/local:|host:/);
+    const descriptions = (request.tools as Array<{ description: string }>).map(tool => tool.description);
+    for (const label of ['[Local Agent] ', '[SOC One] ']) expect(descriptions.filter(description => description.startsWith(label))).toHaveLength(1);
+  });
+
   it('caps the investigation description in the cycle prompt at 2 000 characters', async () => {
     await db.folders.update('S', { description: `${'D'.repeat(2000)}OVERFLOW` });
     const request = await promptFor('ap-threat-hunter');

@@ -16,11 +16,14 @@ import { runAgentCycle } from '../lib/caddy-agent';
 import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
 import { runSupervisorCycle, sendEscalationNotification } from '../lib/caddy-agent-supervisor';
 import { postMessageOrigin } from '../lib/utils';
+import i18n from '../i18n';
 
 interface UseCaddyAgentOptions {
   folder?: Folder;
   settings: Settings;
   onEntitiesChanged?: () => void;
+  /** A supervisor cycle could not run (for example, no AI route or no key); the message says why. */
+  onSupervisorError?: (message: string) => void;
 }
 
 interface UseCaddyAgentResult {
@@ -46,7 +49,7 @@ const MAX_WORKING_MEMORY_CHARS = 10_000;
 const ERROR_RETRY_BASE_MS = 60_000;
 const MAX_ERROR_RETRIES = 3;
 
-export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyAgentOptions): UseCaddyAgentResult {
+export function useCaddyAgent({ folder, settings, onEntitiesChanged, onSupervisorError }: UseCaddyAgentOptions): UseCaddyAgentResult {
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState('');
   const [streamingContent, setStreamingContent] = useState('');
@@ -77,7 +80,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
   const cycleController = useRef<AbortController | null>(null);
   const supervisorController = useRef<AbortController | null>(null);
   const supervisorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const callbacks = useRef({ extensionAvailable, onEntitiesChanged });
+  const callbacks = useRef({ extensionAvailable, onEntitiesChanged, onSupervisorError });
   const cycleScope = useMemo(() => ({ folderId: folder?.id, enabled: folder?.agentEnabled }), [folder?.id, folder?.agentEnabled]);
   const activeCycleScope = useRef<typeof cycleScope | null>(null);
 
@@ -85,8 +88,8 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
   useLayoutEffect(() => {
     folderRef.current = folder;
     settingsRef.current = settings;
-    callbacks.current = { extensionAvailable, onEntitiesChanged };
-  }, [folder, settings, extensionAvailable, onEntitiesChanged]);
+    callbacks.current = { extensionAvailable, onEntitiesChanged, onSupervisorError };
+  }, [folder, settings, extensionAvailable, onEntitiesChanged, onSupervisorError]);
   useLayoutEffect(() => {
     activeCycleScope.current = cycleScope;
     errorRetryCount.current = 0;
@@ -372,6 +375,11 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
       try {
         const result = await runSupervisorCycle(settingsRef.current, callbacks.current.extensionAvailable, undefined, controller.signal);
         if (!current() || controller.signal.aborted) return;
+        // A cycle that could not run (no AI route, no key) says why instead of failing silently.
+        if (result.error) {
+          await i18n.loadNamespaces('agent');
+          if (current() && !controller.signal.aborted) callbacks.current.onSupervisorError?.(i18n.t('supervisor.couldNotRun', { ns: 'agent', error: result.error }));
+        }
         // Fire desktop notifications for escalations
         for (const escalation of result.escalations) {
           sendEscalationNotification(escalation, controller.signal);

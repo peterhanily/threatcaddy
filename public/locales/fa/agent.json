@@ -227,6 +227,8 @@
   "meeting.start": "شروع",
   "meeting.participationInfo": "{{count}} عامل شرکت می‌کند. هر کدام {{rounds}} دور برای مشارکت دارند. صورتجلسه به عنوان یادداشت ذخیره می‌شود.",
   "meeting.meetingInProgress": "جلسه در حال برگزاری...",
+  "meeting.couldNotRun": "جلسه برگزار نشد: {{error}}",
+  "supervisor.couldNotRun": "عامل ناظر اجرا نشد: {{error}}",
   "meeting.deploy2Plus": "برای شروع جلسه ۲+ پروفایل عامل مستقر کنید.",
   "meeting.viewMinutes": "مشاهده صورتجلسه",
   "meeting.viewDiscussion": "مشاهده بحث",

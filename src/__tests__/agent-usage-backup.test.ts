@@ -6,7 +6,8 @@ import { buildFullBackupPayload } from '../lib/backup-data';
 
 const router = vi.hoisted(() => ({ usage: undefined as unknown }));
 vi.mock('../lib/llm-router', () => ({
-  resolveRoutingMode: () => 'server',
+  hasServerSession: () => true,
+  resolveRoute: () => ({ route: 'server' }),
   sendViaServer: (_request: unknown, callbacks: { onChunk: (text: string) => void; onDone: (reason: string, blocks: unknown[], usage?: unknown) => void }) => {
     callbacks.onChunk('Reviewed the case.');
     callbacks.onDone('end_turn', [{ type: 'text', text: 'Reviewed the case.' }], router.usage);

@@ -227,6 +227,8 @@
   "meeting.start": "התחל",
   "meeting.participationInfo": "{{count}} סוכנים ישתתפו. כל אחד מקבל {{rounds}} סבב(ים) לתרום. הפרוטוקול נשמר כהערה.",
   "meeting.meetingInProgress": "פגישה בעיצומה...",
+  "meeting.couldNotRun": "לא ניתן היה לקיים את הפגישה: {{error}}",
+  "supervisor.couldNotRun": "לא ניתן היה להפעיל את הסוכן המפקח: {{error}}",
   "meeting.deploy2Plus": "פרוס 2+ פרופילי סוכן להתחלת פגישה.",
   "meeting.viewMinutes": "צפה בפרוטוקול",
   "meeting.viewDiscussion": "צפה בדיון",

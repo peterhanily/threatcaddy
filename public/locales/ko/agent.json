@@ -227,6 +227,8 @@
   "meeting.start": "시작",
   "meeting.participationInfo": "{{count}}개 에이전트가 참여합니다. 각 에이전트는 {{rounds}}라운드씩 기여합니다. 회의록은 노트로 저장됩니다.",
   "meeting.meetingInProgress": "회의 진행 중...",
+  "meeting.couldNotRun": "회의를 진행할 수 없습니다: {{error}}",
+  "supervisor.couldNotRun": "슈퍼바이저 에이전트를 실행할 수 없습니다: {{error}}",
   "meeting.deploy2Plus": "회의를 시작하려면 2개 이상의 에이전트 프로필을 배포하세요.",
   "meeting.viewMinutes": "회의록 보기",
   "meeting.viewDiscussion": "토론 보기",
