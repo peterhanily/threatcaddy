@@ -106,9 +106,9 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
       'border border-border-subtle rounded-lg p-3 transition-colors',
       isPending ? 'bg-surface-raised border-accent-amber/30' : 'bg-surface',
     )}>
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+      {/* Header: on a narrow card the status wraps under the tool name, which is never cut */}
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={() => setExpanded(!expanded)}
             className="text-text-muted hover:text-text-primary transition-colors"
@@ -117,15 +117,15 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
           >
             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
-          <code className="text-xs font-mono text-text-primary bg-surface-raised px-1.5 py-0.5 rounded">
+          <code className="min-w-0 break-all text-xs font-mono text-text-primary bg-surface-raised px-1.5 py-0.5 rounded">
             {action.toolName}
           </code>
-          <span className={cn('text-[10px] font-medium uppercase', classInfo.color)}>
+          <span className={cn('shrink-0 text-[10px] font-medium uppercase', classInfo.color)}>
             {t(classInfo.labelKey)}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 ms-auto">
           <span className={cn('flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded', statusInfo.bg, statusInfo.color)}>
             <StatusIcon size={10} />
             {t(statusInfo.labelKey)}

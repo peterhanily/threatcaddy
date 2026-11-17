@@ -277,6 +277,26 @@ describe('A4-5 the agent panel and cards speak the analyst’s language', () => 
   });
 });
 
+describe('A4-6 and A4-7 phone layout (measured in Playwright; these pin the structure)', () => {
+  it('a long tool name wraps instead of running under the status badge', () => {
+    render(<AgentActionCard action={action({ toolName: 'search_across_investigations', status: 'failed' })} />);
+    const name = screen.getByText('search_across_investigations');
+    expect(name).toHaveClass('min-w-0', 'break-all');
+    expect(screen.getByText('Read')).toHaveClass('shrink-0');
+    expect(name.parentElement?.parentElement).toHaveClass('flex-wrap');
+  });
+
+  it('the approve-all confirmation is its own row with touch-size buttons', async () => {
+    await db.agentActions.add(action({ id: 'p1', toolInput: { title: 'Summary' } }));
+    render(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={[]} />);
+    fireEvent.click(await screen.findByRole('button', { name: /approve all/i }));
+    const yes = await screen.findByRole('button', { name: 'Yes' });
+    const no = screen.getByRole('button', { name: 'No' });
+    expect(screen.getByRole('tablist').parentElement?.contains(yes)).toBe(false);
+    for (const button of [yes, no]) expect(button).toHaveClass('min-h-11', 'min-w-11', 'md:min-h-0', 'md:min-w-0');
+  });
+});
+
 describe('A4 catalogs', () => {
   const ADDED = [
     'action.lookupDestinations', 'action.lookupNone', 'action.lookupChecking', 'action.severityWarning', 'action.severityCritical', 'action.questionAcknowledged',

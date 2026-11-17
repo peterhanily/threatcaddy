@@ -546,19 +546,23 @@ function InvestigationAgentPanel({
                 >{t(`panel.${f}`)}{f === 'pending' && pendingCount > 0 && <span className="ms-0.5 text-accent-amber">({pendingCount})</span>}</button>
               ))}
             </div>
-            {pendingCount > 0 && (confirmBulk ? (
-              <div className="flex items-center gap-1.5">
-                <span className="text-[9px] text-text-muted">{t('panel.executePending', { count: confirmBulk.routine })}</span>
-                {confirmBulk.review > 0 && <span className="text-[9px] text-accent-amber">{t('panel.leftForReview', { count: confirmBulk.review })}</span>}
-                <button onClick={handleBulkApprove} disabled={confirmBulk.routine === 0} className="text-[9px] text-accent-green px-1 rounded hover:bg-accent-green/10 disabled:opacity-50">{t('common:yes')}</button>
-                <button onClick={() => setConfirmBulk(null)} className="text-[9px] text-text-muted px-1 rounded hover:bg-surface-raised">{t('common:no')}</button>
-              </div>
-            ) : (
+            {pendingCount > 0 && !confirmBulk && (
               <button onClick={() => void openBulkConfirm()} className="flex items-center gap-1 text-[10px] text-accent-green hover:bg-accent-green/10 px-1.5 py-0.5 rounded">
                 <CheckCheck size={10} /> {t('panel.approveAll')}
               </button>
-            ))}
+            )}
           </div>
+          {/* Its own row, so a long translation wraps instead of running off a phone screen. */}
+          {pendingCount > 0 && confirmBulk && (
+            <div className="flex flex-wrap items-center gap-2 w-full px-4 py-1.5 border-b border-border-subtle shrink-0">
+              <span className="text-xs text-text-muted">{t('panel.executePending', { count: confirmBulk.routine })}</span>
+              {confirmBulk.review > 0 && <span className="text-xs text-accent-amber">{t('panel.leftForReview', { count: confirmBulk.review })}</span>}
+              <div className="flex items-center gap-2 ms-auto">
+                <button onClick={handleBulkApprove} disabled={confirmBulk.routine === 0} className="min-h-11 min-w-11 md:min-h-0 md:min-w-0 px-3 py-0.5 text-xs text-accent-green rounded hover:bg-accent-green/10 disabled:opacity-50">{t('common:yes')}</button>
+                <button onClick={() => setConfirmBulk(null)} className="min-h-11 min-w-11 md:min-h-0 md:min-w-0 px-3 py-0.5 text-xs text-text-muted rounded hover:bg-surface-raised">{t('common:no')}</button>
+              </div>
+            </div>
+          )}
           <div className="flex-1 overflow-auto px-4 py-2 space-y-2">
             {filteredActions.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-text-muted">
