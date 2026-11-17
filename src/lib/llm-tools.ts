@@ -674,9 +674,8 @@ async function executeListAgentActivity(inp: Record<string, unknown>, folderId?:
   const agentName = inp.agentName ? String(inp.agentName) : undefined;
   const limit = Math.min(Number(inp.limit) || 20, 50);
 
-  // Load profiles once (avoid N+1)
-  const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
-  const allProfiles = [...BUILTIN_AGENT_PROFILES, ...await db.agentProfiles.toArray()];
+  // Load profiles once (avoid N+1); code wins for builtins, as in delegate_task.
+  const allProfiles = await getAllAgentProfiles();
   const profileMap = new Map(allProfiles.map(p => [p.id, p.name]));
 
   let actions = await db.agentActions

@@ -364,6 +364,17 @@ describe('A-GATE-6 review and escalation scope', () => {
     expect(await delegate(builtin.name)).toMatchObject({ success: true, found: true });
     expect((await db.tasks.filter(task => task.assignedDeploymentId === 'th').toArray()).map(task => task.title)).toEqual(['Hunt']);
   });
+
+  it('list_agent_activity names a builtin as delegate_task finds it, not by a stored row\'s name', async () => {
+    const builtin = BUILTIN_AGENT_PROFILES.find(profile => profile.id === 'ap-threat-hunter') as AgentProfile;
+    await db.agentProfiles.put(JSON.parse(JSON.stringify({ ...builtin, name: 'Stale Persona' })));
+    await db.agentActions.add({ id: 'done', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'create_note', toolInput: {}, rationale: 'r', status: 'executed', createdAt: 5 });
+    const activity = async (input: Record<string, unknown>) => JSON.parse((await execTool(call('list_agent_activity', input), 'S', { surface: 'agent', agentContext: {} })).result)
+      .actions.map((action: { agentName: string }) => action.agentName);
+    expect(await activity({})).toEqual([builtin.name]);
+    expect(await activity({ agentName: builtin.name })).toEqual([builtin.name]);
+    expect(await activity({ agentName: 'Stale Persona' })).toEqual([]);
+  });
 });
 
 describe('A-GATE-7 agent configuration tools', () => {
