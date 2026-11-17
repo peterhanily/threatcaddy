@@ -38,13 +38,12 @@ export type Verdict = { kind: 'run' } | { kind: 'ask'; reason: AskReason } | { k
 
 type EntityRow = { folderId?: string; trashed?: boolean } | undefined;
 
-const READ_BY_ID: Record<string, 'notes' | 'tasks' | 'standaloneIOCs' | 'timelineEvents'> = {
-  read_note: 'notes', read_task: 'tasks', read_ioc: 'standaloneIOCs', read_timeline_event: 'timelineEvents',
-};
-const UPDATE_BY_ID: Record<string, 'notes' | 'tasks' | 'standaloneIOCs' | 'timelineEvents'> = {
-  update_note: 'notes', update_task: 'tasks', update_ioc: 'standaloneIOCs', update_timeline_event: 'timelineEvents',
-};
-const LINK_TABLE: Record<string, 'notes' | 'tasks' | 'timelineEvents'> = { note: 'notes', task: 'tasks', 'timeline-event': 'timelineEvents' };
+// Maps, not object literals: names and link types come from model output.
+const READ_BY_ID = new Map<string, 'notes' | 'tasks' | 'standaloneIOCs' | 'timelineEvents'>([
+  ['read_note', 'notes'], ['read_task', 'tasks'], ['read_ioc', 'standaloneIOCs'], ['read_timeline_event', 'timelineEvents']]);
+const UPDATE_BY_ID = new Map<string, 'notes' | 'tasks' | 'standaloneIOCs' | 'timelineEvents'>([
+  ['update_note', 'notes'], ['update_task', 'tasks'], ['update_ioc', 'standaloneIOCs'], ['update_timeline_event', 'timelineEvents']]);
+const LINK_TABLE = new Map<string, 'notes' | 'tasks' | 'timelineEvents'>([['note', 'notes'], ['task', 'tasks'], ['timeline-event', 'timelineEvents']]);
 
 const text = (value: unknown) => typeof value === 'string' ? value : '';
 const getRow = async (table: 'notes' | 'tasks' | 'standaloneIOCs' | 'timelineEvents', id: unknown): Promise<EntityRow> =>
@@ -61,8 +60,8 @@ async function findInvestigationByExactName(name: string) {
 async function resolveTargets(name: string, input: Record<string, unknown>): Promise<{ rows: EntityRow[]; folders: string[] }> {
   const rows: EntityRow[] = [];
   const folders: string[] = [];
-  if (READ_BY_ID[name]) rows.push(await getRow(READ_BY_ID[name], input.id));
-  else if (UPDATE_BY_ID[name]) rows.push(await getRow(UPDATE_BY_ID[name], input.id));
+  const byId = READ_BY_ID.get(name) ?? UPDATE_BY_ID.get(name);
+  if (byId) rows.push(await getRow(byId, input.id));
   else if (name === 'review_completed_task') rows.push(await getRow('tasks', input.taskId));
   else if (name === 'enrich_ioc') rows.push(await getRow('standaloneIOCs', input.iocId));
   else if (name === 'delete_note_folder') rows.push(await getRow('notes', input.folderId));
@@ -71,8 +70,10 @@ async function resolveTargets(name: string, input: Record<string, unknown>): Pro
     for (const link of input.links as unknown[]) {
       if (!link || typeof link !== 'object') continue;
       const { sourceType, sourceId, targetType, targetId } = link as Record<string, unknown>;
-      if (LINK_TABLE[text(sourceType)]) rows.push(await getRow(LINK_TABLE[text(sourceType)], sourceId));
-      if (LINK_TABLE[text(targetType)]) rows.push(await getRow(LINK_TABLE[text(targetType)], targetId));
+      const sourceTable = LINK_TABLE.get(text(sourceType));
+      const targetTable = LINK_TABLE.get(text(targetType));
+      if (sourceTable) rows.push(await getRow(sourceTable, sourceId));
+      if (targetTable) rows.push(await getRow(targetTable, targetId));
     }
   } else if (name === 'create_in_investigation') {
     const folder = text(input.investigationId) ? await db.folders.get(text(input.investigationId))

@@ -144,6 +144,12 @@ describe('A-REACH-5 local-only facts, links and named investigations', () => {
     expect(await reach('link_entities', link(ids('S').note), 'S')).toMatchObject({ crossWrite: false });
   });
 
+  it('ignores model-supplied names that collide with object prototype keys', async () => {
+    const link = { links: [{ sourceType: 'constructor', sourceId: 'x', targetType: '__proto__', targetId: 'y' }] };
+    await expect(reach('link_entities', link, 'S')).resolves.toMatchObject({ crossWrite: false, hidden: false });
+    await expect(reach('toString', { id: ids('L').note }, 'S')).resolves.toMatchObject({ hidden: false });
+  });
+
   it('create_in_investigation resolves an exact name only', async () => {
     expect(await reach('create_in_investigation', { investigationName: 'Priv', entityType: 'note', data: {} }, 'S')).toMatchObject({ crossWrite: false, targetFolderIds: [] });
     expect(await reach('create_in_investigation', { investigationName: 'private CASE', entityType: 'note', data: {} }, 'S')).toMatchObject({ crossWrite: true, targetFolderIds: ['P'] });

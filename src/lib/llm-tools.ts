@@ -1,9 +1,9 @@
 import { db } from '../db';
 import { notifyDesktop } from './desktop-notifications';
 import { nanoid } from 'nanoid';
-import type { Folder, ToolUseBlock, Settings, AgentProfile } from '../types';
+import type { AgentPolicy, Folder, ToolUseBlock, Settings, AgentProfile } from '../types';
 import { getToolExecutionError, normalizeToolResult, toolExecutionError, type ToolExecutionConstraints, type ToolExecutionResult } from './llm-tool-execution';
-import { classifyToolCall, decideToolCall } from './tool-reach';
+import { classifyToolCall, decideToolCall, type ToolReach } from './tool-reach';
 import { consumeHumanApproval } from './human-approval';
 import { listAgentProfiles, loadAgentPolicy, resolveAgentProfile } from './agent-profile-resolver';
 import { currentCreator, popCreator, pushCreator } from './tool-creator';
@@ -257,9 +257,15 @@ async function dispatchTool(
   const _settings: Settings = JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}');
 
   // Mandatory backstop: the same table the decision sites ran, with the same inputs.
-  const reach = await classifyToolCall(toolUse, { homeFolderId: folderId, settings: _settings });
   if (constraints.surface === 'agent' && !agentContext) return toolExecutionError('Agent tool calls require an agent context.');
-  const policy = constraints.surface === 'agent' ? await loadAgentPolicy(folderId, agentContext) : undefined;
+  let reach: ToolReach;
+  let policy: AgentPolicy | undefined;
+  try {
+    reach = await classifyToolCall(toolUse, { homeFolderId: folderId, settings: _settings });
+    policy = constraints.surface === 'agent' ? await loadAgentPolicy(folderId, agentContext) : undefined;
+  } catch {
+    return toolExecutionError('The reach of this tool call could not be checked, so it was not run.');
+  }
   const verdict = decideToolCall(reach, { surface: constraints.surface, policy });
   if (verdict.kind === 'deny') return toolExecutionError(verdict.message);
   // A presented token is spent even if the call later fails or its transaction aborts.
