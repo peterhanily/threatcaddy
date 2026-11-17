@@ -123,6 +123,16 @@ describe('agent hook lifecycle ownership', () => {
     expect(mocks.run).toHaveBeenCalledOnce();
   });
 
+  it('one agent waiting for review does not slow the others', async () => {
+    const first = folder(); mocks.folders.set(first.id, first); mocks.count.mockResolvedValue(2);
+    mocks.multi.mockResolvedValue({ deploymentResults: new Map([['dep-ap-lead-analyst', outcome]]), errors: [], waitingForReview: ['ap-threat-hunter'] });
+    const { result } = renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(result.current.agentStatus).toBe('waiting');
+    await act(async () => vi.advanceTimersByTimeAsync(300_000));
+    expect(mocks.multi).toHaveBeenCalledTimes(2);
+  });
+
   it('B-PAUSE-1 keeps running deployed agents while one of them waits for review', async () => {
     const first = folder(); mocks.folders.set(first.id, first); mocks.count.mockResolvedValue(2);
     mocks.pending.mockResolvedValue([{ toolName: 'fetch_url', agentConfigId: 'ap-threat-hunter' }]);

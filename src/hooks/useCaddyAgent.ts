@@ -288,10 +288,10 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
     const scheduleNext = async () => {
       if (!current()) return;
-      // Adaptive: double interval when waiting for approvals (use ref to avoid stale closure)
+      // A waiting agent skips its own cycles, so waiting does not slow the
+      // others (use ref to avoid stale closure).
       const currentStatus = agentStatusRef.current;
-      const multiplier = currentStatus === 'waiting' ? 2 : 1;
-      let intervalMs = baseIntervalMs * multiplier;
+      let intervalMs = baseIntervalMs;
 
       // Error backoff: double interval for each consecutive error, up to max retries
       if (currentStatus === 'error') {
