@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import i18n from '../i18n';
+import deIntegrations from '../../public/locales/de/integrations.json';
 import { executeFetchUrl } from '../lib/llm-tools-analysis';
 // The `/fetch` chat command calls the bridge through this re-export.
 import { fetchViaExtensionBridge } from '../lib/llm-tools';
@@ -72,6 +74,23 @@ describe('SPA web fetch guard', () => {
     const url = 'https://nvd.nist.gov/vuln/detail/CVE-2024-3094';
     expect(await fetchViaExtensionBridge(url)).toMatchObject({ success: true, title: 'Fixture' });
     expect(bridgeFetches(post)).toHaveLength(1);
+  });
+
+  it('shows both refusals in the analyst’s language', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'integrations', deIntegrations, true, true);
+    await i18n.changeLanguage('de');
+    try {
+      const de = deIntegrations as Record<string, string>;
+      document.documentElement.dataset.tcBridgeCaps = HEAD_CAPS;
+      expect(await fetchViaExtensionBridge('http://127.0.0.1/')).toEqual({ success: false, error: de['fetch.privateTarget'] });
+      document.documentElement.dataset.tcBridgeCaps = STORE_1_1_1_CAPS;
+      const url = 'https://nvd.nist.gov/vuln/detail/CVE-2024-3094';
+      expect(await fetchViaExtensionBridge(url)).toEqual({ success: false, error: de['fetch.updateExtension'] });
+      expect(JSON.parse(await executeFetchUrl({ url })).error).toBe(de['fetch.updateExtension']);
+      expect(de['fetch.updateExtension']).toContain('1.1.3');
+      expect(bridgeFetches(post)).toHaveLength(0);
+    } finally { await i18n.changeLanguage('en'); }
   });
 
   it('reads the capabilities at call time', async () => {

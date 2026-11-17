@@ -3,6 +3,8 @@
   "catalog.teamUnavailable": "Não foi possível carregar os modelos da equipe. Verifique sua conexão e atualize.",
   "team.installedDisabled": "{{name}} foi instalada desativada. Ela pode enviar dados para: {{domains}}. Revise-a e depois ative-a na guia Instaladas.",
   "team.installedDisabledNoDomains": "{{name}} foi instalada desativada. Ela não faz solicitações web. Revise-a e depois ative-a na guia Instaladas.",
+  "fetch.privateTarget": "Somente endereços http(s) públicos sem credenciais podem ser buscados. Destinos privados, locais e com IP literal não são permitidos.",
+  "fetch.updateExtension": "Instale ou atualize a extensão ThreatCaddy para a versão 1.1.3 ou posterior e aprove este app nela para usar a busca na web.",
   "builtin.vtIpLookup.name": "Pesquisa de IP no VirusTotal",
   "builtin.vtIpLookup.description": "Pesquisar um endereço IP no VirusTotal para obter reputação, geolocalização e estatísticas de análise.",
   "builtin.vtIpLookup.config.apiKey.label": "Chave de API",

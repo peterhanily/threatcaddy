@@ -3,6 +3,8 @@
   "catalog.teamUnavailable": "Teamvorlagen konnten nicht geladen werden. Prüfe deine Verbindung und aktualisiere die Liste.",
   "team.installedDisabled": "{{name}} wurde deaktiviert installiert. Es kann Daten senden an: {{domains}}. Prüfe es und aktiviere es dann im Tab „Installiert“.",
   "team.installedDisabledNoDomains": "{{name}} wurde deaktiviert installiert. Es sendet keine Webanfragen. Prüfe es und aktiviere es dann im Tab „Installiert“.",
+  "fetch.privateTarget": "Nur öffentliche http(s)-Adressen ohne Zugangsdaten können abgerufen werden. Private, lokale und als IP-Adresse angegebene Ziele sind nicht erlaubt.",
+  "fetch.updateExtension": "Installiere die ThreatCaddy-Erweiterung oder aktualisiere sie auf 1.1.3 oder neuer und gib diese App darin frei, um den Webabruf zu nutzen.",
   "builtin.vtIpLookup.name": "VirusTotal IP-Abfrage",
   "builtin.vtIpLookup.description": "IP-Adresse bei VirusTotal abfragen, um Reputation, Geolokalisierung und Analysestatistiken abzurufen.",
   "builtin.vtIpLookup.config.apiKey.label": "API-Schlüssel",

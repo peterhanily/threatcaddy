@@ -3,6 +3,8 @@
   "catalog.teamUnavailable": "Templat tim tidak dapat dimuat. Periksa koneksi Anda dan muat ulang.",
   "team.installedDisabled": "{{name}} dipasang dalam keadaan nonaktif. Integrasi ini dapat mengirim data ke: {{domains}}. Tinjau terlebih dahulu, lalu aktifkan di tab Terpasang.",
   "team.installedDisabledNoDomains": "{{name}} dipasang dalam keadaan nonaktif. Integrasi ini tidak membuat permintaan web. Tinjau terlebih dahulu, lalu aktifkan di tab Terpasang.",
+  "fetch.privateTarget": "Hanya alamat http(s) publik tanpa kredensial yang dapat diambil. Tujuan privat, lokal, dan alamat IP literal tidak diizinkan.",
+  "fetch.updateExtension": "Instal atau perbarui ekstensi ThreatCaddy ke versi 1.1.3 atau yang lebih baru, lalu setujui aplikasi ini di dalamnya, untuk menggunakan pengambilan web.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "Cari alamat IP di VirusTotal untuk mendapatkan reputasi, geolokasi, dan statistik analisis.",
   "builtin.vtIpLookup.config.apiKey.label": "API Key",

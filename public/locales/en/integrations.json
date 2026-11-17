@@ -3,6 +3,8 @@
   "catalog.teamUnavailable": "Team templates could not be loaded. Check your connection and refresh.",
   "team.installedDisabled": "{{name}} was installed disabled. It can send data to: {{domains}}. Review it, then enable it on the Installed tab.",
   "team.installedDisabledNoDomains": "{{name}} was installed disabled. It makes no web requests. Review it, then enable it on the Installed tab.",
+  "fetch.privateTarget": "Only public http(s) addresses without credentials can be fetched. Private, local and literal-IP destinations are not allowed.",
+  "fetch.updateExtension": "Install or update the ThreatCaddy extension to 1.1.3 or later, and approve this app in it, to use web fetch.",
   "config.selectPlaceholder": "Select...",
   "config.togglePassword": "Show or hide {{label}}",
   "config.requiredField": "{{label}} is required.",

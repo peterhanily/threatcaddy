@@ -3,6 +3,8 @@
   "catalog.teamUnavailable": "Không thể tải mẫu của nhóm. Hãy kiểm tra kết nối và làm mới.",
   "team.installedDisabled": "{{name}} đã được cài đặt ở trạng thái tắt. Nó có thể gửi dữ liệu tới: {{domains}}. Hãy xem xét, sau đó bật nó trong thẻ Đã cài đặt.",
   "team.installedDisabledNoDomains": "{{name}} đã được cài đặt ở trạng thái tắt. Nó không gửi yêu cầu web nào. Hãy xem xét, sau đó bật nó trong thẻ Đã cài đặt.",
+  "fetch.privateTarget": "Chỉ có thể tải các địa chỉ http(s) công khai không chứa thông tin xác thực. Không cho phép các đích riêng tư, cục bộ hoặc được chỉ định bằng địa chỉ IP trực tiếp.",
+  "fetch.updateExtension": "Để dùng tính năng tải trang web, hãy cài đặt hoặc cập nhật tiện ích ThreatCaddy lên phiên bản 1.1.3 trở lên và phê duyệt ứng dụng này trong tiện ích.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "Tra cứu địa chỉ IP trên VirusTotal để lấy danh tiếng, vị trí địa lý và thống kê phân tích.",
   "builtin.vtIpLookup.config.apiKey.label": "Khóa API",

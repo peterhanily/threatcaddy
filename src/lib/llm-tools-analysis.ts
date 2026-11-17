@@ -2,6 +2,7 @@ import { db } from '../db';
 import { extractIOCs } from './ioc-extractor';
 import { buildGraphData } from './graph-data';
 import { postMessageOrigin } from './utils';
+import i18n from '../i18n';
 
 export async function executeAnalyzeGraph(input: Record<string, unknown>, folderId?: string): Promise<string> {
   if (!folderId) {
@@ -132,13 +133,15 @@ function hasGuardedBridgeFetch(): boolean {
   return caps.includes('clip_import_ack_v2') || caps.includes('fetch_url_public_v1');
 }
 
+/** `/fetch` shows this text to the analyst, so it is translated. Hosted builds load the namespace lazily. */
+async function fetchRefusal(key: 'fetch.privateTarget' | 'fetch.updateExtension'): Promise<{ success: false; error: string }> {
+  await i18n.loadNamespaces('integrations');
+  return { success: false, error: i18n.t(key, { ns: 'integrations' }) };
+}
+
 export function fetchViaExtensionBridge(url: string): Promise<{ success: boolean; title?: string; content?: string; error?: string }> {
-  if (!isPublicFetchURL(url)) {
-    return Promise.resolve({ success: false, error: 'Only public http(s) addresses without credentials can be fetched. Private, local and literal-IP destinations are not allowed.' });
-  }
-  if (!hasGuardedBridgeFetch()) {
-    return Promise.resolve({ success: false, error: 'Install or update the ThreatCaddy extension to 1.1.3 or later, and approve this app in it, to use web fetch.' });
-  }
+  if (!isPublicFetchURL(url)) return fetchRefusal('fetch.privateTarget');
+  if (!hasGuardedBridgeFetch()) return fetchRefusal('fetch.updateExtension');
   const requestId = Math.random().toString(36).slice(2);
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {
