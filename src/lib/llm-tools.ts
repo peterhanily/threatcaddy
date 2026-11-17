@@ -306,8 +306,8 @@ async function dispatchTool(
       agentLabel = `${profile.icon || '🤖'} ${profile.name}`;
       agentRole = profile.role;
     }
-    creator = `agent:${agentLabel} (${operatorName})`;
   }
+  const creator = agentLabel ? `agent:${agentLabel} (${operatorName})` : operatorName;
 
   try {
     let result: string;
@@ -1422,6 +1422,17 @@ async function deploymentCapError(folderId: string, profileId?: string): Promise
   }
 }
 
+/** Runs the cap check and the adds in one transaction, so IndexedDB serialises
+ * concurrent approved deployments and the second one sees the first. `add` may
+ * use only these tables and Dexie calls. */
+function addWithinDeploymentCap(folderId: string, profileId: string | undefined, add: () => Promise<void>): Promise<string | undefined> {
+  return db.transaction('rw', [db.agentDeployments, db.agentProfiles, db.chatThreads], async () => {
+    const capped = await deploymentCapError(folderId, profileId);
+    if (capped) return capped;
+    await add();
+  });
+}
+
 async function executeDeployAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
   const profileName = String(inp.profileName || inp.name || inp.agent_type || inp.profile || '');
   if (!profileName) return JSON.stringify({ error: 'profileName is required' });
@@ -1434,9 +1445,6 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
     return JSON.stringify({ error: `Profile "${profileName}" not found. Available: ${available}` });
   }
 
-  const capped = await deploymentCapError(folderId, profile.id);
-  if (capped) return capped;
-  const existing = await db.agentDeployments.filter(d => d.investigationId === folderId).toArray();
   const competitiveness = enumInput(inp.competitiveness, 'competitiveness', AGENT_COMPETITIVENESS);
   if (competitiveness.error) return competitiveness.error;
 
@@ -1444,28 +1452,33 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
   const threadId = nanoid();
   const now = Date.now();
 
-  // Create audit thread immediately so the agent's history is visible from deployment
-  await db.chatThreads.add({
-    id: threadId,
-    title: `${profile.name} — Audit Log`,
-    messages: [{ id: nanoid(), role: 'assistant' as const, content: `**${profile.icon || ''} ${profile.name}** deployed to investigation. Role: ${profile.role}. Status: active.`, createdAt: now }],
-    model: '', provider: 'anthropic', folderId,
-    tags: ['agent-audit'], archived: false, trashed: false,
-    createdAt: now, updatedAt: now,
-  });
+  const capped = await addWithinDeploymentCap(folderId, profile.id, async () => {
+    const existing = await db.agentDeployments.filter(d => d.investigationId === folderId).toArray();
 
-  await db.agentDeployments.add({
-    id: deploymentId,
-    investigationId: folderId,
-    profileId: profile.id,
-    threadId,
-    status: 'idle',
-    competitiveness: competitiveness.value ?? 'cooperative',
-    shift: 'active',
-    order: existing.length,
-    createdAt: now,
-    updatedAt: now,
+    // Create audit thread immediately so the agent's history is visible from deployment
+    await db.chatThreads.add({
+      id: threadId,
+      title: `${profile.name} — Audit Log`,
+      messages: [{ id: nanoid(), role: 'assistant' as const, content: `**${profile.icon || ''} ${profile.name}** deployed to investigation. Role: ${profile.role}. Status: active.`, createdAt: now }],
+      model: '', provider: 'anthropic', folderId,
+      tags: ['agent-audit'], archived: false, trashed: false,
+      createdAt: now, updatedAt: now,
+    });
+
+    await db.agentDeployments.add({
+      id: deploymentId,
+      investigationId: folderId,
+      profileId: profile.id,
+      threadId,
+      status: 'idle',
+      competitiveness: competitiveness.value ?? 'cooperative',
+      shift: 'active',
+      order: existing.length,
+      createdAt: now,
+      updatedAt: now,
+    });
   });
+  if (capped) return capped;
 
   // Enable agents on the folder. The investigation policy stays the analyst's.
   await db.folders.update(folderId, { agentEnabled: true, updatedAt: Date.now() });
@@ -1570,23 +1583,23 @@ async function executeSpawnAgent(inp: Record<string, unknown>, folderId?: string
     return JSON.stringify({ error: `Profile "${profileName}" not found. Available: ${available}` });
   }
 
-  const capped = await deploymentCapError(folderId, profile.id);
-  if (capped) return capped;
-  const existing = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
-
   // Create deployment
   const deploymentId = nanoid();
-  await db.agentDeployments.add({
-    id: deploymentId,
-    investigationId: folderId,
-    profileId: profile.id,
-    status: 'idle',
-    competitiveness: competitiveness.value ?? 'cooperative',
-    shift: 'active',
-    order: existing.length,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+  const capped = await addWithinDeploymentCap(folderId, profile.id, async () => {
+    const existing = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
+    await db.agentDeployments.add({
+      id: deploymentId,
+      investigationId: folderId,
+      profileId: profile.id,
+      status: 'idle',
+      competitiveness: competitiveness.value ?? 'cooperative',
+      shift: 'active',
+      order: existing.length,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
   });
+  if (capped) return capped;
 
   window.dispatchEvent(new CustomEvent('tc-folders-changed'));
   return JSON.stringify({
@@ -1610,43 +1623,44 @@ async function executeDefineSpecialist(inp: Record<string, unknown>, folderId?: 
   // Sanitize prompt to prevent injection of override instructions
   const sanitizedPrompt = systemPrompt.replace(/\b(IGNORE|OVERRIDE|SYSTEM|INSTRUCTION|PROMPT|DISREGARD)\b/gi, '[REDACTED]');
   const sanitizedName = name.replace(/[*_`#<>[\]]/g, '').substring(0, 50);
-  const capped = await deploymentCapError(folderId);
-  if (capped) return capped;
 
-  // Create profile
   const profileId = nanoid();
-  const now = Date.now();
-  await db.agentProfiles.add({
-    id: profileId,
-    name: sanitizedName,
-    description: reason,
-    icon,
-    role,
-    systemPrompt: sanitizedPrompt,
-    // Explicit and offline: no web, vendor, cross-case, agent or external-system tools.
-    allowedTools: ['search_notes', 'search_all', 'read_note', 'read_task', 'read_ioc', 'read_timeline_event',
-      'list_tasks', 'list_iocs', 'list_timeline_events', 'get_investigation_summary', 'create_note', 'create_task'],
-    policy: { autoApproveReads: true, autoApproveEnrich: true, autoApproveFetch: false, autoApproveCreate: false, autoApproveModify: false, intervalMinutes: 5 },
-    source: 'user',
-    createdBy: 'agent',
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  // Deploy it
-  const existing = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
   const deploymentId = nanoid();
-  await db.agentDeployments.add({
-    id: deploymentId,
-    investigationId: folderId,
-    profileId,
-    status: 'idle',
-    competitiveness: 'cooperative',
-    shift: 'active',
-    order: existing.length,
-    createdAt: now,
-    updatedAt: now,
+  const now = Date.now();
+  const capped = await addWithinDeploymentCap(folderId, undefined, async () => {
+    // Create profile
+    await db.agentProfiles.add({
+      id: profileId,
+      name: sanitizedName,
+      description: reason,
+      icon,
+      role,
+      systemPrompt: sanitizedPrompt,
+      // Explicit and offline: no web, vendor, cross-case, agent or external-system tools.
+      allowedTools: ['search_notes', 'search_all', 'read_note', 'read_task', 'read_ioc', 'read_timeline_event',
+        'list_tasks', 'list_iocs', 'list_timeline_events', 'get_investigation_summary', 'create_note', 'create_task'],
+      policy: { autoApproveReads: true, autoApproveEnrich: true, autoApproveFetch: false, autoApproveCreate: false, autoApproveModify: false, intervalMinutes: 5 },
+      source: 'user',
+      createdBy: 'agent',
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Deploy it
+    const existing = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
+    await db.agentDeployments.add({
+      id: deploymentId,
+      investigationId: folderId,
+      profileId,
+      status: 'idle',
+      competitiveness: 'cooperative',
+      shift: 'active',
+      order: existing.length,
+      createdAt: now,
+      updatedAt: now,
+    });
   });
+  if (capped) return capped;
 
   window.dispatchEvent(new CustomEvent('tc-folders-changed'));
   return JSON.stringify({
@@ -1731,13 +1745,9 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
   let replacementResult = '';
   if (replacementProfile) {
     const replacement = profiles.find(p => normalizeName(p.name) === normalizeName(replacementProfile));
-    const replacementCapped = replacement && await deploymentCapError(folderId, replacement.id);
-    if (replacementCapped) {
-      replacementResult = ` Replacement "${replacement.name}" not deployed: ${JSON.parse(replacementCapped).error}`;
-    } else if (replacement) {
-      const deploymentId = nanoid();
+    const replacementCapped = replacement && await addWithinDeploymentCap(folderId, replacement.id, async () => {
       await db.agentDeployments.add({
-        id: deploymentId,
+        id: nanoid(),
         investigationId: folderId,
         profileId: replacement.id,
         status: 'idle',
@@ -1747,6 +1757,10 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
         createdAt: now,
         updatedAt: now,
       });
+    });
+    if (replacementCapped) {
+      replacementResult = ` Replacement "${replacement.name}" not deployed: ${JSON.parse(replacementCapped).error}`;
+    } else if (replacement) {
       replacementResult = ` Replacement "${replacement.name}" deployed.`;
     } else {
       replacementResult = ` Replacement "${replacementProfile}" not found — deploy manually.`;

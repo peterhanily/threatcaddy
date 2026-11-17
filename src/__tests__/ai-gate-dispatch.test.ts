@@ -4,6 +4,7 @@
  * site cannot hide a gap here.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import Dexie from 'dexie';
 import { db } from '../db';
 import type { AgentAction, AgentProfile, AgentSoul, ToolUseBlock } from '../types';
 import type { InstalledIntegration, IntegrationTemplate } from '../types/integration-types';
@@ -412,6 +413,50 @@ describe('A-GATE-7 agent configuration tools', () => {
     expect(await db.agentActions.get('colleague')).toEqual(row('colleague', { agentConfigId: 'ap-malware-analyst' }));
     await bulkApproveActions('S');
     expect(await db.notes.where('title').equals('note mine').count()).toBe(0);
+  });
+
+  describe('concurrent approved deployments', () => {
+    const activeIn = async (folderId: string) => (await db.agentDeployments.where('investigationId').equals(folderId).toArray()).filter(d => d.shift !== 'resting');
+    const lifecycle = {
+      spawn: (name: string) => call('spawn_agent', { profileName: name, reason: 'More hands' }),
+      deploy: (name: string) => call('deploy_agent', { profileName: name }),
+      define: (name: string) => call('define_specialist', { name, systemPrompt: 'Help.' }),
+    };
+    const run = (kind: keyof typeof lifecycle, name: string) => execTool(lifecycle[kind](name), 'S');
+
+    it.each([['spawn', 'spawn'], ['spawn', 'deploy'], ['deploy', 'define'], ['define', 'define']] as const)('%s and %s at once stop at 8 active', async (first, second) => {
+      for (let i = 0; i < 7; i++) await db.agentDeployments.add({ id: `dep-${i}`, investigationId: 'S', profileId: `p-${i}`, status: 'idle', shift: 'active', order: i, createdAt: 1, updatedAt: 1 });
+      const results = await Promise.all([run(first, 'Threat Hunter'), run(second, 'Malware Analyst')]);
+      expect(results.map(result => result.isError).sort()).toEqual([false, true]);
+      expect(await activeIn('S')).toHaveLength(8);
+    });
+
+    it.each([['spawn', 'spawn'], ['spawn', 'deploy'], ['deploy', 'deploy']] as const)('%s and %s of one profile at once deploy it once', async (first, second) => {
+      const results = await Promise.all([run(first, 'Threat Hunter'), run(second, 'Threat Hunter')]);
+      expect(results.map(result => result.isError).sort()).toEqual([false, true]);
+      expect((await activeIn('S')).map(d => d.profileId)).toEqual(['ap-threat-hunter']);
+      // deploy_agent's audit thread is written only for the deployment that was made.
+      expect(await db.chatThreads.count()).toBe(results.filter((result, i) => !result.isError && [first, second][i] === 'deploy').length);
+    });
+
+    it('two dismissals with the same replacement at once deploy it once', async () => {
+      await db.agentDeployments.bulkAdd(['ap-threat-hunter', 'ap-network-forensics'].map((profileId, order) =>
+        ({ id: `dep-${profileId}`, investigationId: 'S', profileId, status: 'idle' as const, shift: 'active' as const, order, createdAt: 1, updatedAt: 1 })));
+      const dismiss = (agentName: string) => execTool(call('dismiss_agent', { agentName, replacementProfile: 'Malware Analyst',
+        reason: 'Repeatedly ignored the scope of the investigation.', evidence: 'Three off-scope notes.' }), 'S');
+      // Two approval flows can interleave in a browser: hold a deployment add made
+      // outside a transaction until both dismissals reach theirs.
+      const waiting: Array<() => void> = [];
+      const add = db.agentDeployments.add.bind(db.agentDeployments);
+      vi.spyOn(db.agentDeployments, 'add').mockImplementation(((...args: Parameters<typeof add>) => Dexie.currentTransaction ? add(...args)
+        : new Promise(resolve => {
+          waiting.push(() => resolve(add(...args)));
+          if (waiting.length === 2) waiting.forEach(release => release());
+        })) as never);
+      const results = await Promise.all([dismiss('Threat Hunter'), dismiss('Network Forensics')]);
+      expect(results.map(result => result.isError)).toEqual([false, false]);
+      expect((await activeIn('S')).map(d => d.profileId)).toEqual(['ap-malware-analyst']);
+    });
   });
 
   it('reflection needs an agent profile', async () => {
