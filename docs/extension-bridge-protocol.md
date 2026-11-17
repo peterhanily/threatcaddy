@@ -163,7 +163,7 @@ Accepts long-lived port connections (name prefix `llm-`) and streams responses f
 
 All providers use SSE streaming. Responses are normalized to a common format: `chunk` messages with text content, followed by a `done` message with `stopReason` (`end_turn`, `tool_use`, or `max_tokens`) and `contentBlocks` (text and tool_use blocks). Tool call arguments are accumulated across deltas and parsed into JSON on completion.
 
-For a local model that returns no structured tool calls, 1.1.4 reads tool calls from the reply text only when they use the exact `<tool_call>{"name":"…","arguments":{…}}</tool_call>` wrapper and name a tool offered in the request; JSON in code fences or other tags is ignored. These calls get `text_tc_` ids, and the app treats them as taken from reply text: writes, outbound calls, agent changes and reads of other investigations need approval.
+For a local model that returns no structured tool calls, 1.1.4 reads tool calls from the reply text only when they use the exact `<tool_call>{"name":"…","arguments":{…}}</tool_call>` wrapper and name a tool offered in the request; JSON in code fences or other tags is ignored. These calls get `text_tc_` ids, and the app treats them as taken from reply text: writes, outbound calls, agent changes and reads of other investigations never run without approval. Approval does not widen what the agent or the supervisor that proposed a call may do; an agent's approved read of another investigation's entity, for example, is still refused.
 
 ### CORS Proxy (URL Fetch)
 
