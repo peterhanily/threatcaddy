@@ -57,7 +57,7 @@ Hardens CaddyAI chat, AgentCaddy agents, the supervisor and the agent bridge aga
 ### Agent bridge and agent hosts
 
 - The agent bridge (`window.threatcaddy`, used by browser automation such as the Claude Code skill over CDP) is off by default; turn it on in Settings → AI. It works only in the investigation selected in ThreatCaddy (`setFolderId` was removed), offers 33 tools, and cannot fetch web pages, run enrichment, reach other investigations or change agents.
-- Named agent hosts can no longer be added or edited; Settings → AI lists them with Remove. Hosts that use plain http on an address other than localhost are no longer offered or called. Every agent-host or local-skill call asks first, whatever action class the host declares. Skill descriptions and parameter schemas are sanitised and capped.
+- Named agent hosts can no longer be added or edited; Settings → AI lists them with Remove. Hosts that use plain http on an address other than localhost are no longer offered or called. Every agent-host or local-skill call that CaddyAI or an agent makes asks first, whatever action class the host declares. Skill descriptions and parameter schemas are sanitised and capped.
 
 ### Offline use
 
