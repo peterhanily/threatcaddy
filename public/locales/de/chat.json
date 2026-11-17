@@ -22,12 +22,8 @@
     "badgeMeeting": "meeting",
     "planMode": "Planen",
     "actMode": "Ausführen",
-    "planModeTitle": "Planmodus: KI schlägt vor, führt aber keine Schreibaktionen aus",
     "actModeTitle": "Ausführungsmodus: KI führt Aktionen mit Genehmigung aus",
     "yoloLabel": "YOLO",
-    "safeLabel": "Sicher",
-    "yoloOnTitle": "YOLO-Modus AN — alle Tool-Aufrufe automatisch genehmigt",
-    "yoloOffTitle": "Klicken, um YOLO-Modus zu aktivieren (alle Aktionen auto-genehmigen)",
     "tokSuffix": "Tok",
     "tokenTotal": "Tokens gesamt: {{total}}",
     "tokenTotalBudget": "Tokens gesamt: {{total}} / {{budget}} Budget",
@@ -56,7 +52,6 @@
     "restoreLabel": "Wiederherstellen",
     "approve": "Genehmigen",
     "reject": "Ablehnen",
-    "switchedToPlan": "In den Planmodus gewechselt — KI schlägt vor, ohne auszuführen",
     "switchedToAct": "In den Ausführungsmodus gewechselt — KI führt mit Genehmigung aus",
     "switchedToActMessage": "In den **Ausführungsmodus** gewechselt. Senden Sie \"Plan ausführen\", um die vorgeschlagenen Aktionen mit Genehmigungsschranke auszuführen, oder führen Sie das Gespräch fort.",
     "errorCreateThread": "Chat-Thread konnte nicht erstellt werden. Versuchen Sie, die Seite neu zu laden.",
@@ -75,6 +70,13 @@
     "onboardingStep3Title": "3. Berechtigungen aktivieren",
     "onboardingStep3Desc": "Aktivieren Sie im Erweiterungs-Popup \"CaddyAI zulassen\" für KI-Provider-Zugriff und \"URL-Abruf zulassen\" für das /fetch-Tool.",
     "onboardingDismiss": "Verstanden"
+  },
+  "mode": {
+    "planTitle": "Planmodus: CaddyAI liest nur diese Untersuchung und beschreibt alles andere als Plan",
+    "switchedToPlan": "In den Planmodus gewechselt. CaddyAI liest nur diese Untersuchung und beschreibt alles andere als Plan",
+    "askLabel": "Fragen",
+    "yoloOnTitle": "YOLO ist an: genehmigt Änderungen innerhalb dieser Untersuchung und integrierte Anbieterabfragen automatisch. Fragt weiterhin nach, bevor Webseiten geöffnet, andere Untersuchungen gelesen oder geändert, Skills verwendet oder Agenten geändert werden.",
+    "yoloOffTitle": "CaddyAI fragt vor jeder Änderung nach. Klicken, um YOLO einzuschalten: genehmigt Änderungen innerhalb dieser Untersuchung und integrierte Anbieterabfragen automatisch und fragt weiterhin nach, bevor Webseiten geöffnet, andere Untersuchungen gelesen oder geändert, Skills verwendet oder Agenten geändert werden."
   },
   "approval": {
     "position": "{{index}} von {{total}}",

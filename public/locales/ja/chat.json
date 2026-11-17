@@ -22,12 +22,8 @@
     "badgeMeeting": "ミーティング",
     "planMode": "プラン",
     "actMode": "実行",
-    "planModeTitle": "プランモード：AIは提案するが書き込みアクションは実行しない",
     "actModeTitle": "実行モード：AIは承認を得てアクションを実行する",
     "yoloLabel": "YOLO",
-    "safeLabel": "安全",
-    "yoloOnTitle": "YOLOモードON——すべてのツール呼び出しが自動承認されます",
-    "yoloOffTitle": "クリックしてYOLOモードを有効化（すべてのアクションを自動承認）",
     "tokSuffix": "tok",
     "tokenTotal": "総トークン数：{{total}}",
     "tokenTotalBudget": "総トークン数：{{total}} / {{budget}} 予算",
@@ -56,7 +52,6 @@
     "restoreLabel": "復元",
     "approve": "承認",
     "reject": "拒否",
-    "switchedToPlan": "プランモードに切り替えました——AIは実行せずに提案します",
     "switchedToAct": "実行モードに切り替えました——AIは承認を得て実行します",
     "switchedToActMessage": "**実行モード**に切り替えました。「プランを実行する」と送信して承認ゲート付きで提案されたアクションを実行するか、会話を続けてください。",
     "errorCreateThread": "チャットスレッドの作成に失敗しました。ページを更新してください。",
@@ -75,6 +70,13 @@
     "onboardingStep3Title": "3. 権限を有効化",
     "onboardingStep3Desc": "拡張機能のポップアップで、AIプロバイダーアクセスのための「CaddyAIを許可」と、/fetchツールのための「URLフェッチを許可」を有効にします。",
     "onboardingDismiss": "了解"
+  },
+  "mode": {
+    "planTitle": "プランモード：CaddyAI はこの調査のみを読み取り、それ以外はすべてプランとして説明します",
+    "switchedToPlan": "プランモードに切り替えました。CaddyAI はこの調査のみを読み取り、それ以外はすべてプランとして説明します",
+    "askLabel": "確認",
+    "yoloOnTitle": "YOLO オン：この調査内の変更と組み込みのベンダー照会を自動承認します。Web ページを開く、他の調査を読み書きする、スキルを使う、エージェントを変更する前には引き続き確認します。",
+    "yoloOffTitle": "CaddyAI は変更のたびに確認します。クリックすると YOLO がオンになります：この調査内の変更と組み込みのベンダー照会を自動承認し、Web ページを開く、他の調査を読み書きする、スキルを使う、エージェントを変更する前には引き続き確認します。"
   },
   "approval": {
     "position": "{{total}} 件中 {{index}} 件目",

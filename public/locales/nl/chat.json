@@ -22,12 +22,8 @@
     "badgeMeeting": "vergadering",
     "planMode": "Plan",
     "actMode": "Actie",
-    "planModeTitle": "Planmodus: AI stelt voor maar voert geen schrijfacties uit",
     "actModeTitle": "Actiemodus: AI voert acties uit met goedkeuring",
     "yoloLabel": "YOLO",
-    "safeLabel": "Veilig",
-    "yoloOnTitle": "YOLO-modus AAN — alle toolaanroepen automatisch goedgekeurd",
-    "yoloOffTitle": "Klik om YOLO-modus in te schakelen (alle acties automatisch goedkeuren)",
     "tokSuffix": "tok",
     "tokenTotal": "Totaal tokens: {{total}}",
     "tokenTotalBudget": "Totaal tokens: {{total}} / {{budget}} budget",
@@ -56,7 +52,6 @@
     "restoreLabel": "Herstellen",
     "approve": "Goedkeuren",
     "reject": "Afwijzen",
-    "switchedToPlan": "Overgeschakeld naar planmodus — AI stelt voor zonder uit te voeren",
     "switchedToAct": "Overgeschakeld naar actiemodus — AI voert uit met goedkeuring",
     "switchedToActMessage": "Overgeschakeld naar **actiemodus**. Stuur «voer het plan uit» om de voorgestelde acties uit te voeren met goedkeuringscontrole, of ga door met het gesprek.",
     "errorCreateThread": "Chatthread aanmaken mislukt. Probeer de pagina te vernieuwen.",
@@ -75,6 +70,13 @@
     "onboardingStep3Title": "3. Rechten inschakelen",
     "onboardingStep3Desc": "Schakel in het extensiepopup «CaddyAI toestaan» in voor toegang tot AI-providers en «URL ophalen toestaan» voor het /fetch-gereedschap.",
     "onboardingDismiss": "Begrepen"
+  },
+  "mode": {
+    "planTitle": "Planmodus: CaddyAI leest alleen dit onderzoek en beschrijft al het andere als plan",
+    "switchedToPlan": "Overgeschakeld naar planmodus. CaddyAI leest alleen dit onderzoek en beschrijft al het andere als plan",
+    "askLabel": "Vragen",
+    "yoloOnTitle": "YOLO staat aan: keurt wijzigingen binnen dit onderzoek en ingebouwde leveranciersopzoekingen automatisch goed. Vraagt nog steeds voordat webpagina's worden geopend, andere onderzoeken worden gelezen of gewijzigd, skills worden gebruikt of agents worden gewijzigd.",
+    "yoloOffTitle": "CaddyAI vraagt vóór elke wijziging. Klik om YOLO in te schakelen: keurt wijzigingen binnen dit onderzoek en ingebouwde leveranciersopzoekingen automatisch goed, en vraagt nog steeds voordat webpagina's worden geopend, andere onderzoeken worden gelezen of gewijzigd, skills worden gebruikt of agents worden gewijzigd."
   },
   "approval": {
     "position": "{{index}} van {{total}}",

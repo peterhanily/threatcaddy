@@ -22,12 +22,8 @@
     "badgeMeeting": "cuộc họp",
     "planMode": "Lên kế hoạch",
     "actMode": "Hành động",
-    "planModeTitle": "Chế độ lên kế hoạch: AI đề xuất nhưng không thực thi các hành động ghi",
     "actModeTitle": "Chế độ hành động: AI thực thi các hành động với sự chấp thuận",
     "yoloLabel": "YOLO",
-    "safeLabel": "An toàn",
-    "yoloOnTitle": "Chế độ YOLO BẬT — tất cả lệnh gọi công cụ được tự động phê duyệt",
-    "yoloOffTitle": "Nhấp để bật chế độ YOLO (tự động phê duyệt tất cả hành động)",
     "tokSuffix": "tok",
     "tokenTotal": "Tổng token: {{total}}",
     "tokenTotalBudget": "Tổng token: {{total}} / {{budget}} ngân sách",
@@ -56,7 +52,6 @@
     "restoreLabel": "Khôi phục",
     "approve": "Phê duyệt",
     "reject": "Từ chối",
-    "switchedToPlan": "Đã chuyển sang chế độ lên kế hoạch — AI sẽ đề xuất mà không thực thi",
     "switchedToAct": "Đã chuyển sang chế độ hành động — AI sẽ thực thi với sự chấp thuận",
     "switchedToActMessage": "Đã chuyển sang **chế độ hành động**. Gửi \"thực thi kế hoạch\" để chạy các hành động đề xuất với cổng phê duyệt, hoặc tiếp tục cuộc trò chuyện.",
     "errorCreateThread": "Tạo luồng trò chuyện thất bại. Thử làm mới trang.",
@@ -75,6 +70,13 @@
     "onboardingStep3Title": "3. Kích hoạt quyền",
     "onboardingStep3Desc": "Trong popup tiện ích mở rộng, bật \"Cho phép CaddyAI\" để truy cập nhà cung cấp AI và \"Cho phép lấy URL\" cho công cụ /fetch.",
     "onboardingDismiss": "Đã hiểu"
+  },
+  "mode": {
+    "planTitle": "Chế độ lên kế hoạch: CaddyAI chỉ đọc cuộc điều tra này và mô tả mọi thứ khác dưới dạng kế hoạch",
+    "switchedToPlan": "Đã chuyển sang chế độ lên kế hoạch. CaddyAI chỉ đọc cuộc điều tra này và mô tả mọi thứ khác dưới dạng kế hoạch",
+    "askLabel": "Hỏi",
+    "yoloOnTitle": "YOLO đang bật: tự động phê duyệt các thay đổi trong cuộc điều tra này và các tra cứu nhà cung cấp tích hợp sẵn. Vẫn hỏi trước khi mở trang web, đọc hoặc ghi các cuộc điều tra khác, dùng kỹ năng hoặc thay đổi tác tử.",
+    "yoloOffTitle": "CaddyAI hỏi trước mỗi thay đổi. Nhấp để bật YOLO: tự động phê duyệt các thay đổi trong cuộc điều tra này và các tra cứu nhà cung cấp tích hợp sẵn, và vẫn hỏi trước khi mở trang web, đọc hoặc ghi các cuộc điều tra khác, dùng kỹ năng hoặc thay đổi tác tử."
   },
   "approval": {
     "position": "{{index}} trên {{total}}",

@@ -22,12 +22,8 @@
     "badgeMeeting": "reunião",
     "planMode": "Planejar",
     "actMode": "Executar",
-    "planModeTitle": "Modo Planejar: a IA propõe mas não executa ações de escrita",
     "actModeTitle": "Modo Executar: a IA executa ações com aprovação",
     "yoloLabel": "YOLO",
-    "safeLabel": "Seguro",
-    "yoloOnTitle": "Modo YOLO ATIVADO — todas as chamadas de ferramentas auto-aprovadas",
-    "yoloOffTitle": "Clique para habilitar o modo YOLO (auto-aprovar todas as ações)",
     "tokSuffix": "tok",
     "tokenTotal": "Total de tokens: {{total}}",
     "tokenTotalBudget": "Total de tokens: {{total}} / {{budget}} orçamento",
@@ -56,7 +52,6 @@
     "restoreLabel": "Restaurar",
     "approve": "Aprovar",
     "reject": "Rejeitar",
-    "switchedToPlan": "Alterado para modo Planejar — a IA propõe sem executar",
     "switchedToAct": "Alterado para modo Executar — a IA executa com aprovação",
     "switchedToActMessage": "Alterado para **modo Executar**. Envie \"executar o plano\" para executar as ações propostas com controle de aprovação, ou continue a conversa.",
     "errorCreateThread": "Falha ao criar tópico de conversa. Tente recarregar a página.",
@@ -76,6 +71,13 @@
     "onboardingStep3Desc": "No popup da extensão, habilite \"Permitir CaddyAI\" para acesso aos provedores de IA e \"Permitir busca de URL\" para a ferramenta /fetch.",
     "onboardingDismiss": "Entendido",
     "loopCount_many": "{{count}} loops"
+  },
+  "mode": {
+    "planTitle": "Modo Planejar: o CaddyAI só lê esta investigação e descreve todo o resto como um plano",
+    "switchedToPlan": "Alterado para modo Planejar. O CaddyAI só lê esta investigação e descreve todo o resto como um plano",
+    "askLabel": "Perguntar",
+    "yoloOnTitle": "YOLO ativado: aprova automaticamente alterações dentro desta investigação e consultas integradas a fornecedores. Ainda pergunta antes de abrir páginas da web, ler ou alterar outras investigações, usar habilidades ou alterar agentes.",
+    "yoloOffTitle": "O CaddyAI pergunta antes de cada alteração. Clique para ativar o YOLO: aprova automaticamente alterações dentro desta investigação e consultas integradas a fornecedores, e ainda pergunta antes de abrir páginas da web, ler ou alterar outras investigações, usar habilidades ou alterar agentes."
   },
   "approval": {
     "position": "{{index}} de {{total}}",

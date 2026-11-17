@@ -22,12 +22,8 @@
     "badgeMeeting": "réunion",
     "planMode": "Planifier",
     "actMode": "Agir",
-    "planModeTitle": "Mode Planification : l'IA propose sans exécuter les actions d'écriture",
     "actModeTitle": "Mode Action : l'IA exécute les actions avec approbation",
     "yoloLabel": "YOLO",
-    "safeLabel": "Sécurisé",
-    "yoloOnTitle": "Mode YOLO ACTIVÉ — tous les appels d'outils auto-approuvés",
-    "yoloOffTitle": "Cliquer pour activer le mode YOLO (auto-approuver toutes les actions)",
     "tokSuffix": "tok",
     "tokenTotal": "Total tokens : {{total}}",
     "tokenTotalBudget": "Total tokens : {{total}} / {{budget}} budget",
@@ -56,7 +52,6 @@
     "restoreLabel": "Restaurer",
     "approve": "Approuver",
     "reject": "Rejeter",
-    "switchedToPlan": "Basculé en mode Planification — l'IA propose sans exécuter",
     "switchedToAct": "Basculé en mode Action — l'IA exécute avec approbation",
     "switchedToActMessage": "Basculé en **mode Action**. Envoyez « exécuter le plan » pour lancer les actions proposées avec contrôle d'approbation, ou continuez la conversation.",
     "errorCreateThread": "Impossible de créer le fil de discussion. Essayez de recharger la page.",
@@ -76,6 +71,13 @@
     "onboardingStep3Desc": "Dans le popup de l'extension, activez « Autoriser CaddyAI » pour l'accès aux fournisseurs IA et « Autoriser la récupération d'URL » pour l'outil /fetch.",
     "onboardingDismiss": "Compris",
     "loopCount_many": "{{count}} boucles"
+  },
+  "mode": {
+    "planTitle": "Mode Planification : CaddyAI lit uniquement cette enquête et décrit tout le reste sous forme de plan",
+    "switchedToPlan": "Basculé en mode Planification. CaddyAI lit uniquement cette enquête et décrit tout le reste sous forme de plan",
+    "askLabel": "Demander",
+    "yoloOnTitle": "YOLO activé : approuve automatiquement les modifications dans cette enquête et les recherches intégrées auprès des fournisseurs. Demande toujours avant d'ouvrir des pages web, de lire ou de modifier d'autres enquêtes, d'utiliser des compétences ou de modifier des agents.",
+    "yoloOffTitle": "CaddyAI demande avant chaque modification. Cliquez pour activer YOLO : approuve automatiquement les modifications dans cette enquête et les recherches intégrées auprès des fournisseurs, et demande toujours avant d'ouvrir des pages web, de lire ou de modifier d'autres enquêtes, d'utiliser des compétences ou de modifier des agents."
   },
   "approval": {
     "position": "{{index}} sur {{total}}",

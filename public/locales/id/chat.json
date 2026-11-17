@@ -22,12 +22,8 @@
     "badgeMeeting": "rapat",
     "planMode": "Rencana",
     "actMode": "Aksi",
-    "planModeTitle": "Mode rencana: AI mengusulkan tetapi tidak mengeksekusi tindakan tulis",
     "actModeTitle": "Mode aksi: AI mengeksekusi tindakan dengan persetujuan",
     "yoloLabel": "YOLO",
-    "safeLabel": "Aman",
-    "yoloOnTitle": "Mode YOLO AKTIF — semua pemanggilan alat disetujui otomatis",
-    "yoloOffTitle": "Klik untuk mengaktifkan mode YOLO (setujui semua tindakan otomatis)",
     "tokSuffix": "tok",
     "tokenTotal": "Total token: {{total}}",
     "tokenTotalBudget": "Total token: {{total}} / {{budget}} anggaran",
@@ -56,7 +52,6 @@
     "restoreLabel": "Pulihkan",
     "approve": "Setujui",
     "reject": "Tolak",
-    "switchedToPlan": "Beralih ke mode rencana — AI akan mengusulkan tanpa mengeksekusi",
     "switchedToAct": "Beralih ke mode aksi — AI akan mengeksekusi dengan persetujuan",
     "switchedToActMessage": "Beralih ke **mode aksi**. Kirim \"eksekusi rencana\" untuk menjalankan tindakan yang diusulkan dengan gerbang persetujuan, atau lanjutkan percakapan.",
     "errorCreateThread": "Gagal membuat utas obrolan. Coba segarkan halaman.",
@@ -75,6 +70,13 @@
     "onboardingStep3Title": "3. Aktifkan izin",
     "onboardingStep3Desc": "Di popup ekstensi, aktifkan \"Izinkan CaddyAI\" untuk akses penyedia AI dan \"Izinkan pengambilan URL\" untuk alat /fetch.",
     "onboardingDismiss": "Mengerti"
+  },
+  "mode": {
+    "planTitle": "Mode rencana: CaddyAI hanya membaca investigasi ini dan menjelaskan hal lain sebagai rencana",
+    "switchedToPlan": "Beralih ke mode rencana. CaddyAI hanya membaca investigasi ini dan menjelaskan hal lain sebagai rencana",
+    "askLabel": "Tanya",
+    "yoloOnTitle": "YOLO aktif: menyetujui otomatis perubahan di dalam investigasi ini dan pencarian vendor bawaan. Tetap bertanya sebelum membuka halaman web, membaca atau menulis investigasi lain, menggunakan skill, atau mengubah agen.",
+    "yoloOffTitle": "CaddyAI bertanya sebelum setiap perubahan. Klik untuk mengaktifkan YOLO: menyetujui otomatis perubahan di dalam investigasi ini dan pencarian vendor bawaan, dan tetap bertanya sebelum membuka halaman web, membaca atau menulis investigasi lain, menggunakan skill, atau mengubah agen."
   },
   "approval": {
     "position": "{{index}} dari {{total}}",

@@ -22,12 +22,8 @@
     "badgeMeeting": "toplantı",
     "planMode": "Plan",
     "actMode": "Eylem",
-    "planModeTitle": "Plan modu: AI önerir ancak yazma işlemleri gerçekleştirmez",
     "actModeTitle": "Eylem modu: AI işlemleri onay ile gerçekleştirir",
     "yoloLabel": "YOLO",
-    "safeLabel": "Güvenli",
-    "yoloOnTitle": "YOLO modu AÇIK — tüm araç çağrıları otomatik onaylanır",
-    "yoloOffTitle": "YOLO modunu etkinleştirmek için tıklayın (tüm işlemleri otomatik onayla)",
     "tokSuffix": "tok",
     "tokenTotal": "Toplam token: {{total}}",
     "tokenTotalBudget": "Toplam token: {{total}} / {{budget}} bütçe",
@@ -56,7 +52,6 @@
     "restoreLabel": "Geri Yükle",
     "approve": "Onayla",
     "reject": "Reddet",
-    "switchedToPlan": "Plan moduna geçildi — AI öneri sunar ancak işlem gerçekleştirmez",
     "switchedToAct": "Eylem moduna geçildi — AI işlemleri onay ile gerçekleştirecek",
     "switchedToActMessage": "**Eylem moduna** geçildi. Onay kapılı önerilen işlemleri çalıştırmak için \"planı uygula\" gönderin veya konuşmaya devam edin.",
     "errorCreateThread": "Sohbet konusu oluşturulamadı. Sayfayı yenilemeyi deneyin.",
@@ -75,6 +70,13 @@
     "onboardingStep3Title": "3. İzinleri etkinleştir",
     "onboardingStep3Desc": "Uzantı açılır penceresinde AI sağlayıcı erişimi için \"CaddyAI'ye İzin Ver\" ve /fetch aracı için \"URL getirmeye İzin Ver\"i etkinleştirin.",
     "onboardingDismiss": "Anladım"
+  },
+  "mode": {
+    "planTitle": "Plan modu: CaddyAI yalnızca bu soruşturmayı okur ve diğer her şeyi bir plan olarak açıklar",
+    "switchedToPlan": "Plan moduna geçildi. CaddyAI yalnızca bu soruşturmayı okur ve diğer her şeyi bir plan olarak açıklar",
+    "askLabel": "Sor",
+    "yoloOnTitle": "YOLO açık: bu soruşturma içindeki değişiklikleri ve yerleşik sağlayıcı sorgularını otomatik onaylar. Web sayfalarını açmadan, diğer soruşturmaları okumadan veya bunlara yazmadan, beceri kullanmadan ya da ajanları değiştirmeden önce yine sorar.",
+    "yoloOffTitle": "CaddyAI her değişiklikten önce sorar. YOLO'yu açmak için tıklayın: bu soruşturma içindeki değişiklikleri ve yerleşik sağlayıcı sorgularını otomatik onaylar; web sayfalarını açmadan, diğer soruşturmaları okumadan veya bunlara yazmadan, beceri kullanmadan ya da ajanları değiştirmeden önce yine sorar."
   },
   "approval": {
     "position": "{{index}} / {{total}}",

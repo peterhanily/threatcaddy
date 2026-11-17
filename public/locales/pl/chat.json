@@ -22,12 +22,8 @@
     "badgeMeeting": "spotkanie",
     "planMode": "Plan",
     "actMode": "Działaj",
-    "planModeTitle": "Tryb planowania: AI proponuje, ale nie wykonuje operacji zapisu",
     "actModeTitle": "Tryb działania: AI wykonuje akcje po zatwierdzeniu",
     "yoloLabel": "YOLO",
-    "safeLabel": "Bezpieczny",
-    "yoloOnTitle": "Tryb YOLO WŁĄCZONY — wszystkie wywołania narzędzi są automatycznie zatwierdzane",
-    "yoloOffTitle": "Kliknij, aby włączyć tryb YOLO (automatyczne zatwierdzanie wszystkich akcji)",
     "tokSuffix": "tok",
     "tokenTotal": "Łącznie tokenów: {{total}}",
     "tokenTotalBudget": "Łącznie tokenów: {{total}} / {{budget}} budżet",
@@ -56,7 +52,6 @@
     "restoreLabel": "Przywróć",
     "approve": "Zatwierdź",
     "reject": "Odrzuć",
-    "switchedToPlan": "Przełączono na tryb planowania — AI będzie proponować bez wykonywania",
     "switchedToAct": "Przełączono na tryb działania — AI będzie wykonywać po zatwierdzeniu",
     "switchedToActMessage": "Przełączono na **tryb działania**. Wyślij «wykonaj plan», aby uruchomić proponowane akcje z kontrolą zatwierdzania, lub kontynuuj rozmowę.",
     "errorCreateThread": "Nie udało się utworzyć wątku czatu. Spróbuj odświeżyć stronę.",
@@ -77,6 +72,13 @@
     "onboardingDismiss": "Rozumiem",
     "loopCount_few": "{{count}} pętle",
     "loopCount_many": "{{count}} pętli"
+  },
+  "mode": {
+    "planTitle": "Tryb planowania: CaddyAI tylko odczytuje to śledztwo, a wszystko inne opisuje jako plan",
+    "switchedToPlan": "Przełączono na tryb planowania. CaddyAI tylko odczytuje to śledztwo, a wszystko inne opisuje jako plan",
+    "askLabel": "Pytaj",
+    "yoloOnTitle": "YOLO włączone: automatycznie zatwierdza zmiany w tym śledztwie i wbudowane wyszukiwania u dostawców. Nadal pyta przed otwarciem stron internetowych, odczytem lub zapisem innych śledztw, użyciem umiejętności lub zmianą agentów.",
+    "yoloOffTitle": "CaddyAI pyta przed każdą zmianą. Kliknij, aby włączyć YOLO: automatycznie zatwierdza zmiany w tym śledztwie i wbudowane wyszukiwania u dostawców, a nadal pyta przed otwarciem stron internetowych, odczytem lub zapisem innych śledztw, użyciem umiejętności lub zmianą agentów."
   },
   "approval": {
     "position": "{{index}} z {{total}}",

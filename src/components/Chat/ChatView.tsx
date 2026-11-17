@@ -19,6 +19,7 @@ import { TOOL_DEFINITIONS, buildSystemPrompt, isWriteTool, fetchViaExtensionBrid
 import { getHostToolDefinitions, executeHostSkill } from '../../lib/agent-hosts';
 import { mintHumanApproval, type HumanApproval } from '../../lib/human-approval';
 import { createChatToolExecutor, type ApprovalItem } from '../../lib/chat-tool-executor';
+import { isPlanModeTool } from '../../lib/tool-reach';
 import { parseCtiSlashCommand, planCtiSourceRequests, normalizeCtiSourceRunResult, renderCtiRunMarkdown } from '../../lib/cti-source-formatting';
 import { generateChatTitle } from '../../lib/chat-utils';
 import { truncateConversation, summarizeConversation, MAX_CONTEXT_MESSAGES } from '../../lib/chat-utils';
@@ -144,7 +145,7 @@ export function ChatView({
   const hasDrafts = useSyncExternalStore(subscribeComposerDrafts, hasComposerDrafts);
   const [discardDraftsOpen, setDiscardDraftsOpen] = useState(false);
 
-  // ── YOLO mode — auto-approve all write tools without prompting
+  // ── YOLO mode — auto-approve in-scope changes and passive lookups; the decision table still asks for the rest
   const [yoloMode, setYoloMode] = useState(false);
   // Track which thread is streaming so we don't show stale content on thread switch
   const streamingThreadRef = useRef<string | undefined>(undefined);
@@ -522,18 +523,18 @@ export function ChatView({
     const assistantMessageId = nanoid();
     const checkpointContext = { id: nanoid(), threadId: activeThread.id, messageId: assistantMessageId };
 
-    // In plan mode, filter out write tools so the LLM can only read/analyze
+    // In plan mode, offer only reads of this investigation
     const currentMode = activeThread.mode || 'act';
     const hostTools = getHostToolDefinitions(settings);
     const allTools = hostTools.length > 0 ? [...TOOL_DEFINITIONS, ...hostTools] : TOOL_DEFINITIONS;
     const tools = currentMode === 'plan'
-      ? allTools.filter(t => !isWriteTool(t.name))
+      ? allTools.filter(t => isPlanModeTool(t.name))
       : allTools;
     const allowedTools = new Set(tools.map(tool => tool.name));
 
     // In plan mode, append instructions to the system prompt
     const finalSystemPrompt = currentMode === 'plan'
-      ? systemPrompt + '\n\nYou are in PLAN MODE. Do NOT create, update, or modify any entities. Instead, describe what you WOULD do: list the tools you would call, what data you would create, and what your analysis plan is. Present this as a structured plan the analyst can review before switching to Act mode.'
+      ? systemPrompt + '\n\nYou are in PLAN MODE. You can only read this investigation; describe anything else as a plan: list the tools you would call, what data you would create, and what your analysis plan is. Present this as a structured plan the analyst can review before switching to Act mode.'
       : systemPrompt;
 
     // Track which thread is streaming
@@ -692,7 +693,7 @@ export function ChatView({
     if (!activeThread) return;
     const newMode = threadMode === 'act' ? 'plan' : 'act';
     onUpdateThread(activeThread.id, { mode: newMode });
-    addToast('success', newMode === 'plan' ? t('view.switchedToPlan') : t('view.switchedToAct'));
+    addToast('success', newMode === 'plan' ? t('mode.switchedToPlan') : t('view.switchedToAct'));
 
     // When switching from Plan to Act, if the last assistant message exists,
     // prompt the user to execute the plan
@@ -1091,7 +1092,7 @@ export function ChatView({
                       ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
                       : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
                   )}
-                  title={threadMode === 'plan' ? t('view.planModeTitle') : t('view.actModeTitle')}
+                  title={threadMode === 'plan' ? t('mode.planTitle') : t('view.actModeTitle')}
                 >
                   {threadMode === 'plan' ? <Eye size={10} /> : <Play size={10} />}
                   {threadMode === 'plan' ? t('view.planMode') : t('view.actMode')}
@@ -1104,10 +1105,10 @@ export function ChatView({
                       ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
                       : 'bg-surface-raised border-border-subtle text-text-muted hover:text-text-secondary'
                   )}
-                  title={yoloMode ? t('view.yoloOnTitle') : t('view.yoloOffTitle')}
+                  title={yoloMode ? t('mode.yoloOnTitle') : t('mode.yoloOffTitle')}
                 >
                   <Shield size={10} />
-                  {yoloMode ? t('view.yoloLabel') : t('view.safeLabel')}
+                  {yoloMode ? t('view.yoloLabel') : t('mode.askLabel')}
                 </button>
                 {threadTokenTotal > 0 && (
                   <span className={cn(

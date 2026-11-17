@@ -29,12 +29,8 @@
     "badgeMeeting": "meeting",
     "planMode": "Plan",
     "actMode": "Act",
-    "planModeTitle": "Plan mode: AI proposes but does not execute write actions",
     "actModeTitle": "Act mode: AI executes actions with approval",
     "yoloLabel": "YOLO",
-    "safeLabel": "Safe",
-    "yoloOnTitle": "YOLO mode ON — all tool calls auto-approved",
-    "yoloOffTitle": "Click to enable YOLO mode (auto-approve all actions)",
     "tokSuffix": "tok",
     "tokenTotal": "Total tokens: {{total}}",
     "tokenTotalBudget": "Total tokens: {{total}} / {{budget}} budget",
@@ -63,7 +59,6 @@
     "restoreLabel": "Restore",
     "approve": "Approve",
     "reject": "Reject",
-    "switchedToPlan": "Switched to Plan mode — AI will propose without executing",
     "switchedToAct": "Switched to Act mode — AI will execute with approval",
     "switchedToActMessage": "Switched to **Act mode**. Send \"execute the plan\" to run the proposed actions with approval gating, or continue the conversation.",
     "errorCreateThread": "Failed to create chat thread. Try refreshing the page.",
@@ -82,6 +77,13 @@
     "onboardingStep3Title": "3. Enable permissions",
     "onboardingStep3Desc": "In the extension popup, enable \"Allow CaddyAI\" for AI provider access and \"Allow URL fetching\" for the /fetch tool.",
     "onboardingDismiss": "Got it"
+  },
+  "mode": {
+    "planTitle": "Plan mode: CaddyAI only reads this investigation and describes anything else as a plan",
+    "switchedToPlan": "Switched to Plan mode. CaddyAI only reads this investigation and describes anything else as a plan",
+    "askLabel": "Ask",
+    "yoloOnTitle": "YOLO is on: auto-approves changes inside this investigation and built-in vendor lookups. Still asks before opening web pages, reading or writing other investigations, using skills, or changing agents.",
+    "yoloOffTitle": "CaddyAI asks before each change. Click to turn on YOLO: auto-approves changes inside this investigation and built-in vendor lookups, and still asks before opening web pages, reading or writing other investigations, using skills, or changing agents."
   },
   "approval": {
     "position": "{{index}} of {{total}}",

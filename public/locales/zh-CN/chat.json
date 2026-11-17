@@ -22,12 +22,8 @@
     "badgeMeeting": "会议",
     "planMode": "计划",
     "actMode": "执行",
-    "planModeTitle": "计划模式：AI 提出建议但不执行写入操作",
     "actModeTitle": "执行模式：AI 在审批下执行操作",
     "yoloLabel": "YOLO",
-    "safeLabel": "安全",
-    "yoloOnTitle": "YOLO 模式已开启——所有工具调用自动批准",
-    "yoloOffTitle": "点击启用 YOLO 模式（自动批准所有操作）",
     "tokSuffix": "令牌",
     "tokenTotal": "总令牌数：{{total}}",
     "tokenTotalBudget": "总令牌数：{{total}} / {{budget}} 预算",
@@ -56,7 +52,6 @@
     "restoreLabel": "恢复",
     "approve": "批准",
     "reject": "拒绝",
-    "switchedToPlan": "已切换到计划模式——AI 将提出建议而不执行",
     "switchedToAct": "已切换到执行模式——AI 将在审批下执行",
     "switchedToActMessage": "已切换到**执行模式**。发送\"执行计划\"以在审批下运行提案操作，或继续对话。",
     "errorCreateThread": "创建聊天会话失败。请尝试刷新页面。",
@@ -75,6 +70,13 @@
     "onboardingStep3Title": "3. 启用权限",
     "onboardingStep3Desc": "在扩展弹出窗口中，启用\"允许 CaddyAI\"以访问 AI 提供商，以及\"允许 URL 获取\"以使用 /fetch 工具。",
     "onboardingDismiss": "明白了"
+  },
+  "mode": {
+    "planTitle": "计划模式：CaddyAI 只读取此调查，其他一切都以计划的形式描述",
+    "switchedToPlan": "已切换到计划模式。CaddyAI 只读取此调查，其他一切都以计划的形式描述",
+    "askLabel": "询问",
+    "yoloOnTitle": "YOLO 已开启：自动批准此调查内的更改和内置供应商查询。在打开网页、读取或写入其他调查、使用技能或更改代理之前仍会询问。",
+    "yoloOffTitle": "CaddyAI 在每次更改前都会询问。点击开启 YOLO：自动批准此调查内的更改和内置供应商查询，并在打开网页、读取或写入其他调查、使用技能或更改代理之前仍会询问。"
   },
   "approval": {
     "position": "第 {{index}} 项，共 {{total}} 项",
