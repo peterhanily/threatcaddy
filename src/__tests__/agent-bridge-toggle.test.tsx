@@ -69,6 +69,32 @@ describe('agent bridge switch in Settings → AI', () => {
     await expect(bridge().exec(nonce, 'create_note', { title: 'Refused', content: 'x' })).rejects.toThrow('Turn on the agent bridge');
   });
 
+  it('stored settings that will not parse leave the bridge off when another setting changes', async () => {
+    localStorage.setItem(workspaceStorageKey('threatcaddy-settings'), '{not json');
+    const { result } = renderHook(() => useSettings());
+    act(() => result.current.updateSettings({ theme: 'light' }));
+    expect(savedSettings().theme).toBe('light');
+    expect(savedSettings().agentBridgeEnabled).not.toBe(true);
+    expect(result.current.settings.agentBridgeEnabled).not.toBe(true);
+    await expect(bridge().exec(nonce, 'create_note', { title: 'Refused', content: 'x' })).rejects.toThrow('Turn on the agent bridge');
+  });
+
+  it("a tab's switch shows the bridge state another tab saved", async () => {
+    render(<SettingsWithSavedState />);
+    const toggle = screen.getByRole('switch', { name: 'Agent bridge' });
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    // Another tab turns the bridge on; this tab's bridge now accepts calls.
+    const key = workspaceStorageKey('threatcaddy-settings');
+    localStorage.setItem(key, JSON.stringify({ ...savedSettings(), agentBridgeEnabled: true }));
+    act(() => { window.dispatchEvent(new StorageEvent('storage', { key, newValue: localStorage.getItem(key) })); });
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+    // And off again.
+    localStorage.setItem(key, JSON.stringify({ ...savedSettings(), agentBridgeEnabled: false }));
+    act(() => { window.dispatchEvent(new StorageEvent('storage', { key, newValue: localStorage.getItem(key) })); });
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    await expect(bridge().exec(nonce, 'create_note', { title: 'Refused', content: 'x' })).rejects.toThrow('Turn on the agent bridge');
+  });
+
   it('a stale tab can still turn the bridge on or off itself', () => {
     const stale = renderHook(() => useSettings());
     act(() => stale.result.current.updateSettings({ agentBridgeEnabled: true }));

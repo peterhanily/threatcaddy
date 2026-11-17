@@ -97,6 +97,17 @@ export function useSettings() {
     applyAppLanguage(settings.language);
   }, [settings.language]);
 
+  // The bridge in this tab follows a switch another tab saved, so this tab's switch shows that state too.
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== SETTINGS_KEY) return;
+      const bridge = storedAgentBridgeEnabled();
+      setSettingsState(prev => (!!prev.agentBridgeEnabled === bridge ? prev : { ...prev, agentBridgeEnabled: bridge }));
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   const updateSettings = useCallback((update: SettingsUpdate) => {
     setSettingsState((prev) => {
       const updates = typeof update === 'function' ? update(prev) : update;
