@@ -200,6 +200,13 @@
     "failed": "Gagal mengambil URL: {{error}}",
     "unknownError": "Kesalahan tidak dikenal"
   },
+  "loop": {
+    "started": "Loop latar belakang `{{id}}` dimulai. Berjalan setiap {{interval}}:",
+    "stopHint": "Gunakan `/stoploop` untuk menghentikannya.",
+    "stopped_one": "{{count}} loop latar belakang dihentikan.",
+    "stopped_other": "{{count}} loop latar belakang dihentikan.",
+    "noneToStop": "Tidak ada loop aktif untuk dihentikan."
+  },
   "input.serverStatus": "Jalur server tim",
   "input.serverModelsHelp": "Penyedia dan model yang tersedia bergantung pada konfigurasi server tim.",
   "input.modelLabel": "Model AI"

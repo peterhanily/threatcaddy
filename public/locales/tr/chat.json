@@ -201,6 +201,13 @@
     "failed": "URL getirilemedi: {{error}}",
     "unknownError": "Bilinmeyen hata"
   },
+  "loop": {
+    "started": "Arka plan döngüsü `{{id}}` başlatıldı. Her {{interval}} çalışır:",
+    "stopHint": "Durdurmak için `/stoploop` kullanın.",
+    "stopped_one": "{{count}} arka plan döngüsü durduruldu.",
+    "stopped_other": "{{count}} arka plan döngüsü durduruldu.",
+    "noneToStop": "Durdurulacak etkin döngü yok."
+  },
   "input.serverStatus": "Ekip sunucusu yolu",
   "input.serverModelsHelp": "Kullanılabilir sağlayıcılar ve modeller ekip sunucusunun yapılandırmasına bağlıdır.",
   "input.modelLabel": "Yapay zekâ modeli"

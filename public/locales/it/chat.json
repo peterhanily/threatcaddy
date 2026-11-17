@@ -203,6 +203,14 @@
     "failed": "Impossibile recuperare l'URL: {{error}}",
     "unknownError": "Errore sconosciuto"
   },
+  "loop": {
+    "started": "Loop in background `{{id}}` avviato. Esecuzione ogni {{interval}}:",
+    "stopHint": "Usa `/stoploop` per fermarlo.",
+    "stopped_one": "Fermato {{count}} loop in background.",
+    "stopped_many": "Fermati {{count}} loop in background.",
+    "stopped_other": "Fermati {{count}} loop in background.",
+    "noneToStop": "Nessun loop attivo da fermare."
+  },
   "input.serverStatus": "Instradamento tramite server del team",
   "input.serverModelsHelp": "I fornitori e i modelli disponibili dipendono dalla configurazione del server del team.",
   "input.modelLabel": "Modello IA"

@@ -203,6 +203,14 @@
     "failed": "שליפת ה-URL נכשלה: {{error}}",
     "unknownError": "שגיאה לא ידועה"
   },
+  "loop": {
+    "started": "לולאת הרקע `{{id}}` הופעלה. רצה כל {{interval}}:",
+    "stopHint": "השתמש ב-`/stoploop` כדי לעצור.",
+    "stopped_one": "{{count}} לולאת רקע נעצרה.",
+    "stopped_two": "{{count}} לולאות רקע נעצרו.",
+    "stopped_other": "{{count}} לולאות רקע נעצרו.",
+    "noneToStop": "אין לולאות פעילות לעצירה."
+  },
   "input.serverStatus": "ניתוב דרך שרת הצוות",
   "input.serverModelsHelp": "הספקים והמודלים הזמינים תלויים בהגדרות שרת הצוות.",
   "input.modelLabel": "מודל בינה מלאכותית"

@@ -200,6 +200,13 @@
     "failed": "获取 URL 失败：{{error}}",
     "unknownError": "未知错误"
   },
+  "loop": {
+    "started": "已启动后台循环 `{{id}}`。每 {{interval}} 运行一次：",
+    "stopHint": "使用 `/stoploop` 停止。",
+    "stopped_one": "已停止 {{count}} 个后台循环。",
+    "stopped_other": "已停止 {{count}} 个后台循环。",
+    "noneToStop": "没有可停止的活动循环。"
+  },
   "input.serverStatus": "团队服务器通道",
   "input.serverModelsHelp": "可用的提供商和模型取决于团队服务器配置。",
   "input.modelLabel": "AI 模型"

@@ -200,6 +200,13 @@
     "failed": "دریافت URL ناموفق بود: {{error}}",
     "unknownError": "خطای ناشناخته"
   },
+  "loop": {
+    "started": "حلقه پس‌زمینه `{{id}}` آغاز شد. هر {{interval}} اجرا می‌شود:",
+    "stopHint": "برای توقف از `/stoploop` استفاده کنید.",
+    "stopped_one": "{{count}} حلقه پس‌زمینه متوقف شد.",
+    "stopped_other": "{{count}} حلقه پس‌زمینه متوقف شد.",
+    "noneToStop": "هیچ حلقه فعالی برای توقف وجود ندارد."
+  },
   "input.serverStatus": "مسیر سرور تیم",
   "input.serverModelsHelp": "ارائه‌دهندگان و مدل‌های در دسترس به پیکربندی سرور تیم شما بستگی دارند.",
   "input.modelLabel": "مدل هوش مصنوعی"

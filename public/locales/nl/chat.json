@@ -200,6 +200,13 @@
     "failed": "URL ophalen mislukt: {{error}}",
     "unknownError": "Onbekende fout"
   },
+  "loop": {
+    "started": "Achtergrondlus `{{id}}` gestart. Wordt elke {{interval}} uitgevoerd:",
+    "stopHint": "Gebruik `/stoploop` om te stoppen.",
+    "stopped_one": "{{count}} achtergrondlus gestopt.",
+    "stopped_other": "{{count}} achtergrondlussen gestopt.",
+    "noneToStop": "Geen actieve lussen om te stoppen."
+  },
   "input.serverStatus": "Route via teamserver",
   "input.serverModelsHelp": "Beschikbare aanbieders en modellen hangen af van de configuratie van je teamserver.",
   "input.modelLabel": "AI-model"

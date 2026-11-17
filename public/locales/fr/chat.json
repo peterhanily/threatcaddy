@@ -203,6 +203,14 @@
     "failed": "Impossible de récupérer l'URL : {{error}}",
     "unknownError": "Erreur inconnue"
   },
+  "loop": {
+    "started": "Boucle en arrière-plan `{{id}}` démarrée. Exécution toutes les {{interval}} :",
+    "stopHint": "Utilisez `/stoploop` pour l'arrêter.",
+    "stopped_one": "{{count}} boucle en arrière-plan arrêtée.",
+    "stopped_many": "{{count}} boucles en arrière-plan arrêtées.",
+    "stopped_other": "{{count}} boucles en arrière-plan arrêtées.",
+    "noneToStop": "Aucune boucle active à arrêter."
+  },
   "input.serverStatus": "Routage par le serveur d’équipe",
   "input.serverModelsHelp": "Les fournisseurs et modèles disponibles dépendent de la configuration du serveur de votre équipe.",
   "input.modelLabel": "Modèle d’IA"

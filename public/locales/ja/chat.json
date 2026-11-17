@@ -200,6 +200,13 @@
     "failed": "URL を取得できませんでした: {{error}}",
     "unknownError": "不明なエラー"
   },
+  "loop": {
+    "started": "バックグラウンドループ `{{id}}` を開始しました。{{interval}} ごとに実行します：",
+    "stopHint": "停止するには `/stoploop` を使用してください。",
+    "stopped_one": "{{count}} 件のバックグラウンドループを停止しました。",
+    "stopped_other": "{{count}} 件のバックグラウンドループを停止しました。",
+    "noneToStop": "停止するアクティブなループはありません。"
+  },
   "input.serverStatus": "チームサーバー経由",
   "input.serverModelsHelp": "利用できるプロバイダーとモデルはチームサーバーの設定によって異なります。",
   "input.modelLabel": "AI モデル"

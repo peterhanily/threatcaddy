@@ -12,6 +12,13 @@
     "failed": "Failed to fetch URL: {{error}}",
     "unknownError": "Unknown error"
   },
+  "loop": {
+    "started": "Started background loop `{{id}}`. Running every {{interval}}:",
+    "stopHint": "Use `/stoploop` to stop.",
+    "stopped_one": "Stopped {{count}} background loop.",
+    "stopped_other": "Stopped {{count}} background loops.",
+    "noneToStop": "No active loops to stop."
+  },
   "view": {
     "newChat": "New Chat",
     "newFolder": "New investigation",

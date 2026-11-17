@@ -200,6 +200,13 @@
     "failed": "Không thể lấy URL: {{error}}",
     "unknownError": "Lỗi không xác định"
   },
+  "loop": {
+    "started": "Đã bắt đầu vòng lặp nền `{{id}}`. Chạy mỗi {{interval}}:",
+    "stopHint": "Dùng `/stoploop` để dừng.",
+    "stopped_one": "Đã dừng {{count}} vòng lặp nền.",
+    "stopped_other": "Đã dừng {{count}} vòng lặp nền.",
+    "noneToStop": "Không có vòng lặp đang hoạt động để dừng."
+  },
   "input.serverStatus": "Kênh máy chủ nhóm",
   "input.serverModelsHelp": "Nhà cung cấp và mô hình khả dụng phụ thuộc vào cấu hình máy chủ nhóm.",
   "input.modelLabel": "Mô hình AI"

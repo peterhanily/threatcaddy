@@ -203,6 +203,14 @@
     "failed": "Falha ao buscar a URL: {{error}}",
     "unknownError": "Erro desconhecido"
   },
+  "loop": {
+    "started": "Loop em segundo plano `{{id}}` iniciado. Executando a cada {{interval}}:",
+    "stopHint": "Use `/stoploop` para parar.",
+    "stopped_one": "{{count}} loop em segundo plano parado.",
+    "stopped_many": "{{count}} loops em segundo plano parados.",
+    "stopped_other": "{{count}} loops em segundo plano parados.",
+    "noneToStop": "Nenhum loop ativo para parar."
+  },
   "input.serverStatus": "Rota pelo servidor da equipe",
   "input.serverModelsHelp": "Os provedores e modelos disponíveis dependem da configuração do servidor da equipe.",
   "input.modelLabel": "Modelo de IA"

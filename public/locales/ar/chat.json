@@ -212,6 +212,17 @@
     "failed": "تعذّر جلب URL: {{error}}",
     "unknownError": "خطأ غير معروف"
   },
+  "loop": {
+    "started": "بدأت الحلقة الخلفية `{{id}}`. تعمل كل {{interval}}:",
+    "stopHint": "استخدم `/stoploop` لإيقافها.",
+    "stopped_zero": "عدد الحلقات الخلفية التي تم إيقافها: {{count}}",
+    "stopped_one": "تم إيقاف {{count}} حلقة خلفية.",
+    "stopped_two": "تم إيقاف حلقتين خلفيتين ({{count}}).",
+    "stopped_few": "تم إيقاف {{count}} حلقات خلفية.",
+    "stopped_many": "تم إيقاف {{count}} حلقة خلفية.",
+    "stopped_other": "تم إيقاف {{count}} حلقة خلفية.",
+    "noneToStop": "لا توجد حلقات نشطة لإيقافها."
+  },
   "input.serverStatus": "مسار خادم الفريق",
   "input.serverModelsHelp": "تعتمد الجهات المزوّدة والنماذج المتاحة على إعدادات خادم فريقك.",
   "input.modelLabel": "نموذج الذكاء الاصطناعي"

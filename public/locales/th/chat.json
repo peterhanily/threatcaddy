@@ -217,6 +217,13 @@
     "failed": "ดึง URL ไม่สำเร็จ: {{error}}",
     "unknownError": "ข้อผิดพลาดที่ไม่ทราบสาเหตุ"
   },
+  "loop": {
+    "started": "เริ่มลูปพื้นหลัง `{{id}}` แล้ว ทำงานทุก {{interval}}:",
+    "stopHint": "ใช้ `/stoploop` เพื่อหยุด",
+    "stopped_one": "หยุดลูปพื้นหลัง {{count}} รายการแล้ว",
+    "stopped_other": "หยุดลูปพื้นหลัง {{count}} รายการแล้ว",
+    "noneToStop": "ไม่มีลูปที่ทำงานอยู่ให้หยุด"
+  },
   "input.serverStatus": "ช่องทางเซิร์ฟเวอร์ทีม",
   "input.serverModelsHelp": "ผู้ให้บริการและโมเดลที่ใช้ได้ขึ้นอยู่กับการตั้งค่าเซิร์ฟเวอร์ทีม",
   "input.modelLabel": "โมเดล AI",

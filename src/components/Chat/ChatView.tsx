@@ -433,7 +433,7 @@ export function ChatView({
       const confirmMsg: ChatMessage = {
         id: nanoid(),
         role: 'assistant',
-        content: `Started background loop \`${loopId}\`. Running every ${formattedInterval}:\n\n> ${prompt}\n\nUse \`/stoploop\` to stop.`,
+        content: `${t('loop.started', { id: loopId, interval: formattedInterval })}\n\n> ${prompt}\n\n${t('loop.stopHint')}`,
         createdAt: Date.now(),
       };
       await onAddMessage(activeThread.id, confirmMsg);
@@ -446,9 +446,7 @@ export function ChatView({
       const confirmMsg: ChatMessage = {
         id: nanoid(),
         role: 'assistant',
-        content: count > 0
-          ? `Stopped ${count} background loop${count > 1 ? 's' : ''}.`
-          : 'No active loops to stop.',
+        content: count > 0 ? t('loop.stopped', { count }) : t('loop.noneToStop'),
         createdAt: Date.now(),
       };
       await onAddMessage(activeThread.id, confirmMsg);

@@ -200,6 +200,13 @@
     "failed": "URL लाने में विफल: {{error}}",
     "unknownError": "अज्ञात त्रुटि"
   },
+  "loop": {
+    "started": "पृष्ठभूमि लूप `{{id}}` शुरू हुआ। हर {{interval}} पर चलता है:",
+    "stopHint": "रोकने के लिए `/stoploop` का उपयोग करें।",
+    "stopped_one": "{{count}} पृष्ठभूमि लूप बंद किया गया।",
+    "stopped_other": "{{count}} पृष्ठभूमि लूप बंद किए गए।",
+    "noneToStop": "बंद करने के लिए कोई सक्रिय लूप नहीं है।"
+  },
   "input.serverStatus": "टीम सर्वर मार्ग",
   "input.serverModelsHelp": "उपलब्ध प्रदाता और मॉडल टीम सर्वर के कॉन्फ़िगरेशन पर निर्भर करते हैं।",
   "input.modelLabel": "AI मॉडल"

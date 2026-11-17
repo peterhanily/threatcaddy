@@ -206,6 +206,15 @@
     "failed": "Nie udało się pobrać URL: {{error}}",
     "unknownError": "Nieznany błąd"
   },
+  "loop": {
+    "started": "Uruchomiono pętlę w tle `{{id}}`. Wykonywana co {{interval}}:",
+    "stopHint": "Użyj `/stoploop`, aby ją zatrzymać.",
+    "stopped_one": "Zatrzymano {{count}} pętlę w tle.",
+    "stopped_few": "Zatrzymano {{count}} pętle w tle.",
+    "stopped_many": "Zatrzymano {{count}} pętli w tle.",
+    "stopped_other": "Zatrzymano {{count}} pętli w tle.",
+    "noneToStop": "Brak aktywnych pętli do zatrzymania."
+  },
   "input.serverStatus": "Trasa przez serwer zespołu",
   "input.serverModelsHelp": "Dostępni dostawcy i modele zależą od konfiguracji serwera zespołu.",
   "input.modelLabel": "Model AI"
