@@ -27,23 +27,14 @@ describe('integration cancellation ownership', () => {
     expect(await h.run()).toMatchObject({ status: 'cancelled', entitiesCreated: 0, displayResults: undefined });
     expect(h.callbacks.onCreateEntity).not.toHaveBeenCalled(); expect(h.callbacks.onNotify).not.toHaveBeenCalled();
   });
-  it('stops waiting for a shared token lookup and never starts a proxy request after its late result', async () => {
-    const token = deferred<string>(); const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
-    const getAccessToken = vi.fn(() => token.promise);
-    const h = setup([http], { useServerProxy: { serverUrl: 'https://server.example.test', getAccessToken } });
-    const run = h.run(); expect(getAccessToken).toHaveBeenCalledOnce(); h.controller.abort();
-    expect((await run).status).toBe('cancelled'); token.resolve('synthetic-token'); await token.promise;
-    expect(fetch).not.toHaveBeenCalled(); expect(h.callbacks.onCreateEntity).not.toHaveBeenCalled();
-  });
-  it.each(['direct', 'server'])('cancels %s response-body waiting without processing late content', async transport => {
+  it('cancels direct response-body waiting without processing late content', async () => {
     const body = deferred<unknown>();
-    const response = transport === 'server' ? { ok: true, status: 200, json: () => body.promise, headers: new Headers() }
-      : new Response(new ReadableStream({ start(controller) {
-        void body.promise.then(value => { try { controller.enqueue(new TextEncoder().encode(JSON.stringify(value))); controller.close(); } catch { /* reader was cancelled */ } });
-      } }));
+    const response = new Response(new ReadableStream({ start(controller) {
+      void body.promise.then(value => { try { controller.enqueue(new TextEncoder().encode(JSON.stringify(value))); controller.close(); } catch { /* reader was cancelled */ } });
+    } }));
     const fetch = vi.fn().mockResolvedValue(response);
     vi.stubGlobal('fetch', fetch);
-    const h = setup([http], transport === 'server' ? { useServerProxy: { serverUrl: 'https://server.example.test', getAccessToken: async () => null } } : undefined);
+    const h = setup([http]);
     const run = h.run(); await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce()); h.controller.abort();
     expect((await run).status).toBe('cancelled'); expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
     body.resolve({ status: 200, data: 'late' }); await body.promise;
