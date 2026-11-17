@@ -276,6 +276,29 @@ describe('B-CHAIN-8 calls parsed out of model text', () => {
     expect((await actionsFor('create_note')).map(action => action.status)).toEqual(['pending']);
     expect((await db.notes.toArray()).filter(note => note.title === 'Harvested')).toEqual([]);
   });
+
+  it('approve all leaves a harvested proposal for individual review, where it runs once', async () => {
+    await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY, autoApproveCreate: false } });
+    await deploy('ap-threat-hunter');
+    scriptedLLM.script({ toolCalls: [
+      { id: 'text_tc_1', name: 'create_note', input: { title: 'Harvested', content: 'From text' } },
+      { name: 'create_note', input: { title: 'Ordinary', content: 'Structured call' } },
+    ] });
+    await runMultiAgentCycle(await folder('S'), settings, true);
+    const notes = async (title: string) => (await db.notes.toArray()).filter(note => note.title === title);
+    const harvested = (await actionsFor('create_note')).find(action => action.toolInput.title === 'Harvested')!;
+
+    expect(await previewBulkApprove('S')).toEqual({ routine: 1, review: 1 });
+    expect(await bulkApproveActions('S')).toEqual({ executed: 1, failed: 0, skipped: 1 });
+    expect(await notes('Ordinary')).toHaveLength(1);
+    expect(await notes('Harvested')).toEqual([]);
+    expect((await db.agentActions.get(harvested.id))?.status).toBe('pending');
+
+    expect((await executeApprovedAction(harvested)).isError).toBe(false);
+    await executeApprovedAction(harvested);
+    expect(await notes('Harvested')).toHaveLength(1);
+    expect((await db.agentActions.get(harvested.id))?.status).toBe('executed');
+  });
 });
 
 describe('B-CHAIN-9..10 executive agent-control tools wait for a person', () => {

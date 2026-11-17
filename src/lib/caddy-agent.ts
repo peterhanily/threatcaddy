@@ -907,7 +907,7 @@ async function _runAgentCycleInner(
             toolBinding,
             rationale: response.content || 'Agent proposed action',
             severity: actionClass === 'modify' ? 'warning' : 'info',
-          });
+          }, { harvested: String(toolCall.id).startsWith('text_tc_') });
 
           if (alreadyPending) {
             // Skip duplicate — tell the LLM it's already pending
