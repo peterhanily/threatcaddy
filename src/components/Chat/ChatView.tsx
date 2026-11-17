@@ -1,24 +1,25 @@
 import { persistChatCompletion } from '../../lib/locked-chat-recovery';
-import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore, type KeyboardEvent } from 'react';
 import { Virtuoso } from 'react-virtuoso';
-import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, Check, X, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, ToolUseBlock } from '../../types';
 import { ClsSelect } from '../Common/ClsSelect';
 import { ClsBadge } from '../Common/ClsBadge';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { ChatMessageBubble } from './ChatMessage';
+import { ChatApprovalCard, ChatApprovalStatus } from './ChatApprovalCard';
 import { AgentCycleSummaryCard } from '../Agent/AgentCycleSummaryCard';
 import { ChatInput } from './ChatInput';
 import { useLLM } from '../../hooks/useLLM';
 import { DEFAULT_MODEL_PER_PROVIDER } from '../../lib/models';
 import { cn, formatDate } from '../../lib/utils';
 import { nanoid } from 'nanoid';
-import { TOOL_DEFINITIONS, buildSystemPrompt, executeTool, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
+import { TOOL_DEFINITIONS, buildSystemPrompt, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
 import { getHostToolDefinitions, executeHostSkill } from '../../lib/agent-hosts';
-import { getToolExecutionError, toolExecutionError, type ToolExecutionConstraints } from '../../lib/llm-tool-execution';
 import { mintHumanApproval, type HumanApproval } from '../../lib/human-approval';
-import type { ToolSurface } from '../../lib/tool-reach';
+import { createChatToolExecutor, type ApprovalItem } from '../../lib/chat-tool-executor';
+import { isPlanModeTool } from '../../lib/tool-reach';
 import { parseCtiSlashCommand, planCtiSourceRequests, normalizeCtiSourceRunResult, renderCtiRunMarkdown } from '../../lib/cti-source-formatting';
 import { generateChatTitle } from '../../lib/chat-utils';
 import { truncateConversation, summarizeConversation, MAX_CONTEXT_MESSAGES } from '../../lib/chat-utils';
@@ -27,7 +28,6 @@ import { useChatLoops } from '../../hooks/useChatLoops';
 import { hasLoopsForThread } from '../../lib/chat-loop';
 import { resolveMentions } from '../../lib/chat-mentions';
 import { executeCheckpointedTool, restoreCheckpoint } from '../../lib/checkpoints';
-import { getToolBinding } from '../../lib/tool-binding';
 import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCustomSlashCommands';
 import { useToast } from '../../contexts/ToastContext';
 import { supportsVision, describeImage } from '../../lib/image-ocr';
@@ -67,6 +67,14 @@ interface ChatViewProps {
   onEntitiesChanged?: () => void;
   onNavigateToEntity?: (type: string, id: string) => void;
   onOpenSettings?: (tab?: string) => void;
+}
+
+/** A queued approval card; resolve(null) rejects it. */
+interface PendingApproval {
+  id: string;
+  item: ApprovalItem;
+  threadId: string;
+  resolve: (approval: HumanApproval | null) => void;
 }
 
 export function ChatView({
@@ -137,20 +145,23 @@ export function ChatView({
   const hasDrafts = useSyncExternalStore(subscribeComposerDrafts, hasComposerDrafts);
   const [discardDraftsOpen, setDiscardDraftsOpen] = useState(false);
 
-  // ── YOLO mode — auto-approve all write tools without prompting
+  // ── YOLO mode — auto-approve in-scope changes and passive lookups; the decision table still asks for the rest
   const [yoloMode, setYoloMode] = useState(false);
   // Track which thread is streaming so we don't show stale content on thread switch
   const streamingThreadRef = useRef<string | undefined>(undefined);
   const yoloModeRef = useRef(false);
   useEffect(() => { yoloModeRef.current = yoloMode; }, [yoloMode]);
 
-  // ── Write tool approval flow (state declared early so handleSend can reference it)
-  const [pendingApproval, setPendingApproval] = useState<{
-    toolName: string;
-    input: Record<string, unknown>;
-    threadId: string;
-    resolve: (approved: boolean) => void;
-  } | null>(null);
+  // ── Tool approval queue, one card at a time, oldest first (declared early so handleSend can reference it)
+  const approvalQueueRef = useRef<PendingApproval[]>([]);
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
+  const settleApproval = useCallback((id: string, approval: HumanApproval | null) => {
+    const entry = approvalQueueRef.current.find(pending => pending.id === id);
+    if (!entry) return;
+    approvalQueueRef.current = approvalQueueRef.current.filter(pending => pending !== entry);
+    setPendingApprovals(approvalQueueRef.current);
+    entry.resolve(approval);
+  }, []);
 
   // Auto-select first non-folder thread when none selected (or stale selection)
   useEffect(() => {
@@ -328,6 +339,9 @@ export function ChatView({
       }
     }
 
+    // The conversation's investigation: its tools, prompt and /fetch notes work where its messages sync.
+    const homeFolderId = activeThread.folderId ?? selectedFolderId ?? undefined;
+
     // Intercept /fetch <url> — fetch directly without LLM
     const fetchMatch = text.match(/^\/fetch\s+(https?:\/\/\S+)$/i);
     if (fetchMatch) {
@@ -341,7 +355,7 @@ export function ChatView({
             id: nanoid(),
             title,
             content: result.content || '',
-            folderId: selectedFolderId || undefined,
+            folderId: homeFolderId,
             tags: [],
             pinned: false,
             archived: false,
@@ -378,6 +392,8 @@ export function ChatView({
       return;
     }
 
+    const homeFolder = homeFolderId === selectedFolderId ? selectedFolder : homeFolderId ? await db.folders.get(homeFolderId) : undefined;
+
     // Intercept /loop <interval> <prompt> — start a background scheduling loop
     const loopMatch = text.match(/^\/loop\s+(\d+[smh])\s+([\s\S]+)$/i);
     if (loopMatch) {
@@ -389,7 +405,7 @@ export function ChatView({
         model: activeThread.model,
         provider: activeThread.provider,
         apiKey: apiKey!,
-        systemPrompt: await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, activeThread.provider),
+        systemPrompt: await buildSystemPrompt(homeFolder, settings.llmSystemPrompt, activeThread.provider),
         endpoint: activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined,
         useServerProxy: effectiveRoute === 'server',
         onMessage: onAddMessage,
@@ -445,8 +461,8 @@ export function ChatView({
       await onAddMessage(activeThread.id, {
         id: nanoid(),
         role: 'assistant',
-        content: planned.length === 0 && skipped.length === 0
-          ? t('cti.noSources')
+        content: !availableToolNames.some(name => name.startsWith('host:cti:'))
+          ? t('cti.noSourcesV2')
           : renderCtiRunMarkdown(ctiCommand.target, results, skipped),
         createdAt: Date.now(),
       });
@@ -455,7 +471,7 @@ export function ChatView({
 
     // Build for this submission's scope. A shared async cache can complete out
     // of order after an investigation switch and attach another case's context.
-    const systemPrompt = await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, activeThread.provider);
+    const systemPrompt = await buildSystemPrompt(homeFolder, settings.llmSystemPrompt, activeThread.provider);
 
     // Build text-only messages for truncation, then overlay multimodal content
     const allMessages = [...activeThread.messages, userMsg];
@@ -508,22 +524,43 @@ export function ChatView({
     const assistantMessageId = nanoid();
     const checkpointContext = { id: nanoid(), threadId: activeThread.id, messageId: assistantMessageId };
 
-    // In plan mode, filter out write tools so the LLM can only read/analyze
+    // In plan mode, offer only reads of this investigation
     const currentMode = activeThread.mode || 'act';
     const hostTools = getHostToolDefinitions(settings);
     const allTools = hostTools.length > 0 ? [...TOOL_DEFINITIONS, ...hostTools] : TOOL_DEFINITIONS;
     const tools = currentMode === 'plan'
-      ? allTools.filter(t => !isWriteTool(t.name))
+      ? allTools.filter(t => isPlanModeTool(t.name))
       : allTools;
     const allowedTools = new Set(tools.map(tool => tool.name));
 
     // In plan mode, append instructions to the system prompt
     const finalSystemPrompt = currentMode === 'plan'
-      ? systemPrompt + '\n\nYou are in PLAN MODE. Do NOT create, update, or modify any entities. Instead, describe what you WOULD do: list the tools you would call, what data you would create, and what your analysis plan is. Present this as a structured plan the analyst can review before switching to Act mode.'
+      ? systemPrompt + '\n\nYou are in PLAN MODE. You can only read this investigation; describe anything else as a plan: list the tools you would call, what data you would create, and what your analysis plan is. Present this as a structured plan the analyst can review before switching to Act mode.'
       : systemPrompt;
 
     // Track which thread is streaming
     streamingThreadRef.current = activeThread.id;
+
+    const threadId = activeThread.id;
+    const executeChatTool = createChatToolExecutor({
+      homeFolderId,
+      mode: currentMode,
+      isYolo: () => yoloModeRef.current,
+      settings,
+      allowedTools,
+      requestApproval: (item, signal) => new Promise<HumanApproval | null>((resolve) => {
+        if (signal.aborted) { resolve(null); return; }
+        const id = nanoid();
+        const abortApproval = () => settleApproval(id, null);
+        signal.addEventListener('abort', abortApproval, { once: true });
+        approvalQueueRef.current = [...approvalQueueRef.current, {
+          id, item, threadId,
+          resolve: approval => { signal.removeEventListener('abort', abortApproval); resolve(approval); },
+        }];
+        setPendingApprovals(approvalQueueRef.current);
+      }),
+      runCheckpointed: (execute, signal, toolUse) => executeCheckpointedTool({ ...checkpointContext, signal }, toolUse, execute),
+    });
 
     // Send with agentic loop
     sendAgentRequest(
@@ -538,42 +575,7 @@ export function ChatView({
         useServerProxy: effectiveRoute === 'server',
       },
       async (toolUse: ToolUseBlock, signal: AbortSignal) => {
-        if (signal.aborted) return toolExecutionError('Tool execution was cancelled.');
-        const surface: ToolSurface = currentMode === 'plan' ? 'chat-plan' : yoloModeRef.current ? 'chat-yolo' : 'chat-act';
-        const toolConstraints: ToolExecutionConstraints = { surface, allowedTools };
-        const permissionError = getToolExecutionError(toolUse, toolConstraints);
-        if (permissionError) return toolExecutionError(permissionError);
-        let toolBinding: string | undefined;
-        try { toolBinding = await getToolBinding(toolUse, selectedFolderId, currentMode, settings); }
-        catch (error) { return toolExecutionError(error instanceof Error ? error.message : 'Tool configuration is unavailable.'); }
-        // Approval gate for write tools in Act mode (skip if yolo mode)
-        let approval: HumanApproval | undefined;
-        if (isWriteTool(toolUse.name) && surface !== 'chat-yolo') {
-          const threadAtRequest = activeThread.id;
-          const approved = await new Promise<boolean>((resolve) => {
-            const abortApproval = () => { setPendingApproval(null); resolve(false); };
-            signal.addEventListener('abort', abortApproval, { once: true });
-            setPendingApproval({
-              toolName: toolUse.name,
-              input: toolUse.input as Record<string, unknown>,
-              threadId: threadAtRequest,
-              resolve: value => { signal.removeEventListener('abort', abortApproval); resolve(value); },
-            });
-          });
-
-          if (!approved) {
-            return {
-              result: JSON.stringify({ error: 'Tool execution rejected by analyst' }),
-              isError: true,
-            };
-          }
-          approval = mintHumanApproval(toolUse, selectedFolderId, 'chat-card');
-        }
-
-        if (signal.aborted) return toolExecutionError('Tool execution was cancelled.');
-
-        const result = await executeCheckpointedTool({ ...checkpointContext, signal }, toolUse,
-          () => executeTool(toolUse, selectedFolderId, undefined, { ...toolConstraints, signal, toolBinding, approval }));
+        const result = await executeChatTool(toolUse, signal);
         if (isWriteTool(toolUse.name) && !result.isError) {
           usedWriteTool = true;
         }
@@ -616,7 +618,7 @@ export function ChatView({
       },
       { threadId: activeThread.id, messageId: assistantMessageId, model: activeThread.model, provider: activeThread.provider },
     );
-  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread, pendingImages, setPendingImages, readingImages, customCommands, effectiveRoute, t]);
+  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread, pendingImages, setPendingImages, readingImages, customCommands, effectiveRoute, settleApproval, t]);
 
   const handleModelChange = useCallback((model: string, provider: LLMProvider) => {
     if (activeThread) {
@@ -661,24 +663,37 @@ export function ChatView({
     handleSend(text);
   }, [handleSend]);
 
-  // ── Write tool approval handlers ────────────────────────────────────
+  // ── Tool approval handlers ──────────────────────────────────────────
+  const visibleApprovals = useMemo(() => pendingApprovals.filter(pending => pending.threadId === selectedThreadId), [pendingApprovals, selectedThreadId]);
+  const headApproval = visibleApprovals[0];
+
+  // The only place a chat approval is minted: the analyst approved this card.
   const handleApprove = useCallback(() => {
-    pendingApproval?.resolve(true);
-    setPendingApproval(null);
-  }, [pendingApproval]);
+    if (!headApproval) return;
+    const { toolUse, reach } = headApproval.item;
+    settleApproval(headApproval.id, mintHumanApproval(toolUse, reach.homeFolderId, 'chat-card'));
+  }, [headApproval, settleApproval]);
 
   const handleReject = useCallback(() => {
-    pendingApproval?.resolve(false);
-    setPendingApproval(null);
-  }, [pendingApproval]);
+    if (headApproval) settleApproval(headApproval.id, null);
+  }, [headApproval, settleApproval]);
 
-  // Clear pending approval when thread changes (prevents ghost from trashed threads)
+  // Focus stays in the composer after sending, so Escape there rejects the card too, when
+  // nothing is typed and no composer menu used the key.
+  const handleComposerKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Escape' || event.defaultPrevented || event.nativeEvent.isComposing || !headApproval) return;
+    if (!(event.target instanceof HTMLTextAreaElement) || event.target.value !== '') return;
+    event.preventDefault();
+    settleApproval(headApproval.id, null);
+  }, [headApproval, settleApproval]);
+
+  // Reject every queued card when the thread changes (prevents ghosts from trashed threads)
   useEffect(() => {
-    if (pendingApproval) {
-      pendingApproval.resolve(false);
-      setPendingApproval(null);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const queue = approvalQueueRef.current;
+    if (queue.length === 0) return;
+    approvalQueueRef.current = [];
+    setPendingApprovals([]);
+    for (const pending of queue) pending.resolve(null);
   }, [selectedThreadId]);
 
   // ── Plan/Act mode ──────────────────────────────────────────────────
@@ -688,7 +703,7 @@ export function ChatView({
     if (!activeThread) return;
     const newMode = threadMode === 'act' ? 'plan' : 'act';
     onUpdateThread(activeThread.id, { mode: newMode });
-    addToast('success', newMode === 'plan' ? t('view.switchedToPlan') : t('view.switchedToAct'));
+    addToast('success', newMode === 'plan' ? t('mode.switchedToPlan') : t('view.switchedToAct'));
 
     // When switching from Plan to Act, if the last assistant message exists,
     // prompt the user to execute the plan
@@ -1087,7 +1102,7 @@ export function ChatView({
                       ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
                       : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
                   )}
-                  title={threadMode === 'plan' ? t('view.planModeTitle') : t('view.actModeTitle')}
+                  title={threadMode === 'plan' ? t('mode.planTitle') : t('view.actModeTitle')}
                 >
                   {threadMode === 'plan' ? <Eye size={10} /> : <Play size={10} />}
                   {threadMode === 'plan' ? t('view.planMode') : t('view.actMode')}
@@ -1100,10 +1115,10 @@ export function ChatView({
                       ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
                       : 'bg-surface-raised border-border-subtle text-text-muted hover:text-text-secondary'
                   )}
-                  title={yoloMode ? t('view.yoloOnTitle') : t('view.yoloOffTitle')}
+                  title={yoloMode ? t('mode.yoloOnTitle') : t('mode.yoloOffTitle')}
                 >
                   <Shield size={10} />
-                  {yoloMode ? t('view.yoloLabel') : t('view.safeLabel')}
+                  {yoloMode ? t('view.yoloLabel') : t('mode.askLabel')}
                 </button>
                 {threadTokenTotal > 0 && (
                   <span className={cn(
@@ -1234,37 +1249,6 @@ export function ChatView({
                           ))}
                         </div>
                       )}
-                      {/* Write tool approval card */}
-                      {pendingApproval && pendingApproval.threadId === selectedThreadId && (
-                        <div className="mx-auto max-w-md my-3 rounded-xl border border-amber-500/30 bg-amber-500/5 overflow-hidden">
-                          <div className="px-4 py-2.5 border-b border-amber-500/20 flex items-center gap-2">
-                            <Shield size={14} className="text-amber-400" />
-                            <span className="text-xs font-medium text-amber-400">{t('view.approvalTitle')}</span>
-                          </div>
-                          <div className="px-4 py-2.5 space-y-1.5">
-                            <div className="text-xs">
-                              <span className="font-mono font-medium text-purple">{pendingApproval.toolName}</span>
-                            </div>
-                            <pre className="text-[10px] font-mono text-text-secondary bg-bg-deep rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
-                              {JSON.stringify(pendingApproval.input, null, 2)}
-                            </pre>
-                            <div className="flex items-center gap-2 pt-1">
-                              <button
-                                onClick={handleApprove}
-                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors"
-                              >
-                                <Check size={12} /> {t('view.approve')}
-                              </button>
-                              <button
-                                onClick={handleReject}
-                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors"
-                              >
-                                <X size={12} /> {t('view.reject')}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                       <div ref={messagesEndRef} />
                     </div>
                   ),
@@ -1272,6 +1256,22 @@ export function ChatView({
               />
               )}
             </div>
+
+            {/* Tool approval card: the head of this thread's queue. Outside the list, whose
+                footer remounts on every render, so the card keeps its state and focus. */}
+            {headApproval && (
+              <div className="px-4">
+                <ChatApprovalCard
+                  key={headApproval.id}
+                  item={headApproval.item}
+                  index={1}
+                  total={visibleApprovals.length}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                />
+              </div>
+            )}
+            <ChatApprovalStatus item={headApproval?.item} total={visibleApprovals.length} />
 
             {/* Input */}
             {localError && (
@@ -1286,26 +1286,28 @@ export function ChatView({
                 ) : localError}
               </div>
             )}
-            <ChatInput
-              draftScope={selectedThreadId}
-              onSend={handleSend}
-              onStop={abort}
-              isStreaming={isStreaming}
-              extensionAvailable={extensionAvailable}
-              serverRoute={effectiveRoute === 'server' && serverConnected}
-              provider={activeThread.provider}
-              model={activeThread.model}
-              onModelChange={handleModelChange}
-              localModelName={settings.llmLocalModelName}
-              configuredProviders={configuredProviders}
-              onOpenSettings={onOpenSettings ? () => onOpenSettings('ai') : undefined}
-              folderId={selectedFolderId}
-              customCommands={customCommands.map(c => ({ command: `/${c.name}`, description: c.description }))}
-              onImageAttach={handleImageAttach}
-              readingImages={readingImages}
-              attachedImages={pendingImages.map(a => ({ name: a.name || 'Image' }))}
-              onClearImages={clearImages}
-            />
+            <div onKeyDown={handleComposerKeyDown}>
+              <ChatInput
+                draftScope={selectedThreadId}
+                onSend={handleSend}
+                onStop={abort}
+                isStreaming={isStreaming}
+                extensionAvailable={extensionAvailable}
+                serverRoute={effectiveRoute === 'server' && serverConnected}
+                provider={activeThread.provider}
+                model={activeThread.model}
+                onModelChange={handleModelChange}
+                localModelName={settings.llmLocalModelName}
+                configuredProviders={configuredProviders}
+                onOpenSettings={onOpenSettings ? () => onOpenSettings('ai') : undefined}
+                folderId={selectedFolderId}
+                customCommands={customCommands.map(c => ({ command: `/${c.name}`, description: c.description }))}
+                onImageAttach={handleImageAttach}
+                readingImages={readingImages}
+                attachedImages={pendingImages.map(a => ({ name: a.name || 'Image' }))}
+                onClearImages={clearImages}
+              />
+            </div>
           </>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-text-muted">

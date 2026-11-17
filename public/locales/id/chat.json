@@ -22,12 +22,8 @@
     "badgeMeeting": "rapat",
     "planMode": "Rencana",
     "actMode": "Aksi",
-    "planModeTitle": "Mode rencana: AI mengusulkan tetapi tidak mengeksekusi tindakan tulis",
     "actModeTitle": "Mode aksi: AI mengeksekusi tindakan dengan persetujuan",
     "yoloLabel": "YOLO",
-    "safeLabel": "Aman",
-    "yoloOnTitle": "Mode YOLO AKTIF — semua pemanggilan alat disetujui otomatis",
-    "yoloOffTitle": "Klik untuk mengaktifkan mode YOLO (setujui semua tindakan otomatis)",
     "tokSuffix": "tok",
     "tokenTotal": "Total token: {{total}}",
     "tokenTotalBudget": "Total token: {{total}} / {{budget}} anggaran",
@@ -54,10 +50,8 @@
     "restoreDialog": "Pulihkan Titik Periksa",
     "restoreMessage": "Ini akan membatalkan perubahan AI — entitas yang dibuat akan dihapus dan entitas yang diubah akan dikembalikan ke status sebelumnya. Tindakan ini tidak dapat dibatalkan.",
     "restoreLabel": "Pulihkan",
-    "approvalTitle": "Setujui tindakan tulis?",
     "approve": "Setujui",
     "reject": "Tolak",
-    "switchedToPlan": "Beralih ke mode rencana — AI akan mengusulkan tanpa mengeksekusi",
     "switchedToAct": "Beralih ke mode aksi — AI akan mengeksekusi dengan persetujuan",
     "switchedToActMessage": "Beralih ke **mode aksi**. Kirim \"eksekusi rencana\" untuk menjalankan tindakan yang diusulkan dengan gerbang persetujuan, atau lanjutkan percakapan.",
     "errorCreateThread": "Gagal membuat utas obrolan. Coba segarkan halaman.",
@@ -76,6 +70,42 @@
     "onboardingStep3Title": "3. Aktifkan izin",
     "onboardingStep3Desc": "Di popup ekstensi, aktifkan \"Izinkan CaddyAI\" untuk akses penyedia AI dan \"Izinkan pengambilan URL\" untuk alat /fetch.",
     "onboardingDismiss": "Mengerti"
+  },
+  "mode": {
+    "planTitle": "Mode rencana: CaddyAI hanya membaca investigasi ini dan menjelaskan hal lain sebagai rencana",
+    "switchedToPlan": "Beralih ke mode rencana. CaddyAI hanya membaca investigasi ini dan menjelaskan hal lain sebagai rencana",
+    "askLabel": "Tanya",
+    "yoloOnTitle": "YOLO aktif: menyetujui otomatis perubahan di dalam investigasi ini dan pencarian vendor bawaan. Tetap bertanya sebelum membuka halaman web, membaca atau menulis investigasi lain, menggunakan skill, atau mengubah agen.",
+    "yoloOffTitle": "CaddyAI bertanya sebelum setiap perubahan. Klik untuk mengaktifkan YOLO: menyetujui otomatis perubahan di dalam investigasi ini dan pencarian vendor bawaan, dan tetap bertanya sebelum membuka halaman web, membaca atau menulis investigasi lain, menggunakan skill, atau mengubah agen."
+  },
+  "approval": {
+    "position": "{{index}} dari {{total}}",
+    "title": {
+      "write": "Setujui perubahan pada investigasi ini?",
+      "egress": "Kirim data ke luar ThreatCaddy?",
+      "crossRead": "Baca investigasi lain?",
+      "crossWrite": "Ubah investigasi lain?",
+      "agentControl": "Ubah agen AI?",
+      "harvested": "Jalankan pemanggilan alat yang ditemukan di teks balasan?"
+    },
+    "opensPage": "Membuka halaman di {{host}}. Situs tersebut menerima alamat lengkapnya.",
+    "lookup": "Mengirim {{value}} ke: {{vendors}}",
+    "lookupNone": "Tidak ada pencarian aktif yang berlaku untuk {{value}}.",
+    "sendsTo": "Mengirim permintaan ini ke {{destination}}.",
+    "agentChange": "Mengubah agen AI yang bekerja di investigasi ini.",
+    "readsOthers": "Membaca investigasi lain, bukan hanya yang ini.",
+    "targetSynced": "{{name}}: disinkronkan ke anggotanya",
+    "targetLocal": "{{name}}: tetap di perangkat ini",
+    "unfiled": "Di luar investigasi mana pun: tetap di perangkat ini",
+    "conversationSyncs": "Apa yang dibacanya menjadi bagian dari percakapan ini, yang disinkronkan ke anggota \"{{name}}\".",
+    "flag": {
+      "untrustedHost": "Bukan salah satu situs referensi bawaan.",
+      "urlCarriesData": "Alamatnya cukup panjang untuk membawa data investigasi.",
+      "hostIsIoc": "Situs ini adalah IOC dalam investigasi ini. Mengunjunginya dapat memperingatkan penyerang.",
+      "harvested": "Pemanggilan ini diambil dari teks balasan, bukan dikirim sebagai pemanggilan alat, sehingga mungkin dihasilkan oleh konten yang disisipkan.",
+      "readForeign": "Sebelumnya dalam balasan ini CaddyAI membaca investigasi lain. Tindakan ini mungkin membawa data tersebut."
+    },
+    "details": "Detail"
   },
   "input": {
     "noApiKeys": "Tidak ada kunci API yang dikonfigurasi — tambahkan di Pengaturan → AI/LLM",
@@ -160,7 +190,7 @@
   },
   "cti": {
     "invalidCommand": "Perintah CTI itu tidak dapat dijalankan:",
-    "noSources": "Tidak ada sumber CTI Agent Host yang dikonfigurasi. Tambahkan host CTI di Pengaturan → AI → Agent Hosts untuk menggunakan perintah ini."
+    "noSourcesV2": "Tidak ada sumber CTI yang tersedia. Agent host bernama tidak dapat dikonfigurasi lagi di versi ini."
   },
   "input.serverStatus": "Jalur server tim",
   "input.serverModelsHelp": "Penyedia dan model yang tersedia bergantung pada konfigurasi server tim.",

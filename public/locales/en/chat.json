@@ -4,7 +4,7 @@
   "input.modelLabel": "AI model",
   "cti": {
     "invalidCommand": "That CTI command couldn't be run:",
-    "noSources": "No CTI Agent Host sources are configured. Add a CTI host under Settings → AI → Agent Hosts to use this command."
+    "noSourcesV2": "No CTI sources are available. Named agent hosts are no longer configurable in this version."
   },
   "view": {
     "newChat": "New Chat",
@@ -29,12 +29,8 @@
     "badgeMeeting": "meeting",
     "planMode": "Plan",
     "actMode": "Act",
-    "planModeTitle": "Plan mode: AI proposes but does not execute write actions",
     "actModeTitle": "Act mode: AI executes actions with approval",
     "yoloLabel": "YOLO",
-    "safeLabel": "Safe",
-    "yoloOnTitle": "YOLO mode ON — all tool calls auto-approved",
-    "yoloOffTitle": "Click to enable YOLO mode (auto-approve all actions)",
     "tokSuffix": "tok",
     "tokenTotal": "Total tokens: {{total}}",
     "tokenTotalBudget": "Total tokens: {{total}} / {{budget}} budget",
@@ -61,10 +57,8 @@
     "restoreDialog": "Restore Checkpoint",
     "restoreMessage": "This will undo the AI's changes — created entities will be deleted and modified entities will be reverted to their previous state. This cannot be undone.",
     "restoreLabel": "Restore",
-    "approvalTitle": "Approve write action?",
     "approve": "Approve",
     "reject": "Reject",
-    "switchedToPlan": "Switched to Plan mode — AI will propose without executing",
     "switchedToAct": "Switched to Act mode — AI will execute with approval",
     "switchedToActMessage": "Switched to **Act mode**. Send \"execute the plan\" to run the proposed actions with approval gating, or continue the conversation.",
     "errorCreateThread": "Failed to create chat thread. Try refreshing the page.",
@@ -83,6 +77,42 @@
     "onboardingStep3Title": "3. Enable permissions",
     "onboardingStep3Desc": "In the extension popup, enable \"Allow CaddyAI\" for AI provider access and \"Allow URL fetching\" for the /fetch tool.",
     "onboardingDismiss": "Got it"
+  },
+  "mode": {
+    "planTitle": "Plan mode: CaddyAI only reads this investigation and describes anything else as a plan",
+    "switchedToPlan": "Switched to Plan mode. CaddyAI only reads this investigation and describes anything else as a plan",
+    "askLabel": "Ask",
+    "yoloOnTitle": "YOLO is on: auto-approves changes inside this investigation and built-in vendor lookups. Still asks before opening web pages, reading or writing other investigations, using skills, or changing agents.",
+    "yoloOffTitle": "CaddyAI asks before each change. Click to turn on YOLO: auto-approves changes inside this investigation and built-in vendor lookups, and still asks before opening web pages, reading or writing other investigations, using skills, or changing agents."
+  },
+  "approval": {
+    "position": "{{index}} of {{total}}",
+    "title": {
+      "write": "Approve a change to this investigation?",
+      "egress": "Send data outside ThreatCaddy?",
+      "crossRead": "Read other investigations?",
+      "crossWrite": "Change another investigation?",
+      "agentControl": "Change the AI agents?",
+      "harvested": "Run a tool call found in the reply text?"
+    },
+    "opensPage": "Opens a page on {{host}}. The site receives the full address.",
+    "lookup": "Sends {{value}} to: {{vendors}}",
+    "lookupNone": "No enabled lookup applies to {{value}}.",
+    "sendsTo": "Sends this request to {{destination}}.",
+    "agentChange": "Changes the AI agents working in this investigation.",
+    "readsOthers": "Reads other investigations, not only this one.",
+    "targetSynced": "{{name}}: syncs to its members",
+    "targetLocal": "{{name}}: stays on this device",
+    "unfiled": "Outside any investigation: stays on this device",
+    "conversationSyncs": "What it reads becomes part of this conversation, which syncs to the members of \"{{name}}\".",
+    "flag": {
+      "untrustedHost": "Not one of the built-in reference sites.",
+      "urlCarriesData": "The address is long enough to carry investigation data.",
+      "hostIsIoc": "This site is an IOC in this investigation. Visiting it can alert the attacker.",
+      "harvested": "This call was taken from the reply text rather than sent as a tool call, so injected content may have produced it.",
+      "readForeign": "Earlier in this reply CaddyAI read another investigation. This action may carry that data."
+    },
+    "details": "Details"
   },
   "input": {
     "readingImages": "Reading images…",

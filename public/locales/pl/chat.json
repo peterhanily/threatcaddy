@@ -22,12 +22,8 @@
     "badgeMeeting": "spotkanie",
     "planMode": "Plan",
     "actMode": "Działaj",
-    "planModeTitle": "Tryb planowania: AI proponuje, ale nie wykonuje operacji zapisu",
     "actModeTitle": "Tryb działania: AI wykonuje akcje po zatwierdzeniu",
     "yoloLabel": "YOLO",
-    "safeLabel": "Bezpieczny",
-    "yoloOnTitle": "Tryb YOLO WŁĄCZONY — wszystkie wywołania narzędzi są automatycznie zatwierdzane",
-    "yoloOffTitle": "Kliknij, aby włączyć tryb YOLO (automatyczne zatwierdzanie wszystkich akcji)",
     "tokSuffix": "tok",
     "tokenTotal": "Łącznie tokenów: {{total}}",
     "tokenTotalBudget": "Łącznie tokenów: {{total}} / {{budget}} budżet",
@@ -54,10 +50,8 @@
     "restoreDialog": "Przywróć punkt kontrolny",
     "restoreMessage": "Spowoduje to cofnięcie zmian AI — utworzone obiekty zostaną usunięte, a zmodyfikowane przywrócone do poprzedniego stanu. Tej operacji nie można cofnąć.",
     "restoreLabel": "Przywróć",
-    "approvalTitle": "Zatwierdzić operację zapisu?",
     "approve": "Zatwierdź",
     "reject": "Odrzuć",
-    "switchedToPlan": "Przełączono na tryb planowania — AI będzie proponować bez wykonywania",
     "switchedToAct": "Przełączono na tryb działania — AI będzie wykonywać po zatwierdzeniu",
     "switchedToActMessage": "Przełączono na **tryb działania**. Wyślij «wykonaj plan», aby uruchomić proponowane akcje z kontrolą zatwierdzania, lub kontynuuj rozmowę.",
     "errorCreateThread": "Nie udało się utworzyć wątku czatu. Spróbuj odświeżyć stronę.",
@@ -78,6 +72,42 @@
     "onboardingDismiss": "Rozumiem",
     "loopCount_few": "{{count}} pętle",
     "loopCount_many": "{{count}} pętli"
+  },
+  "mode": {
+    "planTitle": "Tryb planowania: CaddyAI tylko odczytuje to śledztwo, a wszystko inne opisuje jako plan",
+    "switchedToPlan": "Przełączono na tryb planowania. CaddyAI tylko odczytuje to śledztwo, a wszystko inne opisuje jako plan",
+    "askLabel": "Pytaj",
+    "yoloOnTitle": "YOLO włączone: automatycznie zatwierdza zmiany w tym śledztwie i wbudowane wyszukiwania u dostawców. Nadal pyta przed otwarciem stron internetowych, odczytem lub zapisem innych śledztw, użyciem umiejętności lub zmianą agentów.",
+    "yoloOffTitle": "CaddyAI pyta przed każdą zmianą. Kliknij, aby włączyć YOLO: automatycznie zatwierdza zmiany w tym śledztwie i wbudowane wyszukiwania u dostawców, a nadal pyta przed otwarciem stron internetowych, odczytem lub zapisem innych śledztw, użyciem umiejętności lub zmianą agentów."
+  },
+  "approval": {
+    "position": "{{index}} z {{total}}",
+    "title": {
+      "write": "Zatwierdzić zmianę w tym śledztwie?",
+      "egress": "Wysłać dane poza ThreatCaddy?",
+      "crossRead": "Odczytać inne śledztwa?",
+      "crossWrite": "Zmienić inne śledztwo?",
+      "agentControl": "Zmienić agentów AI?",
+      "harvested": "Uruchomić wywołanie narzędzia znalezione w tekście odpowiedzi?"
+    },
+    "opensPage": "Otwiera stronę w {{host}}. Witryna otrzymuje pełny adres.",
+    "lookup": "Wysyła {{value}} do: {{vendors}}",
+    "lookupNone": "Żadne włączone wyszukiwanie nie dotyczy {{value}}.",
+    "sendsTo": "Wysyła to żądanie do {{destination}}.",
+    "agentChange": "Zmienia agentów AI pracujących w tym śledztwie.",
+    "readsOthers": "Odczytuje inne śledztwa, nie tylko to.",
+    "targetSynced": "{{name}}: synchronizowane z członkami",
+    "targetLocal": "{{name}}: pozostaje na tym urządzeniu",
+    "unfiled": "Poza jakimkolwiek śledztwem: pozostaje na tym urządzeniu",
+    "conversationSyncs": "To, co odczyta, stanie się częścią tej rozmowy, która jest synchronizowana z członkami «{{name}}».",
+    "flag": {
+      "untrustedHost": "To nie jest żadna z wbudowanych witryn referencyjnych.",
+      "urlCarriesData": "Adres jest na tyle długi, że może przenosić dane ze śledztwa.",
+      "hostIsIoc": "Ta witryna jest IOC w tym śledztwie. Jej odwiedzenie może zaalarmować atakującego.",
+      "harvested": "To wywołanie pochodzi z tekstu odpowiedzi, a nie zostało wysłane jako wywołanie narzędzia, więc mogła je wytworzyć wstrzyknięta treść.",
+      "readForeign": "Wcześniej w tej odpowiedzi CaddyAI odczytał inne śledztwo. Ta akcja może przenosić te dane."
+    },
+    "details": "Szczegóły"
   },
   "input": {
     "noApiKeys": "Brak skonfigurowanych kluczy API — dodaj jeden w Ustawienia → AI/LLM",
@@ -166,7 +196,7 @@
   },
   "cti": {
     "invalidCommand": "Nie udało się wykonać tego polecenia CTI:",
-    "noSources": "Nie skonfigurowano żadnych źródeł CTI Agent Host. Dodaj host CTI w Ustawienia → AI → Agent Hosts, aby użyć tego polecenia."
+    "noSourcesV2": "Brak dostępnych źródeł CTI. Nazwanych hostów agentów nie można już konfigurować w tej wersji."
   },
   "input.serverStatus": "Trasa przez serwer zespołu",
   "input.serverModelsHelp": "Dostępni dostawcy i modele zależą od konfiguracji serwera zespołu.",

@@ -30,6 +30,12 @@ export function toolExecutionError(error: string): ToolExecutionResult {
   return { result: JSON.stringify({ error }), isError: true };
 }
 
+/** Truncate tool results and signal truncation to the LLM */
+export function truncateToolResult(result: string, maxLen: number): string {
+  if (result.length <= maxLen) return result;
+  return result.substring(0, maxLen) + `\n\n[TRUNCATED: showing ${maxLen.toLocaleString()} of ${result.length.toLocaleString()} chars. Use more specific queries or filters to get complete data.]`;
+}
+
 /** Preserve existing payloads while making handler errors visible to every caller. */
 export function normalizeToolResult(result: string): ToolExecutionResult {
   try {

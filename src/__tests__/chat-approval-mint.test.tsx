@@ -3,7 +3,6 @@
  * dispatcher requires, so the approved write runs through the real executeTool.
  */
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import type { ChatThread, Folder, Settings, ToolUseBlock } from '../types';
@@ -29,8 +28,7 @@ vi.mock('../hooks/useCustomSlashCommands', () => ({ useCustomSlashCommands: () =
 vi.mock('../components/Chat/ChatInput', () => ({ ChatInput: (props: typeof state.input) => { state.input = props; return null; } }));
 vi.mock('../components/Chat/ChatMessage', () => ({ ChatMessageBubble: () => null }));
 vi.mock('../components/Agent/AgentCycleSummaryCard', () => ({ AgentCycleSummaryCard: () => null }));
-// The approval card lives in the list footer.
-vi.mock('react-virtuoso', () => ({ Virtuoso: ({ components }: { components?: { Footer?: () => ReactNode } }) => <>{components?.Footer?.()}</> }));
+vi.mock('react-virtuoso', () => ({ Virtuoso: () => null }));
 
 const thread: ChatThread = { id: 'thread', title: 'Synthetic chat', folderId: 'case', model: 'synthetic-model', provider: 'anthropic',
   messages: [{ id: 'm1', role: 'user', content: 'Earlier question', createdAt: 1 }], tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 };
@@ -55,7 +53,10 @@ describe('chat write approval', () => {
 
     let pending!: Promise<ToolExecutionResult>;
     act(() => { pending = handleTool({ type: 'tool_use', id: 'toolu_1', name: 'create_note', input: { title: 'Approved finding', content: 'Beacon seen' } }, new AbortController().signal); });
-    fireEvent.click(await screen.findByRole('button', { name: /approve/i }));
+    const approve = await screen.findByRole('button', { name: /approve/i });
+    // A card that just appeared ignores Approve for a moment.
+    await waitFor(() => expect(approve).toBeEnabled(), { timeout: 3000 });
+    fireEvent.click(approve);
     const result = await pending;
 
     expect(result.isError).toBe(false);

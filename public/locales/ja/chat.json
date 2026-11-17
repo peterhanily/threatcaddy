@@ -22,12 +22,8 @@
     "badgeMeeting": "ミーティング",
     "planMode": "プラン",
     "actMode": "実行",
-    "planModeTitle": "プランモード：AIは提案するが書き込みアクションは実行しない",
     "actModeTitle": "実行モード：AIは承認を得てアクションを実行する",
     "yoloLabel": "YOLO",
-    "safeLabel": "安全",
-    "yoloOnTitle": "YOLOモードON——すべてのツール呼び出しが自動承認されます",
-    "yoloOffTitle": "クリックしてYOLOモードを有効化（すべてのアクションを自動承認）",
     "tokSuffix": "tok",
     "tokenTotal": "総トークン数：{{total}}",
     "tokenTotalBudget": "総トークン数：{{total}} / {{budget}} 予算",
@@ -54,10 +50,8 @@
     "restoreDialog": "チェックポイントを復元",
     "restoreMessage": "AIの変更を取り消します——作成されたエンティティは削除され、変更されたエンティティは以前の状態に戻されます。この操作は元に戻せません。",
     "restoreLabel": "復元",
-    "approvalTitle": "書き込みアクションを承認しますか？",
     "approve": "承認",
     "reject": "拒否",
-    "switchedToPlan": "プランモードに切り替えました——AIは実行せずに提案します",
     "switchedToAct": "実行モードに切り替えました——AIは承認を得て実行します",
     "switchedToActMessage": "**実行モード**に切り替えました。「プランを実行する」と送信して承認ゲート付きで提案されたアクションを実行するか、会話を続けてください。",
     "errorCreateThread": "チャットスレッドの作成に失敗しました。ページを更新してください。",
@@ -76,6 +70,42 @@
     "onboardingStep3Title": "3. 権限を有効化",
     "onboardingStep3Desc": "拡張機能のポップアップで、AIプロバイダーアクセスのための「CaddyAIを許可」と、/fetchツールのための「URLフェッチを許可」を有効にします。",
     "onboardingDismiss": "了解"
+  },
+  "mode": {
+    "planTitle": "プランモード：CaddyAI はこの調査のみを読み取り、それ以外はすべてプランとして説明します",
+    "switchedToPlan": "プランモードに切り替えました。CaddyAI はこの調査のみを読み取り、それ以外はすべてプランとして説明します",
+    "askLabel": "確認",
+    "yoloOnTitle": "YOLO オン：この調査内の変更と組み込みのベンダー照会を自動承認します。Web ページを開く、他の調査を読み書きする、スキルを使う、エージェントを変更する前には引き続き確認します。",
+    "yoloOffTitle": "CaddyAI は変更のたびに確認します。クリックすると YOLO がオンになります：この調査内の変更と組み込みのベンダー照会を自動承認し、Web ページを開く、他の調査を読み書きする、スキルを使う、エージェントを変更する前には引き続き確認します。"
+  },
+  "approval": {
+    "position": "{{total}} 件中 {{index}} 件目",
+    "title": {
+      "write": "この調査への変更を承認しますか？",
+      "egress": "ThreatCaddy の外部にデータを送信しますか？",
+      "crossRead": "他の調査を読み取りますか？",
+      "crossWrite": "別の調査を変更しますか？",
+      "agentControl": "AI エージェントを変更しますか？",
+      "harvested": "応答テキスト内で見つかったツール呼び出しを実行しますか？"
+    },
+    "opensPage": "{{host}} のページを開きます。サイトには完全なアドレスが送信されます。",
+    "lookup": "{{value}} を次に送信します：{{vendors}}",
+    "lookupNone": "{{value}} に適用される有効な照会はありません。",
+    "sendsTo": "このリクエストを {{destination}} に送信します。",
+    "agentChange": "この調査で作業している AI エージェントを変更します。",
+    "readsOthers": "この調査だけでなく、他の調査も読み取ります。",
+    "targetSynced": "{{name}}：メンバーと同期されます",
+    "targetLocal": "{{name}}：このデバイスに留まります",
+    "unfiled": "どの調査にも属さない：このデバイスに留まります",
+    "conversationSyncs": "読み取った内容はこの会話の一部になり、「{{name}}」のメンバーと同期されます。",
+    "flag": {
+      "untrustedHost": "組み込みの参照サイトではありません。",
+      "urlCarriesData": "このアドレスは調査データを運べるほど長いです。",
+      "hostIsIoc": "このサイトはこの調査の IOC です。アクセスすると攻撃者に気付かれる可能性があります。",
+      "harvested": "この呼び出しはツール呼び出しとして送信されたものではなく、応答テキストから取り出されたものです。注入されたコンテンツによって生成された可能性があります。",
+      "readForeign": "この応答の前半で CaddyAI は別の調査を読み取りました。この操作にはそのデータが含まれる可能性があります。"
+    },
+    "details": "詳細"
   },
   "input": {
     "noApiKeys": "APIキーが設定されていません——設定 → AI/LLM で追加してください",
@@ -160,7 +190,7 @@
   },
   "cti": {
     "invalidCommand": "その CTI コマンドは実行できませんでした:",
-    "noSources": "CTI Agent Host のソースが設定されていません。このコマンドを使用するには、設定 → AI → Agent Hosts で CTI ホストを追加してください。"
+    "noSourcesV2": "利用できる CTI ソースがありません。このバージョンでは名前付きエージェントホストを設定できなくなりました。"
   },
   "input.serverStatus": "チームサーバー経由",
   "input.serverModelsHelp": "利用できるプロバイダーとモデルはチームサーバーの設定によって異なります。",

@@ -22,12 +22,8 @@
     "badgeMeeting": "riunione",
     "planMode": "Piano",
     "actMode": "Azione",
-    "planModeTitle": "Modalità piano: l'AI propone ma non esegue azioni di scrittura",
     "actModeTitle": "Modalità azione: l'AI esegue azioni con approvazione",
     "yoloLabel": "YOLO",
-    "safeLabel": "Sicuro",
-    "yoloOnTitle": "Modalità YOLO ATTIVA — tutte le chiamate agli strumenti sono approvate automaticamente",
-    "yoloOffTitle": "Clicca per attivare la modalità YOLO (approva automaticamente tutte le azioni)",
     "tokSuffix": "tok",
     "tokenTotal": "Token totali: {{total}}",
     "tokenTotalBudget": "Token totali: {{total}} / {{budget}} budget",
@@ -54,10 +50,8 @@
     "restoreDialog": "Ripristina checkpoint",
     "restoreMessage": "Questo annullerà le modifiche AI — le entità create verranno eliminate e quelle modificate verranno ripristinate allo stato precedente. Questa azione non può essere annullata.",
     "restoreLabel": "Ripristina",
-    "approvalTitle": "Approvare azioni di scrittura?",
     "approve": "Approva",
     "reject": "Rifiuta",
-    "switchedToPlan": "Passato a modalità piano — l'AI proporrà senza eseguire",
     "switchedToAct": "Passato a modalità azione — l'AI eseguirà con approvazione",
     "switchedToActMessage": "Passato a **modalità azione**. Invia \"esegui piano\" per eseguire le azioni proposte con gate di approvazione, o continua la conversazione.",
     "errorCreateThread": "Impossibile creare il thread di chat. Prova ad aggiornare la pagina.",
@@ -77,6 +71,42 @@
     "onboardingStep3Desc": "Nel popup dell'estensione, abilita \"Consenti CaddyAI\" per l'accesso ai provider AI e \"Consenti recupero URL\" per lo strumento /fetch.",
     "onboardingDismiss": "Capito",
     "loopCount_many": "{{count}} loop"
+  },
+  "mode": {
+    "planTitle": "Modalità piano: CaddyAI legge solo questa indagine e descrive tutto il resto come un piano",
+    "switchedToPlan": "Passato a modalità piano. CaddyAI legge solo questa indagine e descrive tutto il resto come un piano",
+    "askLabel": "Chiedi",
+    "yoloOnTitle": "YOLO attivo: approva automaticamente le modifiche all'interno di questa indagine e le ricerche integrate presso i fornitori. Chiede comunque prima di aprire pagine web, leggere o scrivere altre indagini, usare skill o modificare agenti.",
+    "yoloOffTitle": "CaddyAI chiede prima di ogni modifica. Clicca per attivare YOLO: approva automaticamente le modifiche all'interno di questa indagine e le ricerche integrate presso i fornitori, e chiede comunque prima di aprire pagine web, leggere o scrivere altre indagini, usare skill o modificare agenti."
+  },
+  "approval": {
+    "position": "{{index}} di {{total}}",
+    "title": {
+      "write": "Approvare una modifica a questa indagine?",
+      "egress": "Inviare dati fuori da ThreatCaddy?",
+      "crossRead": "Leggere altre indagini?",
+      "crossWrite": "Modificare un'altra indagine?",
+      "agentControl": "Modificare gli agenti AI?",
+      "harvested": "Eseguire una chiamata a strumento trovata nel testo della risposta?"
+    },
+    "opensPage": "Apre una pagina su {{host}}. Il sito riceve l'indirizzo completo.",
+    "lookup": "Invia {{value}} a: {{vendors}}",
+    "lookupNone": "Nessuna ricerca attiva si applica a {{value}}.",
+    "sendsTo": "Invia questa richiesta a {{destination}}.",
+    "agentChange": "Modifica gli agenti AI che lavorano in questa indagine.",
+    "readsOthers": "Legge altre indagini, non solo questa.",
+    "targetSynced": "{{name}}: si sincronizza con i suoi membri",
+    "targetLocal": "{{name}}: resta su questo dispositivo",
+    "unfiled": "Fuori da qualsiasi indagine: resta su questo dispositivo",
+    "conversationSyncs": "Ciò che legge entra a far parte di questa conversazione, che si sincronizza con i membri di \"{{name}}\".",
+    "flag": {
+      "untrustedHost": "Non è uno dei siti di riferimento integrati.",
+      "urlCarriesData": "L'indirizzo è abbastanza lungo da trasportare dati dell'indagine.",
+      "hostIsIoc": "Questo sito è un IOC di questa indagine. Visitarlo può allertare l'attaccante.",
+      "harvested": "Questa chiamata è stata presa dal testo della risposta invece di essere inviata come chiamata a strumento, quindi potrebbe essere stata prodotta da contenuto iniettato.",
+      "readForeign": "In precedenza in questa risposta CaddyAI ha letto un'altra indagine. Questa azione potrebbe trasportare quei dati."
+    },
+    "details": "Dettagli"
   },
   "input": {
     "noApiKeys": "Nessuna chiave API configurata — aggiungila in Impostazioni → AI/LLM",
@@ -163,7 +193,7 @@
   },
   "cti": {
     "invalidCommand": "Non è stato possibile eseguire quel comando CTI:",
-    "noSources": "Nessuna origine CTI Agent Host è configurata. Aggiungi un host CTI in Impostazioni → AI → Agent Hosts per usare questo comando."
+    "noSourcesV2": "Nessuna origine CTI disponibile. Gli Agent Host con nome non sono più configurabili in questa versione."
   },
   "input.serverStatus": "Instradamento tramite server del team",
   "input.serverModelsHelp": "I fornitori e i modelli disponibili dipendono dalla configurazione del server del team.",

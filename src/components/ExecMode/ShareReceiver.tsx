@@ -268,7 +268,7 @@ function ShareReceiverContent({ encodedData, theme, onDismiss, onSave }: ShareRe
                   {msg.role === 'assistant' ? (
                     <div
                       className="markdown-preview text-sm"
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content, undefined, { disableMedia: true }) }}
                     />
                   ) : (
                     <p className="whitespace-pre-wrap">{msg.content}</p>

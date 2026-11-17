@@ -22,12 +22,8 @@
     "badgeMeeting": "vergadering",
     "planMode": "Plan",
     "actMode": "Actie",
-    "planModeTitle": "Planmodus: AI stelt voor maar voert geen schrijfacties uit",
     "actModeTitle": "Actiemodus: AI voert acties uit met goedkeuring",
     "yoloLabel": "YOLO",
-    "safeLabel": "Veilig",
-    "yoloOnTitle": "YOLO-modus AAN — alle toolaanroepen automatisch goedgekeurd",
-    "yoloOffTitle": "Klik om YOLO-modus in te schakelen (alle acties automatisch goedkeuren)",
     "tokSuffix": "tok",
     "tokenTotal": "Totaal tokens: {{total}}",
     "tokenTotalBudget": "Totaal tokens: {{total}} / {{budget}} budget",
@@ -54,10 +50,8 @@
     "restoreDialog": "Controlepunt herstellen",
     "restoreMessage": "Hiermee worden de wijzigingen van de AI ongedaan gemaakt — aangemaakte objecten worden verwijderd en gewijzigde objecten worden teruggezet naar hun vorige staat. Dit kan niet ongedaan worden gemaakt.",
     "restoreLabel": "Herstellen",
-    "approvalTitle": "Schrijfactie goedkeuren?",
     "approve": "Goedkeuren",
     "reject": "Afwijzen",
-    "switchedToPlan": "Overgeschakeld naar planmodus — AI stelt voor zonder uit te voeren",
     "switchedToAct": "Overgeschakeld naar actiemodus — AI voert uit met goedkeuring",
     "switchedToActMessage": "Overgeschakeld naar **actiemodus**. Stuur «voer het plan uit» om de voorgestelde acties uit te voeren met goedkeuringscontrole, of ga door met het gesprek.",
     "errorCreateThread": "Chatthread aanmaken mislukt. Probeer de pagina te vernieuwen.",
@@ -76,6 +70,42 @@
     "onboardingStep3Title": "3. Rechten inschakelen",
     "onboardingStep3Desc": "Schakel in het extensiepopup «CaddyAI toestaan» in voor toegang tot AI-providers en «URL ophalen toestaan» voor het /fetch-gereedschap.",
     "onboardingDismiss": "Begrepen"
+  },
+  "mode": {
+    "planTitle": "Planmodus: CaddyAI leest alleen dit onderzoek en beschrijft al het andere als plan",
+    "switchedToPlan": "Overgeschakeld naar planmodus. CaddyAI leest alleen dit onderzoek en beschrijft al het andere als plan",
+    "askLabel": "Vragen",
+    "yoloOnTitle": "YOLO staat aan: keurt wijzigingen binnen dit onderzoek en ingebouwde leveranciersopzoekingen automatisch goed. Vraagt nog steeds voordat webpagina's worden geopend, andere onderzoeken worden gelezen of gewijzigd, skills worden gebruikt of agents worden gewijzigd.",
+    "yoloOffTitle": "CaddyAI vraagt vóór elke wijziging. Klik om YOLO in te schakelen: keurt wijzigingen binnen dit onderzoek en ingebouwde leveranciersopzoekingen automatisch goed, en vraagt nog steeds voordat webpagina's worden geopend, andere onderzoeken worden gelezen of gewijzigd, skills worden gebruikt of agents worden gewijzigd."
+  },
+  "approval": {
+    "position": "{{index}} van {{total}}",
+    "title": {
+      "write": "Wijziging in dit onderzoek goedkeuren?",
+      "egress": "Gegevens buiten ThreatCaddy versturen?",
+      "crossRead": "Andere onderzoeken lezen?",
+      "crossWrite": "Een ander onderzoek wijzigen?",
+      "agentControl": "AI-agents wijzigen?",
+      "harvested": "Een toolaanroep uit de antwoordtekst uitvoeren?"
+    },
+    "opensPage": "Opent een pagina op {{host}}. De site ontvangt het volledige adres.",
+    "lookup": "Stuurt {{value}} naar: {{vendors}}",
+    "lookupNone": "Geen ingeschakelde opzoeking is van toepassing op {{value}}.",
+    "sendsTo": "Stuurt dit verzoek naar {{destination}}.",
+    "agentChange": "Wijzigt de AI-agents die in dit onderzoek werken.",
+    "readsOthers": "Leest andere onderzoeken, niet alleen dit.",
+    "targetSynced": "{{name}}: wordt gesynchroniseerd met de leden",
+    "targetLocal": "{{name}}: blijft op dit apparaat",
+    "unfiled": "Buiten elk onderzoek: blijft op dit apparaat",
+    "conversationSyncs": "Wat het leest wordt deel van dit gesprek, dat wordt gesynchroniseerd met de leden van «{{name}}».",
+    "flag": {
+      "untrustedHost": "Geen van de ingebouwde referentiesites.",
+      "urlCarriesData": "Het adres is lang genoeg om onderzoeksgegevens mee te nemen.",
+      "hostIsIoc": "Deze site is een IOC in dit onderzoek. Een bezoek kan de aanvaller waarschuwen.",
+      "harvested": "Deze aanroep is uit de antwoordtekst gehaald in plaats van als toolaanroep verzonden, dus geïnjecteerde inhoud kan hem hebben gemaakt.",
+      "readForeign": "Eerder in dit antwoord heeft CaddyAI een ander onderzoek gelezen. Deze actie kan die gegevens bevatten."
+    },
+    "details": "Details"
   },
   "input": {
     "noApiKeys": "Geen API-sleutels geconfigureerd — voeg er een toe in Instellingen → AI/LLM",
@@ -160,7 +190,7 @@
   },
   "cti": {
     "invalidCommand": "Die CTI-opdracht kon niet worden uitgevoerd:",
-    "noSources": "Er zijn geen CTI Agent Host-bronnen geconfigureerd. Voeg een CTI-host toe onder Instellingen → AI → Agent Hosts om deze opdracht te gebruiken."
+    "noSourcesV2": "Er zijn geen CTI-bronnen beschikbaar. Benoemde agent-hosts kunnen in deze versie niet meer worden geconfigureerd."
   },
   "input.serverStatus": "Route via teamserver",
   "input.serverModelsHelp": "Beschikbare aanbieders en modellen hangen af van de configuratie van je teamserver.",

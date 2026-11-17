@@ -22,12 +22,8 @@
     "badgeMeeting": "会议",
     "planMode": "计划",
     "actMode": "执行",
-    "planModeTitle": "计划模式：AI 提出建议但不执行写入操作",
     "actModeTitle": "执行模式：AI 在审批下执行操作",
     "yoloLabel": "YOLO",
-    "safeLabel": "安全",
-    "yoloOnTitle": "YOLO 模式已开启——所有工具调用自动批准",
-    "yoloOffTitle": "点击启用 YOLO 模式（自动批准所有操作）",
     "tokSuffix": "令牌",
     "tokenTotal": "总令牌数：{{total}}",
     "tokenTotalBudget": "总令牌数：{{total}} / {{budget}} 预算",
@@ -54,10 +50,8 @@
     "restoreDialog": "恢复检查点",
     "restoreMessage": "这将撤销 AI 的更改——创建的实体将被删除，修改的实体将恢复到之前的状态，此操作无法撤销。",
     "restoreLabel": "恢复",
-    "approvalTitle": "批准写入操作？",
     "approve": "批准",
     "reject": "拒绝",
-    "switchedToPlan": "已切换到计划模式——AI 将提出建议而不执行",
     "switchedToAct": "已切换到执行模式——AI 将在审批下执行",
     "switchedToActMessage": "已切换到**执行模式**。发送\"执行计划\"以在审批下运行提案操作，或继续对话。",
     "errorCreateThread": "创建聊天会话失败。请尝试刷新页面。",
@@ -76,6 +70,42 @@
     "onboardingStep3Title": "3. 启用权限",
     "onboardingStep3Desc": "在扩展弹出窗口中，启用\"允许 CaddyAI\"以访问 AI 提供商，以及\"允许 URL 获取\"以使用 /fetch 工具。",
     "onboardingDismiss": "明白了"
+  },
+  "mode": {
+    "planTitle": "计划模式：CaddyAI 只读取此调查，其他一切都以计划的形式描述",
+    "switchedToPlan": "已切换到计划模式。CaddyAI 只读取此调查，其他一切都以计划的形式描述",
+    "askLabel": "询问",
+    "yoloOnTitle": "YOLO 已开启：自动批准此调查内的更改和内置供应商查询。在打开网页、读取或写入其他调查、使用技能或更改代理之前仍会询问。",
+    "yoloOffTitle": "CaddyAI 在每次更改前都会询问。点击开启 YOLO：自动批准此调查内的更改和内置供应商查询，并在打开网页、读取或写入其他调查、使用技能或更改代理之前仍会询问。"
+  },
+  "approval": {
+    "position": "第 {{index}} 项，共 {{total}} 项",
+    "title": {
+      "write": "批准对此调查的更改？",
+      "egress": "将数据发送到 ThreatCaddy 之外？",
+      "crossRead": "读取其他调查？",
+      "crossWrite": "更改另一个调查？",
+      "agentControl": "更改 AI 代理？",
+      "harvested": "运行在回复文本中发现的工具调用？"
+    },
+    "opensPage": "打开 {{host}} 上的页面。该网站会收到完整地址。",
+    "lookup": "将 {{value}} 发送到：{{vendors}}",
+    "lookupNone": "没有适用于 {{value}} 的已启用查询。",
+    "sendsTo": "将此请求发送到 {{destination}}。",
+    "agentChange": "更改在此调查中工作的 AI 代理。",
+    "readsOthers": "读取其他调查，而不仅是此调查。",
+    "targetSynced": "{{name}}：与其成员同步",
+    "targetLocal": "{{name}}：保留在此设备上",
+    "unfiled": "不属于任何调查：保留在此设备上",
+    "conversationSyncs": "它读取的内容会成为此对话的一部分，而此对话会与“{{name}}”的成员同步。",
+    "flag": {
+      "untrustedHost": "不是内置参考网站之一。",
+      "urlCarriesData": "此地址长度足以携带调查数据。",
+      "hostIsIoc": "此网站是此调查中的 IOC。访问它可能会惊动攻击者。",
+      "harvested": "此调用取自回复文本，而不是作为工具调用发送的，因此可能由注入的内容生成。",
+      "readForeign": "在此回复的前面部分，CaddyAI 读取了另一个调查。此操作可能携带这些数据。"
+    },
+    "details": "详细信息"
   },
   "input": {
     "noApiKeys": "未配置 API 密钥——请在设置 → AI/LLM 中添加一个",
@@ -160,7 +190,7 @@
   },
   "cti": {
     "invalidCommand": "无法运行该 CTI 命令:",
-    "noSources": "未配置任何 CTI Agent Host 源。请在“设置 → AI → Agent Hosts”下添加一个 CTI host 以使用此命令。"
+    "noSourcesV2": "没有可用的 CTI 源。此版本中已无法再配置具名代理主机。"
   },
   "input.serverStatus": "团队服务器通道",
   "input.serverModelsHelp": "可用的提供商和模型取决于团队服务器配置。",

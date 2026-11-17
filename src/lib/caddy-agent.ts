@@ -16,6 +16,7 @@ import type { AgentAction, AgentCycleOutcome, AgentCycleSummary, AgentEntityRef,
 import { DEFAULT_AGENT_POLICY } from '../types';
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
 import { executeTool } from './llm-tools';
+import { truncateToolResult } from './llm-tool-execution';
 import { getReadOnlyEntityError, getToolEntityEffects } from './tool-entity-policy';
 import { getToolActionClass, AGENT_NEVER_TOOLS, CROSS_CASE_READ_TOOLS, EXPLICIT_ONLY_TOOLS } from './caddy-agent-policy';
 import { queueAgentAction } from './agent-action-queue';
@@ -42,12 +43,6 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   search_across_investigations: 90_000,
   compare_investigations: 90_000,
 };
-
-/** Truncate tool results and signal truncation to the LLM */
-function truncateToolResult(result: string, maxLen: number): string {
-  if (result.length <= maxLen) return result;
-  return result.substring(0, maxLen) + `\n\n[TRUNCATED: showing ${maxLen.toLocaleString()} of ${result.length.toLocaleString()} chars. Use more specific queries or filters to get complete data.]`;
-}
 
 // ── Global Concurrency Limit ───────────────────────────────────────────
 
