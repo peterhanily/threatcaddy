@@ -80,10 +80,10 @@ On non-2xx, ThreatCaddy returns a synthetic `{"error": "<displayName> returned H
    - Tool name: `host:<name>:<skill>` (or `local:<skill>` for the local flavour).
    - Description: `[<host displayName>] <skill description>` (`[Local Agent] …` for the local flavour), cleaned and capped as above.
    - Input schema: the cleaned `skill.parameters`.
-   - Hosts that use plain http on any address other than `localhost`, `127.0.0.1` or `[::1]` are left out.
+   - Named hosts that use plain http on any address other than `localhost`, `127.0.0.1` or `[::1]` are left out. The local flavour's `local:<skill>` tools are offered whenever a local endpoint is set.
    - Anthropic, OpenAI and Mistral accept only `^[a-zA-Z0-9_-]{1,64}$` tool names, so each request sends a readable alias (`host__soc1__ping_host`) or, when that does not fit, `dyn_<hash>`. Responses are decoded back to the internal name before any approval check or execution.
 4. **Allowlist** — `buildAgentToolset` offers host and local tools to agents whose profile has no tool list or lists the tool by name, and to the legacy single agent; observers never get them. CaddyAI chat offers them in Act and YOLO mode, never in Plan mode. The supervisor and the agent bridge never offer them.
-5. **Approve and execute** — every call is decided as outbound ("configured" egress): chat shows an approval card and an agent's call becomes a proposal in the agent inbox. After a person approves it, `executeHostSkill` parses the prefix, looks up the host, and POSTs `{ skill, parameters }` to `<baseUrl>/execute`. An analyst-typed CTI slash command such as `/cti` runs a host named `cti` directly, because the analyst started it.
+5. **Approve and execute** — every call is decided as outbound ("configured" egress): chat shows an approval card and an agent's call becomes a proposal in the agent inbox. After a person approves it, `executeHostSkill` parses the prefix, looks up the host, and POSTs `{ skill, parameters }` to `<baseUrl>/execute`. An analyst-typed CTI slash command such as `/cti` runs a host named `cti` directly, because the analyst started it. An enabled `cti` host with cached skills that uses plain http to another computer is not used, and the command says it needs https.
 
 ## Policy integration
 
