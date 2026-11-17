@@ -36,7 +36,11 @@ describe('supervisor refusal', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });
     render(<App />);
     await screen.findAllByRole('button', { name: /^Investigations/ });
-    await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+    // The fake clock also moves while the render is idle, so one 10 s step could run past the run and the
+    // 4 s error toast's removal. Step 1 s at a time and stop once the run has happened.
+    await act(async () => {
+      for (let step = 0; step < 20 && supervisor.runSupervisorCycle.mock.calls.length === 0; step++) await vi.advanceTimersByTimeAsync(1_000);
+    });
     expect(await screen.findByText('The supervisor agent could not run: Synthetic refusal')).toBeInTheDocument();
     expect(supervisor.runSupervisorCycle).toHaveBeenCalledOnce();
   }, 30_000);

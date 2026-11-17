@@ -1,5 +1,5 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SettingsPanel } from '../components/Settings/SettingsPanel';
 import { DEFAULT_SETTINGS } from '../types';
@@ -445,6 +445,41 @@ describe('SettingsPanel: where AI data goes', () => {
     expect(within(section()).queryByText(FETCH_AVAILABLE)).not.toBeInTheDocument();
     held.forEach(deliver);
     expect(await within(section()).findByText(FETCH_UPDATE)).toBeInTheDocument();
+  });
+
+  // A check still waiting for its ping when the capabilities go and come back answers for the bridge that
+  // published them first; that late answer must not show while the new check runs.
+  it('drops the answer of a check that was still running when its capabilities were withdrawn', async () => {
+    const post = answerPing(GUARDED_CAPS);
+    const held: { requestId: string }[] = [];
+    post.mockImplementation((message: unknown) => {
+      if ((message as { type?: string })?.type === 'TC_EXTENSION_PING') held.push(message as { requestId: string });
+      else deliver(message);
+    });
+    document.documentElement.dataset.tcBridgeCaps = GUARDED_CAPS;
+    renderAI();
+    await waitFor(() => expect(held).toHaveLength(1));
+    delete document.documentElement.dataset.tcBridgeCaps;
+    expect(await within(section()).findByText('Web fetch needs the ThreatCaddy browser extension.')).toBeInTheDocument();
+    document.documentElement.dataset.tcBridgeCaps = GUARDED_CAPS;
+    await waitFor(() => expect(held).toHaveLength(2));
+    // The first check's ping reaches the guarded bridge, and that check finishes.
+    deliver(held[0]);
+    await waitFor(() => expect(post).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'TC_EXTENSION_PING_END', requestId: held[0].requestId }), expect.anything()));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 50)); });
+    expect(within(section()).queryByText(FETCH_AVAILABLE)).not.toBeInTheDocument();
+    expect(within(section()).queryByText(FETCH_UPDATE)).not.toBeInTheDocument();
+    // The bridge that answers the second check's ping is store 1.1.1, so only the update line is true.
+    if (bridges) window.removeEventListener('message', bridges);
+    bridges = event => {
+      if (event.source !== window || event.data?.type !== 'TC_EXTENSION_PING') return;
+      deliver({ type: 'TC_EXTENSION_READY', protocolVersion: 1, capabilities: STORE_1_1_1_CAPS.split(',') });
+    };
+    window.addEventListener('message', bridges);
+    deliver(held[1]);
+    expect(await within(section()).findByText(FETCH_UPDATE)).toBeInTheDocument();
+    expect(within(section()).queryByText(FETCH_AVAILABLE)).not.toBeInTheDocument();
   });
 
   it('says where keys and prompts go instead of claiming every call uses the extension', () => {
