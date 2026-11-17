@@ -8,14 +8,14 @@ const mocks = vi.hoisted(() => {
   const collection = { remove: vi.fn(), removeClass: vi.fn().mockReturnThis(), addClass: vi.fn().mockReturnThis(), unselect: vi.fn().mockReturnThis() };
   const graph = { on: vi.fn((name: string, ...args: unknown[]) => { handlers.set(name + (typeof args[0] === 'string' ? ':' + args[0] : ''), args.at(-1) as (event: unknown) => void); }),
     elements: () => collection, batch: (fn: () => void) => fn(), layout: () => ({ run: vi.fn() }), fit: vi.fn(), destroy: vi.fn() };
-  return { handlers, graph, cytoscape: vi.fn(() => graph), cycle: vi.fn(), meeting: vi.fn(), toast: vi.fn() };
+  return { handlers, graph, cytoscape: vi.fn(() => graph), cycle: vi.fn(), meeting: vi.fn(), handoff: vi.fn(), toast: vi.fn() };
 });
 vi.mock('cytoscape', () => ({ default: Object.assign(mocks.cytoscape, { use: vi.fn() }) }));
 vi.mock('cytoscape-cose-bilkent', () => ({ default: {} }));
 vi.mock('../lib/caddy-agent', () => ({ runAgentCycle: mocks.cycle }));
 vi.mock('../lib/caddy-agent-manager', () => ({ runMultiAgentCycle: vi.fn() }));
 vi.mock('../lib/caddy-agent-supervisor', () => ({ runSupervisorCycle: vi.fn(), sendEscalationNotification: vi.fn() }));
-vi.mock('../lib/caddy-agent-meeting', () => ({ runAgentMeeting: mocks.meeting, runHandoffCall: vi.fn() }));
+vi.mock('../lib/caddy-agent-meeting', () => ({ runAgentMeeting: mocks.meeting, runHandoffCall: mocks.handoff }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string, options?: { error?: string }) => options?.error ? `${key}: ${options.error}` : key }) }));
 vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: mocks.toast }) }));
 import GraphCanvas from '../components/Graph/GraphCanvas';
@@ -28,6 +28,7 @@ beforeEach(async () => {
   vi.clearAllMocks(); mocks.handlers.clear();
   mocks.cycle.mockResolvedValue({ autoExecuted: [], proposed: [], threadId: 'thread' });
   mocks.meeting.mockResolvedValue({ meetingId: 'meeting', threadId: 'thread', roundsCompleted: 1 });
+  mocks.handoff.mockResolvedValue({ meetingId: 'meeting', threadId: 'thread', roundsCompleted: 2 });
   await Promise.all([db.folders.clear(), db.notes.clear(), db.agentDeployments.clear(), db.agentMeetings.clear()]);
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -112,6 +113,26 @@ describe('committed callback bindings', () => {
     await waitFor(() => expect(mocks.meeting).toHaveBeenCalledOnce());
     fireEvent.click(await screen.findByRole('button', { name: 'meeting.startMeeting' }));
     expect(screen.getByPlaceholderText('meeting.meetingAgendaPlaceholder')).toHaveValue('');
+    expect(mocks.toast).not.toHaveBeenCalled();
+  });
+
+  const shifts = () => [['a', 'active'], ['b', 'resting']].map(([id, shift]) =>
+    ({ id, investigationId: 'one', profileId: id, status: 'idle', order: 0, shift, createdAt: 1, updatedAt: 1 } as AgentDeployment));
+
+  it('says why when a shift handoff could not run', async () => {
+    mocks.handoff.mockResolvedValue({ meetingId: '', threadId: '', roundsCompleted: 0, error: 'Synthetic route refusal.' });
+    render(<AgentMeetingPanel folder={folder('one')} deployments={shifts()} settings={DEFAULT_SETTINGS} extensionAvailable={false} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'meeting.shiftHandoff' }));
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledExactlyOnceWith('error', 'meeting.couldNotRun: Synthetic route refusal.'));
+    expect(mocks.handoff).toHaveBeenCalledOnce();
+    expect(await screen.findByRole('button', { name: 'meeting.shiftHandoff' })).toBeEnabled();
+  });
+
+  it('shows no error when a shift handoff ran', async () => {
+    render(<AgentMeetingPanel folder={folder('one')} deployments={shifts()} settings={DEFAULT_SETTINGS} extensionAvailable={false} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'meeting.shiftHandoff' }));
+    await waitFor(() => expect(mocks.handoff).toHaveBeenCalledOnce());
+    expect(await screen.findByRole('button', { name: 'meeting.shiftHandoff' })).toBeEnabled();
     expect(mocks.toast).not.toHaveBeenCalled();
   });
 });

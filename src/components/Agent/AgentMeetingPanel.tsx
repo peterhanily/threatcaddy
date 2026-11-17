@@ -151,8 +151,10 @@ export function AgentMeetingPanel({
                 const active = deployments.filter(d => d.shift !== 'resting');
                 const resting = deployments.filter(d => d.shift === 'resting');
                 if (active.length > 0 && resting.length > 0) {
-                  await runHandoffCall(folder, active, resting, settings, extensionAvailable, (s, st) => setProgress(`${s}: ${st}`));
+                  const result = await runHandoffCall(folder, active, resting, settings, extensionAvailable, (s, st) => setProgress(`${s}: ${st}`));
                   setRunning(false);
+                  // A handoff that could not run leaves shift states unchanged and says why.
+                  if (result.error) addToast('error', t('meeting.couldNotRun', { error: result.error }));
                   onEntitiesChanged?.();
                 } else {
                   setRunning(false);
