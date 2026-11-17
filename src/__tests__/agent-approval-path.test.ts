@@ -72,6 +72,18 @@ describe('A-APPR re-derivation on approval', () => {
     expect(await db.notes.where('title').equals('x').count()).toBe(0);
   });
 
+  it('approving an agent question acknowledges it without asking again', async () => {
+    // The row executeAskHuman queues: no agentConfigId, nothing to run.
+    const question: AgentAction = { id: 'question-1', investigationId: 'S', threadId: '', toolName: 'ask_human', toolInput: { question: 'Isolate the host?', context: '', options: '' },
+      rationale: 'Agent needs human input: Isolate the host?', status: 'pending', severity: 'warning', createdAt: 1 };
+    await db.agentActions.add(question);
+    const notes = await db.notes.count();
+    expect((await executeApprovedAction(question)).isError).toBe(false);
+    expect(await db.agentActions.get(question.id)).toMatchObject({ status: 'executed' });
+    expect(await db.agentActions.filter(action => action.toolName === 'ask_human').count()).toBe(1);
+    expect(await db.notes.count()).toBe(notes);
+  });
+
   it('a supervisor update in another investigation runs only through approval', async () => {
     await db.folders.add({ id: 'SUP', name: 'CaddyAgent Supervisor', order: 9, createdAt: 1 });
     await db.folders.update('P', { agentPolicy: { ...DEFAULT_AGENT_POLICY, autoApproveModify: true } });

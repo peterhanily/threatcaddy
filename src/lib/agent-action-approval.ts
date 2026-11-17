@@ -78,11 +78,16 @@ export async function executeApprovedAction(action: AgentAction): Promise<ToolEx
     input: action.toolInput,
   };
 
-  const constraints = await approvalConstraints(action, toolUse);
-  const result = typeof constraints === 'string'
-    ? toolExecutionError(constraints)
-    : await executeTool(toolUse, action.investigationId,
-      constraints.surface === 'agent' ? { profileId: action.agentConfigId } : undefined, constraints);
+  // An agent question has nothing to run: approving it acknowledges it.
+  // Dispatching ask_human again would only queue the same question again.
+  const acknowledged = action.toolName === 'ask_human' && !action.id.startsWith('srv:');
+  const constraints = acknowledged ? undefined : await approvalConstraints(action, toolUse);
+  const result = !constraints
+    ? { result: 'Question acknowledged.', isError: false }
+    : typeof constraints === 'string'
+      ? toolExecutionError(constraints)
+      : await executeTool(toolUse, action.investigationId,
+        constraints.surface === 'agent' ? { profileId: action.agentConfigId } : undefined, constraints);
 
   await db.agentActions.update(action.id, {
     status: result.isError ? 'failed' : 'executed',
