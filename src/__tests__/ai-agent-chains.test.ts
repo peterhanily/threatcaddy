@@ -330,7 +330,7 @@ describe('B-PAUSE-1 only the agent with a pending proposal pauses', () => {
 
   it('every agent paused leaves the investigation waiting without an error', async () => {
     await deploy('ap-threat-hunter');
-    await db.folders.update('S', { agentStatus: 'waiting' });
+    await db.folders.update('S', { agentStatus: 'idle' });
     await db.agentActions.add({ id: 'held', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'fetch_url',
       toolInput: { url: COLLECTOR }, rationale: 'Proposed', status: 'pending', createdAt: 1 });
     const result = await runMultiAgentCycle(await folder('S'), settings, true);
