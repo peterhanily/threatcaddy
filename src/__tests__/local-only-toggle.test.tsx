@@ -3,6 +3,7 @@ import { configure, fireEvent, getConfig, render, screen, waitFor, within } from
 import App from '../App';
 import { db } from '../db';
 import { syncEngine } from '../lib/sync-engine';
+import { SYNC_WORKSPACE_KEY } from '../lib/sync-capture-policy';
 import { InvestigationDetailPanel } from '../components/Investigation/InvestigationDetailPanel';
 import { ToastProvider } from '../contexts/ToastContext';
 import type { Folder } from '../types';
@@ -57,19 +58,27 @@ describe('investigation privacy copy', () => {
   const props = { onUpdate: vi.fn(), onClose: vi.fn(), allTags: [], onCreateTag: vi.fn(), entityCounts: { notes: 0, tasks: 0, events: 0, whiteboards: 0 }, effectiveClsLevels: [] };
   const panel = (extra: Partial<Parameters<typeof InvestigationDetailPanel>[0]>) => <ToastProvider><InvestigationDetailPanel {...props} folder={folder} {...extra} /></ToastProvider>;
 
-  it('says local-only investigations are hidden from AI elsewhere, with or without a server', () => {
+  it('says local-only investigations are hidden from AI elsewhere, with or without a server', async () => {
     const onToggleSync = vi.fn();
     const view = render(panel({ serverConnected: true, onToggleSync }));
     expect(screen.getByText(/AI working in investigations that can sync cannot see it/)).toBeInTheDocument();
     view.unmount();
     render(panel({ serverConnected: false, onToggleSync }));
+    fireEvent.click(await screen.findByRole('switch', { name: /Keep on this device/ }));
     expect(screen.getByText(/AI working in investigations that can sync cannot see it/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('switch', { name: /Keep on this device/ }));
     expect(onToggleSync).toHaveBeenCalledExactlyOnceWith('case', true);
   });
 
   it('shows no privacy control when the panel cannot change it', () => {
     render(panel({ serverConnected: false }));
     expect(screen.queryByRole('switch', { name: /Keep on this device/ })).not.toBeInTheDocument();
+  });
+
+  it('offers no switch in a workspace bound to a team server while it is unreachable', async () => {
+    // Re-sharing there must queue a replay of rows skipped while local-only, which needs the connection.
+    await db.table('_syncMeta').put({ key: SYNC_WORKSPACE_KEY, value: { version: 1, serverUrl: 'https://team.example', userId: 'user-1' } });
+    render(panel({ serverConnected: false, onToggleSync: vi.fn() }));
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
   });
 });

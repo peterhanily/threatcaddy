@@ -7,6 +7,7 @@ import { TagInput } from '../Common/TagInput';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import type { Tag } from '../../types';
 import { cn, formatFullDate } from '../../lib/utils';
+import { isSyncWorkspaceBound } from '../../lib/sync-workspace';
 import { PlaybookProgress } from '../Playbooks/PlaybookProgress';
 
 interface InvestigationDetailPanelProps {
@@ -65,6 +66,16 @@ export function InvestigationDetailPanel({
   const [description, setDescription] = useState(folder.description || '');
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const keepLocalId = useId();
+  // Offline, only a workspace never bound to a team server may change privacy: a bound
+  // one must replay rows skipped while local-only (syncFolder), which needs the connection.
+  const [unbound, setUnbound] = useState(false);
+
+  useEffect(() => {
+    if (serverConnected) return;
+    let alive = true;
+    void isSyncWorkspaceBound().then(bound => { if (alive) setUnbound(!bound); }, () => {});
+    return () => { alive = false; setUnbound(false); };
+  }, [serverConnected]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -393,7 +404,7 @@ export function InvestigationDetailPanel({
           )}
 
           {/* Without a team server: binding one later shares every investigation that is not local-only */}
-          {!serverConnected && onToggleSync && (
+          {!serverConnected && unbound && onToggleSync && (
             <button
               role="switch"
               aria-checked={!!folder.localOnly}
