@@ -225,5 +225,13 @@ async function runMultiAgentCycleInner(
     }
   }
 
+  // Each run wrote its own status, so the last one to finish could leave the
+  // investigation idle while a proposal waits. Use the hook's rule instead.
+  const ran = [...deploymentResults.values()];
+  const allFailed = ran.length > 0 && ran.every(result => result.error);
+  if (!allFailed && (waitingForReview.length > 0 || ran.some(result => result.proposed.length > 0))) {
+    await db.folders.update(folder.id, { agentStatus: 'waiting' });
+  }
+
   return { deploymentResults, errors, waitingForReview };
 }

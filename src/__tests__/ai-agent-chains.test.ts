@@ -341,6 +341,30 @@ describe('B-PAUSE-1 only the agent with a pending proposal pauses', () => {
     expect(await ran()).toEqual(['ap-lead-analyst']);
   });
 
+  it('keeps the investigation waiting when one agent waits and another runs without proposals', async () => {
+    await deploy('ap-threat-hunter'); await deploy('ap-lead-analyst');
+    await db.folders.update('S', { agentStatus: 'idle' });
+    await db.agentActions.add({ id: 'held', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'fetch_url',
+      toolInput: { url: COLLECTOR }, rationale: 'Proposed', status: 'pending', createdAt: 1 });
+    const result = await runMultiAgentCycle(await folder('S'), settings, true);
+    expect(result.errors).toEqual([]);
+    expect(await ran()).toEqual(['ap-lead-analyst']);
+    expect((await db.folders.get('S'))?.agentStatus).toBe('waiting');
+  });
+
+  it('does not mark the investigation waiting when every agent that ran failed', async () => {
+    await deploy('ap-threat-hunter');
+    // No OpenAI key is configured, so this agent's cycle fails.
+    await db.agentDeployments.add({ id: 'dep-failing', investigationId: 'S', profileId: 'ap-lead-analyst', status: 'idle', order: 1,
+      policyOverrides: { model: 'gpt-4o' }, createdAt: 1, updatedAt: 1 });
+    await db.folders.update('S', { agentStatus: 'idle' });
+    await db.agentActions.add({ id: 'held', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'fetch_url',
+      toolInput: { url: COLLECTOR }, rationale: 'Proposed', status: 'pending', createdAt: 1 });
+    const result = await runMultiAgentCycle(await folder('S'), settings, true);
+    expect(result.errors).toHaveLength(1);
+    expect((await db.folders.get('S'))?.agentStatus).not.toBe('waiting');
+  });
+
   it('a manual run also runs the waiting agent, without queueing a second copy of its proposal', async () => {
     await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY, autoApproveCreate: false } });
     await deploy('ap-threat-hunter');
