@@ -93,6 +93,18 @@ test('simple and advanced search remain available if the browser disables worker
   expect(failures).toEqual([]);
 });
 
+test('copied HTML shows none of the hosted offline notices, Settings row or backup note', async ({ page }) => {
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('tabpanel', { name: 'General', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Offline use', exact: true })).toHaveCount(0);
+  await page.getByRole('tab', { name: 'Data', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Export & Import', exact: true })).toBeVisible();
+  await expect(page.getByText(/^Offline use is not a backup\./)).toHaveCount(0);
+  await expect(page.getByTestId('offline-notice')).toHaveCount(0);
+  await expect(page.getByTestId('offline-status')).toHaveCount(0);
+  expect(failures).toEqual([]);
+});
+
 test('copied HTML imports DOCX through its embedded evidence worker without sibling assets or network', async ({ page }) => {
   const workers: string[] = [];
   page.on('worker', worker => workers.push(worker.url()));
