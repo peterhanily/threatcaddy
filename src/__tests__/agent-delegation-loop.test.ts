@@ -12,7 +12,7 @@ import 'fake-indexeddb/auto';
 import { nanoid } from 'nanoid';
 import { db } from '../db';
 import type { ToolUseBlock, Task, Folder } from '../types';
-import { executeTool } from '../lib/llm-tools';
+import { execTool } from './helpers/tool-exec';
 
 const FOLDER_ID = 'test-folder';
 const LEAD_PROFILE_ID = 'ap-lead-analyst';
@@ -55,7 +55,7 @@ function reviewCall(taskId: string, requestedDelta: string, quality: 'good' | 'n
 }
 
 async function review(taskId: string, requestedDelta: string, quality: 'good' | 'needs-redo' | 'serious-failure' = 'needs-redo') {
-  const r = await executeTool(reviewCall(taskId, requestedDelta, quality), FOLDER_ID, { profileId: LEAD_PROFILE_ID });
+  const r = await execTool(reviewCall(taskId, requestedDelta, quality), FOLDER_ID, { surface: 'agent', agentContext: { profileId: LEAD_PROFILE_ID } });
   return JSON.parse(r.result);
 }
 
@@ -137,7 +137,7 @@ describe('Phase 3 delegation loop', () => {
       type: 'tool_use', id: nanoid(), name: 'update_task',
       input: { id: t.id, status: 'in-progress' },
     };
-    const r = await executeTool(updateCall, FOLDER_ID, { profileId: SPECIALIST_PROFILE_ID });
+    const r = await execTool(updateCall, FOLDER_ID, { surface: 'agent', agentContext: { profileId: SPECIALIST_PROFILE_ID } });
     expect(r.isError).toBe(true);
     const parsed = JSON.parse(r.result);
     expect(parsed.escalated).toBe(true);
@@ -157,7 +157,7 @@ describe('Phase 3 delegation loop', () => {
       type: 'tool_use', id: nanoid(), name: 'update_task',
       input: { id: t.id, status: 'done' },
     };
-    const r = await executeTool(updateCall, FOLDER_ID, { profileId: LEAD_PROFILE_ID });
+    const r = await execTool(updateCall, FOLDER_ID, { surface: 'agent', agentContext: { profileId: LEAD_PROFILE_ID } });
     expect(r.isError).toBe(true);
   });
 
@@ -170,7 +170,7 @@ describe('Phase 3 delegation loop', () => {
       input: { id: t.id, status: 'done' },
     };
     // No agentContext → agentRole is undefined → escalation gate doesn't trigger.
-    const r = await executeTool(updateCall, FOLDER_ID);
+    const r = await execTool(updateCall, FOLDER_ID);
     expect(r.isError).toBe(false);
     const after = await db.tasks.get(t.id);
     expect(after?.status).toBe('done');

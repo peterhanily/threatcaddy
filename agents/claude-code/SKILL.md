@@ -13,6 +13,7 @@ Interact with a live ThreatCaddy investigation session running in Chrome. Create
   - macOS: `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222`
   - Alternative: `chrome://inspect/#remote-debugging` → toggle on (shows allow popup each time)
 - ThreatCaddy open in a Chrome tab with an investigation selected
+- The agent bridge turned on in ThreatCaddy under Settings → AI (it is off by default)
 - Node.js 22+
 
 ## Commands
@@ -31,10 +32,12 @@ scripts/tc.mjs status
 scripts/tc.mjs investigations
 ```
 
-### Set active investigation
+### Show the active investigation
+
+The bridge works only in the investigation selected in ThreatCaddy. Select it in the app, then check it:
 
 ```bash
-scripts/tc.mjs folder <investigation_id>
+scripts/tc.mjs folder
 ```
 
 ### Execute a tool
@@ -49,7 +52,9 @@ scripts/tc.mjs exec <tool_name> '<json_input>'
 scripts/tc.mjs stop
 ```
 
-## Available Tools (29)
+## Available Tools (23)
+
+Web, enrichment and cross-investigation tools are not available through the bridge.
 
 ### Search & Read (10 tools)
 
@@ -83,14 +88,6 @@ scripts/tc.mjs stop
 - **extract_iocs** — `{"text": "Found IP 10.0.0.1 and domain evil.com"}` — Extract IOCs from text
 - **analyze_graph** — `{}` — Analyze entity relationship graph
 
-### Cross-Investigation (5 tools)
-
-- **list_investigations** — `{}` — List all investigations
-- **get_investigation_details** — `{"name": "APT29"}` — Detailed investigation summary
-- **search_across_investigations** — `{"query": "cobalt strike"}` — Search all investigations
-- **create_in_investigation** — `{"investigationName": "APT29", "entityType": "note", "data": {"title": "...", "content": "..."}}`
-- **compare_investigations** — `{"investigationIds": ["id1", "id2"]}` — Find shared IOCs and TTPs
-
 ## IOC Types
 
 `ipv4`, `ipv6`, `domain`, `url`, `email`, `md5`, `sha1`, `sha256`, `cve`, `mitre-attack`, `yara-rule`, `sigma-rule`, `file-path`
@@ -122,7 +119,4 @@ scripts/tc.mjs exec create_task '{"title":"Block C2 IP at firewall","priority":"
 ```bash
 # Create a note with analysis findings
 scripts/tc.mjs exec create_note '{"title":"APT29 Infrastructure Analysis","content":"# Infrastructure Mapping\n\nThe following C2 infrastructure was identified..."}'
-
-# Search across all investigations for related activity
-scripts/tc.mjs exec search_across_investigations '{"query":"185.220.101"}'
 ```

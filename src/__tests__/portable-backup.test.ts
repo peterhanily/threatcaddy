@@ -9,7 +9,7 @@ import { validatePortableTables } from '../lib/backup-records';
 import { BUILTIN_INTEGRATIONS } from '../lib/builtin-integrations';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
 import { restoreFullReplace } from '../lib/backup-restore';
-import { executeTool } from '../lib/llm-tools';
+import { execTool } from './helpers/tool-exec';
 
 const note = (id = 'note') => ({ id, title: 'Synthetic note', content: 'Complete content', tags: [], pinned: false,
   archived: false, trashed: false, createdAt: 10, updatedAt: 20 });
@@ -61,8 +61,8 @@ describe('portable backup contracts', () => {
   it('backs up and restores a task an agent delegated, with its device-only agent assignment', async () => {
     await db.folders.add({ id: 'folder', name: 'Folder', order: 0, createdAt: 10 });
     await db.agentDeployments.add({ id: 'deployment', investigationId: 'folder', profileId: 'ap-ioc-enricher', status: 'idle', order: 0, createdAt: 10, updatedAt: 20 } as never);
-    const delegated = await executeTool({ type: 'tool_use', id: 'call', name: 'delegate_task',
-      input: { title: 'Enrich the beacon IP', description: 'Synthetic', assignToProfile: 'IOC Enricher' } }, 'folder', { profileId: 'ap-lead-analyst' });
+    const delegated = await execTool({ type: 'tool_use', id: 'call', name: 'delegate_task',
+      input: { title: 'Enrich the beacon IP', description: 'Synthetic', assignToProfile: 'IOC Enricher' } }, 'folder', { surface: 'agent', agentContext: { profileId: 'ap-lead-analyst' } });
     const { taskId } = JSON.parse(delegated.result);
     expect(await db.tasks.get(taskId)).toMatchObject({ assignedDeploymentId: 'deployment' });
     const full = await buildFullBackupPayload('all');

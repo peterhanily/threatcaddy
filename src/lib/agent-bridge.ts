@@ -4,15 +4,22 @@
  * the live session via Chrome DevTools Protocol `Runtime.evaluate`.
  *
  * Security:
- * - Nonce validation: callers must present the nonce returned by `installAgentBridge`
- *   to execute tools, preventing arbitrary page scripts from abusing the bridge.
+ * - Off unless Settings.agentBridgeEnabled is set on this device.
+ * - The nonce is published on `window.__tcNonce` for the CDP daemon, so any page
+ *   script can read it too. It is not an authentication boundary; the limits are:
+ * - Scope: only the investigation selected in ThreatCaddy (no re-scoping), and the
+ *   dispatcher's bridge surface refuses web, vendor, skill and cross-investigation
+ *   reach. Agent lifecycle, cross-case, SIEM and ticket tools are not offered.
  * - Audit logging: every tool call is logged to IndexedDB activityLog.
  */
 
 import { executeTool } from './llm-tools';
 import { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
+import { AGENT_NEVER_TOOLS, EXPLICIT_ONLY_TOOLS } from './caddy-agent-policy';
+import { isFolderLocalOnly, isShareableFolder } from './ai-scope';
+import { workspaceStorageKey } from './workspace-profiles';
 import { db } from '../db';
-import type { ToolUseBlock } from '../types';
+import type { Settings, ToolUseBlock } from '../types';
 import { isEncryptionEnabled, getEncryptionMeta } from './encryptionStore';
 import { ENCRYPTION_COVERAGE_VERSION, getSessionKey } from './encryptionMiddleware';
 import { isWorkspaceInitialized } from './workspace-initialization';
@@ -24,16 +31,30 @@ interface ThreatCaddyBridge {
   tools: () => string[];
   /** Get the currently selected investigation (folder) ID, if any */
   folderId: () => string | undefined;
-  /** Set the active investigation by ID. Requires valid nonce. */
+  /** Retired: the bridge follows the investigation selected in ThreatCaddy. Always throws. */
   setFolderId: (nonce: string, id: string | undefined) => void;
-  /** List investigations with basic metadata */
-  investigations: () => Promise<string>;
+  /** List investigations with basic metadata. Requires valid nonce and the bridge turned on. */
+  investigations: (nonce: string) => Promise<string>;
   /** Bridge version for compatibility checks */
   version: string;
 }
 
 let activeFolderId: string | undefined;
 let bridgeNonce: string | undefined;
+
+/** In-scope tools only; the dispatcher's bridge surface enforces the rest. */
+const BRIDGE_TOOLS: ReadonlySet<string> = new Set(TOOL_DEFINITIONS.map(t => t.name)
+  .filter(name => !AGENT_NEVER_TOOLS.has(name) && !EXPLICIT_ONLY_TOOLS.has(name)));
+
+/** Read at call time, like the dispatcher reads settings. */
+function isBridgeEnabled(): boolean {
+  try {
+    const settings: Partial<Settings> = JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}');
+    return settings.agentBridgeEnabled === true;
+  } catch {
+    return false;
+  }
+}
 
 function generateNonce(): string {
   const array = new Uint8Array(24);
@@ -70,19 +91,23 @@ async function logBridgeCall(toolName: string, folderId: string | undefined, isE
 }
 
 const bridge: ThreatCaddyBridge = {
-  version: '1.1.0',
+  version: '1.2.0',
 
   async exec(nonce: string, toolName: string, input: Record<string, unknown> = {}): Promise<string> {
     validateNonce(nonce);
     requireReadyWorkspace();
+    if (!isBridgeEnabled()) throw new Error('Turn on the agent bridge in Settings → AI');
+    // With no home, the bridge surface could not tell a cross-investigation read.
+    const folderId = activeFolderId;
+    if (!folderId) throw new Error('Select an investigation in ThreatCaddy first');
     const toolUse: ToolUseBlock = {
       type: 'tool_use',
       id: `agent-${Date.now()}`,
       name: toolName,
       input,
     };
-    const { result, isError } = await executeTool(toolUse, activeFolderId);
-    await logBridgeCall(toolName, activeFolderId, isError);
+    const { result, isError } = await executeTool(toolUse, folderId, undefined, { surface: 'bridge', allowedTools: BRIDGE_TOOLS });
+    await logBridgeCall(toolName, folderId, isError);
     if (isError) throw new Error(result);
     // Notify the UI to reload when a write tool succeeds
     if (isWriteTool(toolName)) {
@@ -92,7 +117,7 @@ const bridge: ThreatCaddyBridge = {
   },
 
   tools(): string[] {
-    return TOOL_DEFINITIONS.map(t => t.name);
+    return [...BRIDGE_TOOLS];
   },
 
   folderId(): string | undefined {
@@ -100,15 +125,18 @@ const bridge: ThreatCaddyBridge = {
     return activeFolderId;
   },
 
-  setFolderId(nonce: string, id: string | undefined): void {
-    validateNonce(nonce);
-    requireReadyWorkspace();
-    activeFolderId = id;
+  setFolderId(): void {
+    throw new Error('The agent bridge follows the investigation selected in ThreatCaddy');
   },
 
-  async investigations(): Promise<string> {
+  async investigations(nonce: string): Promise<string> {
+    validateNonce(nonce);
     requireReadyWorkspace();
-    const folders = await db.folders.toArray();
+    if (!isBridgeEnabled()) throw new Error('Turn on the agent bridge in Settings → AI');
+    // From a shareable investigation, local-only investigations do not exist.
+    const hideLocalOnly = await isShareableFolder(activeFolderId);
+    const folders = [];
+    for (const folder of await db.folders.toArray()) if (!hideLocalOnly || !await isFolderLocalOnly(folder)) folders.push(folder);
     return JSON.stringify(folders.map(f => ({
       id: f.id,
       name: f.name,
@@ -119,8 +147,9 @@ const bridge: ThreatCaddyBridge = {
 
 /**
  * Call once at app startup to expose the bridge on window.
- * Returns the nonce that agents must present with each exec/setFolderId call.
- * The nonce is available on `window.__tcNonce` for the CDP daemon to read.
+ * Returns the nonce that agents must present with each exec/investigations call.
+ * The nonce is available on `window.__tcNonce` for the CDP daemon to read, and
+ * so to every script on the page.
  */
 export function installAgentBridge(): string {
   bridgeNonce = generateNonce();

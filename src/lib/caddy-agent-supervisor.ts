@@ -15,7 +15,7 @@ import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-route
 import { notifyDesktop } from './desktop-notifications';
 import { parseToolCallsFromText } from './caddy-agent';
 import { SUPERVISOR_TOOLS, SUPERVISOR_ACTION_PROFILE, getSupervisorToolPermission, validateSupervisorDispatch } from './supervisor-tool-policy';
-import { queueAgentAction } from './agent-action-approval';
+import { queueAgentAction } from './agent-action-queue';
 import { toolExecutionError, type ToolExecutionResult } from './llm-tool-execution';
 import { cancellableRequest } from './request-cancellation';
 
@@ -363,7 +363,7 @@ async function runSupervisorCycleInner(
           result = { result: JSON.stringify({ status: 'pending_approval', message: 'This action requires analyst approval and has been queued for review.' }), isError: false };
         } else {
           result = await executeTool(toolCall, supervisorFolder.id, undefined, {
-            allowedTools: SUPERVISOR_TOOLS,
+            surface: 'supervisor', allowedTools: SUPERVISOR_TOOLS,
             validateScope: call => validateSupervisorDispatch(call, supervisorFolder.id),
             signal,
           });

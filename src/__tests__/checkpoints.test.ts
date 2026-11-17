@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import { executeCheckpointedTool, restoreCheckpoint } from '../lib/checkpoints';
-import { executeTool } from '../lib/llm-tools';
+import { execTool } from './helpers/tool-exec';
 import { revisionKey } from '../lib/sync-state';
 import type { Note, ToolUseBlock } from '../types';
 
 const context = { id: 'checkpoint', threadId: 'thread', messageId: 'assistant' };
 const note = (id: string): Note => ({ id, title: 'Before', content: 'Original body', tags: [], pinned: false, archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
 const tool = (name: string, input: Record<string, unknown>): ToolUseBlock => ({ type: 'tool_use', id: 'call', name, input });
-const run = (call: ToolUseBlock) => executeCheckpointedTool(context, call, () => executeTool(call));
+const run = (call: ToolUseBlock) => executeCheckpointedTool(context, call, () => execTool(call));
 beforeEach(async () => {
   await Promise.all([db.notes.clear(), db.checkpoints.clear(), db.standaloneIOCs.clear(), db.table('_syncMeta').clear()]);
 });

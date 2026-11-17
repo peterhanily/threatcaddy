@@ -8,6 +8,7 @@ import type {
 } from '../types';
 import { isUserTimeline } from './sync-capture-policy';
 import { CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES, TASK_STATUSES, TIMELINE_EVENT_TYPES } from './entity-enums';
+import { withCreatorTags } from './tool-creator';
 
 const MAX_SNIPPET = 200;
 /** Max stored length for LLM-supplied free-text fields (prevents memory abuse from runaway agents) */
@@ -46,17 +47,18 @@ async function agentAssigneeError(assigneeId: unknown): Promise<string | undefin
   return JSON.stringify({ error: 'assigneeId must be a team member user ID. Use delegate_task to assign work to an agent.' });
 }
 
-export async function executeCreateNote(input: Record<string, unknown>, folderId?: string): Promise<string> {
+export async function executeCreateNote(input: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const now = Date.now();
   const note = {
     id: nanoid(),
     title: String(input.title || 'Untitled'),
     content: sanitizeText(String(input.content || '')),
     folderId: folderId || undefined,
-    tags: Array.isArray(input.tags) ? input.tags.map(String) : [],
+    tags: withCreatorTags(Array.isArray(input.tags) ? input.tags.map(String) : [], creator),
     pinned: false,
     archived: false,
     trashed: false,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   };
@@ -81,7 +83,7 @@ export async function executeUpdateNote(input: Record<string, unknown>): Promise
   return JSON.stringify({ success: true, id, title: updates.title || note.title });
 }
 
-export async function executeCreateTask(input: Record<string, unknown>, folderId?: string): Promise<string> {
+export async function executeCreateTask(input: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const priority = enumInput(input.priority, 'priority', TASK_PRIORITIES);
   const status = enumInput(input.status, 'status', TASK_STATUSES);
   const refused = priority.error ?? status.error ?? await agentAssigneeError(input.assigneeId);
@@ -100,10 +102,11 @@ export async function executeCreateTask(input: Record<string, unknown>, folderId
     status: status.value ?? 'todo',
     order: count,
     folderId: folderId || undefined,
-    tags: [],
+    tags: withCreatorTags([], creator),
     trashed: false,
     archived: false,
     assigneeId: input.assigneeId ? String(input.assigneeId) : undefined,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   };
@@ -136,7 +139,7 @@ export async function executeUpdateTask(input: Record<string, unknown>): Promise
   return JSON.stringify({ success: true, id, title: updates.title || task.title });
 }
 
-export async function executeCreateIOC(input: Record<string, unknown>, folderId?: string): Promise<string> {
+export async function executeCreateIOC(input: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const confidence = enumInput(input.confidence, 'confidence', CONFIDENCE_VALUES);
   const refused = iocTypeError(input.type) ?? confidence.error;
   if (refused) return refused;
@@ -148,9 +151,10 @@ export async function executeCreateIOC(input: Record<string, unknown>, folderId?
     confidence: confidence.value ?? 'medium',
     analystNotes: input.analystNotes ? sanitizeText(String(input.analystNotes)) : undefined,
     folderId: folderId || undefined,
-    tags: [],
+    tags: withCreatorTags([], creator),
     trashed: false,
     archived: false,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   };
@@ -181,7 +185,7 @@ export async function executeUpdateIOC(input: Record<string, unknown>): Promise<
   return JSON.stringify({ success: true, id, type: updates.type || ioc.type, value: updates.value || ioc.value });
 }
 
-export async function executeBulkCreateIOCs(input: Record<string, unknown>, folderId?: string): Promise<string> {
+export async function executeBulkCreateIOCs(input: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const iocInputs = input.iocs as Array<Record<string, unknown>>;
   if (!Array.isArray(iocInputs) || iocInputs.length === 0) {
     return JSON.stringify({ error: 'iocs array is required and must not be empty' });
@@ -204,9 +208,10 @@ export async function executeBulkCreateIOCs(input: Record<string, unknown>, fold
     confidence: confidences[index] ?? 'medium',
     analystNotes: iocInput.analystNotes ? sanitizeText(String(iocInput.analystNotes)) : undefined,
     folderId: folderId || undefined,
-    tags: [],
+    tags: withCreatorTags([], creator),
     trashed: false,
     archived: false,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   }));
@@ -222,7 +227,7 @@ export async function executeBulkCreateIOCs(input: Record<string, unknown>, fold
   return JSON.stringify({ success: true, count: created.length, iocs: created });
 }
 
-export async function executeCreateTimelineEvent(input: Record<string, unknown>, folderId?: string): Promise<string> {
+export async function executeCreateTimelineEvent(input: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const eventType = enumInput(input.eventType, 'eventType', TIMELINE_EVENT_TYPES);
   if (eventType.error) return eventType.error;
   const now = Date.now();
@@ -262,13 +267,14 @@ export async function executeCreateTimelineEvent(input: Record<string, unknown>,
     linkedTaskIds: [],
     mitreAttackIds: [],
     assets: [],
-    tags: [],
+    tags: withCreatorTags([], creator),
     starred: false,
     folderId: folderId || undefined,
     timelineId,
     ...(hasGeo ? { latitude: lat, longitude: lng } : {}),
     trashed: false,
     archived: false,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   };
@@ -311,7 +317,7 @@ export async function executeUpdateTimelineEvent(input: Record<string, unknown>)
 }
 
 export async function executeLinkEntities(input: Record<string, unknown>): Promise<string> {
-  const links = input.links as Array<Record<string, string>>;
+  const links = input.links as Array<Record<string, unknown>>;
   if (!Array.isArray(links) || links.length === 0) {
     return JSON.stringify({ error: 'links array is required' });
   }
@@ -320,7 +326,9 @@ export async function executeLinkEntities(input: Record<string, unknown>): Promi
   const errors: string[] = [];
 
   for (const link of links) {
-    const { sourceType, sourceId, targetType, targetId } = link;
+    // Coerce as the other executors do (and as the reach classifier assumes): Dexie
+    // treats an object key as criteria, so {id: X} would reach row X.
+    const [sourceType, sourceId, targetType, targetId] = [link?.sourceType, link?.sourceId, link?.targetType, link?.targetId].map(value => String(value || ''));
     try {
       await addLink(sourceType, sourceId, targetType, targetId);
       linked++;
@@ -439,7 +447,7 @@ export async function executeGenerateReport(input: Record<string, unknown>, fold
   return JSON.stringify({ success: true, id: note.id, title: note.title, contentLength: report.length });
 }
 
-export async function executeCreateInInvestigation(input: Record<string, unknown>): Promise<string> {
+export async function executeCreateInInvestigation(input: Record<string, unknown>, creator?: string): Promise<string> {
   const id = String(input.investigationId || '');
   const name = String(input.investigationName || '');
   const entityType = String(input.entityType || '');
@@ -452,10 +460,10 @@ export async function executeCreateInInvestigation(input: Record<string, unknown
   if (id) {
     folder = await db.folders.get(id);
   } else if (name) {
+    // Exact name only: a partial match could write into an unintended investigation.
     const lower = name.toLowerCase();
     const all = await db.folders.toArray();
-    folder = all.find(f => f.name.toLowerCase() === lower)
-      || all.find(f => f.name.toLowerCase().includes(lower));
+    folder = all.find(f => f.name.toLowerCase() === lower);
   }
 
   if (!folder) return JSON.stringify({ error: 'Investigation not found' });
@@ -463,13 +471,13 @@ export async function executeCreateInInvestigation(input: Record<string, unknown
   // Delegate to existing create functions with the resolved folderId
   switch (entityType) {
     case 'note':
-      return executeCreateNote(data, folder.id);
+      return executeCreateNote(data, folder.id, creator);
     case 'task':
-      return executeCreateTask(data, folder.id);
+      return executeCreateTask(data, folder.id, creator);
     case 'ioc':
-      return executeCreateIOC(data, folder.id);
+      return executeCreateIOC(data, folder.id, creator);
     case 'timeline-event':
-      return executeCreateTimelineEvent(data, folder.id);
+      return executeCreateTimelineEvent(data, folder.id, creator);
     default:
       return JSON.stringify({ error: `Unknown entity type: ${entityType}. Use: note, task, ioc, timeline-event` });
   }

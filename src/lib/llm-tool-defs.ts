@@ -412,7 +412,7 @@ export const TOOL_DEFINITIONS = [
       type: 'object' as const,
       properties: {
         investigationId: { type: 'string', description: 'Target investigation (folder) ID' },
-        investigationName: { type: 'string', description: 'Target investigation name (partial match). Used if investigationId is not provided.' },
+        investigationName: { type: 'string', description: 'Exact target investigation name (case-insensitive). Used if investigationId is not provided.' },
         entityType: { type: 'string', enum: ['note', 'task', 'ioc', 'timeline-event'], description: 'Type of entity to create' },
         data: {
           type: 'object',
@@ -458,7 +458,7 @@ export const TOOL_DEFINITIONS = [
   },
   {
     name: 'forensicate_scan',
-    description: 'Scan text for prompt injection patterns using Forensicate.ai detection rules (keyword, regex, heuristic, NLP). Returns confidence score, matched rules, and attack complexity.',
+    description: 'Basic local check of text for common prompt-injection patterns. Nothing leaves this device.',
     input_schema: {
       type: 'object' as const,
       properties: {

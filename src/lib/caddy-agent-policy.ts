@@ -3,8 +3,52 @@
  * whether a tool call should be auto-executed or proposed for human approval.
  */
 
-import type { AgentActionClass, AgentPolicy, Settings } from '../types';
+import { DEFAULT_AGENT_POLICY, type AgentActionClass, type AgentPolicy, type Settings } from '../types';
 import { workspaceStorageKey } from './workspace-profiles';
+
+export const CROSS_CASE_READ_TOOLS: ReadonlySet<string> = new Set([
+  'list_investigations', 'get_investigation_details', 'search_across_investigations', 'compare_investigations']);
+/** Never in any agent toolset, any agent role, legacy included. Chat may use them with a card. */
+export const AGENT_NEVER_TOOLS: ReadonlySet<string> = new Set([
+  'deploy_agent', 'stop_agent', 'run_agent_cycle', 'create_in_investigation', 'run_remote_command']);
+/** Agent-configuration changes: always need a person (chat card or queued proposal). */
+export const AGENT_CONTROL_TOOLS: ReadonlySet<string> = new Set([
+  'spawn_agent', 'define_specialist', 'dismiss_agent', 'reflect_on_performance']);
+/** Offered to an agent only when its profile lists them explicitly. Cross-case readers also need a local-only home. */
+export const EXPLICIT_ONLY_TOOLS: ReadonlySet<string> = new Set([...CROSS_CASE_READ_TOOLS, 'query_siem', 'create_ticket']);
+export const isEgressToolName = (n: string) =>
+  ['fetch_url', 'enrich_ioc', 'query_siem', 'create_ticket'].includes(n) || n.startsWith('host:') || n.startsWith('local:');
+/** Owner decision D2. https only, exact host, no credentials, default port, href <= 2048. */
+export const AGENT_AUTO_FETCH_HOSTS: readonly string[] = ['nvd.nist.gov', 'services.nvd.nist.gov', 'www.cve.org',
+  'cve.mitre.org', 'cwe.mitre.org', 'attack.mitre.org', 'www.cisa.gov', 'api.first.org'];
+export function isTrustedFetchUrl(url: string): boolean {
+  if (typeof url !== 'string' || url.length > 2048) return false;
+  let parsed: URL;
+  try { parsed = new URL(url); } catch { return false; }
+  return parsed.protocol === 'https:' && !parsed.username && !parsed.password && parsed.port === ''
+    && parsed.href.length <= 2048 && AGENT_AUTO_FETCH_HOSTS.includes(parsed.hostname);
+}
+export const MAX_ACTIVE_DEPLOYMENTS_PER_INVESTIGATION = 8;
+
+const POLICY_FLAGS = ['autoApproveReads', 'autoApproveEnrich', 'autoApproveFetch', 'autoApproveCreate', 'autoApproveModify'] as const;
+/** Fetch predates its own flag; older policies inherit it from Enrich (see shouldAutoApprove). */
+const policyFlag = (policy: Partial<AgentPolicy>, key: typeof POLICY_FLAGS[number]) =>
+  key === 'autoApproveFetch' ? policy.autoApproveFetch ?? policy.autoApproveEnrich : policy[key];
+
+/** M-AGENT-POLICY-OVERRIDE. Pure. The investigation policy is a ceiling and
+ * deployment overrides can only clear a flag; neither a profile nor an override
+ * can grant what the investigation turned off. */
+export function resolveEffectivePolicy(folderPolicy: AgentPolicy | undefined, profilePolicy: AgentPolicy | undefined,
+  overrides: Partial<AgentPolicy> | undefined, hasProfile: boolean): AgentPolicy {
+  const effective: AgentPolicy = { ...(folderPolicy ?? DEFAULT_AGENT_POLICY), ...profilePolicy, ...overrides };
+  for (const key of POLICY_FLAGS) {
+    const base = (hasProfile ? profilePolicy && policyFlag(profilePolicy, key) : policyFlag(folderPolicy ?? DEFAULT_AGENT_POLICY, key))
+      ?? DEFAULT_AGENT_POLICY[key];
+    const ceiling = folderPolicy ? policyFlag(folderPolicy, key) !== false : true;
+    effective[key] = base && ceiling && overrides?.[key] !== false;
+  }
+  return effective;
+}
 
 /** Map every tool to its action class for policy decisions. */
 const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {

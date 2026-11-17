@@ -1,5 +1,6 @@
 import { db } from '../db';
-import type { IOCType, TimelineEventType, TaskStatus } from '../types';
+import type { Folder, IOCType, TimelineEventType, TaskStatus } from '../types';
+import { isFolderLocalOnly } from './ai-scope';
 
 const MAX_SNIPPET = 200;
 const MAX_CONTENT = 8000;
@@ -278,11 +279,23 @@ export async function executeGetInvestigationSummary(_input: Record<string, unkn
   });
 }
 
-export async function executeListInvestigations(input: Record<string, unknown>): Promise<string> {
+/** Who is asking: from a shareable home, local-only investigations do not exist. */
+export interface InvestigationVisibility { homeFolderId?: string; hideLocalOnly: boolean }
+
+async function visibleFolders(visibility: InvestigationVisibility): Promise<{ folders: Folder[]; hiddenLocalOnly: number }> {
+  const all = await db.folders.toArray();
+  if (!visibility.hideLocalOnly) return { folders: all, hiddenLocalOnly: 0 };
+  const folders: Folder[] = [];
+  for (const folder of all) if (!await isFolderLocalOnly(folder)) folders.push(folder);
+  return { folders, hiddenLocalOnly: all.length - folders.length };
+}
+
+export async function executeListInvestigations(input: Record<string, unknown>, visibility: InvestigationVisibility): Promise<string> {
   const statusFilter = input.status as string | undefined;
   const limit = Math.min(Number(input.limit) || 20, 50);
 
-  let folders = await db.folders.toArray();
+  const visible = await visibleFolders(visibility);
+  let folders = visible.folders;
   if (statusFilter) folders = folders.filter(f => (f.status || 'active') === statusFilter);
   folders.sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
   folders = folders.slice(0, limit);
@@ -306,19 +319,19 @@ export async function executeListInvestigations(input: Record<string, unknown>):
     };
   }));
 
-  return JSON.stringify({ count: results.length, investigations: results });
+  return JSON.stringify({ count: results.length, investigations: results, hiddenLocalOnly: visible.hiddenLocalOnly });
 }
 
-export async function executeGetInvestigationDetails(input: Record<string, unknown>): Promise<string> {
+export async function executeGetInvestigationDetails(input: Record<string, unknown>, visibility: InvestigationVisibility): Promise<string> {
   const id = String(input.id || '');
   const name = String(input.name || '');
 
   let folder;
+  const { folders: all } = await visibleFolders(visibility);
   if (id) {
-    folder = await db.folders.get(id);
+    folder = all.find(f => f.id === id);
   } else if (name) {
     const lower = name.toLowerCase();
-    const all = await db.folders.toArray();
     folder = all.find(f => f.name.toLowerCase() === lower)
       || all.find(f => f.name.toLowerCase().includes(lower));
   }
@@ -358,13 +371,13 @@ export async function executeGetInvestigationDetails(input: Record<string, unkno
   });
 }
 
-export async function executeSearchAcrossInvestigations(input: Record<string, unknown>): Promise<string> {
+export async function executeSearchAcrossInvestigations(input: Record<string, unknown>, visibility: InvestigationVisibility): Promise<string> {
   const query = String(input.query || '').toLowerCase();
   if (!query) return JSON.stringify({ error: 'query is required' });
   const limit = Math.min(Number(input.limit) || 5, 20);
   const entityTypes = (input.entityTypes as string[] | undefined) || ['notes', 'tasks', 'iocs', 'events'];
 
-  const folders = await db.folders.toArray();
+  const { folders, hiddenLocalOnly } = await visibleFolders(visibility);
   const results: Record<string, unknown>[] = [];
 
   for (const folder of folders) {
@@ -410,15 +423,16 @@ export async function executeSearchAcrossInvestigations(input: Record<string, un
     if (totalHits > 0) results.push(match);
   }
 
-  return JSON.stringify({ query, investigationsSearched: folders.length, investigationsWithHits: results.length, results });
+  return JSON.stringify({ query, investigationsSearched: folders.length, investigationsWithHits: results.length, results, hiddenLocalOnly });
 }
 
-export async function executeCompareInvestigations(input: Record<string, unknown>): Promise<string> {
+export async function executeCompareInvestigations(input: Record<string, unknown>, visibility: InvestigationVisibility): Promise<string> {
   const ids = input.investigationIds as string[];
   if (!ids || ids.length < 2) return JSON.stringify({ error: 'At least 2 investigation IDs required' });
 
+  const { folders: visible } = await visibleFolders(visibility);
   const comparisons = await Promise.all(ids.map(async (id) => {
-    const folder = await db.folders.get(id);
+    const folder = visible.find(f => f.id === id);
     if (!folder) return { id, error: 'Not found' };
 
     const [notes, tasks, iocs, events] = await Promise.all([

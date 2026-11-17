@@ -16,7 +16,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import 'fake-indexeddb/auto';
 import { db } from '../db';
 import type { ToolUseBlock } from '../types';
-import { executeTool } from '../lib/llm-tools';
+import { execTool } from './helpers/tool-exec';
 
 const CISO_ID = 'ap-ciso';                    // executive — for dismiss + read
 const HUNTER_ID = 'ap-threat-hunter';         // specialist — for reflect-on-self
@@ -44,10 +44,8 @@ describe('soul persistence on builtin profiles', () => {
     // Sanity: no DB row exists for the builtin yet.
     expect(await db.agentProfiles.get(HUNTER_ID)).toBeUndefined();
 
-    const r = await executeTool(
-      reflectCall('Always check the timeline before forming a hypothesis.'),
-      'fid',
-      { profileId: HUNTER_ID },
+    const r = await execTool(
+      reflectCall('Always check the timeline before forming a hypothesis.'), 'fid', { surface: 'agent', agentContext: { profileId: HUNTER_ID } },
     );
     const parsed = JSON.parse(r.result);
     expect(parsed.success).toBe(true);
@@ -62,9 +60,9 @@ describe('soul persistence on builtin profiles', () => {
   });
 
   it('reflect_on_performance updates the soul on subsequent calls (no row duplication)', async () => {
-    await executeTool(reflectCall('First lesson.'), 'fid', { profileId: HUNTER_ID });
-    await executeTool(reflectCall('Second lesson.'), 'fid', { profileId: HUNTER_ID });
-    await executeTool(reflectCall('Third lesson.'), 'fid', { profileId: HUNTER_ID });
+    await execTool(reflectCall('First lesson.'), 'fid', { surface: 'agent', agentContext: { profileId: HUNTER_ID } });
+    await execTool(reflectCall('Second lesson.'), 'fid', { surface: 'agent', agentContext: { profileId: HUNTER_ID } });
+    await execTool(reflectCall('Third lesson.'), 'fid', { surface: 'agent', agentContext: { profileId: HUNTER_ID } });
 
     const rows = await db.agentProfiles.where('id').equals(HUNTER_ID).toArray();
     expect(rows).toHaveLength(1);
@@ -74,13 +72,11 @@ describe('soul persistence on builtin profiles', () => {
   });
 
   it('read_soul (peer-read by executive) sees the persisted soul on a builtin', async () => {
-    await executeTool(
-      reflectCall('Specialists should always cite a source.', 'I am the Threat Hunter, evidence-driven.'),
-      'fid',
-      { profileId: HUNTER_ID },
+    await execTool(
+      reflectCall('Specialists should always cite a source.', 'I am the Threat Hunter, evidence-driven.'), 'fid', { surface: 'agent', agentContext: { profileId: HUNTER_ID } },
     );
 
-    const r = await executeTool(readSoulCall('Threat Hunter'), 'fid', { profileId: CISO_ID });
+    const r = await execTool(readSoulCall('Threat Hunter'), 'fid', { surface: 'agent', agentContext: { profileId: CISO_ID } });
     const parsed = JSON.parse(r.result);
     expect(parsed.error).toBeUndefined();
     expect(parsed.profile).toBe('Threat Hunter');
@@ -90,7 +86,7 @@ describe('soul persistence on builtin profiles', () => {
   });
 
   it('reflect snapshot preserves builtin role + systemPrompt at write time', async () => {
-    await executeTool(reflectCall('initial'), 'fid', { profileId: HUNTER_ID });
+    await execTool(reflectCall('initial'), 'fid', { surface: 'agent', agentContext: { profileId: HUNTER_ID } });
     const row = await db.agentProfiles.get(HUNTER_ID);
     // The materialised row carries the i18n-resolved name primitive (not a getter)
     // and the full-fat profile fields, so it round-trips through structured-clone

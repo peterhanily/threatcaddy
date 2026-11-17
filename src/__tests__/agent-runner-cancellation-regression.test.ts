@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS, DEFAULT_AGENT_POLICY, type AgentDeployment, type Agen
 import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
 import { runSupervisorCycle } from '../lib/caddy-agent-supervisor';
 import * as supervisorPolicy from '../lib/supervisor-tool-policy';
-import * as approval from '../lib/agent-action-approval';
+import * as approval from '../lib/agent-action-queue';
 
 const mocks = vi.hoisted(() => ({ run: vi.fn(), route: vi.fn(), execute: vi.fn() }));
 vi.mock('../lib/caddy-agent', () => ({ runAgentCycle: mocks.run, parseToolCallsFromText: () => [] }));

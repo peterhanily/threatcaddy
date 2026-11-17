@@ -21,7 +21,7 @@ export async function getSupervisorToolPermission(
   toolUse: ToolUseBlock,
   supervisorFolderId: string,
 ): Promise<SupervisorPermission> {
-  const inputError = getToolExecutionError(toolUse, { allowedTools: SUPERVISOR_TOOLS });
+  const inputError = getToolExecutionError(toolUse, { surface: 'supervisor', allowedTools: SUPERVISOR_TOOLS });
   if (inputError) return { kind: 'denied', error: inputError };
   if (!isWriteTool(toolUse.name)) {
     const supervisor = await db.folders.get(supervisorFolderId);

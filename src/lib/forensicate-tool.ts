@@ -1,83 +1,20 @@
-// Forensicate.ai integration for ThreatCaddy
-// Provides prompt injection scanning capabilities within investigations
-//
-// Usage:
-//   1. Add FORENSICATE_TOOL_DEF to the TOOL_DEFINITIONS array in llm-tool-defs.ts
-//   2. Add a case for 'forensicate_scan' in the switch in llm-tools.ts:
-//        case 'forensicate_scan': result = await executeForensicateScan(inp); break;
-//   3. Import executeForensicateScan in llm-tools.ts
-//   4. (Optional) Add FORENSICATE_AGENT_PROFILE to BUILTIN_AGENT_PROFILES in builtin-agent-profiles.ts
+// Forensicate Scanner for ThreatCaddy: a basic local check of text for common
+// prompt-injection patterns. Nothing leaves this device.
 
 import type { AgentProfile } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
 import i18n from '../i18n';
 
-// ── Tool Definition (Anthropic format) ───────────────────────────────────
-
-export const FORENSICATE_TOOL_DEF = {
-  name: 'forensicate_scan',
-  description:
-    'Scan text for prompt injection patterns using Forensicate.ai\'s 149 detection rules across 20 categories (keyword, regex, heuristic, NLP). Returns confidence score, matched rules, attack complexity, and compliance mapping.',
-  input_schema: {
-    type: 'object' as const,
-    properties: {
-      text: {
-        type: 'string',
-        description:
-          'The text to scan for prompt injection patterns, jailbreak attempts, or adversarial inputs',
-      },
-      threshold: {
-        type: 'number',
-        description:
-          'Confidence threshold (0-100). Only rules scoring at or above this value are reported. Default: 0 (return all matches)',
-      },
-    },
-    required: ['text'],
-  },
-};
-
 // ── Tool Executor ────────────────────────────────────────────────────────
-
-const API_URL = 'https://api.forensicate.ai/v1/scan';
 
 export async function executeForensicateScan(params: {
   text: string;
   threshold?: number;
 }): Promise<string> {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30_000);
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: params.text,
-        confidenceThreshold: params.threshold ?? 0,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-
-    if (!response.ok) {
-      return JSON.stringify({
-        error: `Forensicate API returned ${response.status}: ${response.statusText}`,
-        fallback: true,
-        basicCheck: performBasicCheck(params.text),
-      });
-    }
-
-    return await response.text();
-  } catch {
-    // API unreachable — fall back to client-side pattern matching
-    return JSON.stringify({
-      error: 'Forensicate API unavailable — using basic client-side check',
-      fallback: true,
-      basicCheck: performBasicCheck(params.text),
-    });
-  }
+  return JSON.stringify({ local: true, ...performBasicCheck(params.text) });
 }
 
-// ── Basic Fallback Scanner ───────────────────────────────────────────────
+// ── Basic Local Scanner ──────────────────────────────────────────────────
 
 interface BasicCheckResult {
   detected: boolean;
@@ -128,11 +65,12 @@ function performBasicCheck(text: string): BasicCheckResult {
 export const FORENSICATE_AGENT_PROFILE: AgentProfile = {
   id: 'ap-forensicate-scanner',
   get name() { return i18n.t('builtinProfile.forensicateScanner.name', { ns: 'agent' }); },
-  get description() { return i18n.t('builtinProfile.forensicateScanner.description', { ns: 'agent' }); },
+  // descriptionV2 says the scan is local; the old text covers locales without it, never a raw key.
+  get description() { return i18n.t(['builtinProfile.forensicateScanner.descriptionV2', 'builtinProfile.forensicateScanner.description'], { ns: 'agent' }); },
   icon: '🛡️',
   role: 'specialist',
   systemPrompt:
-    'You are a prompt injection security specialist. Scan investigation content for prompt injection patterns, jailbreak attempts, and adversarial inputs using the forensicate_scan tool. Create IOCs for detected threats and add analysis notes. When scanning, examine notes, task descriptions, and any user-supplied text for injection attempts. For each detection, create an IOC with type "mitre-attack" and value "T1059" (or the most specific technique) and confidence based on the scan score. Write a summary note with findings, severity assessment, and remediation recommendations.',
+    'You are a prompt injection security specialist. Check notes, task descriptions and other user-supplied text with forensicate_scan, a basic local pattern check. For each detection, create an IOC (type "mitre-attack", value "T1059" or a more specific technique) and write a summary note with severity and remediation.',
   allowedTools: [
     'forensicate_scan',
     'create_ioc',

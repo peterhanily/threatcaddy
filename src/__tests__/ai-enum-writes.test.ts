@@ -2,14 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import { buildFullBackupPayload } from '../lib/backup-data';
 import { exportInvestigationJSON } from '../lib/export';
-import { executeTool, TOOL_DEFINITIONS } from '../lib/llm-tools';
+import { TOOL_DEFINITIONS } from '../lib/llm-tools';
+import { execTool } from './helpers/tool-exec';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
 import type { ToolUseBlock } from '../types';
 import type { IntegrationTemplate } from '../types/integration-types';
 
 // Tool errors go to the model as JSON, not to users, so they are not localized.
 const call = (name: string, input: Record<string, unknown>): ToolUseBlock => ({ type: 'tool_use', id: `tool-${name}`, name, input });
-const run = async (name: string, input: Record<string, unknown>) => JSON.parse((await executeTool(call(name, input), 'f1')).result);
+const run = async (name: string, input: Record<string, unknown>) => JSON.parse((await execTool(call(name, input), 'f1')).result);
 const base = { tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 };
 
 beforeEach(async () => {
@@ -52,9 +53,10 @@ describe('AI write tools store only values every backup accepts', () => {
 
     const deployed = await run('deploy_agent', { profileName: 'Threat Hunter', competitiveness: 'Competitive' });
     expect((await db.agentDeployments.get(deployed.deploymentId))?.competitiveness).toBe('competitive');
-    const spawned = await run('spawn_agent', { profileName: 'Threat Hunter', reason: 'Coverage', competitiveness: 'INDEPENDENT' });
+    // One active deployment per profile: each spawn uses a different agent.
+    const spawned = await run('spawn_agent', { profileName: 'Malware Analyst', reason: 'Coverage', competitiveness: 'INDEPENDENT' });
     expect((await db.agentDeployments.get(spawned.deploymentId))?.competitiveness).toBe('independent');
-    const unspecified = await run('spawn_agent', { profileName: 'Threat Hunter', reason: 'Coverage' });
+    const unspecified = await run('spawn_agent', { profileName: 'Network Forensics', reason: 'Coverage' });
     expect((await db.agentDeployments.get(unspecified.deploymentId))?.competitiveness).toBe('cooperative');
 
     await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
@@ -95,7 +97,7 @@ describe('AI write tools store only values every backup accepts', () => {
     ['spawn_agent', { profileName: 'Threat Hunter', reason: 'Coverage', competitiveness: 'aggressive' }, 'competitiveness'],
   ])('%s refuses an unsupported value and writes nothing (%#)', async (name, input, field) => {
     const before = await buildFullBackupPayload('all');
-    const result = await executeTool(call(name, input), 'f1');
+    const result = await execTool(call(name, input), 'f1');
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.result).error).toContain(`Unsupported ${field}`);
     expect((await buildFullBackupPayload('all')).data).toEqual(before.data);
