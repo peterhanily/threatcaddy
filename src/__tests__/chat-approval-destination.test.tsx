@@ -132,6 +132,14 @@ describe('C2-2 /fetch says where its note goes', () => {
     expect(replies(props)).toEqual(['Created note **Fixture page** from https://www.cisa.gov/advisory\n\nShared case: syncs to its members']);
   });
 
+  it('says a local-only investigation\'s note stays on this device', async () => {
+    state.folder = { id: 'S', name: 'Shared case', order: 0, createdAt: 1 };
+    const props = renderChat('L2');
+    await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/advisory'); });
+    expect(await notesTitled('Fixture page')).toEqual([expect.objectContaining({ folderId: 'L2' })]);
+    expect(replies(props)).toEqual(['Created note **Fixture page** from https://www.cisa.gov/advisory\n\nHunting case: stays on this device']);
+  });
+
   it('says an unfiled thread\'s note stays outside any investigation', async () => {
     const props = renderChat();
     await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/advisory'); });
