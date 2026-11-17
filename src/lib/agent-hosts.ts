@@ -31,6 +31,13 @@ function redactAuth(s: string): string {
     .replace(/(["']?(?:api[_-]?key|access[_-]?token|token|secret|password)["']?\s*[:=]\s*["']?)[^"'\s,}]+/gi, '$1[redacted]');
 }
 
+/** Host-authored skill text, capped at 200 chars without control characters.
+ * Applied at discovery and again to descriptions stored by older versions. */
+function sanitizeSkillDescription(description: string): string {
+  // eslint-disable-next-line no-control-regex -- intentional: strip control chars from host-authored text
+  return description.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200);
+}
+
 // ── Skill Discovery ──────────────────────────────────────────────────
 
 /**
@@ -68,8 +75,7 @@ export async function fetchHostSkills(host: AgentHost, signal?: AbortSignal): Pr
         typeof (s as AgentHostSkill).description === 'string'
     ).map(s => ({
       name: s.name,
-      // eslint-disable-next-line no-control-regex -- intentional: strip control chars from host-authored text
-      description: s.description.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200),
+      description: sanitizeSkillDescription(s.description),
       parameters: s.parameters || { type: 'object' as const, properties: {}, required: [] },
       actionClass: normalizeHostActionClass(s.actionClass),
     }));
@@ -101,7 +107,7 @@ export function getHostToolDefinitions(settings: Settings): ToolDef[] {
     for (const skill of localSkills) {
       tools.push({
         name: `local:${skill.name}`,
-        description: `[Local Agent] ${skill.description}`,
+        description: `[Local Agent] ${sanitizeSkillDescription(skill.description)}`,
         input_schema: {
           type: 'object' as const,
           properties: skill.parameters?.properties || {},
@@ -117,7 +123,7 @@ export function getHostToolDefinitions(settings: Settings): ToolDef[] {
     for (const skill of host.skills) {
       tools.push({
         name: `host:${host.name}:${skill.name}`,
-        description: `[${host.displayName}] ${skill.description}`,
+        description: `[${host.displayName}] ${sanitizeSkillDescription(skill.description)}`,
         input_schema: {
           type: 'object' as const,
           properties: skill.parameters?.properties || {},
