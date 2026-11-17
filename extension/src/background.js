@@ -1037,30 +1037,15 @@ async function streamAnthropic(send, payload, signal) {
 }
 
 // Parse tool calls from model text output (fallback for local LLMs that don't use structured tool_calls).
-// Supports: <tool_call>{"name":"...","arguments":{...}}</tool_call>, <function_call>...</function_call>,
-// and ```json blocks with name+arguments/parameters.
+// Only the exact <tool_call>{"name":"...","arguments":{...}}</tool_call> wrapper the app asks for counts.
+// JSON quoted in fences or other tags is often text the model read (a web page, a note), not a call.
 function parseToolCallsFromText(text, toolNames) {
   const calls = [];
   const nameSet = new Set(toolNames || []);
 
-  // Pattern 1: <tool_call>JSON</tool_call> or <function_call>JSON</function_call>
-  const tagPattern = /<(?:tool_call|function_call)>\s*([\s\S]*?)\s*<\/(?:tool_call|function_call)>/gi;
+  const tagPattern = /<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/g;
   let match;
   while ((match = tagPattern.exec(text)) !== null) {
-    try {
-      const obj = JSON.parse(match[1]);
-      const name = obj.name || obj.function;
-      const args = obj.arguments || obj.parameters || obj.input || {};
-      if (name && nameSet.has(name)) {
-        calls.push({ name, arguments: typeof args === 'string' ? JSON.parse(args) : args });
-      }
-    } catch { /* This text candidate is not a usable tool-call object. */ }
-  }
-  if (calls.length > 0) return calls;
-
-  // Pattern 2: JSON blocks (```json or bare) containing {name, arguments/parameters}
-  const jsonBlockPattern = /```(?:json)?\s*\n?([\s\S]*?)\n?```/gi;
-  while ((match = jsonBlockPattern.exec(text)) !== null) {
     try {
       const obj = JSON.parse(match[1]);
       const name = obj.name || obj.function;
@@ -1207,8 +1192,8 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
 
   // Fallback: if no structured tool calls were found and text-based parsing is enabled,
   // try to extract tool calls from the model's text output. Many local LLMs output
-  // tool calls as <tool_call>JSON</tool_call> or ```json blocks instead of using
-  // the OpenAI tool_calls streaming protocol.
+  // tool calls as <tool_call>JSON</tool_call> instead of using the OpenAI tool_calls
+  // streaming protocol.
   if (contentBlocks.length === 0 && options.textToolParsing && fullText) {
     const toolNames = (payload.tools || []).map(t => t.name);
     const textCalls = parseToolCallsFromText(fullText, toolNames);

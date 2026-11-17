@@ -3,7 +3,7 @@
 // Protocol version — increment when message shapes change in breaking ways.
 // The webapp reads this to know which features/messages the extension supports.
 var TC_PROTOCOL_VERSION = 1;
-var TC_CAPABILITIES = ['llm_streaming', 'fetch_url', 'clip_import', 'clip_import_ack_v2', 'proxy_fetch', 'proxy_fetch_abort', 'notification_ack'];
+var TC_CAPABILITIES = ['llm_streaming', 'fetch_url', 'fetch_url_public_v1', 'clip_import', 'clip_import_ack_v2', 'proxy_fetch', 'proxy_fetch_abort', 'notification_ack'];
 var tcAppApproved = typeof tcAppApproved === 'boolean' ? tcAppApproved : false;
 var tcApprovalRequest = typeof tcApprovalRequest === 'number' ? tcApprovalRequest : 0;
 
