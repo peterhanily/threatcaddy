@@ -5,7 +5,7 @@
   "team.installedDisabledNoDomains": "{{name}} は無効の状態でインストールされました。Web リクエストは送信しません。内容を確認してから、[インストール済み] タブで有効にしてください。",
   "fetch.privateTarget": "取得できるのは、認証情報を含まない公開の http(s) アドレスのみです。プライベート、ローカル、および IP アドレスを直接指定した宛先は許可されていません。",
   "fetch.tooLong": "2048 文字を超えるアドレスは取得できません。URL を短くしてもう一度お試しください。",
-  "fetch.updateExtension": "Web 取得には、このアプリを承認済みの ThreatCaddy 拡張機能 1.1.3 以降が必要です。インストールする ThreatCaddy 拡張機能は最新のものだけにして、ページを再読み込みしてください。",
+  "fetch.updateExtension": "Web 取得には、このアプリを承認済みの ThreatCaddy 拡張機能 1.1.3 以降が必要です。ブラウザーの拡張機能ストアで更新が提供されない場合は、GitHub の ThreatCaddy リリースから最新版をインストールしてください。インストールする ThreatCaddy 拡張機能は最新のものだけにして、ページを再読み込みしてください。",
   "fetch.bridgeTimeout": "拡張機能ブリッジがタイムアウトしました。ThreatCaddy 拡張機能がインストールされていること、およびインストール後にページを再読み込みしたことを確認してください。",
   "builtin.vtIpLookup.name": "VirusTotal IP ルックアップ",
   "builtin.vtIpLookup.description": "IPアドレスをVirusTotalで照会して評判、ジオロケーション、分析統計を取得します。",

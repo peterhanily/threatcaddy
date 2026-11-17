@@ -1,8 +1,14 @@
 import { defineConfig } from 'vitest/config'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  // As in vite.config.ts and vite.config.single.ts.
+  define: {
+    __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8')).version),
+  },
   test: {
     environment: 'jsdom',
     globals: true,

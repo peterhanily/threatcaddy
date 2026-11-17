@@ -5,7 +5,7 @@
   "team.installedDisabledNoDomains": "{{name}} a été installée désactivée. Elle n’effectue aucune requête web. Vérifiez-la, puis activez-la dans l’onglet Installées.",
   "fetch.privateTarget": "Seules les adresses http(s) publiques sans identifiants peuvent être récupérées. Les destinations privées, locales et les adresses IP littérales ne sont pas autorisées.",
   "fetch.tooLong": "Les adresses de plus de 2048 caractères ne peuvent pas être récupérées. Raccourcissez l’URL et réessayez.",
-  "fetch.updateExtension": "La récupération web nécessite l’extension ThreatCaddy 1.1.3 ou ultérieure, approuvée pour cette application. Ne gardez installée que l’extension ThreatCaddy la plus récente, puis rechargez la page.",
+  "fetch.updateExtension": "La récupération web nécessite l’extension ThreatCaddy 1.1.3 ou ultérieure, approuvée pour cette application. Si la boutique d’extensions de votre navigateur ne propose pas de mise à jour, installez la dernière version depuis les versions publiées de ThreatCaddy sur GitHub. Ne gardez installée que l’extension ThreatCaddy la plus récente, puis rechargez la page.",
   "fetch.bridgeTimeout": "Le pont de l’extension n’a pas répondu à temps. Vérifiez que l’extension ThreatCaddy est installée et que la page a été rechargée après l’installation.",
   "builtin.vtIpLookup.name": "Recherche IP VirusTotal",
   "builtin.vtIpLookup.description": "Rechercher une adresse IP sur VirusTotal pour obtenir la réputation, la géolocalisation et les statistiques d'analyse.",

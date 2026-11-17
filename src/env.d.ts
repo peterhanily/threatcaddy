@@ -1,5 +1,7 @@
 declare const __STANDALONE__: boolean | undefined;
 declare const __BUILD_TIME__: number | undefined;
+/** package.json version, defined by the hosted, standalone and test builds. */
+declare const __APP_VERSION__: string | undefined;
 /** Hosted service-worker cache name for non-English locale JSON. */
 declare const __LOCALE_CACHE__: string | undefined;
 /** Per-language deflate-compressed, base64-encoded locale data for standalone builds. */

@@ -5,7 +5,7 @@
   "team.installedDisabledNoDomains": "{{name}} è stata installata disattivata. Non effettua richieste web. Controllala, poi attivala nella scheda Installate.",
   "fetch.privateTarget": "Possono essere recuperati solo indirizzi http(s) pubblici senza credenziali. Le destinazioni private, locali e con IP letterale non sono consentite.",
   "fetch.tooLong": "Non è possibile recuperare indirizzi più lunghi di 2048 caratteri. Accorcia l'URL e riprova.",
-  "fetch.updateExtension": "Il recupero web richiede l'estensione ThreatCaddy 1.1.3 o successiva, approvata per questa app. Tieni installata solo l'estensione ThreatCaddy più recente, poi ricarica la pagina.",
+  "fetch.updateExtension": "Il recupero web richiede l'estensione ThreatCaddy 1.1.3 o successiva, approvata per questa app. Se lo store delle estensioni del browser non offre aggiornamenti, installa l'ultima versione dalle release di ThreatCaddy su GitHub. Tieni installata solo l'estensione ThreatCaddy più recente, poi ricarica la pagina.",
   "fetch.bridgeTimeout": "Tempo scaduto per il bridge dell'estensione. Assicurati che l'estensione ThreatCaddy sia installata e che la pagina sia stata ricaricata dopo l'installazione.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "Cerca indirizzi IP su VirusTotal per reputazione, geolocalizzazione e statistiche di analisi.",
