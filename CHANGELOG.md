@@ -38,7 +38,7 @@ Hardens CaddyAI chat, AgentCaddy agents, the supervisor and the agent bridge aga
 
 ### AI routing and Settings
 
-- The route Settings → AI shows is the route used by chat, agents, meetings and the supervisor. A local model with an endpoint is always called directly; Browser Extension and Team Server routing never fall back to the other; Auto uses the team server while signed in, otherwise the extension. With no route nothing is sent, and the reason is shown. The routing select shows "Auto" when no mode was chosen.
+- The route Settings → AI shows is the route used by chat, agents, meetings and the supervisor. A local model with an endpoint is called directly, though chat titles and conversation summaries still go to it through the extension; Browser Extension and Team Server routing never fall back to the other; Auto uses the team server while signed in, otherwise the extension. With no route nothing is sent, and the reason is shown. The routing select shows "Auto" when no mode was chosen.
 - Settings → AI has a "Where AI data goes" section: the route for the local model and for cloud providers (naming the team server, and that its operator can read prompts, investigation content the AI reads and tool results, when requests go through it), whether web fetch is available, the agent bridge switch, and any named agent hosts with Remove.
 - AgentCaddy shows its setup banner only when the agent cycle has no route for the model it will use, including an investigation's own agent model; with Team Server routing and no sign-in, it asks you to sign in.
 - Supervisor, meeting and agent refusals, such as a missing API key or too few agents for a meeting, appear in the analyst's language.
