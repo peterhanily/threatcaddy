@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} לולאה",
     "loopCount_other": "{{count}} לולאות",
     "stopAllLoops": "עצור את כל הלולאות",
+    "loopRetrying": "מנסה שוב לאחר שגיאה",
     "exportAsNote": "ייצא כהערה",
     "shareChat": "שתף צ'אט",
     "emptyTitle": "התחל שיחה",

@@ -1158,7 +1158,7 @@ export function ChatView({
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple/10 border border-purple/20 text-[10px] text-purple me-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-purple animate-pulse" />
                     {t('view.loopCount', { count: activeLoops.length })}
-                    {activeLoops.some(loop => loop.error) && <span role="status" className="text-amber-300" title={activeLoops.filter(loop => loop.error).map(loop => loop.error).join('\n')}>Retrying after error</span>}
+                    {activeLoops.some(loop => loop.error) && <span role="status" className="text-amber-300" title={activeLoops.filter(loop => loop.error).map(loop => loop.error).join('\n')}>{t('view.loopRetrying')}</span>}
                     <button
                       onClick={() => stopAllForThread(activeThread.id)}
                       className="ms-0.5 hover:text-red-400 transition-colors"

@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} lus",
     "loopCount_other": "{{count}} lussen",
     "stopAllLoops": "Alle lussen stoppen",
+    "loopRetrying": "Opnieuw proberen na fout",
     "exportAsNote": "Exporteren als notitie",
     "shareChat": "Chat delen",
     "emptyTitle": "Start een gesprek",

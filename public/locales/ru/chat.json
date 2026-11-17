@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} цикл",
     "loopCount_other": "{{count}} циклов",
     "stopAllLoops": "Остановить все циклы",
+    "loopRetrying": "Повтор после ошибки",
     "exportAsNote": "Экспортировать как заметку",
     "shareChat": "Поделиться чатом",
     "emptyTitle": "Начните разговор",

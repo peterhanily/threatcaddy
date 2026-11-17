@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} लूप",
     "loopCount_other": "{{count}} लूप",
     "stopAllLoops": "सभी लूप बंद करें",
+    "loopRetrying": "त्रुटि के बाद फिर से प्रयास किया जा रहा है",
     "exportAsNote": "नोट के रूप में निर्यात करें",
     "shareChat": "चैट साझा करें",
     "emptyTitle": "बातचीत शुरू करें",

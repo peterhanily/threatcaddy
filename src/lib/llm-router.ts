@@ -167,6 +167,12 @@ export async function unavailableRouteError(reason: keyof typeof UNAVAILABLE_ROU
   return i18n.t(UNAVAILABLE_ROUTE_ERRORS[reason], { ns: 'settings' });
 }
 
+/** The fixed refusals of agents, meetings and the supervisor (no key, too few agents), translated the same way. */
+export async function agentRefusal(key: string, options?: Record<string, string>): Promise<string> {
+  await i18n.loadNamespaces('agent');
+  return i18n.t(key, { ns: 'agent', ...options });
+}
+
 export function sendViaExtension(request: LLMRouteRequest, callbacks: LLMRouteCallbacks, signal?: AbortSignal): string {
   const requestId = nanoid();
   let encoded: ReturnType<typeof encodeRequest<LLMRouteRequest>>;

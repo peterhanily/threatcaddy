@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} Schleife",
     "loopCount_other": "{{count}} Schleifen",
     "stopAllLoops": "Alle Schleifen stoppen",
+    "loopRetrying": "Neuer Versuch nach Fehler",
     "exportAsNote": "Als Notiz exportieren",
     "shareChat": "Chat teilen",
     "emptyTitle": "Gespräch starten",

@@ -24,7 +24,7 @@ import { isShareableFolder } from './ai-scope';
 import { loadAgentPolicy } from './agent-profile-resolver';
 import { classifyToolCall, decideToolCall, type Verdict } from './tool-reach';
 import { sanitizeSoulText } from './soul-text';
-import { hasServerSession, resolveRoute, sendViaExtension, sendViaServer, sendDirectToLocal, unavailableRouteError } from './llm-router';
+import { agentRefusal, hasServerSession, resolveRoute, sendViaExtension, sendViaServer, sendDirectToLocal, unavailableRouteError } from './llm-router';
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
 import { getHostToolDefinitions } from './agent-hosts';
 import { calculateCost, tokenCount } from './model-pricing';
@@ -547,9 +547,9 @@ async function _runAgentCycleInner(
     if (!apiKey) {
       const configured = getConfiguredProviderNames(settings);
       const hint = configured.length > 0
-        ? `Configured providers: ${configured.join(', ')}. Set the agent model in AgentCaddy settings.`
-        : 'Add an API key in Settings > AI/LLM.';
-      return { autoExecuted: [], proposed: [], threadId: '', error: `No API key for ${provider}. ${hint}` };
+        ? await agentRefusal('refusal.configuredProviders', { providers: configured.join(', ') })
+        : await agentRefusal('panel.configureApiKeyDesc');
+      return { autoExecuted: [], proposed: [], threadId: '', error: `${await agentRefusal('refusal.noApiKey', { provider })} ${hint}` };
     }
   }
 

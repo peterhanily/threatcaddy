@@ -11,7 +11,7 @@ import { nanoid } from 'nanoid';
 import type { Folder, Settings, ChatThread, ChatMessage, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
 import { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
 import { executeTool, buildSystemPrompt } from './llm-tools';
-import { hasServerSession, resolveRoute, sendViaExtension, sendViaServer, sendDirectToLocal, unavailableRouteError } from './llm-router';
+import { agentRefusal, hasServerSession, resolveRoute, sendViaExtension, sendViaServer, sendDirectToLocal, unavailableRouteError } from './llm-router';
 import { notifyDesktop } from './desktop-notifications';
 import { isFolderLocalOnly } from './ai-scope';
 import { SUPERVISOR_TOOLS, SUPERVISOR_ACTION_PROFILE, getSupervisorToolPermission, validateSupervisorDispatch } from './supervisor-tool-policy';
@@ -200,7 +200,7 @@ async function runSupervisorCycleInner(
 
   const apiKey = useServerProxy ? 'server-proxy' : getApiKeyForProvider(provider, settings);
   if (!useServerProxy && !apiKey) {
-    return { findings: [], escalations: [], error: `No API key configured for ${provider}` };
+    return { findings: [], escalations: [], error: await agentRefusal('refusal.noApiKey', { provider }) };
   }
 
   const endpoint = provider === 'local' ? settings.llmLocalEndpoint : undefined;

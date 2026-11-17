@@ -460,7 +460,7 @@ function InvestigationAgentPanel({
           <AlertTriangle size={12} className="shrink-0 mt-0.5" />
           <div className="flex-1">
             <span>{error}</span>
-            {(error.includes('API key') || error.includes('timed out') || error.includes('No API key')) && onOpenSettings && (
+            {(error.includes('API key') || error.includes('timed out') || error.includes(t('refusal.noApiKey', { provider: agentProvider }))) && onOpenSettings && (
               <button onClick={() => onOpenSettings('ai')} className="block text-accent-blue hover:underline mt-0.5">{t('panel.openAISettingsLink')}</button>
             )}
           </div>

@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} pętla",
     "loopCount_other": "{{count}} pętli",
     "stopAllLoops": "Zatrzymaj wszystkie pętle",
+    "loopRetrying": "Ponawianie po błędzie",
     "exportAsNote": "Eksportuj jako notatkę",
     "shareChat": "Udostępnij czat",
     "emptyTitle": "Rozpocznij rozmowę",

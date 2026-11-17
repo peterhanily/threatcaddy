@@ -229,6 +229,8 @@
   "meeting.meetingInProgress": "Réunion en cours...",
   "meeting.couldNotRun": "La réunion n'a pas pu avoir lieu : {{error}}",
   "supervisor.couldNotRun": "L'agent superviseur n'a pas pu s'exécuter : {{error}}",
+  "refusal.noApiKey": "Aucune clé API n'est configurée pour {{provider}}.",
+  "refusal.configuredProviders": "Fournisseurs configurés : {{providers}}. Définissez le modèle de l'agent dans les paramètres d'AgentCaddy.",
   "meeting.deploy2Plus": "Déployez 2+ profils d'agents pour démarrer une réunion.",
   "meeting.viewMinutes": "Voir le procès-verbal",
   "meeting.viewDiscussion": "Voir la discussion",
