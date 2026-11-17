@@ -320,6 +320,13 @@ describe('A4 catalogs', () => {
     }
   });
 
+  it('Arabic names the token total as a label: no counted noun follows a compact number such as 12 ألف', () => {
+    const ar = agentCatalogs['../../public/locales/ar/agent.json'].default;
+    const forms = Object.keys(ar).filter(key => key.startsWith('panel.tokens_'));
+    expect(forms).toHaveLength(6);
+    for (const key of forms) expect(ar[key], key).toBe('الرموز: {{count, number(notation: compact)}}');
+  });
+
   it('every language has the added strings and none keeps a superseded one', () => {
     expect(Object.keys(agentCatalogs)).toHaveLength(21);
     for (const [path, catalog] of Object.entries(agentCatalogs)) {
