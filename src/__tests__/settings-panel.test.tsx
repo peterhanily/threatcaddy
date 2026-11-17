@@ -311,6 +311,13 @@ describe('SettingsPanel: where AI data goes', () => {
     expect(within(section).getByText(/team server at team\.example\. Its operator can read your prompts/)).toBeInTheDocument();
   });
 
+  it('names the signed-in session’s server in a new workspace whose settings have no server URL', () => {
+    signIn();
+    renderAI();
+    const section = screen.getByRole('region', { name: 'Where AI data goes' });
+    expect(within(section).getByText(/team server at team\.example\. Its operator can read your prompts/)).toBeInTheDocument();
+  });
+
   it('describes local, extension and unavailable routes truthfully', () => {
     const view = renderAI({ llmDefaultProvider: 'local', llmLocalEndpoint: 'http://localhost:11434/v1' });
     expect(screen.getByText(/your local model at localhost:11434/)).toBeInTheDocument();

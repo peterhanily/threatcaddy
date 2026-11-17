@@ -70,11 +70,11 @@ describe('D-ROUTE-1 resolveRoute', () => {
     expect(resolveRoute({ ...settings, llmLocalEndpoint: undefined }, { extensionAvailable, serverSession, provider: 'local' })).toEqual(expected);
   });
 
-  it('counts a server session only with a server URL and a stored signed-in user', () => {
-    expect(hasServerSession({ ...DEFAULT_SETTINGS, serverUrl: 'https://team.example' })).toBe(false);
+  it('counts a server session only with a stored signed-in user, whose server the transport uses', () => {
+    expect(hasServerSession()).toBe(false);
     signIn();
-    expect(hasServerSession({ ...DEFAULT_SETTINGS, serverUrl: 'https://team.example' })).toBe(true);
-    expect(hasServerSession({ ...DEFAULT_SETTINGS })).toBe(false);
+    // A first sign-in opens a new workspace whose settings start empty, so Settings has no server URL there.
+    expect(hasServerSession()).toBe(true);
   });
 });
 
@@ -136,6 +136,14 @@ describe('D-ROUTE-4 meetings need a signed-in server session', () => {
     expect(sendViaServer).toHaveBeenCalled();
     expect(sendViaExtension).not.toHaveBeenCalled();
   });
+
+  it('a signed-in session in a new workspace, whose settings have no server URL, still routes Auto through the server', async () => {
+    signIn();
+    const result = await meet({}, true);
+    expect(result.error).toBeUndefined();
+    expect(sendViaServer).toHaveBeenCalled();
+    expect(sendViaExtension).not.toHaveBeenCalled();
+  });
 });
 
 describe('D-ROUTE-5 agent cycles and the supervisor go where Settings says', () => {
@@ -164,6 +172,14 @@ describe('D-ROUTE-5 agent cycles and the supervisor go where Settings says', () 
     expect(result.error).toBeUndefined();
     expect(sendViaExtension).toHaveBeenCalled();
     expect(sendViaServer).not.toHaveBeenCalled();
+  });
+
+  it('a signed-in session in a new workspace, whose settings have no server URL: an agent cycle and the supervisor use the server', async () => {
+    signIn();
+    expect((await cycle({ llmRoutingMode: 'auto' }, true)).error).toBeUndefined();
+    expect((await supervise({ llmRoutingMode: 'auto' }, true)).error).toBeUndefined();
+    expect(vi.mocked(sendViaServer).mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(sendViaExtension).not.toHaveBeenCalled();
   });
 
   it('an agent cycle refuses an explicit extension route with no extension, before any model call or audit thread', async () => {

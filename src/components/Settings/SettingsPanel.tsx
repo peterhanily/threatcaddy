@@ -12,6 +12,7 @@ import { PlaybookManager } from './PlaybookManager';
 import { DEFAULT_SYSTEM_PROMPT } from '../../lib/llm-tools';
 import { MODELS, MODEL_PROVIDER_MAP } from '../../lib/models';
 import { hasServerSession, resolveRoute } from '../../lib/llm-router';
+import { readStoredAuth } from '../../lib/auth-storage';
 import { ExportImport } from './ExportImport';
 import { useAgentProfiles } from '../../hooks/useAgentProfiles';
 import { AgentProfileManager } from '../Agent/AgentProfileManager';
@@ -877,11 +878,12 @@ function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpda
   const { t } = useTranslation('settings');
   const headingId = useId();
   const caps = useSyncExternalStore(subscribeBridgeCaps, bridgeCapsSnapshot).split(',').filter(Boolean);
-  const route = resolveRoute(settings, { extensionAvailable: caps.length > 0, serverSession: hasServerSession(settings), provider: settings.llmDefaultProvider });
+  const route = resolveRoute(settings, { extensionAvailable: caps.length > 0, serverSession: hasServerSession(), provider: settings.llmDefaultProvider });
   const routeLine = route.route === 'unavailable'
     ? t(route.reason === 'no-extension' ? 'ai.dataFlow.routeNoExtension' : route.reason === 'no-server' ? 'ai.dataFlow.routeNoServer' : 'ai.dataFlow.routeNone')
     : route.route === 'local-direct' ? t('ai.dataFlow.routeLocal', { host: hostOf(settings.llmLocalEndpoint) })
-    : route.route === 'server' ? t('ai.dataFlow.routeServer', { host: hostOf(settings.serverUrl) })
+    // Server-routed requests go to the signed-in session's server.
+    : route.route === 'server' ? t('ai.dataFlow.routeServer', { host: hostOf(readStoredAuth()?.serverUrl) })
     : t('ai.dataFlow.routeExtension');
   const fetchLine = !caps.length ? t('ai.dataFlow.fetchNoExtension')
     : caps.includes('fetch_url_public_v1') || caps.includes('clip_import_ack_v2') ? t('ai.dataFlow.fetchSupported') : t('ai.dataFlow.fetchUpdate');

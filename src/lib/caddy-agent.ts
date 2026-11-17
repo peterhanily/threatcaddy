@@ -540,7 +540,7 @@ async function _runAgentCycleInner(
   }
 
   // The route Settings → AI shows: local endpoint first, strict explicit modes, a signed-in session for the server.
-  const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(settings), provider });
+  const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(), provider });
   if (route.route === 'unavailable') return { autoExecuted: [], proposed: [], threadId: '', error: await unavailableRouteError(route.reason) };
   const useServerProxy = route.route === 'server';
 

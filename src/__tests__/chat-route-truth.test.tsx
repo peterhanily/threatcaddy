@@ -100,6 +100,14 @@ describe('chat routes where Settings says', () => {
     expect(onAddMessage).not.toHaveBeenCalled();
   });
 
+  it('signed in, in a new workspace whose settings have no server URL: Auto chat goes through the team server', async () => {
+    signIn();
+    renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'auto' });
+    await act(async () => { await state.input.onSend('What happened?'); });
+    expect(sendViaServer).toHaveBeenCalledOnce();
+    expect(extensionRequests).toEqual([]);
+  });
+
   it('Auto while signed in: a local model with an endpoint is called directly with its own key', async () => {
     signIn();
     renderChat({ llmRoutingMode: 'auto', serverUrl: 'https://team.example', llmLocalEndpoint: 'http://localhost:11434/v1', llmLocalModelName: 'llama3',

@@ -97,7 +97,7 @@ export function ChatView({
   const { addToast } = useToast();
   // Re-render on sign-in and sign-out. The route reads the stored session, as Settings → AI does.
   useAuth();
-  const serverSession = hasServerSession(settings);
+  const serverSession = hasServerSession();
   // Where cloud models go; a local model with an endpoint is always called directly.
   const cloudRoute = resolveRoute(settings, { extensionAvailable, serverSession }).route;
   const hasLocalLLM = !!settings.llmLocalEndpoint?.trim();
@@ -265,7 +265,7 @@ export function ChatView({
     const provider = activeThread.provider;
     const currentTokenTotal = activeThread.messages.reduce((sum, message) => sum + (message.tokenCount ? message.tokenCount.input + message.tokenCount.output : 0), 0);
     // The route Settings → AI shows, resolved for this send.
-    const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(settings), provider });
+    const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(), provider });
     const useServerProxy = route.route === 'server';
 
     // CTI slash commands run allowlisted host tools directly (no LLM call), so they

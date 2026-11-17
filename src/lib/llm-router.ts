@@ -136,9 +136,10 @@ export function sendDirectToLocal(request: LLMRouteRequest, callbacks: LLMRouteC
   return requestId;
 }
 
-/** A configured team server and a stored signed-in user. A server URL alone is not a session. */
-export function hasServerSession(settings: Settings): boolean {
-  return !!settings.serverUrl?.trim() && !!readStoredAuth(workspaceStorageKey('threatcaddy-auth'));
+/** A stored signed-in user; server-routed requests go to that session's server. A server URL in
+ * Settings alone is not a session, and a first sign-in opens a workspace whose settings have none. */
+export function hasServerSession(): boolean {
+  return !!readStoredAuth(workspaceStorageKey('threatcaddy-auth'));
 }
 
 export type LLMRoute = { route: 'local-direct' | 'extension' | 'server' } | { route: 'unavailable'; reason: 'no-extension' | 'no-server' | 'none' };

@@ -209,7 +209,7 @@ export async function runAgentMeeting(
     : Math.min(requestedRounds, DEFAULT_MAX_ROUNDS);
 
   // Resolve provider (same fallback as agent cycle) and route (local endpoint first, strict explicit modes)
-  const routeEnv = { extensionAvailable, serverSession: hasServerSession(settings) };
+  const routeEnv = { extensionAvailable, serverSession: hasServerSession() };
   let provider = (settings.llmDefaultProvider || 'anthropic') as LLMProvider;
   let model = settings.llmDefaultModel || 'claude-sonnet-4-6';
 

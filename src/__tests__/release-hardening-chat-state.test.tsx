@@ -48,8 +48,7 @@ const thread: ChatThread = { id: 'thread', title: 'Synthetic chat', folderId: 'a
 const settings = { llmAnthropicApiKey: 'synthetic-unit-test-only', llmRoutingMode: 'auto' } as Settings;
 const props = { threads: [thread], settings, onCreateThread: state.createThread, onUpdateThread: state.updateThread,
   onAddMessage: state.addMessage, onTrashThread: vi.fn() };
-// Chat reads the session as Settings → AI does: a configured server URL and a stored signed-in user.
-const serverProps = { ...props, settings: { ...settings, serverUrl: 'https://server.test' } };
+// Chat reads the session as Settings → AI does: the stored signed-in user.
 const authKey = workspaceStorageKey('threatcaddy-auth');
 const setSignedIn = (signedIn: boolean) => {
   state.signedIn = signedIn;
@@ -111,9 +110,9 @@ describe('release hardening: committed chat submission state', () => {
   it('uses the current route after extension availability changes', async () => {
     state.serverUrl = 'https://server.test';
     setSignedIn(true);
-    const view = render(<ChatView {...serverProps} />);
+    const view = render(<ChatView {...props} />);
     state.extensionAvailable = false;
-    view.rerender(<ChatView {...serverProps} />);
+    view.rerender(<ChatView {...props} />);
     await act(async () => { await state.input.onSend('Synthetic question'); });
     expect(state.send).toHaveBeenCalledWith(expect.objectContaining({ useServerProxy: true }), expect.any(Function), expect.any(Function), expect.objectContaining({ threadId: thread.id, messageId: expect.any(String), model: thread.model, provider: thread.provider }));
     expect(state.input.serverRoute).toBe(true);
@@ -121,11 +120,11 @@ describe('release hardening: committed chat submission state', () => {
 
   it('does not advertise a server route for an unsigned-in configured URL', () => {
     state.serverUrl = 'https://server.test'; state.extensionAvailable = false;
-    const view = render(<ChatView {...serverProps} />);
+    const view = render(<ChatView {...props} />);
     expect(state.input.serverRoute).toBe(false);
-    setSignedIn(true); view.rerender(<ChatView {...serverProps} />);
+    setSignedIn(true); view.rerender(<ChatView {...props} />);
     expect(state.input.serverRoute).toBe(true);
-    setSignedIn(false); view.rerender(<ChatView {...serverProps} />);
+    setSignedIn(false); view.rerender(<ChatView {...props} />);
     expect(state.input.serverRoute).toBe(false);
   });
 
