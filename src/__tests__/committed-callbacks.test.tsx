@@ -86,4 +86,16 @@ describe('committed callback bindings', () => {
     expect(await screen.findByRole('button', { name: 'meeting.run' })).toBeEnabled();
     expect((await db.notes.get('request'))?.trashed).toBe(false);
   });
+
+  it('keeps the typed agenda when a started meeting could not run', async () => {
+    mocks.meeting.mockResolvedValue({ meetingId: '', threadId: '', roundsCompleted: 0, error: 'LLM routing is set to Browser Extension, but the extension is not available.' });
+    const deployments = ['a', 'b'].map(id => ({ id, investigationId: 'one', profileId: id, status: 'idle', order: 0, createdAt: 1, updatedAt: 1 } as AgentDeployment));
+    render(<AgentMeetingPanel folder={folder('one')} deployments={deployments} settings={DEFAULT_SETTINGS} extensionAvailable={false} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'meeting.startMeeting' }));
+    fireEvent.change(screen.getByPlaceholderText('meeting.meetingAgendaPlaceholder'), { target: { value: 'Review the phishing timeline' } });
+    fireEvent.click(screen.getByRole('button', { name: 'meeting.start' }));
+    await waitFor(() => expect(mocks.meeting).toHaveBeenCalledOnce());
+    fireEvent.click(await screen.findByRole('button', { name: 'meeting.startMeeting' }));
+    expect(screen.getByPlaceholderText('meeting.meetingAgendaPlaceholder')).toHaveValue('Review the phishing timeline');
+  });
 });

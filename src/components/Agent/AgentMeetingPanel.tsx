@@ -85,7 +85,7 @@ export function AgentMeetingPanel({
     setRunning(true);
     setShowNewMeeting(false);
 
-    await runAgentMeeting(
+    const result = await runAgentMeeting(
       folder, deployments, settings, extensionAvailable,
       agenda.trim(), maxRounds,
       (speaker, status) => setProgress(`${speaker}: ${status}`),
@@ -94,7 +94,8 @@ export function AgentMeetingPanel({
 
     setRunning(false);
     setProgress('');
-    setAgenda('');
+    // A meeting that could not run (no LLM route, no key) keeps the typed agenda.
+    if (!result.error) setAgenda('');
     onEntitiesChanged?.();
   };
 
