@@ -197,6 +197,15 @@ describe('agent panel review state', () => {
       expect(await screen.findByRole('option', { name: deAgent['panel.autoUseDefault'] })).toBeInTheDocument();
       expect(screen.queryByRole('option', { name: 'Auto (use default)' })).not.toBeInTheDocument();
     });
+
+    it.each([[1, 'pending', 'executed', 'Keine ausstehenden Aktionen.'], [2, 'executed', 'pending', 'Keine ausgeführten Aktionen.'], [3, 'rejected', 'executed', 'Keine abgelehnten Aktionen.']] as const)(
+      'an empty inbox under filter %i says so in a whole sentence', async (tab, filter, other, sentence) => {
+        await db.agentActions.add(action({ status: other }));
+        await renderPanel(await folder('S'), []);
+        fireEvent.click(screen.getAllByRole('tab')[tab]);
+        expect(await screen.findByText(sentence)).toBeInTheDocument();
+        expect(screen.queryByText(new RegExp(filter))).not.toBeInTheDocument();
+      });
   });
 
   it('a cross-case profile in a shareable investigation says its cross-case tools are off', async () => {

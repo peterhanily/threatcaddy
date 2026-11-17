@@ -39,6 +39,9 @@ const STATUS_LABEL_KEYS: Record<Exclude<AgentStatus, 'idle'>, string> = {
   running: 'panel.statusRunning', waiting: 'panel.statusWaiting', paused: 'panel.statusPaused', error: 'panel.statusError',
 };
 
+/** One whole sentence per inbox filter: a filter name does not inflect inside another sentence. */
+const EMPTY_FILTER_KEYS = { pending: 'panel.noPendingActions', executed: 'panel.noExecutedActions', rejected: 'panel.noRejectedActions' } as const;
+
 interface AgentPanelProps {
   folder: Folder;
   settings: Settings;
@@ -551,7 +554,7 @@ function InvestigationAgentPanel({
             {filteredActions.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-text-muted">
                 <Bot size={24} className="mb-1 opacity-30" />
-                <p className="text-xs">{actions.length === 0 ? t('panel.noActivityYet') : t('panel.noFilteredActions', { filter })}</p>
+                <p className="text-xs">{actions.length === 0 || filter === 'all' ? t('panel.noActivityYet') : t(EMPTY_FILTER_KEYS[filter])}</p>
               </div>
             ) : filteredActions.map(action => (
               <AgentActionCard key={action.id} action={action}
