@@ -11,9 +11,9 @@ import { nanoid } from 'nanoid';
 import type { Folder, Settings, ChatThread, ChatMessage, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
 import { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
 import { executeTool, buildSystemPrompt } from './llm-tools';
-import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
+import { resolveRoutingMode, sendViaExtension, sendViaServer, sendDirectToLocal } from './llm-router';
 import { notifyDesktop } from './desktop-notifications';
-import { parseToolCallsFromText } from './caddy-agent';
+import { isFolderLocalOnly } from './ai-scope';
 import { SUPERVISOR_TOOLS, SUPERVISOR_ACTION_PROFILE, getSupervisorToolPermission, validateSupervisorDispatch } from './supervisor-tool-policy';
 import { queueAgentAction } from './agent-action-queue';
 import { toolExecutionError, type ToolExecutionResult } from './llm-tool-execution';
@@ -87,24 +87,21 @@ function callLLM(opts: {
       tools: opts.tools,
       endpoint: opts.endpoint,
     };
-    const toolNames = (opts.tools || []).map(t => t.name);
     const callbacks = {
       onChunk: (content: string) => { if (!lifecycle.signal.aborted) accumulated += content; },
       onDone: (_stopReason: string, contentBlocks: unknown[]) => {
         if (lifecycle.signal.aborted) return;
+        // Structured calls only: tool calls spelled out in model text never run.
         const blocks = contentBlocks as ContentBlock[];
-        let toolCalls = blocks.filter(
+        const toolCalls = blocks.filter(
           (b): b is ToolUseBlock => b.type === 'tool_use' && !!b.id && !!b.name && typeof b.input === 'object'
         );
-        // Fallback text parsing
-        if (toolCalls.length === 0 && accumulated) {
-          toolCalls = parseToolCallsFromText(accumulated, toolNames);
-        }
         resolve({ content: accumulated, toolCalls });
       },
       onError: (error: string) => reject(new Error(`Supervisor LLM failed (${opts.provider}/${opts.model}): ${error || 'unknown'}`)),
     };
-    if (opts.useServerProxy) sendViaServer(request, callbacks, lifecycle.signal);
+    if (opts.provider === 'local' && opts.endpoint) sendDirectToLocal(request, callbacks, lifecycle.signal);
+    else if (opts.useServerProxy) sendViaServer(request, callbacks, lifecycle.signal);
     else sendViaExtension(request, callbacks, lifecycle.signal);
   });
 
@@ -144,14 +141,19 @@ IMPORTANT: Use write tools judiciously. Only create tasks and links when finding
 
 // ── Main ────────────────────────────────────────────────────────────────
 
-/** Get or create the Supervisor system investigation. */
+/** Get or create the Supervisor system investigation. Its findings come from
+ * every investigation, so it is local-only: a synced folder with this name
+ * (a teammate's, or one from an older version) is never adopted. */
 async function ensureSupervisorFolder(signal: AbortSignal): Promise<Folder> {
-  const existing = await db.folders
+  const named = await db.folders
     .filter(folder => folder.name === SUPERVISOR_FOLDER_NAME)
-    .first();
+    .toArray();
   signal.throwIfAborted();
 
-  if (existing) return existing;
+  for (const existing of named) {
+    if (await isFolderLocalOnly(existing)) return existing;
+  }
+  signal.throwIfAborted();
 
   const folder: Folder = {
     id: nanoid(),
@@ -161,6 +163,7 @@ async function ensureSupervisorFolder(signal: AbortSignal): Promise<Folder> {
     createdAt: Date.now(),
     description: 'Automated cross-investigation findings from CaddyAgent Supervisor',
     status: 'active',
+    localOnly: true,
   };
   await db.folders.add(folder);
   return folder;

@@ -289,56 +289,6 @@ Autonomous threat analyst. Be PROACTIVE:
 - enrich_ioc for vendor lookups; fetch_url only for reference research.${playbookInstructions}${hostBlock}${focusAreas}`;
 }
 
-/**
- * Parse tool calls from LLM text output when structured tool_use blocks aren't returned.
- * Supports: <tool_call>JSON</tool_call>, ```json blocks, and bare JSON with name+arguments.
- */
-export function parseToolCallsFromText(text: string, toolNames: string[]): ToolUseBlock[] {
-  const calls: ToolUseBlock[] = [];
-  const nameSet = new Set(toolNames);
-  let idx = 0;
-
-  // Pattern 1: <tool_call>JSON</tool_call>
-  const tagPattern = /<(?:tool_call|function_call)>\s*([\s\S]*?)\s*<\/(?:tool_call|function_call)>/gi;
-  let match;
-  while ((match = tagPattern.exec(text)) !== null) {
-    try {
-      const obj = JSON.parse(match[1]);
-      const name = obj.name || obj.function;
-      const args = obj.arguments || obj.parameters || obj.input || {};
-      if (name && nameSet.has(name)) {
-        calls.push({
-          type: 'tool_use',
-          id: `text_tc_${Date.now()}_${idx++}`,
-          name,
-          input: typeof args === 'string' ? JSON.parse(args) : args,
-        });
-      }
-    } catch { /* skip malformed */ }
-  }
-  if (calls.length > 0) return calls;
-
-  // Pattern 2: ```json blocks with name+arguments
-  const jsonBlockPattern = /```(?:json)?\s*\n?([\s\S]*?)\n?```/gi;
-  while ((match = jsonBlockPattern.exec(text)) !== null) {
-    try {
-      const obj = JSON.parse(match[1]);
-      const name = obj.name || obj.function;
-      const args = obj.arguments || obj.parameters || obj.input || {};
-      if (name && nameSet.has(name)) {
-        calls.push({
-          type: 'tool_use',
-          id: `text_tc_${Date.now()}_${idx++}`,
-          name,
-          input: typeof args === 'string' ? JSON.parse(args) : args,
-        });
-      }
-    } catch { /* skip malformed */ }
-  }
-
-  return calls;
-}
-
 const LLM_TIMEOUT_MS = 300_000; // 5 minutes per LLM call (local models can be slow with 46+ tools)
 
 /** Send an LLM request and wait for the complete response. Optionally streams text chunks. */
