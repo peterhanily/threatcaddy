@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { db } from '../db';
 import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentDeployment, type Folder, type Settings } from '../types';
-import { hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, type LLMRouteCallbacks } from '../lib/llm-router';
+import { agentRefusal, hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, unavailableRouteError, type LLMRouteCallbacks } from '../lib/llm-router';
 import { useLLM } from '../hooks/useLLM';
 import { getAllLoops, startLoop, stopLoop } from '../lib/chat-loop';
 import { runAgentMeeting } from '../lib/caddy-agent-meeting';
@@ -262,5 +262,26 @@ describe('D-ROUTE-5 agent cycles and the supervisor go where Settings says', () 
     expect((await cycle(settings, false)).error).toBeUndefined();
     expect(sendDirectToLocal).toHaveBeenCalled();
     expect(sendViaExtension).not.toHaveBeenCalled();
+  });
+});
+
+describe('translated refusals load their namespace first', () => {
+  // The suite bundles every namespace, so only a spy sees a hosted build's lazy load go missing.
+  it.each([
+    ['agentRefusal', 'agent', () => agentRefusal('refusal.noApiKey', { provider: 'openai' }), 'refusal.noApiKey'],
+    ['unavailableRouteError', 'settings', () => unavailableRouteError('none'), 'ai.dataFlow.errorNone'],
+  ] as const)('%s waits for the %s namespace before it translates', async (_name, namespace, refuse, key) => {
+    let loaded = () => {};
+    const load = vi.spyOn(i18n, 'loadNamespaces').mockImplementation(() => new Promise<void>(resolve => { loaded = resolve; }));
+    const translate = vi.spyOn(i18n, 't');
+    try {
+      const refusal = refuse();
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(load).toHaveBeenCalledExactlyOnceWith(namespace);
+      expect(translate).not.toHaveBeenCalled();
+      loaded();
+      await refusal;
+      expect(translate).toHaveBeenCalledWith(key, expect.objectContaining({ ns: namespace }));
+    } finally { load.mockRestore(); translate.mockRestore(); }
   });
 });
