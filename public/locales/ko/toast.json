@@ -85,7 +85,6 @@
     "installedFromCatalog": "커뮤니티 카탈로그에서 {{name}} 설치됨",
     "installCatalogFailed": "커뮤니티 템플릿 설치 실패",
     "templateExported": "{{name}} 내보내기됨",
-    "installedFromTeam": "팀에서 {{name}} 설치됨",
     "installTeamFailed": "팀 템플릿 설치 실패",
     "notFound": "통합을 찾을 수 없습니다",
     "completed": "통합 \"{{name}}\"이/가 성공적으로 완료됨",

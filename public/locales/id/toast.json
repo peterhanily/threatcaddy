@@ -85,7 +85,6 @@
     "installedFromCatalog": "Dipasang {{name}} dari katalog komunitas",
     "installCatalogFailed": "Gagal memasang template komunitas",
     "templateExported": "Diekspor {{name}}",
-    "installedFromTeam": "Dipasang {{name}} dari tim",
     "installTeamFailed": "Gagal memasang template tim",
     "notFound": "Integrasi tidak ditemukan",
     "completed": "Integrasi \"{{name}}\" berhasil diselesaikan",

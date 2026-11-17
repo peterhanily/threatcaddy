@@ -85,7 +85,6 @@
     "installedFromCatalog": "ติดตั้ง {{name}} จากแคตตาล็อกชุมชนแล้ว",
     "installCatalogFailed": "การติดตั้งเทมเพลตชุมชนล้มเหลว",
     "templateExported": "ส่งออก {{name}} แล้ว",
-    "installedFromTeam": "ติดตั้ง {{name}} จากทีมแล้ว",
     "installTeamFailed": "การติดตั้งเทมเพลตทีมล้มเหลว",
     "notFound": "ไม่พบการรวมระบบ",
     "completed": "การรวมระบบ \"{{name}}\" เสร็จสมบูรณ์",

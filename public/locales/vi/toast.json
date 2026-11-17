@@ -85,7 +85,6 @@
     "installedFromCatalog": "Đã cài đặt {{name}} từ danh mục cộng đồng",
     "installCatalogFailed": "Cài đặt mẫu cộng đồng thất bại",
     "templateExported": "Đã xuất {{name}}",
-    "installedFromTeam": "Đã cài đặt {{name}} từ nhóm",
     "installTeamFailed": "Cài đặt mẫu nhóm thất bại",
     "notFound": "Không tìm thấy tích hợp",
     "completed": "Tích hợp \"{{name}}\" hoàn thành thành công",

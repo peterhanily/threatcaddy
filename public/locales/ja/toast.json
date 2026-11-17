@@ -85,7 +85,6 @@
     "installedFromCatalog": "コミュニティカタログから {{name}} をインストールしました",
     "installCatalogFailed": "コミュニティテンプレートのインストールに失敗しました",
     "templateExported": "{{name}} をエクスポートしました",
-    "installedFromTeam": "チームから {{name}} をインストールしました",
     "installTeamFailed": "チームテンプレートのインストールに失敗しました",
     "notFound": "インテグレーションが見つかりません",
     "completed": "インテグレーション「{{name}}」が正常に完了しました",

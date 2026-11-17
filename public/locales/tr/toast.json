@@ -85,7 +85,6 @@
     "installedFromCatalog": "Topluluk kataloğundan {{name}} yüklendi",
     "installCatalogFailed": "Topluluk şablonu yüklenemedi",
     "templateExported": "{{name}} dışa aktarıldı",
-    "installedFromTeam": "Ekipten {{name}} yüklendi",
     "installTeamFailed": "Ekip şablonu yüklenemedi",
     "notFound": "Entegrasyon bulunamadı",
     "completed": "\"{{name}}\" entegrasyonu başarıyla tamamlandı",

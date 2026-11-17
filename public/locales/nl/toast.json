@@ -85,7 +85,6 @@
     "installedFromCatalog": "{{name}} geïnstalleerd vanuit de communitycatalogus",
     "installCatalogFailed": "Communitysjabloon installeren mislukt",
     "templateExported": "{{name}} geëxporteerd",
-    "installedFromTeam": "{{name}} geïnstalleerd vanuit team",
     "installTeamFailed": "Teamsjabloon installeren mislukt",
     "notFound": "Integratie niet gevonden",
     "completed": "Integratie '{{name}}' succesvol voltooid",
