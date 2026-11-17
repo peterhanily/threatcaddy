@@ -227,6 +227,7 @@
   "meeting.participationInfo": "{{count}} 件のエージェントが参加します。各エージェントは {{rounds}} ラウンド発言できます。議事録はノートとして保存されます。",
   "meeting.meetingInProgress": "ミーティング進行中...",
   "meeting.couldNotRun": "ミーティングを実行できませんでした: {{error}}",
+  "supervisor.couldNotRun": "スーパーバイザーエージェントを実行できませんでした: {{error}}",
   "meeting.deploy2Plus": "ミーティングを開始するには 2 つ以上のエージェントプロファイルをデプロイしてください。",
   "meeting.viewMinutes": "議事録を表示",
   "meeting.viewDiscussion": "議論を表示",

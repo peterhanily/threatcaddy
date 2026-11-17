@@ -1488,6 +1488,7 @@ const AppInner = memo(function AppInner({
     folder: selectedFolder,
     settings,
     onEntitiesChanged: () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); },
+    onSupervisorError: message => addToast('error', message),
   });
 
   const agentProfilesHook = useAgentProfiles();

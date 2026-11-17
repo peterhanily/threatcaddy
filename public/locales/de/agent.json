@@ -227,6 +227,7 @@
   "meeting.participationInfo": "{{count}} Agenten nehmen teil. Jeder hat {{rounds}} Runde(n) zum Beitragen. Protokolle werden als Notiz gespeichert.",
   "meeting.meetingInProgress": "Besprechung läuft...",
   "meeting.couldNotRun": "Die Besprechung konnte nicht stattfinden: {{error}}",
+  "supervisor.couldNotRun": "Der Supervisor-Agent konnte nicht ausgeführt werden: {{error}}",
   "meeting.deploy2Plus": "Mindestens 2 Agenten-Profile einsetzen, um eine Besprechung zu starten.",
   "meeting.viewMinutes": "Protokoll anzeigen",
   "meeting.viewDiscussion": "Diskussion anzeigen",

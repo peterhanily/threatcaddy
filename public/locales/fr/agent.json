@@ -227,6 +227,7 @@
   "meeting.participationInfo": "{{count}} agents participeront. Chacun a {{rounds}} tour(s) pour contribuer. Le procès-verbal est sauvegardé comme note.",
   "meeting.meetingInProgress": "Réunion en cours...",
   "meeting.couldNotRun": "La réunion n'a pas pu avoir lieu : {{error}}",
+  "supervisor.couldNotRun": "L'agent superviseur n'a pas pu s'exécuter : {{error}}",
   "meeting.deploy2Plus": "Déployez 2+ profils d'agents pour démarrer une réunion.",
   "meeting.viewMinutes": "Voir le procès-verbal",
   "meeting.viewDiscussion": "Voir la discussion",

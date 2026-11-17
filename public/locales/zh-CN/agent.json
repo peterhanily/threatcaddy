@@ -227,6 +227,7 @@
   "meeting.participationInfo": "{{count}} 个代理将参与。每个代理有 {{rounds}} 轮发言机会。会议记录将保存为笔记。",
   "meeting.meetingInProgress": "会议进行中...",
   "meeting.couldNotRun": "会议无法进行：{{error}}",
+  "supervisor.couldNotRun": "监督代理无法运行：{{error}}",
   "meeting.deploy2Plus": "部署 2 个以上代理配置文件以开始会议。",
   "meeting.viewMinutes": "查看会议记录",
   "meeting.viewDiscussion": "查看讨论",

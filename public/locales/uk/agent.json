@@ -227,6 +227,7 @@
   "meeting.participationInfo": "{{count}} агент(ів) візьмуть участь. Кожному виділено {{rounds}} раунд(ів) для внеску. Протокол зберігається у вигляді нотатки.",
   "meeting.meetingInProgress": "Нарада триває...",
   "meeting.couldNotRun": "Не вдалося провести нараду: {{error}}",
+  "supervisor.couldNotRun": "Не вдалося запустити агента-супервізора: {{error}}",
   "meeting.deploy2Plus": "Розгорніть 2+ профілі агентів для початку наради.",
   "meeting.viewMinutes": "Переглянути протокол",
   "meeting.viewDiscussion": "Переглянути обговорення",

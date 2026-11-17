@@ -99,6 +99,18 @@ describe('agent hook lifecycle ownership', () => {
     expect(mocks.notify).not.toHaveBeenCalled();
   });
 
+  it('says why a supervisor cycle could not run, and stays quiet when one runs', async () => {
+    mocks.supervisor.mockResolvedValueOnce({ findings: [], escalations: [], error: 'No AI route is available.' });
+    const onSupervisorError = vi.fn();
+    renderHook(() => useCaddyAgent({ settings: { ...DEFAULT_SETTINGS, agentSupervisorEnabled: true, agentSupervisorIntervalMinutes: 10 }, onSupervisorError }));
+    await act(async () => vi.advanceTimersByTimeAsync(10_000));
+    expect(mocks.supervisor).toHaveBeenCalledOnce();
+    expect(onSupervisorError).toHaveBeenCalledExactlyOnceWith('The supervisor agent could not run: No AI route is available.');
+    await act(async () => vi.advanceTimersByTimeAsync(600_000));
+    expect(mocks.supervisor).toHaveBeenCalledTimes(2);
+    expect(onSupervisorError).toHaveBeenCalledOnce();
+  });
+
   it('uses the latest extension readiness instead of the initial timer closure', async () => {
     const first = folder(); mocks.folders.set(first.id, first);
     renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));

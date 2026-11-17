@@ -227,6 +227,7 @@
   "meeting.participationInfo": "{{count}} agentes participarão. Cada um tem {{rounds}} rodada(s) para contribuir. As atas são salvas como nota.",
   "meeting.meetingInProgress": "Reunião em andamento...",
   "meeting.couldNotRun": "Não foi possível realizar a reunião: {{error}}",
+  "supervisor.couldNotRun": "Não foi possível executar o agente supervisor: {{error}}",
   "meeting.deploy2Plus": "Implante 2+ perfis de agentes para iniciar uma reunião.",
   "meeting.viewMinutes": "Ver atas",
   "meeting.viewDiscussion": "Ver discussão",
