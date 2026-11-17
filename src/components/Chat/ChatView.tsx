@@ -241,7 +241,7 @@ export function ChatView({
       case 'openai': return s.llmOpenAIApiKey?.trim();
       case 'gemini': return s.llmGeminiApiKey?.trim();
       case 'mistral': return s.llmMistralApiKey?.trim();
-      case 'local': return s.llmLocalApiKey?.trim() || 'none';
+      case 'local': return s.llmLocalApiKey?.trim() || 'local';
       default: return undefined;
     }
   }, []);
@@ -271,9 +271,11 @@ export function ChatView({
     // CTI slash commands run allowlisted host tools directly (no LLM call), so they
     // must NOT be gated behind the LLM route / API-key / token-budget checks below.
     const isDirectCtiCommand = parseCtiSlashCommand(text) !== null;
+    // /fetch <url> saves a page through the extension and calls no model, so the AI route does not gate it.
+    const isFetchCommand = /^\/fetch\s+https?:\/\/\S+$/i.test(text);
 
     // No route: say why and send nothing.
-    if (route.route === 'unavailable' && !isDirectCtiCommand) {
+    if (route.route === 'unavailable' && !isDirectCtiCommand && !isFetchCommand) {
       setLocalError(await unavailableRouteError(route.reason));
       setErrorHasSettingsLink(true);
       return;

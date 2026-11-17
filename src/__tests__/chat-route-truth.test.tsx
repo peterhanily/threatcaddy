@@ -9,6 +9,7 @@ import { ChatView } from '../components/Chat/ChatView';
 import { discardAllComposerDrafts } from '../lib/chat-composer-drafts';
 import { sendDirectToLocal, sendViaServer, type LLMRouteCallbacks } from '../lib/llm-router';
 import { generateChatTitle, summarizeConversation } from '../lib/chat-utils';
+import { fetchViaExtensionBridge } from '../lib/llm-tools';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
 import enSettings from '../../public/locales/en/settings.json';
 
@@ -26,7 +27,8 @@ vi.mock('../lib/llm-router', async (importOriginal) => ({
 vi.mock('../lib/chat-utils', async (importOriginal) => ({
   ...await importOriginal<typeof import('../lib/chat-utils')>(), generateChatTitle: vi.fn().mockResolvedValue(null), summarizeConversation: vi.fn().mockResolvedValue(null),
 }));
-vi.mock('../lib/llm-tools', async (importOriginal) => ({ ...await importOriginal<typeof import('../lib/llm-tools')>(), buildSystemPrompt: async () => 'Synthetic context' }));
+vi.mock('../lib/llm-tools', async (importOriginal) => ({ ...await importOriginal<typeof import('../lib/llm-tools')>(), buildSystemPrompt: async () => 'Synthetic context',
+  fetchViaExtensionBridge: vi.fn().mockResolvedValue({ success: true, title: 'Synthetic page', content: 'Synthetic content' }) }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => (state.signedIn
   ? { serverUrl: 'https://team.example', user: { id: 'user-1', email: 'analyst@example.test', displayName: 'Analyst' } }
   : { serverUrl: null, user: null }) }));
@@ -117,6 +119,37 @@ describe('chat routes where Settings says', () => {
     expect(vi.mocked(sendDirectToLocal).mock.calls[0][0]).toMatchObject({ apiKey: 'synthetic-local-key', endpoint: 'http://localhost:11434/v1' });
     expect(sendViaServer).not.toHaveBeenCalled();
     expect(extensionRequests).toEqual([]);
+  });
+
+  it('a local model with no key of its own is called with no Authorization header', async () => {
+    const actual = await vi.importActual<typeof import('../lib/llm-router')>('../lib/llm-router');
+    vi.mocked(sendDirectToLocal).mockImplementationOnce(actual.sendDirectToLocal);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('data: {"choices":[{"delta":{"content":"Answer."},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'));
+    renderChat({ llmRoutingMode: 'auto', llmLocalEndpoint: 'http://localhost:11434/v1', llmLocalModelName: 'llama3' }, makeThread('local'));
+    await act(async () => { await state.input.onSend('What happened?'); });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:11434/v1/chat/completions');
+    expect(new Headers(fetchMock.mock.calls[0][1]?.headers).has('Authorization')).toBe(false);
+  });
+
+  it('/fetch is not a model request: explicit Team Server routing while signed out still fetches the page', async () => {
+    renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'server' });
+    announceExtension();
+    await act(async () => { await state.input.onSend('/fetch https://example.test/report'); });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(fetchViaExtensionBridge).toHaveBeenCalledExactlyOnceWith('https://example.test/report');
+    expect(sendViaServer).not.toHaveBeenCalled();
+    expect(extensionRequests).toEqual([]);
+  });
+
+  it('explicit Team Server routing while signed out: a prompt is still refused with the reason', async () => {
+    renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'server' });
+    announceExtension();
+    await act(async () => { await state.input.onSend('Fetch https://example.test/report and summarise it'); });
+    expect(screen.getByRole('alert')).toHaveTextContent(enSettings['ai.dataFlow.errorNoServer']);
+    expect(sendViaServer).not.toHaveBeenCalled();
+    expect(extensionRequests).toEqual([]);
+    expect(onAddMessage).not.toHaveBeenCalled();
   });
 
   // The title helper runs after a first exchange; the summary helper once a thread outgrows the context limit.
