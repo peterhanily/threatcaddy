@@ -65,7 +65,8 @@ function performBasicCheck(text: string): BasicCheckResult {
 export const FORENSICATE_AGENT_PROFILE: AgentProfile = {
   id: 'ap-forensicate-scanner',
   get name() { return i18n.t('builtinProfile.forensicateScanner.name', { ns: 'agent' }); },
-  get description() { return i18n.t('builtinProfile.forensicateScanner.description', { ns: 'agent' }); },
+  // descriptionV2 says the scan is local; the old text covers locales without it, never a raw key.
+  get description() { return i18n.t(['builtinProfile.forensicateScanner.descriptionV2', 'builtinProfile.forensicateScanner.description'], { ns: 'agent' }); },
   icon: '🛡️',
   role: 'specialist',
   systemPrompt:
