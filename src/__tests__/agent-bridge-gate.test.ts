@@ -81,6 +81,31 @@ describe('A-BRIDGE-1 with the bridge on and the shared investigation selected', 
     expect(() => bridge().setFolderId(nonce, 'L')).toThrow('follows the investigation selected');
   });
 
+  it('reads the caller\'s input once, so an id that changes after the check reaches no other investigation', async () => {
+    /** An id that is in scope on its first read and another investigation's row afterwards. */
+    const swapping = (first: string, then: string) => { let reads = 0; return { get id() { return reads++ === 0 ? first : then; } }; };
+    const read = await bridge().exec(nonce, 'read_note', swapping(ids('S').note, ids('L').note));
+    expect(read).not.toContain(canary('L'));
+    expect(read).toContain(canary('S'));
+    await bridge().exec(nonce, 'update_note', Object.assign(swapping(ids('S').note, ids('P').note), { content: 'Overwritten from the bridge' }));
+    expect((await db.notes.get(ids('P').note))?.content).toContain(canary('P'));
+    expect((await db.notes.get(ids('S').note))?.content).toBe('Overwritten from the bridge');
+  });
+
+  it('refuses input that is not plain JSON', async () => {
+    const cyclic: Record<string, unknown> = { title: 'Cyclic' };
+    cyclic.self = cyclic;
+    await expect(bridge().exec(nonce, 'create_note', cyclic)).rejects.toThrow('plain JSON');
+    await expect(bridge().exec(nonce, 'create_note', { title: 'Big', size: BigInt(1) })).rejects.toThrow('plain JSON');
+    expect(await db.notes.filter(note => ['Cyclic', 'Big'].includes(note.title)).count()).toBe(0);
+  });
+
+  it('cannot change an escalated task, as agents cannot', async () => {
+    await db.tasks.update(ids('S').task, { escalated: true, rejectionCount: 3 });
+    await expect(bridge().exec(nonce, 'update_task', { id: ids('S').task, status: 'done' })).rejects.toThrow(/escalated to a human/);
+    expect(await db.tasks.get(ids('S').task)).toMatchObject({ status: 'todo', escalated: true });
+  });
+
   it('marks what it creates as AI-made, for the operator', async () => {
     const note = JSON.parse(await bridge().exec(nonce, 'create_note', { title: 'Bridge note' }));
     const folder = JSON.parse(await bridge().exec(nonce, 'create_note_folder', { name: 'Bridge folder' }));

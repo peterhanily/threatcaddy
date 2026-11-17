@@ -316,9 +316,10 @@ async function dispatchTool(
     if (constraints.signal?.aborted) return toolExecutionError('Tool execution was cancelled.');
     const visibility = { homeFolderId: folderId, hideLocalOnly: reach.homeShareable };
 
-    // Escalated tasks are off-limits to all agents until a human intervenes.
+    // Escalated tasks are off-limits to all agents until a human intervenes:
+    // whatever is labelled an agent above, the supervisor and the bridge included.
     // Keeps stuck delegation loops from immediately re-opening an escalation.
-    if (agentContext && (name === 'update_task' || name === 'delete_task' || name === 'review_completed_task')) {
+    if (agentLabel && (name === 'update_task' || name === 'delete_task' || name === 'review_completed_task')) {
       const targetId = String((name === 'review_completed_task' ? inp.taskId : inp.id) || '');
       if (targetId) {
         const existing = await db.tasks.get(targetId);
