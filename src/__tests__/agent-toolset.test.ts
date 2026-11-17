@@ -3,7 +3,7 @@ import { buildAgentToolset, runAgentCycle } from '../lib/caddy-agent';
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { AGENT_NEVER_TOOLS, CROSS_CASE_READ_TOOLS, EXPLICIT_ONLY_TOOLS, getToolActionClass } from '../lib/caddy-agent-policy';
-import { DEFAULT_SETTINGS, type AgentProfile, type Folder } from '../types';
+import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentProfile, type Folder } from '../types';
 import { db } from '../db';
 import { scriptedLLM } from './helpers/scripted-llm';
 import { seedAIWorkspace } from './helpers/ai-workspace';
@@ -224,6 +224,16 @@ describe('A-TOOLSET-1 in a running cycle', () => {
     for (const name of [...AGENT_NEVER_TOOLS, ...EXPLICIT_ONLY_TOOLS]) expect(offered).not.toContain(name);
     expect((await db.agentActions.toArray()).filter(action => action.toolName === 'deploy_agent')).toEqual([]);
     expect(await db.agentDeployments.count()).toBe(0);
+  });
+
+  it('a legacy agent\'s policy-approved write runs through the dispatcher as an agent', async () => {
+    await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY, autoApproveCreate: true } });
+    scriptedLLM.script({ toolCalls: [{ name: 'create_note', input: { title: 'Legacy finding', content: 'Beacon seen' } }] });
+    const result = await runAgentCycle(await db.folders.get('S') as Folder, settings, true);
+    expect(result.error).toBeUndefined();
+    expect((await db.notes.where('folderId').equals('S').toArray()).filter(note => note.title === 'Legacy finding')).toEqual([
+      expect.objectContaining({ createdBy: 'agent:🤖 CaddyAgent (Analyst)', tags: ['ai-generated'] }),
+    ]);
   });
 
   it('Pattern Hunter in a local-only investigation is offered the cross-case readers', async () => {
