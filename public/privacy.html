@@ -125,7 +125,7 @@
     <p>Network activity depends on the features you use and the deployment configuration. These requests can reveal your IP address and request metadata to the receiving service. They include:</p>
     <ul>
       <li>CaddyAI requests sent to the LLM provider endpoint you configure (e.g., <code>api.openai.com</code>).</li>
-      <li>Web pages that you open with <code>/fetch</code> or that the AI asks to open, after your approval. Deployed agents also open a fixed list of reference sites (NVD, CVE, CWE, MITRE ATT&amp;CK, CISA and FIRST) without per-page approval when the investigation allows it, which it does by default. Private, local and literal-IP addresses are refused.</li>
+      <li>Web pages you open with <code>/fetch</code>, and pages the AI asks to open once you approve them. Deployed agents also open a fixed list of reference sites (NVD, CVE, CWE, MITRE ATT&amp;CK, CISA and FIRST) without per-page approval when the investigation allows it, which it does by default. Private, local and literal-IP addresses are refused.</li>
       <li>Sync traffic to a self-hosted team server, if you choose to configure one.</li>
       <li>IOC enrichment and enabled integration requests to their configured services; submitted indicators can themselves be sensitive.</li>
       <li>Optional cloud-backup uploads, downloads and connection tests to the storage endpoint you configure. A connection test writes a small remote test object. Plain JSON exports are not encrypted; use the separate password-encrypted backup flow when needed.</li>
