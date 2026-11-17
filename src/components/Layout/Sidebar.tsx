@@ -15,6 +15,11 @@ import { useNavigation } from '../../contexts/NavigationContext';
 import { useInvestigation } from '../../contexts/InvestigationContext';
 import { useUIModals } from '../../contexts/UIModalContext';
 
+/** The AgentCaddy row names every agent status but idle. */
+const AGENT_STATUS_KEYS = {
+  running: 'sidebar.agentStatusRunning', waiting: 'sidebar.agentStatusWaiting', paused: 'sidebar.agentStatusPaused', error: 'sidebar.agentStatusError',
+} as const;
+
 interface SidebarProps {
   collapsed: boolean;
   onToggleCollapsed: () => void;
@@ -284,7 +289,7 @@ export function Sidebar({
                   agentStatus === 'error' && 'bg-red-400/10 text-red-400',
                   agentStatus === 'paused' && 'bg-surface-raised text-text-muted',
                 )}>
-                  {agentStatus}
+                  {t(AGENT_STATUS_KEYS[agentStatus])}
                 </span>
               )}
             </div>
