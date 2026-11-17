@@ -5,7 +5,7 @@
  */
 import { act, cleanup, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ComponentType } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { db } from '../db';
 import type { ChatThread, Folder, Settings, ToolUseBlock } from '../types';
 import type { ToolExecutionResult } from '../lib/llm-tool-execution';
@@ -65,11 +65,22 @@ async function approve() {
   await waitFor(() => expect(button).toBeEnabled());
   fireEvent.click(button);
 }
+/** Waits until the shown card has loaded its investigation names, so that an absence check
+ * proves something. The card starts its folder read with its Approve delay; only microtasks
+ * follow that read, and a macrotask runs after them. */
+async function cardLoaded() {
+  await waitFor(() => expect(screen.getByRole('button', { name: /approve/i })).toBeEnabled());
+  await act(async () => {
+    await Promise.allSettled(folderGets.mock.results.map(result => result.value));
+    await new Promise(resolve => setTimeout(resolve, 0));
+  });
+}
 const notesTitled = (title: string) => db.notes.where('title').equals(title).toArray();
 const replies = (props: ReturnType<typeof renderChat>) =>
   props.onAddMessage.mock.calls.map(([, message]) => message).filter(message => message.role === 'assistant').map(message => message.content);
 
 let egress: EgressSpy;
+let folderGets: MockInstance<(id: string) => Promise<Folder | undefined>>;
 beforeEach(async () => {
   discardAllComposerDrafts();
   vi.clearAllMocks();
@@ -77,10 +88,11 @@ beforeEach(async () => {
   localStorage.clear();
   localStorage.setItem('caddyai-onboarded', '1');
   egress = installEgressSpy();
+  folderGets = vi.spyOn(db.folders, 'get') as unknown as typeof folderGets;
   state.folder = undefined;
   Element.prototype.scrollIntoView = vi.fn();
 });
-afterEach(() => { cleanup(); egress.restore(); discardAllComposerDrafts(); });
+afterEach(() => { cleanup(); egress.restore(); folderGets.mockRestore(); discardAllComposerDrafts(); });
 
 describe('C2-2 a write card names the investigation that changes', () => {
   it('in the global view, a thread filed in a synced investigation names it and says it syncs', async () => {
@@ -124,7 +136,29 @@ describe('C2-2 a write card names the investigation that changes', () => {
     const shown = await card();
     expect(within(shown).getByText('Change the AI agents?')).toBeInTheDocument();
     expect(within(shown).getByText('Changes the AI agents working in this investigation.')).toBeInTheDocument();
+    await cardLoaded();
     expect(within(shown).queryByText(/syncs to its members|stays on this device/)).toBeNull();
+  });
+
+  it('a change to another investigation names only that one, not the conversation\'s', async () => {
+    renderChat('S');
+    const handler = await sendAndGetHandler();
+    void start(handler, call('update_note', { id: 'P-note', content: 'Changed' }));
+    const shown = await card();
+    expect(within(shown).getByText('Change another investigation?')).toBeInTheDocument();
+    // The target line loads together with the conversation's name.
+    expect(await within(shown).findByText('Private case: syncs to its members')).toBeInTheDocument();
+    expect(within(shown).queryByText(/^Shared case:/)).toBeNull();
+  });
+
+  it('an enrichment card says where the value goes, not that the conversation syncs', async () => {
+    renderChat('S');
+    const handler = await sendAndGetHandler();
+    void start(handler, call('enrich_ioc', { iocId: 'S-ioc' }));
+    const shown = await card();
+    // The looked-up value loads together with the conversation's name.
+    expect(await within(shown).findByText('No enabled lookup applies to canary-s.example.')).toBeInTheDocument();
+    expect(within(shown).queryByText(/^Shared case:/)).toBeNull();
   });
 });
 
