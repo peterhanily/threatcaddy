@@ -168,6 +168,7 @@
   "action.destination": "यहाँ भेजता है: {{destination}}",
   "action.vendorLookups": "विक्रेता लुकअप",
   "action.localAgent": "आपका स्थानीय एजेंट",
+  "action.hostIsIoc": "यह साइट इस जांच में एक IOC है। इस पर जाने से हमलावर सतर्क हो सकता है।",
   "action.aiReason": "एजेंट का कारण:",
   "profile.agentProfiles": "एजेंट प्रोफ़ाइल",
   "profile.customAndBuiltin": "{{custom}} कस्टम, {{builtin}} बिल्टइन",

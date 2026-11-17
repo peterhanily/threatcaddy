@@ -168,6 +168,7 @@
   "action.destination": "ارسال به: {{destination}}",
   "action.vendorLookups": "جستجو نزد ارائه‌دهندگان",
   "action.localAgent": "عامل محلی شما",
+  "action.hostIsIoc": "این سایت یک IOC در این تحقیق است. بازدید از آن ممکن است مهاجم را آگاه کند.",
   "action.aiReason": "دلیل عامل:",
   "profile.agentProfiles": "پروفایل‌های عامل",
   "profile.customAndBuiltin": "{{custom}} سفارشی، {{builtin}} داخلی",

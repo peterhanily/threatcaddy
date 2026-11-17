@@ -168,6 +168,7 @@
   "action.destination": "送信先: {{destination}}",
   "action.vendorLookups": "ベンダー照会",
   "action.localAgent": "ローカルエージェント",
+  "action.hostIsIoc": "このサイトはこの調査の IOC です。アクセスすると攻撃者に気付かれる可能性があります。",
   "action.aiReason": "エージェントの理由:",
   "profile.agentProfiles": "エージェントプロファイル",
   "profile.customAndBuiltin": "カスタム {{custom}}、組み込み {{builtin}}",

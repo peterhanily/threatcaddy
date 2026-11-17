@@ -168,6 +168,7 @@
   "action.destination": "Надсилання: {{destination}}",
   "action.vendorLookups": "запити до постачальників",
   "action.localAgent": "ваш локальний агент",
+  "action.hostIsIoc": "Цей сайт є IOC у цьому розслідуванні. Його відвідування може насторожити зловмисника.",
   "action.aiReason": "Обґрунтування агента:",
   "profile.agentProfiles": "Профілі агентів",
   "profile.customAndBuiltin": "{{custom}} користувацьких, {{builtin}} вбудованих",

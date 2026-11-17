@@ -168,6 +168,7 @@
   "action.destination": "Gửi đến: {{destination}}",
   "action.vendorLookups": "tra cứu nhà cung cấp",
   "action.localAgent": "tác nhân cục bộ của bạn",
+  "action.hostIsIoc": "Trang này là một IOC trong cuộc điều tra này. Truy cập nó có thể khiến kẻ tấn công cảnh giác.",
   "action.aiReason": "Lý do của tác nhân:",
   "profile.agentProfiles": "Hồ sơ tác nhân",
   "profile.customAndBuiltin": "{{custom}} tùy chỉnh, {{builtin}} tích hợp sẵn",

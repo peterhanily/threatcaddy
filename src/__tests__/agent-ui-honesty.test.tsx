@@ -39,6 +39,25 @@ describe('B-UI-1 action cards name the action class and where it reaches', () =>
     expect(screen.getByText('Pending')).toBeInTheDocument();
   });
 
+  it('a pending fetch of a host that is an IOC in the investigation carries a warning, and stays approvable', async () => {
+    const warning = 'This site is an IOC in this investigation. Visiting it can alert the attacker.';
+    const onApprove = vi.fn();
+    const view = render(<AgentActionCard action={action({ toolName: 'fetch_url', toolInput: { url: 'https://canary-s.example/beacon' } })} onApprove={onApprove} />);
+    expect(await screen.findByText(warning)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Approve fetch_url action' }));
+    expect(onApprove).toHaveBeenCalledOnce();
+    view.unmount();
+
+    render(<>
+      <AgentActionCard action={action({ id: 'other-host', toolName: 'fetch_url', toolInput: { url: 'https://collector.example/c' } })} />
+      <AgentActionCard action={action({ id: 'other-case', toolName: 'fetch_url', investigationId: 'P', toolInput: { url: 'https://canary-s.example/' } })} />
+      <AgentActionCard action={action({ id: 'done', toolName: 'fetch_url', status: 'executed', toolInput: { url: 'https://canary-s.example/' } })} />
+    </>);
+    await act(async () => {});
+    expect(screen.queryByText(warning)).not.toBeInTheDocument();
+    expect(await db.agentActions.count()).toBe(0);
+  });
+
   it('enrichment, skills and delegation say what they are', () => {
     render(<>
       <AgentActionCard action={action({ toolName: 'enrich_ioc', toolInput: { iocId: ids('S').ioc } })} />

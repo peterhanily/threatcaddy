@@ -168,6 +168,7 @@
   "action.destination": "Stuurt naar: {{destination}}",
   "action.vendorLookups": "leveranciersopzoekingen",
   "action.localAgent": "uw lokale agent",
+  "action.hostIsIoc": "Deze site is een IOC in dit onderzoek. Een bezoek kan de aanvaller waarschuwen.",
   "action.aiReason": "Reden van de agent:",
   "profile.agentProfiles": "Agentprofielen",
   "profile.customAndBuiltin": "{{custom}} aangepast, {{builtin}} ingebouwd",
