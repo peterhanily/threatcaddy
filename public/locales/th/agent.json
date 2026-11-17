@@ -237,6 +237,7 @@
   "meeting.couldNotRun": "ไม่สามารถจัดการประชุมได้: {{error}}",
   "supervisor.couldNotRun": "ไม่สามารถเรียกใช้เอเจนต์ผู้ดูแลได้: {{error}}",
   "supervisor.proposalRationale": "ข้อเสนอจาก CaddyAgent Supervisor เหตุผลของข้อเสนอนี้อยู่ในการสืบสวน CaddyAgent Supervisor เท่านั้น",
+  "refusal.agentDismissed": "ถูกปฏิเสธ: เอเจนต์ถูกไล่ออกแล้ว",
   "refusal.noApiKey": "ยังไม่ได้กำหนดค่า API Key สำหรับ {{provider}}",
   "refusal.configuredProviders": "ผู้ให้บริการที่กำหนดค่าแล้ว: {{providers}} ตั้งค่าโมเดลของเอเจนต์ในการตั้งค่า AgentCaddy",
   "refusal.noActiveDeployments": "ไม่มีเอเจนต์ที่ติดตั้งซึ่งทำงานอยู่ในการสืบสวนนี้",

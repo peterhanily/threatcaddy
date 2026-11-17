@@ -18,6 +18,7 @@ import { getToolBinding, isDynamicTool } from './tool-binding';
 import { cancellableRequest } from './request-cancellation';
 import { readBoundedText } from './bounded-response';
 import { assertConfiguredConnection } from './connection-policy';
+import { agentRefusal } from './llm-router';
 
 // Re-export definitions so existing consumers don't break
 export { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
@@ -1706,9 +1707,10 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
   for (const d of targetDeployments) {
     await db.agentDeployments.delete(d.id);
   }
+  const resultSummary = await agentRefusal('refusal.agentDismissed');
   await db.agentActions.where('[investigationId+status]').equals([folderId, 'pending'])
     .filter(action => action.agentConfigId === targetProfile.id)
-    .modify({ status: 'rejected', resultSummary: 'Agent dismissed' });
+    .modify({ status: 'rejected', resultSummary });
 
   // Create after-action dismissal note
   const noteId = nanoid();
@@ -1735,15 +1737,15 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
     updatedAt: now,
   });
 
-  // Update the dismissed agent's soul with the feedback
+  // Every investigation's copy of this agent reads its soul, so the soul gets no
+  // model text: the reason and evidence stay in the dismissal note above.
   const soul = targetProfile.soul || {
     identity: `I am ${targetProfile.name}, a ${targetProfile.role} agent.`,
     lessons: [], strengths: [], weaknesses: [],
     lifetimeMetrics: { investigationsWorked: 0, totalCycles: 0, totalToolCalls: 0, tasksCompleted: 0, tasksRejected: 0, meetingsAttended: 0, performanceScore: 50 },
     updatedAt: now,
   };
-  soul.lessons = [`DISMISSED: ${reason}. Evidence: ${evidence}`, ...soul.lessons].slice(0, 50);
-  soul.weaknesses = [...new Set([...evidence.split(/[,;.]/).map(s => s.trim()).filter(s => s.length > 5).slice(0, 3), ...soul.weaknesses])].slice(0, 20);
+  soul.lessons = [`Dismissed from an investigation on ${new Date(now).toISOString().slice(0, 10)}.`, ...soul.lessons].slice(0, 50);
   // Penalize performance score
   soul.lifetimeMetrics.performanceScore = Math.max(0, soul.lifetimeMetrics.performanceScore - 15);
   soul.updatedAt = now;

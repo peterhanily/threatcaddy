@@ -444,7 +444,7 @@ describe('A-GATE-7 agent configuration tools', () => {
       row('done', { status: 'executed' }), row('elsewhere', { investigationId: 'P' }), row('colleague', { agentConfigId: 'ap-malware-analyst' })]);
     const dismiss = call('dismiss_agent', { agentName: 'Threat Hunter', reason: 'Repeatedly ignored the scope of the investigation.', evidence: 'Three off-scope notes.' });
     expect((await execTool(dismiss, 'S')).isError).toBe(false);
-    for (const id of ['mine', 'question']) expect(await db.agentActions.get(id)).toMatchObject({ status: 'rejected', resultSummary: 'Agent dismissed' });
+    for (const id of ['mine', 'question']) expect(await db.agentActions.get(id)).toMatchObject({ status: 'rejected', resultSummary: 'Rejected: the agent was dismissed.' });
     expect(await db.agentActions.get('done')).toEqual(row('done', { status: 'executed' }));
     expect(await db.agentActions.get('elsewhere')).toEqual(row('elsewhere', { investigationId: 'P' }));
     expect(await db.agentActions.get('colleague')).toEqual(row('colleague', { agentConfigId: 'ap-malware-analyst' }));

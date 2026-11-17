@@ -257,6 +257,7 @@
   "meeting.couldNotRun": "The meeting could not run: {{error}}",
   "supervisor.couldNotRun": "The supervisor agent could not run: {{error}}",
   "supervisor.proposalRationale": "CaddyAgent Supervisor proposal. Its reasoning stays in the CaddyAgent Supervisor investigation.",
+  "refusal.agentDismissed": "Rejected: the agent was dismissed.",
   "refusal.noApiKey": "No API key is configured for {{provider}}.",
   "refusal.configuredProviders": "Configured providers: {{providers}}. Set the agent model in AgentCaddy settings.",
   "refusal.noActiveDeployments": "No deployed agent is active in this investigation.",

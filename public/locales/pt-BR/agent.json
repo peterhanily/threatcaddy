@@ -237,6 +237,7 @@
   "meeting.couldNotRun": "Não foi possível realizar a reunião: {{error}}",
   "supervisor.couldNotRun": "Não foi possível executar o agente supervisor: {{error}}",
   "supervisor.proposalRationale": "Proposta do CaddyAgent Supervisor. O raciocínio dela permanece na investigação CaddyAgent Supervisor.",
+  "refusal.agentDismissed": "Rejeitada: o agente foi dispensado.",
   "refusal.noApiKey": "Nenhuma chave de API está configurada para {{provider}}.",
   "refusal.configuredProviders": "Provedores configurados: {{providers}}. Defina o modelo do agente nas configurações do AgentCaddy.",
   "refusal.noActiveDeployments": "Nenhum agente implantado está ativo nesta investigação.",

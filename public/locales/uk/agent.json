@@ -237,6 +237,7 @@
   "meeting.couldNotRun": "Не вдалося провести нараду: {{error}}",
   "supervisor.couldNotRun": "Не вдалося запустити агента-супервізора: {{error}}",
   "supervisor.proposalRationale": "Пропозиція CaddyAgent Supervisor. Її обґрунтування залишається в розслідуванні CaddyAgent Supervisor.",
+  "refusal.agentDismissed": "Відхилено: агента звільнено.",
   "refusal.noApiKey": "Для {{provider}} не налаштовано API-ключ.",
   "refusal.configuredProviders": "Налаштовані провайдери: {{providers}}. Укажіть модель агента в налаштуваннях AgentCaddy.",
   "refusal.noActiveDeployments": "У цьому розслідуванні немає активних розгорнутих агентів.",

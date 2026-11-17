@@ -237,6 +237,7 @@
   "meeting.couldNotRun": "De vergadering kon niet doorgaan: {{error}}",
   "supervisor.couldNotRun": "De supervisor-agent kon niet worden uitgevoerd: {{error}}",
   "supervisor.proposalRationale": "Voorstel van CaddyAgent Supervisor. De onderbouwing blijft in het onderzoek CaddyAgent Supervisor.",
+  "refusal.agentDismissed": "Afgewezen: de agent is ontslagen.",
   "refusal.noApiKey": "Er is geen API-sleutel geconfigureerd voor {{provider}}.",
   "refusal.configuredProviders": "Geconfigureerde providers: {{providers}}. Stel het agentmodel in bij de AgentCaddy-instellingen.",
   "refusal.noActiveDeployments": "Er is geen geïmplementeerde agent actief in dit onderzoek.",

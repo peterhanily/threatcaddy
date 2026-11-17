@@ -237,6 +237,7 @@
   "meeting.couldNotRun": "Не удалось провести совещание: {{error}}",
   "supervisor.couldNotRun": "Не удалось запустить агента-супервизора: {{error}}",
   "supervisor.proposalRationale": "Предложение CaddyAgent Supervisor. Его обоснование остаётся в расследовании CaddyAgent Supervisor.",
+  "refusal.agentDismissed": "Отклонено: агент уволен.",
   "refusal.noApiKey": "Для {{provider}} не настроен API-ключ.",
   "refusal.configuredProviders": "Настроенные провайдеры: {{providers}}. Задайте модель агента в настройках AgentCaddy.",
   "refusal.noActiveDeployments": "В этом расследовании нет активных развёрнутых агентов.",
