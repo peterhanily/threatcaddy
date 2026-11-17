@@ -1,5 +1,5 @@
 import { workspaceStorageKey } from '../../lib/workspace-profiles';
-import { useState, useCallback, useId, useSyncExternalStore, type KeyboardEvent } from 'react';
+import { useState, useCallback, useEffect, useId, useSyncExternalStore, type KeyboardEvent } from 'react';
 import DOMPurify from 'dompurify';
 import { CodeXml, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import { useCustomSlashCommands } from '../../hooks/useCustomSlashCommands';
 import { TemplateManager } from './TemplateManager';
 import { PlaybookManager } from './PlaybookManager';
 import { DEFAULT_SYSTEM_PROMPT } from '../../lib/llm-tools';
+import { hasGuardedBridgeFetch } from '../../lib/llm-tools-analysis';
 import { MODELS, MODEL_PROVIDER_MAP } from '../../lib/models';
 import { hasServerSession, resolveRoute } from '../../lib/llm-router';
 import { readStoredAuth } from '../../lib/auth-storage';
@@ -872,29 +873,49 @@ const subscribeBridgeCaps = (onChange: () => void) => {
 };
 const bridgeCapsSnapshot = () => document.documentElement.dataset.tcBridgeCaps ?? '';
 
-/** Describes the route resolveRoute picks for the default provider. Chat, agent cycles,
+// Without a local endpoint every model takes the routing mode's route; with one, cloud models still do.
+const ROUTE_KEYS = {
+  all: { server: 'ai.dataFlow.routeServer', extension: 'ai.dataFlow.routeExtension', 'no-extension': 'ai.dataFlow.routeNoExtension', 'no-server': 'ai.dataFlow.routeNoServer', none: 'ai.dataFlow.routeNone' },
+  cloud: { server: 'ai.dataFlow.routeCloudServer', extension: 'ai.dataFlow.routeCloudExtension', 'no-extension': 'ai.dataFlow.routeCloudNoExtension', 'no-server': 'ai.dataFlow.routeCloudNoServer', none: 'ai.dataFlow.routeCloudNone' },
+} as const;
+
+/** Describes where requests go for every model the analyst can pick: a local model with an endpoint is
+ * called directly, and cloud models take the route resolveRoute picks for them. Chat, agent cycles,
  * meetings and the supervisor route with the same resolver and session check. */
 function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpdateSettings: (updates: Partial<Settings>) => void }) {
   const { t } = useTranslation('settings');
   const headingId = useId();
-  const caps = useSyncExternalStore(subscribeBridgeCaps, bridgeCapsSnapshot).split(',').filter(Boolean);
-  const route = resolveRoute(settings, { extensionAvailable: caps.length > 0, serverSession: hasServerSession(), provider: settings.llmDefaultProvider });
-  const routeLine = route.route === 'unavailable'
-    ? t(route.reason === 'no-extension' ? 'ai.dataFlow.routeNoExtension' : route.reason === 'no-server' ? 'ai.dataFlow.routeNoServer' : 'ai.dataFlow.routeNone')
-    : route.route === 'local-direct' ? t('ai.dataFlow.routeLocal', { host: hostOf(settings.llmLocalEndpoint) })
-    // Server-routed requests go to the signed-in session's server.
-    : route.route === 'server' ? t('ai.dataFlow.routeServer', { host: hostOf(readStoredAuth()?.serverUrl) })
-    : t('ai.dataFlow.routeExtension');
+  const capsText = useSyncExternalStore(subscribeBridgeCaps, bridgeCapsSnapshot);
+  const caps = capsText.split(',').filter(Boolean);
+  const localEndpoint = settings.llmLocalEndpoint?.trim();
+  // Every cloud provider takes the same route.
+  const cloud = resolveRoute(settings, { extensionAvailable: caps.length > 0, serverSession: hasServerSession(), provider: 'anthropic' });
+  const keys = ROUTE_KEYS[localEndpoint ? 'cloud' : 'all'];
+  const cloudKey = keys[cloud.route === 'unavailable' ? cloud.reason : cloud.route === 'server' ? 'server' : 'extension'];
+  // Server-routed requests go to the signed-in session's server.
+  const routeLines = [
+    ...(localEndpoint ? [t('ai.dataFlow.routeLocal', { host: hostOf(localEndpoint) })] : []),
+    t(cloudKey, cloud.route === 'server' ? { host: hostOf(readStoredAuth()?.serverUrl) } : {}),
+  ];
+  // Web fetch asks the extension bridge at call time; show the same answer.
+  const [fetchCheck, setFetchCheck] = useState<{ caps: string; guarded: boolean }>();
+  useEffect(() => {
+    if (!capsText) return;
+    let current = true;
+    void hasGuardedBridgeFetch().then(guarded => { if (current) setFetchCheck({ caps: capsText, guarded }); });
+    return () => { current = false; };
+  }, [capsText]);
   const fetchLine = !caps.length ? t('ai.dataFlow.fetchNoExtension')
-    : caps.includes('fetch_url_public_v1') || caps.includes('clip_import_ack_v2') ? t('ai.dataFlow.fetchSupported') : t('ai.dataFlow.fetchUpdate');
+    : fetchCheck?.caps !== capsText ? null
+    : t(fetchCheck.guarded ? 'ai.dataFlow.fetchSupported' : 'ai.dataFlow.fetchUpdate');
   const hosts = settings.agentHosts ?? [];
   const bridgeOn = settings.agentBridgeEnabled === true;
 
   return (
     <section aria-labelledby={headingId} className="border border-gray-700 rounded-lg p-3 space-y-2">
       <h4 id={headingId} className="text-sm text-gray-300 font-medium">{t('ai.dataFlow.title')}</h4>
-      <p className="text-xs text-gray-400">{routeLine}</p>
-      <p className="text-xs text-gray-400">{fetchLine}</p>
+      {routeLines.map(line => <p key={line} className="text-xs text-gray-400">{line}</p>)}
+      {fetchLine && <p className="text-xs text-gray-400">{fetchLine}</p>}
       <div className="flex min-w-0 items-center justify-between gap-3">
         <div className="min-w-0">
           <span id={`${headingId}-bridge`} className="text-xs text-gray-300">{t('ai.dataFlow.bridgeLabel')}</span>
