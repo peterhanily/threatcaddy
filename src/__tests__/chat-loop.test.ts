@@ -68,6 +68,27 @@ describe('bounded serialized chat schedules', () => {
     expect(sendViaExtension).toHaveBeenCalledOnce();
   });
 
+  it('a run with no route does not back off: the next run is one interval later, so it resumes once a route returns', async () => {
+    const hourly = 3_600_000;
+    const transport = vi.fn<() => Promise<LoopTransport>>().mockResolvedValue({ error: 'No AI route is available.' });
+    startLoop({ ...opts, provider: 'anthropic', apiKey: 'synthetic-key', endpoint: undefined, intervalMs: hourly, transport });
+    await vi.advanceTimersByTimeAsync(4 * hourly);
+    expect(transport).toHaveBeenCalledTimes(5);
+    expect(getAllLoops()[0]).toMatchObject({ runCount: 0, error: 'No AI route is available.' });
+    transport.mockResolvedValue({ useServerProxy: false, apiKey: 'synthetic-key' });
+    await vi.advanceTimersByTimeAsync(hourly);
+    expect(sendViaExtension).toHaveBeenCalledOnce();
+  });
+
+  it('a run with a failed model request still backs off', async () => {
+    startLoop(opts);
+    localCall()[1].onError('Provider unavailable');
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(sendDirectToLocal).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(sendDirectToLocal).toHaveBeenCalledTimes(2);
+  });
+
   it('a loop stopped while its route resolves sends nothing', async () => {
     let resolve!: (transport: LoopTransport) => void;
     const id = startLoop({ ...opts, transport: () => new Promise(done => { resolve = done; }) });

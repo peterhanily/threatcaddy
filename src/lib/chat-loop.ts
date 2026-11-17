@@ -98,7 +98,12 @@ async function runOnce(loop: ChatLoop): Promise<void> {
     if (loop.transport) {
       const transport = await loop.transport();
       if (loop.status !== 'running' || loop.controller.signal.aborted) return;
-      if ('error' in transport) throw new Error(transport.error);
+      if ('error' in transport) {
+        // Nothing was sent, so there is nothing to back off from: try again one interval later.
+        loop.error = transport.error;
+        loop.failures = 0;
+        return;
+      }
       loop.useServerProxy = transport.useServerProxy;
       loop.apiKey = transport.apiKey;
       loop.endpoint = transport.endpoint;
