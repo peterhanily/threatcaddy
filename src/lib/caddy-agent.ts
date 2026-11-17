@@ -81,7 +81,7 @@ function getConfiguredProviderNames(settings: Settings): string[] {
   return names;
 }
 
-function resolveConfiguredProvider(settings: Settings): { resolvedProvider: LLMProvider; resolvedModel: string } {
+export function resolveConfiguredProvider(settings: Settings): { resolvedProvider: LLMProvider; resolvedModel: string } {
   // Try the user's default first
   const defaultProvider = (settings.llmDefaultProvider || 'anthropic') as LLMProvider;
   if (getApiKeyForProvider(defaultProvider, settings)) {

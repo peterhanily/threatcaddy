@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS, type Folder, type Settings } from '../types';
 import { AgentPanel } from '../components/Agent/AgentPanel';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
+import enSettings from '../../public/locales/en/settings.json';
 
 vi.mock('../components/Agent/AgentProfilePicker', () => ({ AgentProfilePicker: () => null }));
 vi.mock('../components/Agent/AgentMeetingPanel', () => ({ AgentMeetingPanel: () => null }));
@@ -18,6 +19,9 @@ const renderPanel = async (settings: Partial<Settings>) => {
   await act(async () => {});
 };
 const setupBanner = () => screen.queryByRole('heading', { name: 'Set up AgentCaddy' });
+const announceExtension = () => act(() => {
+  window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'TC_EXTENSION_READY', protocolVersion: 2, capabilities: [] } }));
+});
 
 beforeEach(() => localStorage.clear());
 afterEach(() => { cleanup(); localStorage.clear(); });
@@ -38,5 +42,25 @@ describe('AgentCaddy readiness follows the route', () => {
     signIn();
     await renderPanel({ serverUrl: 'https://team.example', llmRoutingMode: 'extension' });
     expect(setupBanner()).toBeInTheDocument();
+  });
+
+  it('explicit Team Server routing while signed out, with the extension and a key: the setup banner asks to sign in', async () => {
+    await renderPanel({ llmRoutingMode: 'server', llmAnthropicApiKey: 'synthetic-key' });
+    announceExtension();
+    expect(setupBanner()).toBeInTheDocument();
+    expect(screen.getByText(enSettings['ai.dataFlow.errorNoServer'])).toBeInTheDocument();
+    expect(screen.queryByText('Install the browser extension')).not.toBeInTheDocument();
+    expect(screen.queryByText('Configure an API key')).not.toBeInTheDocument();
+  });
+
+  it('explicit Browser Extension routing with no extension, a local endpoint and a cloud default model: the setup banner shows', async () => {
+    await renderPanel({ llmRoutingMode: 'extension', llmDefaultProvider: 'anthropic', llmAnthropicApiKey: 'synthetic-key', llmLocalEndpoint: 'http://localhost:11434/v1' });
+    expect(setupBanner()).toBeInTheDocument();
+    expect(screen.getByText('Install the browser extension')).toBeInTheDocument();
+  });
+
+  it('a local default model with an endpoint is called directly, so it needs no extension or server', async () => {
+    await renderPanel({ llmRoutingMode: 'extension', llmDefaultProvider: 'local', llmLocalEndpoint: 'http://localhost:11434/v1' });
+    expect(setupBanner()).not.toBeInTheDocument();
   });
 });

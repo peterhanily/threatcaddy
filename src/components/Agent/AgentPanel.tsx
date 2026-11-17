@@ -14,6 +14,7 @@ import { CROSS_CASE_READ_TOOLS, resolveEffectivePolicy } from '../../lib/caddy-a
 import { isShareableFolder } from '../../lib/ai-scope';
 import { workspaceStorageKey } from '../../lib/workspace-profiles';
 import { hasServerSession, resolveRoute } from '../../lib/llm-router';
+import { resolveConfiguredProvider } from '../../lib/caddy-agent';
 import { useAuth } from '../../contexts/AuthContext';
 import { AgentActionCard } from './AgentActionCard';
 import { AgentProfilePicker } from './AgentProfilePicker';
@@ -75,6 +76,7 @@ function InvestigationAgentPanel({
   serverConnected, serverRegistered, serverRunning, onRegisterServer, onUnregisterServer,
 }: AgentPanelProps) {
   const { t } = useTranslation('agent');
+  const { t: tSettings } = useTranslation('settings');
   const [actions, setActions] = useState<AgentAction[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [pageCount, setPageCount] = useState(1);
@@ -158,11 +160,13 @@ function InvestigationAgentPanel({
     settings.llmMistralApiKey?.trim() ||
     settings.llmLocalEndpoint?.trim()
   );
-  // The agent cycle's route: a stored sign-in is the server session. useAuth re-renders on sign-in and sign-out.
+  // The route an agent cycle takes for the model it will use: a stored sign-in is the server session.
+  // useAuth re-renders on sign-in and sign-out.
   useAuth();
-  const hasServerProxy = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession() }).route === 'server';
-  const hasLocalLLM = !!settings.llmLocalEndpoint?.trim();
-  const isReady = (extensionAvailable || hasServerProxy || hasLocalLLM) && (hasApiKey || hasServerProxy);
+  const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(), provider: resolveConfiguredProvider(settings).resolvedProvider });
+  const hasServerProxy = route.route === 'server';
+  const needsSignIn = route.route === 'unavailable' && route.reason === 'no-server';
+  const isReady = hasServerProxy || (route.route !== 'unavailable' && hasApiKey);
 
   // Load actions for this investigation (paginated)
   const [agentTasks, setAgentTasks] = useState<Task[]>([]);
@@ -311,7 +315,25 @@ function InvestigationAgentPanel({
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="max-w-sm space-y-4">
             <h3 className="text-sm font-semibold text-text-primary">{t('panel.setupAgentCaddy')}</h3>
-            {!hasApiKey && !hasServerProxy && (
+            {needsSignIn && (
+              <div className="flex gap-3">
+                <div className="w-7 h-7 rounded-full bg-accent-blue/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <Server size={14} className="text-accent-blue" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-text-primary">{tSettings('ai.dataFlow.errorNoServer')}</p>
+                  {onOpenSettings && (
+                    <button
+                      onClick={() => onOpenSettings('ai')}
+                      className="text-[11px] text-accent-blue hover:underline mt-1"
+                    >
+                      {t('panel.openAISettings')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            {!hasApiKey && !needsSignIn && (
               <div className="flex gap-3">
                 <div className="w-7 h-7 rounded-full bg-accent-blue/15 flex items-center justify-center shrink-0 mt-0.5">
                   <Key size={14} className="text-accent-blue" />
@@ -332,7 +354,7 @@ function InvestigationAgentPanel({
                 </div>
               </div>
             )}
-            {!extensionAvailable && !hasServerProxy && (
+            {!extensionAvailable && !needsSignIn && (
               <div className="flex gap-3">
                 <div className="w-7 h-7 rounded-full bg-accent-blue/15 flex items-center justify-center shrink-0 mt-0.5">
                   <Puzzle size={14} className="text-accent-blue" />
