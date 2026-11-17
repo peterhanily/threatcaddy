@@ -17,8 +17,9 @@ const state = vi.hoisted(() => ({
   signedIn: false,
   folder: { id: 'case', name: 'Case', order: 0, createdAt: 1 } as Folder,
   input: { onSend: async () => {} } as { onSend: (text: string) => Promise<void>; route?: string },
-  startLoop: vi.fn((_opts: { transport: () => Promise<unknown> }) => ({ id: 'loop', intervalMs: 30_000, formattedInterval: '30s' })),
-  stopAllForThread: vi.fn((_threadId: string) => 1),
+  startLoop: vi.fn<(opts: { transport: () => Promise<unknown> }) => { id: string; intervalMs: number; formattedInterval: string }>(
+    () => ({ id: 'loop', intervalMs: 30_000, formattedInterval: '30s' })),
+  stopAllForThread: vi.fn<(threadId: string) => number>(() => 1),
 }));
 const { answer } = vi.hoisted(() => ({
   answer: (_request: unknown, callbacks: LLMRouteCallbacks) => { callbacks.onChunk('Answer.'); callbacks.onDone('end_turn', [{ type: 'text', text: 'Answer.' }]); return 'request'; },
