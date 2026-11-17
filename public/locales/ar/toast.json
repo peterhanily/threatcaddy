@@ -89,7 +89,6 @@
     "installedFromCatalog": "تم تثبيت {{name}} من كتالوج المجتمع",
     "installCatalogFailed": "فشل تثبيت قالب المجتمع",
     "templateExported": "تم تصدير {{name}}",
-    "installedFromTeam": "تم تثبيت {{name}} من الفريق",
     "installTeamFailed": "فشل تثبيت قالب الفريق",
     "notFound": "التكامل غير موجود",
     "completed": "اكتمل التكامل \"{{name}}\" بنجاح",

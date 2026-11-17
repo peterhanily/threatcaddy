@@ -117,8 +117,9 @@ test('team sharing preserves local data on rejection, then lists and installs va
   await panel.getByRole('button', { name: 'Refresh', exact: true }).click();
   await expect(remoteCard).toBeVisible();
   await remoteCard.getByRole('button', { name: 'Install', exact: true }).click();
-  await expect(page.getByText(`Installed ${remote.name} from team`, { exact: true })).toBeVisible();
+  await expect(page.getByText(`${remote.name} was installed disabled. It makes no web requests. Review it, then enable it on the Installed tab.`, { exact: true })).toBeVisible();
   const after = await readRows(page, tables);
+  expect(after.installedIntegrations.find(installation => installation.templateId === remote.id)).toMatchObject({ enabled: false });
   expect(after.integrationTemplates).toHaveLength(2);
   expect(after.integrationTemplates.find(template => template.id === local.id)).toEqual(local);
   expect(after.integrationTemplates.find(template => template.id === remote.id)).toEqual({ ...remote, source: 'team' });

@@ -85,7 +85,6 @@
     "installedFromCatalog": "{{name}} از کاتالوگ جامعه نصب شد",
     "installCatalogFailed": "نصب قالب جامعه ناموفق بود",
     "templateExported": "{{name}} صادر شد",
-    "installedFromTeam": "{{name}} از تیم نصب شد",
     "installTeamFailed": "نصب قالب تیم ناموفق بود",
     "notFound": "یکپارچه‌سازی یافت نشد",
     "completed": "یکپارچه‌سازی «{{name}}» با موفقیت تکمیل شد",

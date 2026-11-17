@@ -86,7 +86,6 @@
     "installedFromCatalog": "{{name}} instalado desde el catálogo comunitario",
     "installCatalogFailed": "Error al instalar la plantilla comunitaria",
     "templateExported": "{{name}} exportado",
-    "installedFromTeam": "{{name}} instalado desde el equipo",
     "installTeamFailed": "Error al instalar la plantilla del equipo",
     "notFound": "Integración no encontrada",
     "completed": "Integración \"{{name}}\" completada correctamente",

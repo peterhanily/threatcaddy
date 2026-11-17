@@ -1,6 +1,10 @@
 {
   "catalog.teamInvalid": "一部のチームテンプレートは無効なため読み込まれませんでした。",
   "catalog.teamUnavailable": "チームテンプレートを読み込めませんでした。接続を確認して更新してください。",
+  "team.installedDisabled": "{{name}} は無効の状態でインストールされました。次の宛先にデータを送信する可能性があります: {{domains}}。内容を確認してから、[インストール済み] タブで有効にしてください。",
+  "team.installedDisabledNoDomains": "{{name}} は無効の状態でインストールされました。Web リクエストは送信しません。内容を確認してから、[インストール済み] タブで有効にしてください。",
+  "fetch.privateTarget": "取得できるのは、認証情報を含まない公開の http(s) アドレスのみです。プライベート、ローカル、および IP アドレスを直接指定した宛先は許可されていません。",
+  "fetch.updateExtension": "Web 取得を使用するには、ThreatCaddy 拡張機能をインストールするか 1.1.3 以降に更新し、拡張機能でこのアプリを承認してください。",
   "builtin.vtIpLookup.name": "VirusTotal IP ルックアップ",
   "builtin.vtIpLookup.description": "IPアドレスをVirusTotalで照会して評判、ジオロケーション、分析統計を取得します。",
   "builtin.vtIpLookup.config.apiKey.label": "APIキー",

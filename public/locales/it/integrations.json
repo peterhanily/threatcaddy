@@ -1,6 +1,10 @@
 {
   "catalog.teamInvalid": "Alcuni modelli del team non sono validi e non sono stati caricati.",
   "catalog.teamUnavailable": "Impossibile caricare i modelli del team. Controlla la connessione e aggiorna.",
+  "team.installedDisabled": "{{name}} è stata installata disattivata. Può inviare dati a: {{domains}}. Controllala, poi attivala nella scheda Installate.",
+  "team.installedDisabledNoDomains": "{{name}} è stata installata disattivata. Non effettua richieste web. Controllala, poi attivala nella scheda Installate.",
+  "fetch.privateTarget": "Possono essere recuperati solo indirizzi http(s) pubblici senza credenziali. Le destinazioni private, locali e con IP letterale non sono consentite.",
+  "fetch.updateExtension": "Installa o aggiorna l'estensione ThreatCaddy alla versione 1.1.3 o successiva e approva questa app al suo interno per usare il recupero web.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "Cerca indirizzi IP su VirusTotal per reputazione, geolocalizzazione e statistiche di analisi.",
   "builtin.vtIpLookup.config.apiKey.label": "API Key",

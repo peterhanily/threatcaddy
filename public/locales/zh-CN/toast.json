@@ -85,7 +85,6 @@
     "installedFromCatalog": "已从社区目录安装 {{name}}",
     "installCatalogFailed": "安装社区模板失败",
     "templateExported": "已导出 {{name}}",
-    "installedFromTeam": "已从团队安装 {{name}}",
     "installTeamFailed": "安装团队模板失败",
     "notFound": "集成未找到",
     "completed": "集成\"{{name}}\"成功完成",

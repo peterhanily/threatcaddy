@@ -570,16 +570,12 @@ const AppInner = memo(function AppInner({
 
   const autoEnrichCreatedIOCs = useCallback((createdIOCs: StandaloneIOC[]) => {
     if (settings.tiAutoEnrichImportedIOCs !== true || createdIOCs.length === 0) return;
-    const executionOptions = auth.connected && auth.serverUrl
-      ? { useServerProxy: { serverUrl: auth.serverUrl, getAccessToken: auth.getAccessToken } }
-      : undefined;
 
     void autoEnrichImportedIOCs(createdIOCs, {
       maxIOCs: settings.tiAutoEnrichImportedIOCMax ?? 50,
       investigation: selectedFolder ? { id: selectedFolder.id, name: selectedFolder.name } : undefined,
       getInstallationsForIOCType: integrationsHook.getInstallationsForIOCType,
       addRun: integrationsHook.addRun,
-      executionOptions,
       onComplete: (stats) => {
         standaloneIOCsHook.reload();
         if (stats.queued === 0) return;
@@ -598,7 +594,7 @@ const AppInner = memo(function AppInner({
         }
       },
     });
-  }, [addToast, auth.connected, auth.getAccessToken, auth.serverUrl, integrationsHook.addRun, integrationsHook.getInstallationsForIOCType, selectedFolder, settings.tiAutoEnrichImportedIOCMax, settings.tiAutoEnrichImportedIOCs, standaloneIOCsHook]);
+  }, [addToast, integrationsHook.addRun, integrationsHook.getInstallationsForIOCType, selectedFolder, settings.tiAutoEnrichImportedIOCMax, settings.tiAutoEnrichImportedIOCs, standaloneIOCsHook]);
 
   const loggedCreateIOCWithAuto = useCallback(async (partial?: Partial<StandaloneIOC>) => {
     const ioc = await loggedCreateIOC(partial);

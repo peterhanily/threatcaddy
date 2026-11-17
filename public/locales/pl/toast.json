@@ -87,7 +87,6 @@
     "installedFromCatalog": "Zainstalowano {{name}} z katalogu społeczności",
     "installCatalogFailed": "Nie udało się zainstalować szablonu społeczności",
     "templateExported": "Wyeksportowano {{name}}",
-    "installedFromTeam": "Zainstalowano {{name}} z zespołu",
     "installTeamFailed": "Nie udało się zainstalować szablonu zespołu",
     "notFound": "Integracja nie znaleziona",
     "completed": "Integracja „{{name}}\" zakończona pomyślnie",

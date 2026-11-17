@@ -153,3 +153,36 @@ describe('approved extension boundaries', () => {
     await pending;
   });
 });
+
+describe('local model text tool calls', () => {
+  // One local-model turn whose only output is `text`; returns the final 'done' message.
+  async function localTurn(text) {
+    const h = harness(); await h.approve('http://localhost:4173', 'http://localhost:11434');
+    const event = data => `data: ${JSON.stringify(data)}\n\n`;
+    h.fetch.mockResolvedValueOnce(new Response(event({ choices: [{ delta: { content: text } }] })
+      + event({ choices: [{ delta: {}, finish_reason: 'stop' }] }) + 'data: [DONE]\n\n'));
+    const { port, send } = h.stream();
+    await send({ provider: 'local', endpoint: 'http://localhost:11434/v1', model: 'fixture', messages: [{ role: 'user', content: 'Fixture' }],
+      tools: [{ name: 'fetch_url', description: 'Fetch a page', input_schema: { type: 'object', properties: { url: { type: 'string' } } } }] });
+    return port.postMessage.mock.calls.map(([message]) => message).find(message => message.type === 'done');
+  }
+  const call = '{"name":"fetch_url","arguments":{"url":"https://collector.example/x"}}';
+
+  it.each([
+    ['a json fence', 'Use this:\n```json\n' + call + '\n```'],
+    ['a plain fence', '```\n' + call + '\n```'],
+    ['a function_call wrapper', '<function_call>' + call + '</function_call>'],
+    ['an upper-case tool_call wrapper', '<TOOL_CALL>' + call + '</TOOL_CALL>'],
+  ])('ignores a tool name quoted in %s', async (_label, text) => {
+    const done = await localTurn(text);
+    expect(done).toMatchObject({ stopReason: 'end_turn', contentBlocks: [] });
+  });
+
+  it('turns an exact <tool_call> wrapper into one text_tc_ tool use', async () => {
+    const done = await localTurn('<tool_call>' + call + '</tool_call>');
+    expect(done.stopReason).toBe('tool_use');
+    expect(done.contentBlocks).toHaveLength(1);
+    expect(done.contentBlocks[0]).toMatchObject({ type: 'tool_use', name: 'fetch_url', input: { url: 'https://collector.example/x' } });
+    expect(done.contentBlocks[0].id).toMatch(/^text_tc_/);
+  });
+});

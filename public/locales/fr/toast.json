@@ -86,7 +86,6 @@
     "installedFromCatalog": "{{name}} installé depuis le catalogue communautaire",
     "installCatalogFailed": "Échec de l'installation du modèle communautaire",
     "templateExported": "{{name}} exporté",
-    "installedFromTeam": "{{name}} installé depuis l'équipe",
     "installTeamFailed": "Échec de l'installation du modèle d'équipe",
     "notFound": "Intégration introuvable",
     "completed": "Intégration \"{{name}}\" terminée avec succès",

@@ -1,6 +1,10 @@
 {
   "catalog.teamInvalid": "Sommige teamsjablonen zijn ongeldig en zijn niet geladen.",
   "catalog.teamUnavailable": "Teamsjablonen konden niet worden geladen. Controleer je verbinding en vernieuw.",
+  "team.installedDisabled": "{{name}} is uitgeschakeld geïnstalleerd. Het kan gegevens versturen naar: {{domains}}. Controleer het en schakel het daarna in op het tabblad Geïnstalleerd.",
+  "team.installedDisabledNoDomains": "{{name}} is uitgeschakeld geïnstalleerd. Het doet geen webverzoeken. Controleer het en schakel het daarna in op het tabblad Geïnstalleerd.",
+  "fetch.privateTarget": "Alleen openbare http(s)-adressen zonder inloggegevens kunnen worden opgehaald. Privé-, lokale en letterlijke IP-bestemmingen zijn niet toegestaan.",
+  "fetch.updateExtension": "Installeer de ThreatCaddy-extensie of werk deze bij naar 1.1.3 of later, en keur deze app daarin goed om web ophalen te gebruiken.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "IP-adres opzoeken in VirusTotal: reputatie, geolocatie en analysestatistieken.",
   "builtin.vtIpLookup.config.apiKey.label": "API-sleutel",

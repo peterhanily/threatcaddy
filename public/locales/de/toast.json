@@ -85,7 +85,6 @@
     "installedFromCatalog": "{{name}} aus Community-Katalog installiert",
     "installCatalogFailed": "Community-Vorlage konnte nicht installiert werden",
     "templateExported": "{{name}} exportiert",
-    "installedFromTeam": "{{name}} vom Team installiert",
     "installTeamFailed": "Team-Vorlage konnte nicht installiert werden",
     "notFound": "Integration nicht gefunden",
     "completed": "Integration \"{{name}}\" erfolgreich abgeschlossen",

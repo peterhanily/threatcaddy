@@ -3,12 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { Zap, Loader2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useToast } from '../../contexts/ToastContext';
-import { useAuth } from '../../contexts/AuthContext';
 import { IntegrationExecutor } from '../../lib/integration-executor';
 import { integrationWrite } from '../../lib/integration-cancellation';
 import { isIOCType } from '../../lib/llm-tools-write';
 import { CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES } from '../../lib/entity-enums';
-import type { ExecutionOptions } from '../../lib/integration-executor';
 import { IntegrationResultModal } from './IntegrationResultModal';
 import { db } from '../../db';
 import type { IntegrationRun, InstalledIntegration, IntegrationTemplate } from '../../types/integration-types';
@@ -29,7 +27,6 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
   const { t } = useTranslation('integrations');
   const { t: tt } = useTranslation('toast');
   const { addToast } = useToast();
-  const { connected, serverUrl, getAccessToken } = useAuth();
   const [open, setOpen] = useState(false);
   const [running, setRunning] = useState(false);
   const [resultRun, setResultRun] = useState<IntegrationRun | null>(null);
@@ -64,10 +61,6 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
 
       let pendingNoteId: string | null = null;
       const executor = new IntegrationExecutor();
-      const execOptions: ExecutionOptions | undefined =
-        connected && serverUrl
-          ? { useServerProxy: { serverUrl, getAccessToken } }
-          : undefined;
       const run = await executor.run(
         match.template,
         match.installation,
@@ -208,8 +201,6 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
             addToast('info', message);
           },
         },
-        undefined,
-        execOptions,
       );
 
       await addRun(run);

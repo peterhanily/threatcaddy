@@ -2,12 +2,10 @@ import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Zap, Loader2, X, CheckCircle2, AlertTriangle, XCircle, Pause, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { nanoid } from 'nanoid';
-import { useAuth } from '../../contexts/AuthContext';
 import { IntegrationExecutor } from '../../lib/integration-executor';
 import { integrationWrite } from '../../lib/integration-cancellation';
 import { CONFIDENCE_VALUES, normalizeEnum } from '../../lib/entity-enums';
 import { cancellableRequest } from '../../lib/request-cancellation';
-import type { ExecutionOptions } from '../../lib/integration-executor';
 import { db } from '../../db';
 import type { IntegrationRun, InstalledIntegration, IntegrationTemplate } from '../../types/integration-types';
 import type { StandaloneIOC } from '../../types';
@@ -80,7 +78,6 @@ export function BulkEnrichModal({
   onCompleted,
 }: BulkEnrichModalProps) {
   const { t } = useTranslation('analysis');
-  const { connected, serverUrl, getAccessToken } = useAuth();
 
   // Phase: 'configure' → 'running' → 'done'
   const [phase, setPhase] = useState<'configure' | 'running' | 'done'>('configure');
@@ -181,10 +178,6 @@ export function BulkEnrichModal({
     const controller = lifecycle.controller;
     abortRef.current = controller;
     const executor = new IntegrationExecutor();
-    const execOptions: ExecutionOptions | undefined =
-      connected && serverUrl
-        ? { useServerProxy: { serverUrl, getAccessToken } }
-        : undefined;
     const newResults: IOCResult[] = [];
 
     // Phase 1a: top-level try/finally so any unhandled error transitions to 'done'
@@ -324,7 +317,6 @@ export function BulkEnrichModal({
                 onNotify: () => {},
               },
               controller.signal,
-              execOptions,
             );
 
             controller.signal.throwIfAborted();
@@ -379,7 +371,7 @@ export function BulkEnrichModal({
       }
       onCompleted?.(finalStats);
     }
-  }, [effectivePlan, addRun, investigation, createNotes, onCompleted, connected, serverUrl, getAccessToken]);
+  }, [effectivePlan, addRun, investigation, createNotes, onCompleted]);
 
   const handleCancel = useCallback(() => {
     cancelledRef.current = true;

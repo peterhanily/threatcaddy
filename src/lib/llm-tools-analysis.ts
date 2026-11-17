@@ -2,6 +2,7 @@ import { db } from '../db';
 import { extractIOCs } from './ioc-extractor';
 import { buildGraphData } from './graph-data';
 import { postMessageOrigin } from './utils';
+import i18n from '../i18n';
 
 export async function executeAnalyzeGraph(input: Record<string, unknown>, folderId?: string): Promise<string> {
   if (!folderId) {
@@ -113,7 +114,34 @@ export function executeExtractIOCs(input: Record<string, unknown>): string {
   return JSON.stringify({ totalFound: iocs.length, byType: grouped });
 }
 
+const PRIVATE_HOST_SUFFIXES = ['.localhost', '.local', '.internal', '.home', '.lan'];
+
+/** Mirrors the extension's publicFetchURL (extension/src/background.js), plus an href bound. */
+export function isPublicFetchURL(value: string): boolean {
+  let url: URL;
+  try { url = new URL(value); } catch { return false; }
+  if (url.href.length > 2048 || !['http:', 'https:'].includes(url.protocol) || url.username || url.password) return false;
+  const host = url.hostname.toLowerCase().replace(/\.$/, '');
+  return host.includes('.') && !host.includes(':') && !/^[\d.]+$/.test(host)
+    && !PRIVATE_HOST_SUFFIXES.some(suffix => host.endsWith(suffix));
+}
+
+/** Extensions older than 1.1.3 follow redirects and have no host filter. Read at call time:
+ *  the bridge deletes the attribute while it refreshes app approval. */
+function hasGuardedBridgeFetch(): boolean {
+  const caps = document.documentElement.dataset.tcBridgeCaps?.split(',') ?? [];
+  return caps.includes('clip_import_ack_v2') || caps.includes('fetch_url_public_v1');
+}
+
+/** `/fetch` shows this text to the analyst, so it is translated. Hosted builds load the namespace lazily. */
+async function fetchRefusal(key: 'fetch.privateTarget' | 'fetch.updateExtension'): Promise<{ success: false; error: string }> {
+  await i18n.loadNamespaces('integrations');
+  return { success: false, error: i18n.t(key, { ns: 'integrations' }) };
+}
+
 export function fetchViaExtensionBridge(url: string): Promise<{ success: boolean; title?: string; content?: string; error?: string }> {
+  if (!isPublicFetchURL(url)) return fetchRefusal('fetch.privateTarget');
+  if (!hasGuardedBridgeFetch()) return fetchRefusal('fetch.updateExtension');
   const requestId = Math.random().toString(36).slice(2);
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {
