@@ -560,9 +560,9 @@ export function ChatView({
       : allTools;
     const allowedTools = new Set(tools.map(tool => tool.name));
 
-    // In plan mode, append instructions to the system prompt
+    // In plan mode, append instructions to the system prompt. With no investigation, Plan reads them all (tool-reach row 14).
     const finalSystemPrompt = currentMode === 'plan'
-      ? systemPrompt + '\n\nYou are in PLAN MODE. You can only read this investigation; describe anything else as a plan: list the tools you would call, what data you would create, and what your analysis plan is. Present this as a structured plan the analyst can review before switching to Act mode.'
+      ? systemPrompt + `\n\nYou are in PLAN MODE. You can only read${homeFolderId ? ' this investigation' : ''}; describe anything else as a plan: list the tools you would call, what data you would create, and what your analysis plan is. Present this as a structured plan the analyst can review before switching to Act mode.`
       : systemPrompt;
 
     // Track which thread is streaming

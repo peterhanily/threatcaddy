@@ -13,8 +13,9 @@ import { AGENT_CONTROL_TOOLS, AGENT_NEVER_TOOLS, CROSS_CASE_READ_TOOLS, isEgress
 import { isWriteTool } from '../lib/llm-tool-defs';
 import { isDynamicTool } from '../lib/tool-binding';
 
+const CASE: Folder = { id: 'case', name: 'Case', order: 0, createdAt: 1 };
 const state = vi.hoisted(() => ({
-  folder: { id: 'case', name: 'Case', order: 0, createdAt: 1 } as Folder,
+  folder: undefined as Folder | undefined,
   input: { onSend: async () => {} } as { onSend: (text: string) => Promise<void> },
   send: vi.fn(),
   toast: vi.fn(),
@@ -23,7 +24,7 @@ vi.mock('../hooks/useLLM', () => ({ useLLM: () => ({ extensionAvailable: true, s
   toolActivity: [], sendAgentRequest: state.send, abort: vi.fn() }) }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ serverUrl: '', user: null }) }));
 vi.mock('../contexts/NavigationContext', () => ({ useNavigation: () => ({ selectedChatThreadId: 'thread', setSelectedChatThreadId: vi.fn() }) }));
-vi.mock('../contexts/InvestigationContext', () => ({ useInvestigation: () => ({ selectedFolderId: state.folder.id, selectedFolder: state.folder }) }));
+vi.mock('../contexts/InvestigationContext', () => ({ useInvestigation: () => ({ selectedFolderId: state.folder?.id, selectedFolder: state.folder }) }));
 vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: state.toast }) }));
 vi.mock('../hooks/useChatLoops', () => ({ useChatLoops: () => ({ loops: [], startLoop: vi.fn(), stopAllForThread: vi.fn() }) }));
 vi.mock('../hooks/useCustomSlashCommands', () => ({ useCustomSlashCommands: () => ({ commands: [] }),
@@ -33,7 +34,8 @@ vi.mock('../components/Chat/ChatMessage', () => ({ ChatMessageBubble: () => null
 vi.mock('../components/Agent/AgentCycleSummaryCard', () => ({ AgentCycleSummaryCard: () => null }));
 vi.mock('react-virtuoso', () => ({ Virtuoso: () => null }));
 
-const makeThread = (mode: 'act' | 'plan', messages: ChatMessage[] = []): ChatThread => ({ id: 'thread', title: 'Synthetic chat', folderId: 'case', mode,
+const makeThread = (mode: 'act' | 'plan', messages: ChatMessage[] = [], folderId: string | null = 'case'): ChatThread => ({ id: 'thread', title: 'Synthetic chat',
+  folderId: folderId ?? undefined, mode,
   model: 'synthetic-model', provider: 'anthropic', messages, tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
 const skill = { name: 'lookup', description: 'Look up an indicator', parameters: { type: 'object' as const, properties: {} } };
 const settings = {
@@ -41,13 +43,16 @@ const settings = {
   llmLocalEndpoint: 'http://localhost:11434/v1', llmLocalSkills: [skill],
   agentHosts: [{ id: 'host-1', name: 'cti', displayName: 'CTI host', url: 'https://cti.example', enabled: true, skills: [skill] }],
 } as Settings;
-const renderChat = (mode: 'act' | 'plan', onUpdateThread = vi.fn(), onAddMessage = vi.fn().mockResolvedValue(undefined), messages: ChatMessage[] = []) =>
-  render(<ChatView threads={[makeThread(mode, messages)]} settings={settings}
+// folderId null: a conversation filed in no investigation.
+const renderChat = (mode: 'act' | 'plan', onUpdateThread = vi.fn(), onAddMessage = vi.fn().mockResolvedValue(undefined), messages: ChatMessage[] = [],
+  folderId: string | null = 'case') =>
+  render(<ChatView threads={[makeThread(mode, messages, folderId)]} settings={settings}
     onCreateThread={vi.fn()} onUpdateThread={onUpdateThread} onAddMessage={onAddMessage} onTrashThread={vi.fn()} />);
 
 beforeEach(() => {
   discardAllComposerDrafts();
   vi.clearAllMocks();
+  state.folder = CASE;
   localStorage.setItem('caddyai-onboarded', '1');
   Element.prototype.scrollIntoView = vi.fn();
 });
@@ -66,6 +71,16 @@ describe('C-CHAT-2 Plan mode only reads this investigation', () => {
     expect(request.systemPrompt).toContain('You can only read this investigation; describe anything else as a plan');
   });
 
+  // With no investigation, Plan reads every investigation (decision table rows 2 and 14), so the prompt claims none.
+  it('outside any investigation, the prompt says Plan only reads without naming one investigation', async () => {
+    state.folder = undefined;
+    renderChat('plan', vi.fn(), vi.fn().mockResolvedValue(undefined), [], null);
+    await act(async () => { await state.input.onSend('What happened?'); });
+    const { systemPrompt } = state.send.mock.calls[0][0] as { systemPrompt: string };
+    expect(systemPrompt).toContain('You are in PLAN MODE. You can only read; describe anything else as a plan');
+    expect(systemPrompt).not.toContain('this investigation');
+  });
+
   it('Act mode still offers skills and web fetch, behind the card', async () => {
     renderChat('act');
     await act(async () => { await state.input.onSend('What happened?'); });
@@ -79,10 +94,12 @@ describe('C-CHAT-2 Plan mode only reads this investigation', () => {
 const PLAN_TITLE = 'Plan mode: CaddyAI only reads and describes anything else as a plan. In an investigation it reads only that investigation; '
   + 'outside any investigation it can read all of them.';
 const ACT_TITLE = 'Act mode: CaddyAI can make changes and use tools. The Ask/YOLO switch sets what needs your approval.';
+// 'Most': YOLO still asks for a change outside the conversation's investigation, a call read from the reply text and
+// create_in_investigation (rows 3, 5 and 7), and no short list is true in every context.
 const ASK_TITLE = 'CaddyAI asks before each change, web page, vendor lookup, skill or other integration, and before reading other investigations '
-  + 'from an investigation that can sync. Click to turn on YOLO: changes and built-in vendor lookups then run without asking, except changes to '
+  + 'from an investigation that can sync. Click to turn on YOLO: most changes and built-in vendor lookups then run without asking, except changes to '
   + 'other investigations or to agents.';
-const YOLO_TITLE = 'YOLO is on: changes and built-in vendor lookups run without asking. Web pages, skills, other integrations, and changes to other '
+const YOLO_TITLE = 'YOLO is on: most changes and built-in vendor lookups run without asking. Web pages, skills, other integrations, and changes to other '
   + 'investigations or to agents still need your approval, as does reading other investigations from an investigation that can sync. '
   + 'A vendor lookup skips other integrations instead of asking; turn YOLO off to approve them.';
 // Plan refuses every change and every call that leaves ThreatCaddy, whatever the switch says (decision table row 2).
@@ -156,6 +173,9 @@ describe('mode copy', () => {
     expect(deChat.mode.yoloOnTitleV2).not.toBe(YOLO_TITLE);
     expect(deChat.mode.planTitleV2).not.toBe(PLAN_TITLE);
     expect(deChat.mode.yoloInPlanTitle).not.toBe(`${IN_PLAN}{{setting}}`);
+    // The German YOLO copy keeps the 'most' of the English one.
+    expect(deChat.mode.yoloOnTitleV2).toMatch(/die meisten Änderungen/i);
+    expect(deChat.mode.yoloOffTitleV2).toMatch(/die meisten Änderungen/i);
   }));
 });
 
@@ -181,7 +201,7 @@ const chatCatalogs = import.meta.glob<{ default: Record<string, unknown> }>('../
 const valueOf = (catalog: Record<string, unknown>, key: string): unknown => key in catalog ? catalog[key]
   : key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], catalog);
 describe('the chat copy this round changed is translated', () => {
-  const KEYS = ['view.emptySubtitleV2', 'approval.title.lookupNothingSent', 'approval.lookupNone',
+  const KEYS = ['view.emptySubtitleV2', 'mode.yoloOnTitleV2', 'mode.yoloOffTitleV2', 'approval.title.lookupNothingSent', 'approval.lookupNone',
     'approval.targetSyncsLater', 'approval.conversationSyncsLater'];
   const english = chatCatalogs['../../public/locales/en/chat.json'].default;
   const others = Object.entries(chatCatalogs).filter(([path]) => !path.endsWith('/en/chat.json'));
