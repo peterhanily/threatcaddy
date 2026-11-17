@@ -24,11 +24,21 @@ function storedSettings(): Settings {
   try { return JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}'); } catch { return {} as Settings; }
 }
 
+/** The proposing agent has no deployment left in the action's investigation: it
+ * was dismissed or removed. Legacy rows name no profile, supervisor rows name
+ * the supervisor, and a paused or resting agent keeps its deployment. */
+async function proposerRemoved(action: AgentAction): Promise<boolean> {
+  if (!action.agentConfigId || action.agentConfigId === SUPERVISOR_ACTION_PROFILE) return false;
+  return !await db.agentDeployments.where('investigationId').equals(action.investigationId)
+    .filter(deployment => deployment.profileId === action.agentConfigId).first();
+}
+
 /** Re-derive what the proposing agent may do today; the stored row is not trusted. */
 async function approvalConstraints(action: AgentAction, toolUse: ToolUseBlock): Promise<ToolExecutionConstraints | string> {
   if (action.id.startsWith('srv:')) return 'Server proposals are history only and cannot be approved here.';
   const folder = await db.folders.get(action.investigationId);
   if (!folder || folder.status === 'archived') return 'Approved actions require an existing, non-archived investigation.';
+  if (await proposerRemoved(action)) return 'This agent is no longer deployed in this investigation, so its proposal cannot run.';
   const approval = mintHumanApproval(toolUse, action.investigationId, 'action-queue');
 
   if (action.agentConfigId === SUPERVISOR_ACTION_PROFILE) {
@@ -117,13 +127,15 @@ const pendingActions = (investigationId: string) => db.agentActions
   .toArray();
 
 /** "Approve all" covers routine rows only: nothing that leaves this device,
- * changes agents, reaches another investigation or came from a server. A
- * supervisor row is filed under its target, not the supervisor's home, so
- * its reach cannot be read from the row: it always needs individual review. */
+ * changes agents, reaches another investigation, came from a server or from an
+ * agent no longer deployed here. A supervisor row is filed under its target,
+ * not the supervisor's home, so its reach cannot be read from the row: it
+ * always needs individual review. */
 async function isRoutineAction(action: AgentAction, settings: Settings): Promise<boolean> {
   if (action.id.startsWith('srv:') || action.agentConfigId === SUPERVISOR_ACTION_PROFILE) return false;
   const call: ToolUseBlock = { type: 'tool_use', id: action.id, name: action.toolName, input: action.toolInput };
   try {
+    if (await proposerRemoved(action)) return false;
     return isRoutineReach(await classifyToolCall(call, { homeFolderId: action.investigationId, settings }));
   } catch {
     return false;

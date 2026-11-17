@@ -49,6 +49,7 @@ describe('A-APPR re-derivation on approval', () => {
   });
 
   it('runs an approved Threat Hunter fetch once', async () => {
+    await db.agentDeployments.add({ id: 'dep-hunter', investigationId: 'S', profileId: 'ap-threat-hunter', status: 'idle', order: 0, createdAt: 1, updatedAt: 1 });
     const action = await queue({ agentConfigId: 'ap-threat-hunter', toolName: 'fetch_url', toolInput: { url: 'https://collector.example/c' } });
     expect((await executeApprovedAction(action)).isError).toBe(false);
     expect(egress.fetchUrlPosts()).toEqual(['https://collector.example/c']);

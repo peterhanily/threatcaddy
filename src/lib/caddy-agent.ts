@@ -897,6 +897,10 @@ async function _runAgentCycleInner(
             content: truncateToolResult(result.result, 50_000),
             is_error: result.isError,
           });
+        } else if (deployment && !await db.agentDeployments.get(deployment.id)) {
+          // Dismissed or removed while this cycle ran: its proposals would outlive it.
+          errorHistogram[toolCall.name] = (errorHistogram[toolCall.name] || 0) + 1;
+          toolResults.push({ type: 'tool_result', tool_use_id: toolCall.id, content: JSON.stringify({ error: 'This agent is no longer deployed in this investigation, so the action was not queued.' }), is_error: true });
         } else {
           const { action, alreadyPending } = await queueAgentAction({
             investigationId: folder.id,
