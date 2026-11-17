@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/peterhanily/threatcaddy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/version-2.0.2-green.svg" alt="Version 2.0.2" />
+  <img src="https://img.shields.io/badge/version-2.0.3-green.svg" alt="Version 2.0.3" />
   <img src="https://img.shields.io/badge/TypeScript-6%20%2F%207-blue.svg?logo=typescript&logoColor=white" alt="TypeScript 6 (client) / 7 (server)" />
   <img src="https://img.shields.io/badge/React-19-61dafb.svg?logo=react&logoColor=white" alt="React 19" />
   <img src="https://img.shields.io/badge/Vite-7-646cff.svg?logo=vite&logoColor=white" alt="Vite 7" />
@@ -42,7 +42,7 @@ Most investigation tools lock your data in a cloud you don't control, cost per s
 
 **Try it now:** [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loads a sample investigation with a guided walkthrough.
 
-**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, checksums and source revision. Client and server 2.0.2 include the data-preservation, backup, session and evidence-import fixes missing from the historical 2.0.0 download. The extension has its own version, currently 1.1.3. Read the [2.0.2 upgrade and channel notes](docs/releases/v2.0.2.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
+**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, checksums and source revision. Client and server 2.0.3 add AI prompt-injection hardening to the data-preservation, backup, session and evidence-import fixes of 2.0.2. The extension has its own version, currently 1.1.4; web fetch needs 1.1.3 or later. Read the [2.0.3 upgrade and channel notes](docs/releases/v2.0.3.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
 
 **Self-host the client:**
 
