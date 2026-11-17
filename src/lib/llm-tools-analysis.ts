@@ -126,11 +126,26 @@ export function isPublicFetchURL(value: string): boolean {
     && !PRIVATE_HOST_SUFFIXES.some(suffix => host.endsWith(suffix));
 }
 
-/** Extensions older than 1.1.3 follow redirects and have no host filter. Read at call time:
- *  the bridge deletes the attribute while it refreshes app approval. */
-function hasGuardedBridgeFetch(): boolean {
-  const caps = document.documentElement.dataset.tcBridgeCaps?.split(',') ?? [];
-  return caps.includes('clip_import_ack_v2') || caps.includes('fetch_url_public_v1');
+const isGuardedFetchCaps = (caps: unknown) => Array.isArray(caps) && (caps.includes('clip_import_ack_v2') || caps.includes('fetch_url_public_v1'));
+
+/** How long to collect ping replies. A bridge answers from its message listener, one message hop. */
+const BRIDGE_PING_WINDOW_MS = 250;
+
+/** Extensions older than 1.1.3 follow redirects and have no host filter. The page attribute is read at call
+ *  time (the bridge deletes it while it refreshes app approval), but with two ThreatCaddy extensions installed
+ *  it can come from one that does not relay the fetch. Only a bridge that owns the page's listeners answers a
+ *  ping, so every reply must be guarded. Settings → AI shows the same check. */
+export async function hasGuardedBridgeFetch(): Promise<boolean> {
+  if (!isGuardedFetchCaps(document.documentElement.dataset.tcBridgeCaps?.split(','))) return false;
+  const replies: unknown[] = [];
+  const handler = (event: MessageEvent) => {
+    if (event.source === window && event.data?.type === 'TC_EXTENSION_READY') replies.push(event.data.capabilities);
+  };
+  window.addEventListener('message', handler);
+  window.postMessage({ type: 'TC_EXTENSION_PING' }, postMessageOrigin());
+  await new Promise(resolve => setTimeout(resolve, BRIDGE_PING_WINDOW_MS));
+  window.removeEventListener('message', handler);
+  return replies.length > 0 && replies.every(isGuardedFetchCaps);
 }
 
 /** `/fetch` shows this text to the analyst, so it is translated. Hosted builds load the namespace lazily. */
@@ -139,10 +154,10 @@ async function fetchRefusal(key: 'fetch.privateTarget' | 'fetch.tooLong' | 'fetc
   return { success: false, error: i18n.t(key, { ns: 'integrations' }) };
 }
 
-export function fetchViaExtensionBridge(url: string): Promise<{ success: boolean; title?: string; content?: string; error?: string }> {
+export async function fetchViaExtensionBridge(url: string): Promise<{ success: boolean; title?: string; content?: string; error?: string }> {
   if (!isPublicFetchURL(url)) return fetchRefusal('fetch.privateTarget');
   if (new URL(url).href.length > 2048) return fetchRefusal('fetch.tooLong');
-  if (!hasGuardedBridgeFetch()) return fetchRefusal('fetch.updateExtension');
+  if (!await hasGuardedBridgeFetch()) return fetchRefusal('fetch.updateExtension');
   const requestId = Math.random().toString(36).slice(2);
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {

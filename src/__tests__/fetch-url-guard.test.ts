@@ -6,13 +6,15 @@ import { executeFetchUrl } from '../lib/llm-tools-analysis';
 // The `/fetch` chat command calls the bridge through this re-export.
 import { fetchViaExtensionBridge } from '../lib/llm-tools';
 
-// Store 1.1.1 (66ec58f4 bridge.js:6) and the 1.1.3 source (bridge.js:6).
+// Store 1.1.1 (66ec58f4 bridge.js:6), the 1.1.3 download (aa4646ad bridge.js:6) and 1.1.4 (bridge.js:6).
 const STORE_1_1_1_CAPS = 'llm_streaming,fetch_url,clip_import,proxy_fetch';
 const HEAD_CAPS = 'llm_streaming,fetch_url,clip_import,clip_import_ack_v2,proxy_fetch,proxy_fetch_abort,notification_ack';
+const CAPS_1_1_4 = 'llm_streaming,fetch_url,fetch_url_public_v1,clip_import,clip_import_ack_v2,proxy_fetch,proxy_fetch_abort,notification_ack';
 
 function bridgeFetches(post: ReturnType<typeof vi.spyOn>) {
   return post.mock.calls.filter(([message]: unknown[]) => (message as { type?: string })?.type === 'TC_FETCH_URL');
 }
+const postedTypes = (post: ReturnType<typeof vi.spyOn>) => post.mock.calls.map(([message]: unknown[]) => (message as { type?: string })?.type);
 
 async function inGerman(run: (de: Record<string, string>) => Promise<void>) {
   for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
@@ -22,10 +24,26 @@ async function inGerman(run: (de: Record<string, string>) => Promise<void>) {
 }
 
 let post: ReturnType<typeof vi.spyOn>;
+/** The capabilities each bridge answers TC_EXTENSION_PING with. Only a bridge that owns the page's
+ * listeners answers, and that bridge is the one that would relay TC_FETCH_URL. */
+let pingReplies: string[];
+let fetchAnswered: boolean;
+/** A bridge that answers the ping but never the fetch. */
+const answerPingOnly = () => { fetchAnswered = false; };
+// How long the app collects ping replies (llm-tools-analysis.ts).
+const PING_WINDOW_MS = 250;
 beforeEach(() => {
+  pingReplies = [HEAD_CAPS];
+  fetchAnswered = true;
   post = vi.spyOn(window, 'postMessage').mockImplementation((message: unknown) => {
     const request = message as { type?: string; requestId?: string };
-    if (request?.type !== 'TC_FETCH_URL') return;
+    if (request?.type === 'TC_EXTENSION_PING') {
+      for (const caps of pingReplies) queueMicrotask(() => window.dispatchEvent(new MessageEvent('message', {
+        source: window, data: { type: 'TC_EXTENSION_READY', protocolVersion: 1, capabilities: caps.split(',') },
+      })));
+      return;
+    }
+    if (request?.type !== 'TC_FETCH_URL' || !fetchAnswered) return;
     queueMicrotask(() => window.dispatchEvent(new MessageEvent('message', {
       source: window,
       data: { type: 'TC_FETCH_URL_RESULT', requestId: request.requestId, success: true, title: 'Fixture', content: 'Fixture page' },
@@ -76,6 +94,7 @@ describe('SPA web fetch guard', () => {
 
   it.each([HEAD_CAPS, 'llm_streaming,fetch_url,fetch_url_public_v1'])('posts a public URL exactly once for the fetch_url tool with caps %s', async caps => {
     document.documentElement.dataset.tcBridgeCaps = caps;
+    pingReplies = [caps];
     const url = 'https://nvd.nist.gov/vuln/detail/CVE-2024-3094';
     expect(JSON.parse(await executeFetchUrl({ url }))).toMatchObject({ title: 'Fixture', content: 'Fixture page', url });
     expect(bridgeFetches(post)).toHaveLength(1);
@@ -118,12 +137,12 @@ describe('SPA web fetch guard', () => {
   }));
 
   it('reports a bridge that never answers in the analyst’s language', () => inGerman(async de => {
-    post.mockImplementation(() => {});
+    answerPingOnly();
     document.documentElement.dataset.tcBridgeCaps = HEAD_CAPS;
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       const pending = fetchViaExtensionBridge('https://nvd.nist.gov/vuln/detail/CVE-2024-3094');
-      await vi.advanceTimersByTimeAsync(20000);
+      await vi.advanceTimersByTimeAsync(PING_WINDOW_MS + 20000);
       expect(await pending).toEqual({ success: false, error: de['fetch.bridgeTimeout'] });
       expect(bridgeFetches(post)).toHaveLength(1);
     } finally { vi.useRealTimers(); }
@@ -145,10 +164,10 @@ describe('SPA web fetch guard', () => {
 
       reads.length = 0;
       i18n.removeResourceBundle('en', 'integrations');
-      post.mockImplementation(() => {});
+      answerPingOnly();
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
       const pending = fetchViaExtensionBridge('https://nvd.nist.gov/vuln/detail/CVE-2024-3094');
-      await vi.advanceTimersByTimeAsync(20000);
+      await vi.advanceTimersByTimeAsync(PING_WINDOW_MS + 20000);
       await vi.runAllTimersAsync(); // the mocked backend read answers on its own timer
       expect(await pending).toEqual({ success: false, error: enIntegrations['fetch.bridgeTimeout'] });
       expect(reads).toContain('en/integrations');
@@ -165,5 +184,53 @@ describe('SPA web fetch guard', () => {
     delete document.documentElement.dataset.tcBridgeCaps;
     expect((await fetchViaExtensionBridge(url)).success).toBe(false);
     expect(bridgeFetches(post)).toHaveLength(1);
+  });
+});
+
+// Store 1.1.1 and a sideloaded 1.1.3 or 1.1.4: the bridge injected first owns the page listeners and relays
+// TC_FETCH_URL, but the other one may still publish guarded capabilities on the page.
+describe('SPA web fetch guard with two ThreatCaddy extensions installed', () => {
+  const url = 'https://nvd.nist.gov/vuln/detail/CVE-2024-3094';
+  const updateExtension = { success: false, error: enIntegrations['fetch.updateExtension'] };
+
+  it('refuses when the bridge that answers is store 1.1.1, although the page shows guarded capabilities', async () => {
+    document.documentElement.dataset.tcBridgeCaps = HEAD_CAPS;
+    pingReplies = [STORE_1_1_1_CAPS];
+    expect(await fetchViaExtensionBridge(url)).toEqual(updateExtension);
+    expect(JSON.parse(await executeFetchUrl({ url })).error).toBe(updateExtension.error);
+    expect(bridgeFetches(post)).toHaveLength(0);
+  });
+
+  it('asks the bridge at call time and fetches when it answers with guarded capabilities', async () => {
+    document.documentElement.dataset.tcBridgeCaps = CAPS_1_1_4;
+    pingReplies = [CAPS_1_1_4];
+    expect(await fetchViaExtensionBridge(url)).toMatchObject({ success: true, title: 'Fixture' });
+    expect(postedTypes(post)).toEqual(['TC_EXTENSION_PING', 'TC_FETCH_URL']);
+  });
+
+  it('refuses when no bridge answers', async () => {
+    document.documentElement.dataset.tcBridgeCaps = CAPS_1_1_4;
+    pingReplies = [];
+    expect(await fetchViaExtensionBridge(url)).toEqual(updateExtension);
+    expect(bridgeFetches(post)).toHaveLength(0);
+  });
+
+  it.each([[[CAPS_1_1_4, STORE_1_1_1_CAPS]], [[STORE_1_1_1_CAPS, HEAD_CAPS]]])('refuses when any answering bridge is old: %j', async replies => {
+    document.documentElement.dataset.tcBridgeCaps = CAPS_1_1_4;
+    pingReplies = replies;
+    expect(await fetchViaExtensionBridge(url)).toEqual(updateExtension);
+    expect(bridgeFetches(post)).toHaveLength(0);
+  });
+
+  it('keeps the page capabilities as the first refusal, without asking the bridge', async () => {
+    document.documentElement.dataset.tcBridgeCaps = STORE_1_1_1_CAPS;
+    pingReplies = [CAPS_1_1_4];
+    expect(await fetchViaExtensionBridge(url)).toEqual(updateExtension);
+    expect(postedTypes(post)).toEqual([]);
+  });
+
+  it('tells the analyst what to do in either case', () => {
+    expect(enIntegrations['fetch.updateExtension']).toBe('Web fetch needs the ThreatCaddy extension 1.1.3 or later, approved for this app. '
+      + 'If more than one ThreatCaddy extension is installed, keep only the newest and reload the page.');
   });
 });

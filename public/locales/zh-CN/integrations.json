@@ -5,7 +5,7 @@
   "team.installedDisabledNoDomains": "{{name}} 已安装，但处于停用状态。它不会发出任何网络请求。请先审核，然后在“已安装”标签页中启用。",
   "fetch.privateTarget": "只能获取不含凭据的公共 http(s) 地址。不允许私有、本地和直接使用 IP 地址的目标。",
   "fetch.tooLong": "无法获取长度超过 2048 个字符的地址。请缩短 URL 后重试。",
-  "fetch.updateExtension": "要使用网页获取，请安装 ThreatCaddy 扩展或将其更新到 1.1.3 或更高版本，并在扩展中批准此应用。",
+  "fetch.updateExtension": "网页获取需要已批准此应用的 ThreatCaddy 扩展 1.1.3 或更高版本。如果安装了多个 ThreatCaddy 扩展，请只保留最新的一个并重新加载页面。",
   "fetch.bridgeTimeout": "扩展桥接超时。请确认已安装 ThreatCaddy 扩展，并且在安装后已重新加载页面。",
   "builtin.vtIpLookup.name": "VirusTotal IP 查询",
   "builtin.vtIpLookup.description": "在 VirusTotal 上查询 IP 地址的信誉、地理位置和分析统计数据。",

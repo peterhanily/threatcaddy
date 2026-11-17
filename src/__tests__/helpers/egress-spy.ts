@@ -1,7 +1,8 @@
 /**
  * Records every way an AI tool call can leave the page: extension postMessage
- * requests (TC_FETCH_URL, TC_PROXY_FETCH, ...) and direct fetch(). TC_FETCH_URL
- * is answered with a fixed page so fetch_url completes without a network.
+ * requests (TC_FETCH_URL, TC_PROXY_FETCH, ...) and direct fetch(). Like one
+ * installed bridge, it answers TC_EXTENSION_PING with its capabilities, and
+ * TC_FETCH_URL with a fixed page so fetch_url completes without a network.
  */
 import { vi } from 'vitest';
 
@@ -24,6 +25,11 @@ export function installEgressSpy(caps: string[] = HEAD_BRIDGE_CAPS): EgressSpy {
   const postSpy = vi.spyOn(window, 'postMessage').mockImplementation((message: unknown) => {
     const data = (message && typeof message === 'object' ? message : { value: message }) as Record<string, unknown>;
     posts.push(data);
+    if (data.type === 'TC_EXTENSION_PING') {
+      setTimeout(() => window.dispatchEvent(new MessageEvent('message', {
+        source: window, data: { type: 'TC_EXTENSION_READY', protocolVersion: 1, capabilities: caps },
+      })), 0);
+    }
     if (data.type === 'TC_FETCH_URL') {
       setTimeout(() => window.dispatchEvent(new MessageEvent('message', {
         source: window,
