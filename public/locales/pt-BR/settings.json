@@ -121,6 +121,7 @@
   "ai.dataFlow.bridgeHelp": "Quando ativada, scripts nesta página, incluindo automação do navegador como o Claude Code via CDP, podem ver os nomes das suas investigações e ler e editar a selecionada por meio de window.threatcaddy; busca na web, o conteúdo de outras investigações e alterações em agentes nunca ficam disponíveis por ela.",
   "ai.dataFlow.hostsTitle": "Hosts de agentes configurados",
   "ai.dataFlow.hostsHelp": "Adicionados em uma versão anterior. Hosts de agentes nomeados não podem mais ser configurados aqui; remova os que você não usa mais.",
+  "ai.dataFlow.hostNeedsHttps": "Não usado: requer https",
   "ai.dataFlow.removeHost": "Remover",
   "ai.dataFlow.removeHostLabel": "Remover o host de agente {{name}}",
   "ai.keysRouteNote": "As chaves de API são salvas neste dispositivo e enviadas apenas ao provedor que você escolher. Quando as solicitações passam pelo servidor de equipe (modo \"Proxy do servidor de equipe\", ou \"Auto\" com sessão iniciada), o operador dele recebe seus prompts, anexos e resultados de ferramentas.",

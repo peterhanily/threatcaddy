@@ -121,6 +121,7 @@
   "ai.dataFlow.bridgeHelp": "Açıkken bu sayfadaki betikler, CDP üzerinden Claude Code gibi tarayıcı otomasyonu dahil, window.threatcaddy aracılığıyla soruşturmalarınızın adlarını görebilir ve seçili soruşturmayı okuyup düzenleyebilir; web getirme, diğer soruşturmaların içeriği ve ajan değişiklikleri bu yolla hiçbir zaman kullanılamaz.",
   "ai.dataFlow.hostsTitle": "Yapılandırılmış ajan sunucuları",
   "ai.dataFlow.hostsHelp": "Önceki bir sürümde eklendi. Adlandırılmış ajan sunucuları artık burada yapılandırılamaz; artık kullanmadıklarınızı kaldırın.",
+  "ai.dataFlow.hostNeedsHttps": "Kullanılmıyor: https gerekir",
   "ai.dataFlow.removeHost": "Kaldır",
   "ai.dataFlow.removeHostLabel": "{{name}} ajan sunucusunu kaldır",
   "ai.keysRouteNote": "API anahtarları bu cihazda kaydedilir ve yalnızca seçtiğiniz sağlayıcıya gönderilir. İstekler ekip sunucusundan geçtiğinde (\"Ekip Sunucusu Proxy\" modu veya oturum açıkken \"Otomatik\"), sunucunun işletmecisi istemlerinizi, eklerinizi ve araç sonuçlarınızı alır.",

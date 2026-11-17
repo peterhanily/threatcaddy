@@ -161,8 +161,8 @@ export function getHostToolDefinitions(settings: Settings): ToolDef[] {
     }
   }
 
-  // Additional agent hosts
-  const hosts = (settings.agentHosts || []).filter(h => h.enabled && h.skills.length > 0);
+  // Additional agent hosts, leaving out those executeHostSkill would refuse for their transport
+  const hosts = (settings.agentHosts || []).filter(h => h.enabled && h.skills.length > 0 && isHttpsOrLoopback(h.url));
   for (const host of hosts) {
     for (const skill of host.skills) {
       tools.push({
@@ -219,7 +219,7 @@ export async function executeHostSkill(
 }
 
 /** Named hosts receive investigation data: https, or plain http only to this machine. */
-function isHttpsOrLoopback(raw: string): boolean {
+export function isHttpsOrLoopback(raw: string): boolean {
   try {
     const url = new URL(raw);
     return url.protocol === 'https:' || (url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname));

@@ -11,6 +11,7 @@ import { TemplateManager } from './TemplateManager';
 import { PlaybookManager } from './PlaybookManager';
 import { DEFAULT_SYSTEM_PROMPT } from '../../lib/llm-tools';
 import { hasGuardedBridgeFetch } from '../../lib/llm-tools-analysis';
+import { isHttpsOrLoopback } from '../../lib/agent-hosts';
 import { MODELS, MODEL_PROVIDER_MAP } from '../../lib/models';
 import { hasServerSession, resolveRoute } from '../../lib/llm-router';
 import { readStoredAuth } from '../../lib/auth-storage';
@@ -941,7 +942,10 @@ function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpda
           <ul className="space-y-1">
             {hosts.map(host => (
               <li key={host.id} className="flex min-w-0 items-center justify-between gap-2 text-xs">
-                <span className="min-w-0 truncate text-gray-300">{host.displayName || host.name} <span className="text-gray-500">{host.url}</span></span>
+                <span className="min-w-0 truncate text-gray-300">
+                  {host.displayName || host.name} <span className="text-gray-500">{host.url}</span>
+                  {!isHttpsOrLoopback(host.url) && <span className="block text-[10px] text-amber-400">{t('ai.dataFlow.hostNeedsHttps')}</span>}
+                </span>
                 <button
                   onClick={() => onUpdateSettings({ agentHosts: hosts.filter(item => item.id !== host.id) })}
                   aria-label={t('ai.dataFlow.removeHostLabel', { name: host.displayName || host.name })}

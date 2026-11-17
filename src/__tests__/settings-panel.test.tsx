@@ -432,6 +432,15 @@ describe('SettingsPanel: where AI data goes', () => {
     expect(onUpdateSettings).toHaveBeenCalledExactlyOnceWith({ agentHosts: [keep] });
   });
 
+  it('marks hosts on plain http away from this computer as unused, since every call to them is refused', () => {
+    const host = (id: string, url: string) => ({ id, name: id, displayName: `Host ${id}`, url, enabled: true, skills: [] });
+    renderAI({ agentHosts: [host('lab', 'http://10.0.0.5:8080'), host('soc', 'https://soc.example'), host('loop', 'http://localhost:8080')] });
+    const row = (url: string) => screen.getByText(url).closest('li') as HTMLElement;
+    expect(within(row('http://10.0.0.5:8080')).getByText('Not used: needs https')).toBeInTheDocument();
+    expect(within(row('https://soc.example')).queryByText('Not used: needs https')).not.toBeInTheDocument();
+    expect(within(row('http://localhost:8080')).queryByText('Not used: needs https')).not.toBeInTheDocument();
+  });
+
   it('hides the agent host list when none are configured', () => {
     renderAI();
     expect(screen.queryByText('Configured agent hosts')).not.toBeInTheDocument();

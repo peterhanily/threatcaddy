@@ -121,6 +121,7 @@
   "ai.dataFlow.bridgeHelp": "Als deze aan staat, kunnen scripts op deze pagina, inclusief browserautomatisering zoals Claude Code via CDP, via window.threatcaddy de namen van uw onderzoeken zien en het geselecteerde onderzoek lezen en bewerken; webophaling, de inhoud van andere onderzoeken en wijzigingen aan agents zijn er nooit via beschikbaar.",
   "ai.dataFlow.hostsTitle": "Geconfigureerde agentshosts",
   "ai.dataFlow.hostsHelp": "Toegevoegd in een eerdere versie. Benoemde agentshosts kunnen hier niet meer worden geconfigureerd; verwijder de hosts die u niet meer gebruikt.",
+  "ai.dataFlow.hostNeedsHttps": "Niet gebruikt: vereist https",
   "ai.dataFlow.removeHost": "Verwijderen",
   "ai.dataFlow.removeHostLabel": "Agentshost {{name}} verwijderen",
   "ai.keysRouteNote": "API-sleutels worden op dit apparaat opgeslagen en alleen naar de door u gekozen provider gestuurd. Wanneer verzoeken via de teamserver lopen ('Teamserverproxy'-modus, of 'Auto' terwijl u bent aangemeld), ontvangt de beheerder ervan uw prompts, bijlagen en toolresultaten.",

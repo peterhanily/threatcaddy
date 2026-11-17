@@ -121,6 +121,7 @@
   "ai.dataFlow.bridgeHelp": "Khi bật, các tập lệnh trên trang này, kể cả tự động hóa trình duyệt như Claude Code qua CDP, có thể xem tên các cuộc điều tra của bạn và đọc, chỉnh sửa cuộc điều tra đang chọn thông qua window.threatcaddy; tải trang web, nội dung của các cuộc điều tra khác và thay đổi đối với tác nhân không bao giờ khả dụng qua đó.",
   "ai.dataFlow.hostsTitle": "Máy chủ tác nhân đã cấu hình",
   "ai.dataFlow.hostsHelp": "Được thêm trong phiên bản trước. Không thể cấu hình máy chủ tác nhân có tên tại đây nữa; hãy xóa những máy chủ bạn không còn dùng.",
+  "ai.dataFlow.hostNeedsHttps": "Không được dùng: cần https",
   "ai.dataFlow.removeHost": "Xóa",
   "ai.dataFlow.removeHostLabel": "Xóa máy chủ tác nhân {{name}}",
   "ai.keysRouteNote": "Khóa API được lưu trên thiết bị này và chỉ gửi đến nhà cung cấp bạn chọn. Khi yêu cầu đi qua máy chủ nhóm (chế độ \"Proxy máy chủ nhóm\", hoặc \"Tự động\" khi đã đăng nhập), người vận hành máy chủ sẽ nhận lời nhắc, tệp đính kèm và kết quả công cụ của bạn.",

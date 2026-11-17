@@ -121,6 +121,7 @@
   "ai.dataFlow.bridgeHelp": "켜면 이 페이지의 스크립트(CDP를 통한 Claude Code 같은 브라우저 자동화 포함)가 window.threatcaddy를 통해 조사 이름을 보고 선택한 조사를 읽고 편집할 수 있지만, 웹 가져오기, 다른 조사의 내용, 에이전트 변경은 이를 통해 절대 사용할 수 없습니다.",
   "ai.dataFlow.hostsTitle": "구성된 에이전트 호스트",
   "ai.dataFlow.hostsHelp": "이전 버전에서 추가되었습니다. 이름이 지정된 에이전트 호스트는 더 이상 여기에서 구성할 수 없습니다. 더 이상 사용하지 않는 호스트는 제거하세요.",
+  "ai.dataFlow.hostNeedsHttps": "사용 안 함: https 필요",
   "ai.dataFlow.removeHost": "제거",
   "ai.dataFlow.removeHostLabel": "에이전트 호스트 {{name}} 제거",
   "ai.keysRouteNote": "API 키는 이 기기에 저장되며 선택한 제공업체에만 전송됩니다. 요청이 팀 서버를 거치는 경우('팀 서버 프록시' 모드 또는 로그인 상태의 '자동'), 서버 운영자가 프롬프트, 첨부 파일, 도구 결과를 받습니다.",

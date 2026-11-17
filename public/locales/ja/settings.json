@@ -121,6 +121,7 @@
   "ai.dataFlow.bridgeHelp": "オンにすると、このページ上のスクリプト (CDP 経由の Claude Code などのブラウザ自動化を含む) が window.threatcaddy を通じて調査の名前を確認し、選択中の調査を読み取り・編集できますが、Web 取得、ほかの調査の内容、エージェントの変更はこの経路では一切利用できません。",
   "ai.dataFlow.hostsTitle": "設定済みのエージェントホスト",
   "ai.dataFlow.hostsHelp": "以前のバージョンで追加されたものです。名前付きエージェントホストはここで設定できなくなりました。使わなくなったものは削除してください。",
+  "ai.dataFlow.hostNeedsHttps": "未使用: https が必要",
   "ai.dataFlow.removeHost": "削除",
   "ai.dataFlow.removeHostLabel": "エージェントホスト {{name}} を削除",
   "ai.keysRouteNote": "API キーはこのデバイスに保存され、選択したプロバイダーにのみ送信されます。リクエストがチームサーバーを経由する場合（「チームサーバープロキシ」モード、またはサインイン中の「自動」）、その運用者はプロンプト、添付ファイル、ツールの結果を受け取ります。",
