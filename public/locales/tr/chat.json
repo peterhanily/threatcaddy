@@ -193,7 +193,8 @@
   },
   "cti": {
     "invalidCommand": "Bu CTI komutu çalıştırılamadı:",
-    "noSourcesV2": "Kullanılabilir CTI kaynağı yok. Adlandırılmış ajan host'ları bu sürümde artık yapılandırılamaz."
+    "noSourcesV2": "Kullanılabilir CTI kaynağı yok. Adlandırılmış ajan host'ları bu sürümde artık yapılandırılamaz.",
+    "hostNeedsHttps": "Kullanılabilir CTI kaynağı yok. CTI ajan host'u https gerektirdiği için kullanılmıyor (düz http yalnızca bu bilgisayarda çalışır). Ayarlar → AI bölümüne bakın."
   },
   "fetch": {
     "createdNote": "{{url}} adresinden **{{title}}** notu oluşturuldu",

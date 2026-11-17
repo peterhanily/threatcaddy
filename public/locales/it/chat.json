@@ -195,7 +195,8 @@
   },
   "cti": {
     "invalidCommand": "Non è stato possibile eseguire quel comando CTI:",
-    "noSourcesV2": "Nessuna origine CTI disponibile. Gli Agent Host con nome non sono più configurabili in questa versione."
+    "noSourcesV2": "Nessuna origine CTI disponibile. Gli Agent Host con nome non sono più configurabili in questa versione.",
+    "hostNeedsHttps": "Nessuna origine CTI disponibile. L'Agent Host CTI non viene usato perché richiede https (http semplice funziona solo su questo computer). Vedi Impostazioni → AI."
   },
   "fetch": {
     "createdNote": "Nota **{{title}}** creata da {{url}}",

@@ -16,7 +16,7 @@ import { DEFAULT_MODEL_PER_PROVIDER } from '../../lib/models';
 import { cn, formatDate } from '../../lib/utils';
 import { nanoid } from 'nanoid';
 import { TOOL_DEFINITIONS, buildSystemPrompt, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
-import { getHostToolDefinitions, executeHostSkill } from '../../lib/agent-hosts';
+import { getHostToolDefinitions, executeHostSkill, isHttpsOrLoopback } from '../../lib/agent-hosts';
 import { mintHumanApproval, type HumanApproval } from '../../lib/human-approval';
 import { createChatToolExecutor, type ApprovalItem } from '../../lib/chat-tool-executor';
 import { isPlanModeTool } from '../../lib/tool-reach';
@@ -478,11 +478,13 @@ export function ChatView({
           return normalizeCtiSourceRunResult(plan, (err as Error).message || String(err));
         }
       }));
+      // A legacy 'cti' host on plain http to another computer is not offered: say so rather than that hosts are unconfigurable.
+      const ctiNeedsHttps = (settings.agentHosts ?? []).some(host => host.name === 'cti' && host.enabled && host.skills.length > 0 && !isHttpsOrLoopback(host.url));
       await onAddMessage(activeThread.id, {
         id: nanoid(),
         role: 'assistant',
         content: !availableToolNames.some(name => name.startsWith('host:cti:'))
-          ? t('cti.noSourcesV2')
+          ? t(ctiNeedsHttps ? 'cti.hostNeedsHttps' : 'cti.noSourcesV2')
           : renderCtiRunMarkdown(ctiCommand.target, results, skipped),
         createdAt: Date.now(),
       });

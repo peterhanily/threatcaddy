@@ -192,7 +192,8 @@
   },
   "cti": {
     "invalidCommand": "Die CTI-opdracht kon niet worden uitgevoerd:",
-    "noSourcesV2": "Er zijn geen CTI-bronnen beschikbaar. Benoemde agent-hosts kunnen in deze versie niet meer worden geconfigureerd."
+    "noSourcesV2": "Er zijn geen CTI-bronnen beschikbaar. Benoemde agent-hosts kunnen in deze versie niet meer worden geconfigureerd.",
+    "hostNeedsHttps": "Er zijn geen CTI-bronnen beschikbaar. De CTI-agent-host wordt niet gebruikt, omdat die https vereist (gewone http werkt alleen op deze computer). Zie Instellingen → AI."
   },
   "fetch": {
     "createdNote": "Notitie **{{title}}** aangemaakt van {{url}}",

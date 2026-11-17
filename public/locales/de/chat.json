@@ -192,7 +192,8 @@
   },
   "cti": {
     "invalidCommand": "Dieser CTI-Befehl konnte nicht ausgeführt werden:",
-    "noSourcesV2": "Keine CTI-Quellen verfügbar. Benannte Agent-Hosts können in dieser Version nicht mehr konfiguriert werden."
+    "noSourcesV2": "Keine CTI-Quellen verfügbar. Benannte Agent-Hosts können in dieser Version nicht mehr konfiguriert werden.",
+    "hostNeedsHttps": "Keine CTI-Quellen verfügbar. Der CTI-Agent-Host wird nicht verwendet, weil er https benötigt (einfaches http funktioniert nur auf diesem Computer). Siehe Einstellungen → KI."
   },
   "fetch": {
     "createdNote": "Notiz **{{title}}** aus {{url}} erstellt",

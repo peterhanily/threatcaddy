@@ -192,7 +192,8 @@
   },
   "cti": {
     "invalidCommand": "Không thể chạy lệnh CTI đó:",
-    "noSourcesV2": "Không có nguồn CTI nào khả dụng. Không thể cấu hình agent host có tên trong phiên bản này nữa."
+    "noSourcesV2": "Không có nguồn CTI nào khả dụng. Không thể cấu hình agent host có tên trong phiên bản này nữa.",
+    "hostNeedsHttps": "Không có nguồn CTI nào khả dụng. Agent host CTI không được dùng vì cần https (http thường chỉ hoạt động trên máy tính này). Xem Cài đặt → AI."
   },
   "fetch": {
     "createdNote": "Đã tạo ghi chú **{{title}}** từ {{url}}",

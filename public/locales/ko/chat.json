@@ -209,7 +209,8 @@
   "slash.stoploop": "백그라운드 루프 중지",
   "cti": {
     "invalidCommand": "해당 CTI 명령을 실행할 수 없습니다:",
-    "noSourcesV2": "사용 가능한 CTI 소스가 없습니다. 이 버전에서는 이름 지정 에이전트 호스트를 더 이상 구성할 수 없습니다."
+    "noSourcesV2": "사용 가능한 CTI 소스가 없습니다. 이 버전에서는 이름 지정 에이전트 호스트를 더 이상 구성할 수 없습니다.",
+    "hostNeedsHttps": "사용 가능한 CTI 소스가 없습니다. CTI 에이전트 호스트는 https가 필요하므로 사용되지 않습니다(일반 http는 이 컴퓨터에서만 작동합니다). 설정 → AI를 확인하세요."
   },
   "fetch": {
     "createdNote": "{{url}} 에서 노트 **{{title}}** 을(를) 만들었습니다",

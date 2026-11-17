@@ -198,7 +198,8 @@
   },
   "cti": {
     "invalidCommand": "Nie udało się wykonać tego polecenia CTI:",
-    "noSourcesV2": "Brak dostępnych źródeł CTI. Nazwanych hostów agentów nie można już konfigurować w tej wersji."
+    "noSourcesV2": "Brak dostępnych źródeł CTI. Nazwanych hostów agentów nie można już konfigurować w tej wersji.",
+    "hostNeedsHttps": "Brak dostępnych źródeł CTI. Host agenta CTI nie jest używany, ponieważ wymaga https (zwykłe http działa tylko na tym komputerze). Zobacz Ustawienia → AI."
   },
   "fetch": {
     "createdNote": "Utworzono notatkę **{{title}}** z {{url}}",

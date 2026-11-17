@@ -4,7 +4,8 @@
   "input.modelLabel": "AI model",
   "cti": {
     "invalidCommand": "That CTI command couldn't be run:",
-    "noSourcesV2": "No CTI sources are available. Named agent hosts are no longer configurable in this version."
+    "noSourcesV2": "No CTI sources are available. Named agent hosts are no longer configurable in this version.",
+    "hostNeedsHttps": "No CTI sources are available. The CTI agent host is not used because it needs https (plain http works only on this computer). See Settings → AI."
   },
   "fetch": {
     "createdNote": "Created note **{{title}}** from {{url}}",

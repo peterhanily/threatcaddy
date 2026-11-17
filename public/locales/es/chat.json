@@ -195,7 +195,8 @@
   },
   "cti": {
     "invalidCommand": "No se pudo ejecutar ese comando de CTI:",
-    "noSourcesV2": "No hay fuentes de CTI disponibles. Los Agent Hosts con nombre ya no se pueden configurar en esta versión."
+    "noSourcesV2": "No hay fuentes de CTI disponibles. Los Agent Hosts con nombre ya no se pueden configurar en esta versión.",
+    "hostNeedsHttps": "No hay fuentes de CTI disponibles. El Agent Host de CTI no se usa porque requiere https (http sin cifrar solo funciona en este equipo). Consulte Configuración → IA."
   },
   "fetch": {
     "createdNote": "Nota **{{title}}** creada a partir de {{url}}",

@@ -192,7 +192,8 @@
   },
   "cti": {
     "invalidCommand": "无法运行该 CTI 命令:",
-    "noSourcesV2": "没有可用的 CTI 源。此版本中已无法再配置具名代理主机。"
+    "noSourcesV2": "没有可用的 CTI 源。此版本中已无法再配置具名代理主机。",
+    "hostNeedsHttps": "没有可用的 CTI 源。CTI 代理主机需要 https，因此未被使用（普通 http 只在本机上可用）。请参阅 设置 → AI。"
   },
   "fetch": {
     "createdNote": "已从 {{url}} 创建笔记 **{{title}}**",

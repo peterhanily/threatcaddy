@@ -192,7 +192,8 @@
   },
   "cti": {
     "invalidCommand": "Perintah CTI itu tidak dapat dijalankan:",
-    "noSourcesV2": "Tidak ada sumber CTI yang tersedia. Agent host bernama tidak dapat dikonfigurasi lagi di versi ini."
+    "noSourcesV2": "Tidak ada sumber CTI yang tersedia. Agent host bernama tidak dapat dikonfigurasi lagi di versi ini.",
+    "hostNeedsHttps": "Tidak ada sumber CTI yang tersedia. Agent host CTI tidak digunakan karena memerlukan https (http biasa hanya berfungsi di komputer ini). Lihat Pengaturan → AI."
   },
   "fetch": {
     "createdNote": "Catatan **{{title}}** dibuat dari {{url}}",
