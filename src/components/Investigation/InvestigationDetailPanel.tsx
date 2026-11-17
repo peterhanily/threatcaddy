@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Briefcase, FileBarChart, Share2, Cloud, CloudOff, Archive, Trash2, Printer, BookOpen } from 'lucide-react';
 import type { Folder, InvestigationStatus, ClosureResolution, PlaybookStep } from '../../types';
@@ -64,6 +64,7 @@ export function InvestigationDetailPanel({
   const [name, setName] = useState(folder.name);
   const [description, setDescription] = useState(folder.description || '');
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const keepLocalId = useId();
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -374,7 +375,7 @@ export function InvestigationDetailPanel({
                   </div>
                   <div className="text-[11px] text-gray-500 mt-0.5">
                     {folder.localOnly
-                      ? t('detail.localOnlyDesc')
+                      ? t('detail.localOnlyDescV2')
                       : t('detail.syncedToServerDesc')}
                   </div>
                 </div>
@@ -389,6 +390,33 @@ export function InvestigationDetailPanel({
                 </div>
               </button>
             </div>
+          )}
+
+          {/* Without a team server: binding one later shares every investigation that is not local-only */}
+          {!serverConnected && onToggleSync && (
+            <button
+              role="switch"
+              aria-checked={!!folder.localOnly}
+              aria-labelledby={`${keepLocalId}-label`}
+              aria-describedby={`${keepLocalId}-desc`}
+              onClick={() => onToggleSync(folder.id, !!folder.localOnly)}
+              className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-colors text-start"
+            >
+              <CloudOff size={16} className="shrink-0 text-gray-500" />
+              <div className="flex-1 min-w-0">
+                <div id={`${keepLocalId}-label`} className="text-sm font-medium text-gray-200">{t('detail.keepLocalLabel')}</div>
+                <div id={`${keepLocalId}-desc`} className="text-[11px] text-gray-500 mt-0.5">{t('detail.localOnlyDescV2')}</div>
+              </div>
+              <div className={cn(
+                'w-8 h-[18px] rounded-full transition-colors relative shrink-0',
+                folder.localOnly ? 'bg-purple/60' : 'bg-gray-700'
+              )}>
+                <div className={cn(
+                  'absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white transition-all',
+                  folder.localOnly ? 'left-[14px]' : 'left-[2px]'
+                )} />
+              </div>
+            </button>
           )}
 
           {/* Export, Report & Share */}
