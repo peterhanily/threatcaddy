@@ -195,6 +195,11 @@
     "invalidCommand": "לא ניתן היה להריץ את פקודת ה-CTI:",
     "noSourcesV2": "אין מקורות CTI זמינים. לא ניתן עוד להגדיר מארחי סוכנים בעלי שם בגרסה זו."
   },
+  "fetch": {
+    "createdNote": "נוצרה הערה **{{title}}** מתוך {{url}}",
+    "failed": "שליפת ה-URL נכשלה: {{error}}",
+    "unknownError": "שגיאה לא ידועה"
+  },
   "input.serverStatus": "ניתוב דרך שרת הצוות",
   "input.serverModelsHelp": "הספקים והמודלים הזמינים תלויים בהגדרות שרת הצוות.",
   "input.modelLabel": "מודל בינה מלאכותית"

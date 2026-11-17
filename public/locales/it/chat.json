@@ -195,6 +195,11 @@
     "invalidCommand": "Non è stato possibile eseguire quel comando CTI:",
     "noSourcesV2": "Nessuna origine CTI disponibile. Gli Agent Host con nome non sono più configurabili in questa versione."
   },
+  "fetch": {
+    "createdNote": "Nota **{{title}}** creata da {{url}}",
+    "failed": "Impossibile recuperare l'URL: {{error}}",
+    "unknownError": "Errore sconosciuto"
+  },
   "input.serverStatus": "Instradamento tramite server del team",
   "input.serverModelsHelp": "I fornitori e i modelli disponibili dipendono dalla configurazione del server del team.",
   "input.modelLabel": "Modello IA"

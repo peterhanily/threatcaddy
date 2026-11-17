@@ -7,9 +7,14 @@ import { act, cleanup, configure, fireEvent, render, screen, waitFor, within } f
 import type { ComponentType } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
+import i18n from '../i18n';
+import deChat from '../../public/locales/de/chat.json';
+import { renderMarkdown, sanitizeHtml } from '../lib/markdown';
 import type { ChatThread, Folder, Settings, ToolUseBlock } from '../types';
 import type { ToolExecutionResult } from '../lib/llm-tool-execution';
+import type { ApprovalItem } from '../lib/chat-tool-executor';
 import { ChatView } from '../components/Chat/ChatView';
+import { ChatApprovalCard } from '../components/Chat/ChatApprovalCard';
 import { discardAllComposerDrafts } from '../lib/chat-composer-drafts';
 import { canary, ids, seedAIWorkspace } from './helpers/ai-workspace';
 import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
@@ -52,11 +57,12 @@ const makeThread = (id: string, folderId?: string): ChatThread => ({ id, title: 
 const settings = { llmAnthropicApiKey: 'synthetic-unit-test-only', llmRoutingMode: 'auto' } as Settings;
 const call = (name: string, input: Record<string, unknown>, id = `call-${name}`): ToolUseBlock => ({ type: 'tool_use', id, name, input });
 const errorOf = (result: ToolExecutionResult) => String(JSON.parse(result.result).error ?? '');
+const chatCatalogs = import.meta.glob<{ default: { fetch: { createdNote: string } } }>('../../public/locales/*/chat.json', { eager: true });
 
 function renderChat(threads: ChatThread[]) {
   const props = { settings, onCreateThread: vi.fn(), onUpdateThread: vi.fn(), onAddMessage: vi.fn().mockResolvedValue(undefined), onTrashThread: vi.fn() };
   const view = render(<ChatView threads={threads} {...props} />);
-  return { rerender: () => view.rerender(<ChatView threads={threads} {...props} />) };
+  return { props, rerender: () => view.rerender(<ChatView threads={threads} {...props} />) };
 }
 async function sendAndGetHandler(): Promise<ToolHandler> {
   await act(async () => { await state.input.onSend('Look into it'); });
@@ -121,6 +127,72 @@ describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
     expect(state.send).not.toHaveBeenCalled();
   });
 
+  it('/fetch reports in the analyst\'s language', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'chat', deChat, true, true);
+    await act(async () => { await i18n.changeLanguage('de'); });
+    const addNote = vi.spyOn(db.notes, 'add');
+    try {
+      const { props } = renderChat([makeThread('thread', 'S')]);
+      await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/advisory'); });
+      await act(async () => { await state.input.onSend('/fetch https://intranet.local/x'); });
+      // The page arrives but its note cannot be saved.
+      addNote.mockRejectedValueOnce(new Error('Synthetic storage failure'));
+      await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/second'); });
+      // The extension can fail a page without saying why.
+      vi.mocked(window.postMessage).mockImplementationOnce((message: unknown) => {
+        const request = message as { type: string; requestId: string; url: string };
+        egress.posts.push(request);
+        setTimeout(() => window.dispatchEvent(new MessageEvent('message', {
+          source: window, data: { type: 'TC_FETCH_URL_RESULT', requestId: request.requestId, success: false } })), 0);
+      });
+      await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/third'); });
+      const replies = props.onAddMessage.mock.calls.map(([, message]) => message).filter(message => message.role === 'assistant');
+      expect(replies.map(message => message.content)).toEqual([
+        'Notiz **Fixture page** aus https://www.cisa.gov/advisory erstellt',
+        `URL konnte nicht abgerufen werden: ${i18n.t('fetch.privateTarget', { ns: 'integrations' })}`,
+        'URL konnte nicht abgerufen werden: Synthetic storage failure',
+        'URL konnte nicht abgerufen werden: Unbekannter Fehler',
+      ]);
+      expect(egress.fetchUrlPosts()).toEqual(['https://www.cisa.gov/advisory', 'https://www.cisa.gov/second', 'https://www.cisa.gov/third']);
+    } finally {
+      addNote.mockRestore();
+      await act(async () => { await i18n.changeLanguage('en'); });
+    }
+  });
+
+  it('/fetch\'s note confirmation links exactly the fetched address and bolds the page title in every language', () => {
+    const url = 'https://www.cisa.gov/advisory';
+    const title = 'CISA (AA24-123A)';
+    const rendered = Object.fromEntries(Object.entries(chatCatalogs).map(([path, catalog]) => {
+      // ChatView fills the template without escaping; the message bubble renders it as markdown without media.
+      const content = catalog.default.fetch.createdNote.replace('{{title}}', title).replace('{{url}}', url);
+      const html = document.createElement('div');
+      html.innerHTML = sanitizeHtml(renderMarkdown(content, undefined, { disableMedia: true }), { disableMedia: true });
+      return [path.split('/').at(-2), { links: [...html.querySelectorAll('a')].map(link => link.getAttribute('href')),
+        bold: [...html.querySelectorAll('strong')].map(node => node.textContent) }];
+    }));
+    expect(Object.keys(rendered)).toHaveLength(21);
+    expect(rendered).toEqual(Object.fromEntries(Object.keys(rendered).map(lng => [lng, { links: [url], bold: [title] }])));
+  });
+
+  it('Export as note files the note in the thread\'s investigation from the global view', async () => {
+    renderChat([makeThread('thread', 'S')]);
+    fireEvent.click(screen.getByTitle('Export as note'));
+    const exported = db.notes.where('title').equals('Chat Export: Chat thread');
+    await waitFor(async () => expect(await exported.count()).toBe(1));
+    expect(await exported.first()).toMatchObject({ folderId: 'S', tags: ['chat-export'] });
+  });
+
+  it('Export as note files an unfiled thread\'s note in the selected investigation', async () => {
+    state.folder = { id: 'P', name: 'Private case', order: 1, createdAt: 1 };
+    renderChat([makeThread('thread')]);
+    fireEvent.click(screen.getByTitle('Export as note'));
+    const exported = db.notes.where('title').equals('Chat Export: Chat thread');
+    await waitFor(async () => expect(await exported.count()).toBe(1));
+    expect(await exported.first()).toMatchObject({ folderId: 'P', tags: ['chat-export'] });
+  });
+
   it('an unfiled thread in the global view reads freely and names the investigation a change would reach', async () => {
     renderChat([makeThread('thread')]);
     const handler = await sendAndGetHandler();
@@ -179,6 +251,25 @@ describe('C-CHAT-6 the approval queue', () => {
     await approve();
     expect((await second).isError).toBe(false);
     expect(egress.fetchUrlPosts()).toEqual(['https://collector.example/a', 'https://collector.example/b']);
+  });
+
+  it('keeps Approve disabled for longer than a double click after a card appears', () => {
+    const item: ApprovalItem = { toolUse: fetchB, reason: 'egress', readForeignThisRequest: false,
+      reach: { name: 'fetch_url', write: false, homeShareable: false, crossRead: false, crossWrite: false, targetFolderIds: [],
+        hidden: false, egress: 'open-fetch', destinations: ['collector.example'], harvested: false, flags: [] } };
+    const onApprove = vi.fn();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      render(<ChatApprovalCard item={item} index={1} total={1} onApprove={onApprove} onReject={vi.fn()} />);
+      const button = screen.getByRole('button', { name: /approve/i });
+      act(() => { vi.advanceTimersByTime(300); });
+      expect(button).toBeDisabled();
+      fireEvent.click(button);
+      act(() => { vi.advanceTimersByTime(200); });
+      expect(button).toBeEnabled();
+      fireEvent.click(button);
+      expect(onApprove).toHaveBeenCalledTimes(1);
+    } finally { vi.useRealTimers(); }
   });
 
   it('a thread switch rejects every queued card and runs nothing', async () => {

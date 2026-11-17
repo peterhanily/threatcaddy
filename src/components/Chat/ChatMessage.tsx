@@ -145,10 +145,12 @@ function processEntityLinks(html: string, onEntityClick?: (type: string, id: str
   });
 }
 
+/** The model writes these, so they are follow-up questions only: a slash command such as
+ * /fetch would run on one click with no approval card. */
 function parseSuggestions(content: string): string[] {
   const match = content.match(/<!--\s*suggestions:\s*(.*?)\s*-->/);
   if (!match) return [];
-  return match[1].split('|').map(s => s.trim()).filter(Boolean);
+  return match[1].split('|').map(s => s.trim()).filter(s => s && !s.startsWith('/'));
 }
 
 function stripSuggestions(content: string): string {

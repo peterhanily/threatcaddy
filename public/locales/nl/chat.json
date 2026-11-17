@@ -192,6 +192,11 @@
     "invalidCommand": "Die CTI-opdracht kon niet worden uitgevoerd:",
     "noSourcesV2": "Er zijn geen CTI-bronnen beschikbaar. Benoemde agent-hosts kunnen in deze versie niet meer worden geconfigureerd."
   },
+  "fetch": {
+    "createdNote": "Notitie **{{title}}** aangemaakt van {{url}}",
+    "failed": "URL ophalen mislukt: {{error}}",
+    "unknownError": "Onbekende fout"
+  },
   "input.serverStatus": "Route via teamserver",
   "input.serverModelsHelp": "Beschikbare aanbieders en modellen hangen af van de configuratie van je teamserver.",
   "input.modelLabel": "AI-model"

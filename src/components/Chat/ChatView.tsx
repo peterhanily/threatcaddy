@@ -380,7 +380,7 @@ export function ChatView({
           const confirmMsg: ChatMessage = {
             id: nanoid(),
             role: 'assistant',
-            content: `Created note **${title}** from ${url}`,
+            content: t('fetch.createdNote', { title, url }),
             createdAt: Date.now(),
           };
           await onAddMessage(activeThread.id, confirmMsg);
@@ -389,7 +389,7 @@ export function ChatView({
           const errorMsg: ChatMessage = {
             id: nanoid(),
             role: 'assistant',
-            content: `Failed to fetch URL: ${result.error || 'Unknown error'}`,
+            content: t('fetch.failed', { error: result.error || t('fetch.unknownError') }),
             createdAt: Date.now(),
           };
           await onAddMessage(activeThread.id, errorMsg);
@@ -398,7 +398,7 @@ export function ChatView({
         const errorMsg: ChatMessage = {
           id: nanoid(),
           role: 'assistant',
-          content: `Failed to fetch URL: ${(err as Error).message || String(err)}`,
+          content: t('fetch.failed', { error: (err as Error).message || String(err) }),
           createdAt: Date.now(),
         };
         await onAddMessage(activeThread.id, errorMsg);
@@ -666,7 +666,7 @@ export function ChatView({
       id: noteId,
       title: `Chat Export: ${activeThread.title}`,
       content,
-      folderId: selectedFolderId || undefined,
+      folderId: activeThread.folderId ?? (selectedFolderId || undefined),
       tags: ['chat-export'],
       pinned: false,
       archived: false,
@@ -679,7 +679,9 @@ export function ChatView({
     setTimeout(() => onNavigateToEntity?.('note', noteId), 100);
   }, [activeThread, selectedFolderId, onEntitiesChanged, onNavigateToEntity]);
 
+  // A chip is model-written text: it may ask a question, never run a slash command such as /fetch.
   const handleSuggestionClick = useCallback((text: string) => {
+    if (text.trimStart().startsWith('/')) return;
     handleSend(text);
   }, [handleSend]);
 
@@ -1278,11 +1280,12 @@ export function ChatView({
             </div>
 
             {/* Tool approval card: the head of this thread's queue. Outside the list, whose
-                footer remounts on every render, so the card keeps its state and focus. */}
+                footer remounts on every render, so the card keeps its state and focus. On a short
+                window the card scrolls within itself, so the composer and its buttons stay reachable.
+                Keyed by the card, so the next queued card starts at its title, not where the last one was scrolled. */}
             {headApproval && (
-              <div className="px-4">
+              <div key={headApproval.id} className="px-4 min-h-0 max-h-[40vh] overflow-y-auto">
                 <ChatApprovalCard
-                  key={headApproval.id}
                   item={headApproval.item}
                   index={1}
                   total={visibleApprovals.length}

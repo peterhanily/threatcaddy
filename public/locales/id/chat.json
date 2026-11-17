@@ -192,6 +192,11 @@
     "invalidCommand": "Perintah CTI itu tidak dapat dijalankan:",
     "noSourcesV2": "Tidak ada sumber CTI yang tersedia. Agent host bernama tidak dapat dikonfigurasi lagi di versi ini."
   },
+  "fetch": {
+    "createdNote": "Catatan **{{title}}** dibuat dari {{url}}",
+    "failed": "Gagal mengambil URL: {{error}}",
+    "unknownError": "Kesalahan tidak dikenal"
+  },
   "input.serverStatus": "Jalur server tim",
   "input.serverModelsHelp": "Penyedia dan model yang tersedia bergantung pada konfigurasi server tim.",
   "input.modelLabel": "Model AI"

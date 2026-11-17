@@ -193,6 +193,11 @@
     "invalidCommand": "Bu CTI komutu çalıştırılamadı:",
     "noSourcesV2": "Kullanılabilir CTI kaynağı yok. Adlandırılmış ajan host'ları bu sürümde artık yapılandırılamaz."
   },
+  "fetch": {
+    "createdNote": "{{url}} adresinden **{{title}}** notu oluşturuldu",
+    "failed": "URL getirilemedi: {{error}}",
+    "unknownError": "Bilinmeyen hata"
+  },
   "input.serverStatus": "Ekip sunucusu yolu",
   "input.serverModelsHelp": "Kullanılabilir sağlayıcılar ve modeller ekip sunucusunun yapılandırmasına bağlıdır.",
   "input.modelLabel": "Yapay zekâ modeli"
