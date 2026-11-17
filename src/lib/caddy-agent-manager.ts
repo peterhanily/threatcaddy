@@ -14,13 +14,24 @@ import { tokenCount } from './model-pricing';
 export interface MultiAgentCycleResult {
   deploymentResults: Map<string, AgentCycleResult>;
   errors: string[];
-  /** Profiles skipped this cycle because a proposal of theirs awaits review. */
+  /** Profiles with a proposal awaiting review when the cycle ends. A timed cycle
+   * skips the ones waiting when it starts; a manual one runs them too. */
   waitingForReview: string[];
+}
+
+/** Profiles of these deployments with a pending proposal. Legacy rows (no
+ * profile) and supervisor rows match no deployment, so they pause none. */
+async function profilesAwaitingReview(folderId: string, deployments: AgentDeployment[]): Promise<string[]> {
+  const pending = new Set((await db.agentActions
+    .where('[investigationId+status]').equals([folderId, 'pending'])
+    .toArray()).map(action => action.agentConfigId));
+  return [...new Set(deployments.filter(d => pending.has(d.profileId)).map(d => d.profileId))];
 }
 
 /**
  * Run a single cycle for all deployed agents in an investigation.
- * Agents run concurrently via Promise.allSettled.
+ * Agents run concurrently via Promise.allSettled. `manual` is a person's run
+ * (Run, or an approved chat run_agent_cycle).
  */
 export async function runMultiAgentCycle(
   folder: Folder,
@@ -28,10 +39,11 @@ export async function runMultiAgentCycle(
   extensionAvailable: boolean,
   onProgress?: (agentName: string, status: string) => void,
   signal?: AbortSignal,
+  options: { manual?: boolean } = {},
 ): Promise<MultiAgentCycleResult> {
   const lifecycle = cancellableRequest(signal);
   try {
-    return await runMultiAgentCycleInner(folder, settings, extensionAvailable, onProgress, lifecycle.signal);
+    return await runMultiAgentCycleInner(folder, settings, extensionAvailable, onProgress, lifecycle.signal, options.manual === true);
   } finally {
     lifecycle.dispose();
   }
@@ -43,6 +55,7 @@ async function runMultiAgentCycleInner(
   extensionAvailable: boolean,
   onProgress: ((agentName: string, status: string) => void) | undefined,
   signal: AbortSignal,
+  manual: boolean,
 ): Promise<MultiAgentCycleResult> {
   signal.throwIfAborted();
   // Load all active deployments
@@ -52,21 +65,18 @@ async function runMultiAgentCycleInner(
     .toArray();
   signal.throwIfAborted();
 
-  // Only the agent whose proposal awaits review pauses. Legacy rows (no
-  // profile) and supervisor rows match no deployment, so they pause none.
-  const awaitingReview = new Set((await db.agentActions
-    .where('[investigationId+status]').equals([folder.id, 'pending'])
-    .toArray()).map(action => action.agentConfigId));
-  signal.throwIfAborted();
-
   // Skip deployments the server owns or that haven't finished reconciling after
   // a handoff — starting a cycle on those would race against the server or act
   // on stale local state.
   const runnable = deployments.filter(
     d => d.status !== 'paused' && d.shift !== 'resting' && !shouldBlockNewCycle(d),
   );
-  const waitingForReview = [...new Set(runnable.filter(d => awaitingReview.has(d.profileId)).map(d => d.profileId))];
-  const activeDeployments = runnable.filter(d => !awaitingReview.has(d.profileId));
+  // Only the agent whose proposal awaits review pauses.
+  const waitingForReview = await profilesAwaitingReview(folder.id, runnable);
+  signal.throwIfAborted();
+  // A manual run runs waiting agents too, as 2.0.2 did. queueAgentAction answers
+  // a repeat of a pending proposal with the pending row instead of a second one.
+  const activeDeployments = manual ? runnable : runnable.filter(d => !waitingForReview.includes(d.profileId));
 
   if (activeDeployments.length === 0) {
     if (waitingForReview.length > 0) {
@@ -220,5 +230,16 @@ async function runMultiAgentCycleInner(
     }
   }
 
-  return { deploymentResults, errors, waitingForReview };
+  // Each run wrote its own status, so the last one to finish could leave the
+  // investigation idle while a proposal waits. Use the hook's rule instead, on
+  // the pending rows read again: the analyst may have answered some meanwhile,
+  // and the runs' own proposals are pending rows too.
+  const stillWaiting = await profilesAwaitingReview(folder.id, runnable);
+  const ran = [...deploymentResults.values()];
+  const allFailed = ran.length > 0 && ran.every(result => result.error);
+  if (!allFailed && stillWaiting.length > 0) {
+    await db.folders.update(folder.id, { agentStatus: 'waiting' });
+  }
+
+  return { deploymentResults, errors, waitingForReview: stillWaiting };
 }

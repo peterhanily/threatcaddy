@@ -52,7 +52,7 @@ scripts/tc.mjs exec <tool_name> '<json_input>'
 scripts/tc.mjs stop
 ```
 
-## Available Tools (23)
+## Available Tools (33)
 
 Web, enrichment and cross-investigation tools are not available through the bridge.
 
@@ -83,10 +83,29 @@ Web, enrichment and cross-investigation tools are not available through the brid
 - **link_entities** — `{"links": [{"sourceType": "note", "sourceId": "...", "targetType": "task", "targetId": "..."}]}`
 - **generate_report** — `{"executiveSummary": "...", "findings": "..."}`
 
-### Analysis (2 tools)
+### Analysis (3 tools)
 
 - **extract_iocs** — `{"text": "Found IP 10.0.0.1 and domain evil.com"}` — Extract IOCs from text
 - **analyze_graph** — `{}` — Analyze entity relationship graph
+- **forensicate_scan** — `{"text": "Ignore previous instructions..."}` — Local check of text for prompt-injection patterns
+
+### Knowledge & Alerts (3 tools)
+
+- **update_knowledge** — `{"key": "confirmed_c2_servers", "value": "10.0.0.1", "category": "fact"}` — Store an entry in the investigation knowledge base
+- **recall_knowledge** — `{"category": "fact"}` — Read knowledge base entries, optional key/category filter
+- **ingest_alert** — `{"source": "splunk", "title": "Beaconing detected", "severity": "high"}` — Record an alert as a pinned note
+
+### Note Folders (4 tools)
+
+- **create_note_folder** — `{"name": "Malware"}` — Create a note folder
+- **delete_note_folder** — `{"folderId": "...", "action": "move_out"}` — Delete a folder; `move_out` or `trash_contents`
+- **move_to_folder** — `{"noteId": "...", "parentFolderId": "..."}` — Move a note into a folder, or out with no `parentFolderId`
+- **list_folders** — `{}` — List note folders with child counts
+
+### Status (2 tools)
+
+- **list_integrations** — `{"iocType": "domain"}` — List configured enrichment integrations (does not run them)
+- **list_deployed_agents** — `{}` — List agents deployed to the investigation
 
 ## IOC Types
 

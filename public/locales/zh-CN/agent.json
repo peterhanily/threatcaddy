@@ -168,6 +168,7 @@
   "action.destination": "发送至：{{destination}}",
   "action.vendorLookups": "供应商查询",
   "action.localAgent": "您的本地代理",
+  "action.hostIsIoc": "此网站是此调查中的 IOC。访问它可能会惊动攻击者。",
   "action.aiReason": "代理的理由：",
   "profile.agentProfiles": "代理配置文件",
   "profile.customAndBuiltin": "{{custom}} 个自定义，{{builtin}} 个内置",

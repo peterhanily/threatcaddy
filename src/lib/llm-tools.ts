@@ -365,7 +365,7 @@ async function dispatchTool(
       case 'list_agent_activity':           result = await executeListAgentActivity(inp, folderId); break;
       case 'update_knowledge':               result = await executeUpdateKnowledge(inp, folderId); break;
       case 'recall_knowledge':               result = await executeRecallKnowledge(inp, folderId); break;
-      case 'ask_human':                     result = await executeAskHuman(inp, folderId, constraints.signal); break;
+      case 'ask_human':                     result = await executeAskHuman(inp, folderId, constraints.signal, agentContext?.profileId); break;
       case 'run_remote_command':            result = JSON.stringify({ error: 'Remote command execution is unavailable in this deployment.' }); break;
       case 'query_siem':                    result = await executeQuerySiem(inp, _settings, constraints.signal); break;
       case 'create_ticket':                 result = await executeCreateTicket(inp, folderId, _settings, constraints.signal); break;
@@ -1076,11 +1076,21 @@ async function executeRecallKnowledge(inp: Record<string, unknown>, folderId?: s
 
 // ── Agent-Human Collaboration ─────────────────────────────────────────
 
-async function executeAskHuman(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal): Promise<string> {
+async function executeAskHuman(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal, profileId?: string): Promise<string> {
   const question = String(inp.question || '');
   const context = String(inp.context || '');
   const options = String(inp.options || '');
   if (!question) return JSON.stringify({ error: 'question is required' });
+
+  // A re-run (a manual Run also runs a waiting agent) answers a repeat of this
+  // agent's pending question with that question, not a second row and note.
+  const asked = await db.agentActions
+    .where('[investigationId+status]').equals([folderId || '', 'pending'])
+    .filter(a => a.toolName === 'ask_human' && a.agentConfigId === profileId && a.toolInput.question === question)
+    .first();
+  if (asked) {
+    return JSON.stringify({ status: 'already_pending', actionId: asked.id, message: 'This question is already waiting for the human operator.' });
+  }
 
   // Check if there's already a pending question for this investigation
   if (folderId) {
@@ -1099,12 +1109,14 @@ async function executeAskHuman(inp: Record<string, unknown>, folderId?: string, 
     }
   }
 
-  // Create a pending action that the human will see and respond to
+  // Create a pending action that the human will see and respond to. Like other
+  // proposals it names the asking profile, so only that agent pauses for it.
   const actionId = nanoid();
   await db.agentActions.add({
     id: actionId,
     investigationId: folderId || '',
     threadId: '',
+    agentConfigId: profileId,
     toolName: 'ask_human',
     toolInput: { question, context, options },
     rationale: `Agent needs human input: ${question}`,
@@ -1288,8 +1300,9 @@ async function executeDeleteNoteFolder(inp: Record<string, unknown>): Promise<st
   if (!folder) return JSON.stringify({ error: 'Folder not found' });
   if (!folder.isFolder) return JSON.stringify({ error: 'That note is not a folder' });
 
-  // Find all children
-  const children = await db.notes.where('parentNoteId').equals(targetId).toArray();
+  // Find all children. Only the folder-note's investigation was checked, so a
+  // child filed in another investigation (after an approved move) is left alone.
+  const children = (await db.notes.where('parentNoteId').equals(targetId).toArray()).filter(child => child.folderId === folder.folderId);
 
   if (action === 'trash_contents') {
     // Trash all children

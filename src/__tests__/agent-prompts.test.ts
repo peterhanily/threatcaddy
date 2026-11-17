@@ -53,6 +53,24 @@ describe('lean agent prompts', () => {
     expect(systemPrompt).not.toMatch(/fetch_url for OSINT|enrich_ioc or fetch_url/);
   });
 
+  it('points builtin personas at enrich_ioc and reference sources, never at an indicator\'s own host', () => {
+    // Fetching an IOC's host from the analyst's browser exposes the analyst and can tip off the adversary.
+    const FETCH_CLAUSES: Record<string, string> = {
+      'ap-ioc-enricher': 'use enrich_ioc (runs VirusTotal, AbuseIPDB, Shodan, etc. automatically); fetch_url only reference sources, never IOC hosts.',
+      'ap-timeline-builder': 'Find key dates in reference sources via fetch_url.',
+      'ap-reporter': 'Use fetch_url on reference sources if data is sparse.',
+      'ap-threat-hunter': 'test them via enrich_ioc (never fetch IOC hosts), document results.',
+      'ap-malware-analyst': 'research hashes via enrich_ioc (never fetch IOC hosts),',
+      'ap-network-forensics': 'Research C2 infrastructure via enrich_ioc; never fetch IOC hosts.',
+      'ap-digital-forensics': 'Research hashes via enrich_ioc, paths in reference sources.',
+      'ap-vulnerability-analyst': 'Research CVEs via fetch_url (NVD, CISA, MITRE).',
+    };
+    for (const profile of BUILTIN_AGENT_PROFILES) {
+      if (FETCH_CLAUSES[profile.id]) expect(profile.systemPrompt).toContain(FETCH_CLAUSES[profile.id]);
+      expect(profile.systemPrompt).not.toMatch(/OSINT|fetch_url\/enrich_ioc|research \(fetch_url\)|exploit-db|via fetch_url to find|paths via fetch_url|fetch_url for context/);
+    }
+  });
+
   it('caps the investigation description in the cycle prompt at 2 000 characters', async () => {
     await db.folders.update('S', { description: `${'D'.repeat(2000)}OVERFLOW` });
     const request = await promptFor('ap-threat-hunter');

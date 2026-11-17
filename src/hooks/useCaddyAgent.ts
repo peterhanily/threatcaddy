@@ -153,18 +153,20 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
       if (!current()) return;
 
       if (deploymentCount > 0) {
-        // Multi-agent mode
+        // Multi-agent mode. The timer skips agents waiting for review; a manual
+        // run (Run, or chat run_agent_cycle) runs them too.
         const multiResult = await runMultiAgentCycle(freshFolder, settingsRef.current, callbacks.current.extensionAvailable, (agentName, status) => {
           if (current()) setProgress(`${agentName}: ${status}`);
-        }, controller.signal);
+        }, controller.signal, { manual: !requireEnabled });
 
         if (!current()) return;
 
         // Per-agent status: determine folder-level status from individual results.
-        // Agents skipped while their proposal awaits review keep it waiting.
+        // The manager lists who still awaits review when the cycle ends,
+        // including this cycle's proposals the analyst has not answered.
         const results = Array.from(multiResult.deploymentResults.values());
         const succeeded = results.filter(r => !r.error);
-        const anyWaiting = multiResult.waitingForReview.length > 0 || results.some(r => r.proposed.length > 0);
+        const anyWaiting = multiResult.waitingForReview.length > 0;
         const allFailed = results.length > 0 && succeeded.length === 0;
 
         if (multiResult.errors.length > 0) {

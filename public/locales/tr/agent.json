@@ -168,6 +168,7 @@
   "action.destination": "Gönderildiği yer: {{destination}}",
   "action.vendorLookups": "sağlayıcı sorguları",
   "action.localAgent": "yerel ajanınız",
+  "action.hostIsIoc": "Bu site bu soruşturmada bir IOC. Ziyaret etmek saldırganı uyarabilir.",
   "action.aiReason": "Ajanın gerekçesi:",
   "profile.agentProfiles": "Ajan Profilleri",
   "profile.customAndBuiltin": "{{custom}} özel, {{builtin}} yerleşik",

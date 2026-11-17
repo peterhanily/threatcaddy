@@ -168,6 +168,7 @@
   "action.destination": "Mengirim ke: {{destination}}",
   "action.vendorLookups": "pencarian vendor",
   "action.localAgent": "agen lokal Anda",
+  "action.hostIsIoc": "Situs ini adalah IOC dalam investigasi ini. Mengunjunginya dapat memperingatkan penyerang.",
   "action.aiReason": "Alasan agen:",
   "profile.agentProfiles": "Profil Agen",
   "profile.customAndBuiltin": "{{custom}} kustom, {{builtin}} bawaan",

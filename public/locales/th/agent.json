@@ -168,6 +168,7 @@
   "action.destination": "ส่งไปยัง: {{destination}}",
   "action.vendorLookups": "การค้นหาผ่านผู้ให้บริการ",
   "action.localAgent": "เอเจนต์ในเครื่องของคุณ",
+  "action.hostIsIoc": "เว็บไซต์นี้เป็น IOC ในการสืบสวนนี้ การเข้าชมอาจทำให้ผู้โจมตีรู้ตัว",
   "action.aiReason": "เหตุผลของเอเจนต์:",
   "profile.agentProfiles": "โปรไฟล์เอเจนต์",
   "profile.customAndBuiltin": "กำหนดเอง {{custom}} รายการ, ในตัว {{builtin}} รายการ",

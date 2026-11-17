@@ -11,10 +11,19 @@ import { AgentActionCard } from '../components/Agent/AgentActionCard';
 import { AgentPanel } from '../components/Agent/AgentPanel';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { loadAgentPolicy } from '../lib/agent-profile-resolver';
+import { classifyToolCall } from '../lib/tool-reach';
 import { ids, seedAIWorkspace } from './helpers/ai-workspace';
 
 vi.mock('../components/Agent/AgentProfilePicker', () => ({ AgentProfilePicker: () => null }));
 vi.mock('../components/Agent/AgentMeetingPanel', () => ({ AgentMeetingPanel: () => null }));
+// The real reach check, recorded so a test can wait for every check a card started.
+vi.mock('../lib/tool-reach', async orig => {
+  const actual = await orig<typeof import('../lib/tool-reach')>();
+  return { ...actual, classifyToolCall: vi.fn(actual.classifyToolCall) };
+});
+const reachChecks = vi.mocked(classifyToolCall);
+/** Wait until every reach check the cards started has finished and rendered. */
+const reachSettled = () => act(async () => { await Promise.allSettled(reachChecks.mock.results.map(result => result.value)); });
 
 const settings = { llmLocalEndpoint: 'http://localhost:11434' } as Settings;
 const action = (values: Partial<AgentAction>): AgentAction => ({ id: `action-${values.toolName}`, investigationId: 'S', threadId: 't', toolName: 'create_note',
@@ -37,6 +46,50 @@ describe('B-UI-1 action cards name the action class and where it reaches', () =>
     expect(screen.getByText('Sends to: collector.example')).toBeInTheDocument();
     expect(screen.getByText('Agent\'s reason:')).toBeInTheDocument();
     expect(screen.getByText('Pending')).toBeInTheDocument();
+  });
+
+  const iocHostWarning = 'This site is an IOC in this investigation. Visiting it can alert the attacker.';
+
+  it('a pending fetch of a host that is an IOC in the investigation carries a warning, and stays approvable', async () => {
+    const onApprove = vi.fn();
+    const view = render(<AgentActionCard action={action({ toolName: 'fetch_url', toolInput: { url: 'https://canary-s.example/beacon' } })} onApprove={onApprove} />);
+    expect(await screen.findByText(iocHostWarning)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Approve fetch_url action' }));
+    expect(onApprove).toHaveBeenCalledOnce();
+    view.unmount();
+
+    reachChecks.mockClear();
+    render(<>
+      <AgentActionCard action={action({ id: 'other-host', toolName: 'fetch_url', toolInput: { url: 'https://collector.example/c' } })} />
+      <AgentActionCard action={action({ id: 'other-case', toolName: 'fetch_url', investigationId: 'P', toolInput: { url: 'https://canary-s.example/' } })} />
+      <AgentActionCard action={action({ id: 'done', toolName: 'fetch_url', status: 'executed', toolInput: { url: 'https://canary-s.example/' } })} />
+    </>);
+    await reachSettled();
+    // Both pending cards were checked, the executed one was not, and neither warns.
+    expect(reachChecks).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(iocHostWarning)).not.toBeInTheDocument();
+    expect(await db.agentActions.count()).toBe(0);
+  });
+
+  it('a refresh that returns the same pending fetch does not check its reach again', async () => {
+    reachChecks.mockClear();
+    const pendingFetch = () => action({ toolName: 'fetch_url', toolInput: { url: 'https://canary-s.example/beacon' } });
+    const view = render(<AgentActionCard action={pendingFetch()} />);
+    await reachSettled();
+    // The inbox poll returns new row objects with the same content.
+    view.rerender(<AgentActionCard action={pendingFetch()} />);
+    await reachSettled();
+    expect(reachChecks).toHaveBeenCalledOnce();
+    expect(screen.getByText(iocHostWarning)).toBeInTheDocument();
+  });
+
+  it('the warning goes once the fetch is no longer pending', async () => {
+    const fetchAction = (status: AgentAction['status']) => action({ toolName: 'fetch_url', status, toolInput: { url: 'https://canary-s.example/beacon' } });
+    const view = render(<AgentActionCard action={fetchAction('pending')} />);
+    expect(await screen.findByText(iocHostWarning)).toBeInTheDocument();
+    view.rerender(<AgentActionCard action={fetchAction('executed')} />);
+    await reachSettled();
+    expect(screen.queryByText(iocHostWarning)).not.toBeInTheDocument();
   });
 
   it('enrichment, skills and delegation say what they are', () => {

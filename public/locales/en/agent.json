@@ -186,6 +186,7 @@
   "action.destination": "Sends to: {{destination}}",
   "action.vendorLookups": "vendor lookups",
   "action.localAgent": "your local agent",
+  "action.hostIsIoc": "This site is an IOC in this investigation. Visiting it can alert the attacker.",
   "action.aiReason": "Agent's reason:",
 
   "profile.agentProfiles": "Agent Profiles",

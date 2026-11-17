@@ -9,13 +9,13 @@ import { db } from '../db';
 import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentPolicy, type AgentProfile, type AgentSoul, type Folder } from '../types';
 import { buildAgentToolset, runAgentCycle } from '../lib/caddy-agent';
 import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
-import { bulkApproveActions, executeApprovedAction, previewBulkApprove } from '../lib/agent-action-approval';
+import { bulkApproveActions, executeApprovedAction, previewBulkApprove, rejectAction } from '../lib/agent-action-approval';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { CROSS_CASE_READ_TOOLS, getToolActionClass } from '../lib/caddy-agent-policy';
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
 import { scriptedLLM, type ScriptedTurn } from './helpers/scripted-llm';
 import { canary, ids, rowsContain, seedAIWorkspace, syncQueueContains } from './helpers/ai-workspace';
-import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
+import { HEAD_BRIDGE_CAPS, installEgressSpy, type EgressSpy } from './helpers/egress-spy';
 
 vi.mock('../lib/llm-router', async orig => (await import('./helpers/scripted-llm')).scriptedRouter(await orig()));
 
@@ -276,6 +276,29 @@ describe('B-CHAIN-8 calls parsed out of model text', () => {
     expect((await actionsFor('create_note')).map(action => action.status)).toEqual(['pending']);
     expect((await db.notes.toArray()).filter(note => note.title === 'Harvested')).toEqual([]);
   });
+
+  it('approve all leaves a harvested proposal for individual review, where it runs once', async () => {
+    await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY, autoApproveCreate: false } });
+    await deploy('ap-threat-hunter');
+    scriptedLLM.script({ toolCalls: [
+      { id: 'text_tc_1', name: 'create_note', input: { title: 'Harvested', content: 'From text' } },
+      { name: 'create_note', input: { title: 'Ordinary', content: 'Structured call' } },
+    ] });
+    await runMultiAgentCycle(await folder('S'), settings, true);
+    const notes = async (title: string) => (await db.notes.toArray()).filter(note => note.title === title);
+    const [harvested] = (await actionsFor('create_note')).filter(action => action.toolInput.title === 'Harvested');
+
+    expect(await previewBulkApprove('S')).toEqual({ routine: 1, review: 1 });
+    expect(await bulkApproveActions('S')).toEqual({ executed: 1, failed: 0, skipped: 1 });
+    expect(await notes('Ordinary')).toHaveLength(1);
+    expect(await notes('Harvested')).toEqual([]);
+    expect((await db.agentActions.get(harvested.id))?.status).toBe('pending');
+
+    expect((await executeApprovedAction(harvested)).isError).toBe(false);
+    await executeApprovedAction(harvested);
+    expect(await notes('Harvested')).toHaveLength(1);
+    expect((await db.agentActions.get(harvested.id))?.status).toBe('executed');
+  });
 });
 
 describe('B-CHAIN-9..10 executive agent-control tools wait for a person', () => {
@@ -318,6 +341,67 @@ describe('B-PAUSE-1 only the agent with a pending proposal pauses', () => {
     expect(await ran()).toEqual(['ap-lead-analyst']);
   });
 
+  it('keeps the investigation waiting when one agent waits and another runs without proposals', async () => {
+    await deploy('ap-threat-hunter'); await deploy('ap-lead-analyst');
+    await db.folders.update('S', { agentStatus: 'idle' });
+    await db.agentActions.add({ id: 'held', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'fetch_url',
+      toolInput: { url: COLLECTOR }, rationale: 'Proposed', status: 'pending', createdAt: 1 });
+    const result = await runMultiAgentCycle(await folder('S'), settings, true);
+    expect(result.errors).toEqual([]);
+    expect(await ran()).toEqual(['ap-lead-analyst']);
+    expect((await db.folders.get('S'))?.agentStatus).toBe('waiting');
+  });
+
+  it('does not leave the investigation waiting when the analyst answers the held proposal during the run', async () => {
+    await deploy('ap-threat-hunter'); await deploy('ap-lead-analyst');
+    await db.agentActions.add({ id: 'held', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'fetch_url',
+      toolInput: { url: COLLECTOR }, rationale: 'Proposed', status: 'pending', createdAt: 1 });
+    let answered: Promise<void> | undefined;
+    const result = await runMultiAgentCycle(await folder('S'), settings, true, () => { answered ??= rejectAction('held'); });
+    await answered;
+    expect(await ran()).toEqual(['ap-lead-analyst']);
+    expect(result.waitingForReview).toEqual([]);
+    expect((await db.folders.get('S'))?.agentStatus).toBe('idle');
+  });
+
+  it('does not mark the investigation waiting when every agent that ran failed', async () => {
+    await deploy('ap-threat-hunter');
+    // No OpenAI key is configured, so this agent's cycle fails.
+    await db.agentDeployments.add({ id: 'dep-failing', investigationId: 'S', profileId: 'ap-lead-analyst', status: 'idle', order: 1,
+      policyOverrides: { model: 'gpt-4o' }, createdAt: 1, updatedAt: 1 });
+    await db.folders.update('S', { agentStatus: 'idle' });
+    await db.agentActions.add({ id: 'held', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'fetch_url',
+      toolInput: { url: COLLECTOR }, rationale: 'Proposed', status: 'pending', createdAt: 1 });
+    const result = await runMultiAgentCycle(await folder('S'), settings, true);
+    expect(result.errors).toHaveLength(1);
+    expect((await db.folders.get('S'))?.agentStatus).not.toBe('waiting');
+  });
+
+  it('a manual run also runs the waiting agent, without queueing a second copy of its proposal', async () => {
+    await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY, autoApproveCreate: false } });
+    await deploy('ap-threat-hunter');
+    await db.agentActions.add({ id: 'held', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'create_note',
+      toolInput: { title: 'Plan', content: 'Hunt for persistence' }, rationale: 'Proposed', status: 'pending', createdAt: 1 });
+    // The same proposal again, with its arguments in another order.
+    scriptedLLM.script({ toolCalls: [{ name: 'create_note', input: { content: 'Hunt for persistence', title: 'Plan' } }] });
+    const result = await runMultiAgentCycle(await folder('S'), settings, true, undefined, undefined, { manual: true });
+    expect(result.errors).toEqual([]);
+    expect(await ran()).toEqual(['ap-threat-hunter']);
+    expect(result.waitingForReview).toEqual(['ap-threat-hunter']);
+    expect((await actionsFor('create_note')).map(action => [action.id, action.status])).toEqual([['held', 'pending']]);
+    expect(String(toolResultTurns()[0][0].content)).toContain('already_pending');
+  });
+
+  it('a timed run still skips the waiting agent', async () => {
+    await deploy('ap-threat-hunter');
+    await db.agentActions.add({ id: 'held', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'fetch_url',
+      toolInput: { url: COLLECTOR }, rationale: 'Proposed', status: 'pending', createdAt: 1 });
+    const result = await runMultiAgentCycle(await folder('S'), settings, true, undefined, undefined, { manual: false });
+    expect(result.waitingForReview).toEqual(['ap-threat-hunter']);
+    expect(scriptedLLM.requests).toEqual([]);
+    expect(await ran()).toEqual([]);
+  });
+
   it('a legacy or supervisor proposal pauses no deployment', async () => {
     await deploy('ap-threat-hunter'); await deploy('ap-lead-analyst');
     await db.agentActions.bulkAdd([
@@ -326,6 +410,52 @@ describe('B-PAUSE-1 only the agent with a pending proposal pauses', () => {
     ]);
     await runMultiAgentCycle(await folder('S'), settings, true);
     expect(await ran()).toEqual(['ap-lead-analyst', 'ap-threat-hunter']);
+  });
+
+  it('a deployed agent\'s own question pauses that agent only, and not legacy mode', async () => {
+    // Without the notification acknowledgement, the desktop notice falls back at once.
+    egress.restore();
+    egress = installEgressSpy(HEAD_BRIDGE_CAPS.filter(cap => cap !== 'notification_ack'));
+    await deploy('ap-lead-analyst');
+    scriptedLLM.script({ toolCalls: [{ name: 'ask_human', input: { question: 'Which host was patient zero?' } }] });
+    await runMultiAgentCycle(await folder('S'), settings, true);
+    const pending = () => db.agentActions.where('[investigationId+status]').equals(['S', 'pending']).toArray();
+    expect((await pending()).map(({ toolName, agentConfigId }) => ({ toolName, agentConfigId }))).toEqual([{ toolName: 'ask_human', agentConfigId: 'ap-lead-analyst' }]);
+    // The legacy timer pauses only for rows without an agent profile (useCaddyAgent).
+    expect((await pending()).filter(action => !action.agentConfigId)).toEqual([]);
+
+    await deploy('ap-threat-hunter');
+    scriptedLLM.reset();
+    const result = await runMultiAgentCycle(await folder('S'), settings, true);
+    expect(result.waitingForReview).toEqual(['ap-lead-analyst']);
+    expect(scriptedLLM.requests).toHaveLength(1);
+    expect(await ran()).toEqual(['ap-lead-analyst', 'ap-threat-hunter']);
+    expect((await db.agentDeployments.get('dep-ap-lead-analyst'))?.metrics?.cyclesRun).toBe(1);
+  });
+
+  it('a manual run of an agent waiting on its own question does not ask it again', async () => {
+    egress.restore();
+    egress = installEgressSpy(HEAD_BRIDGE_CAPS.filter(cap => cap !== 'notification_ack'));
+    await deploy('ap-lead-analyst');
+    const ask = (question: string) => ({ name: 'ask_human', input: { question } });
+    scriptedLLM.script({ toolCalls: [ask('Which host was patient zero?')] });
+    await runMultiAgentCycle(await folder('S'), settings, true);
+    // The same question from another agent is that agent's own.
+    await db.agentActions.add({ id: 'hunter-question', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'ask_human',
+      toolInput: { question: 'Was the backup server touched?' }, rationale: 'Asked', status: 'pending', createdAt: 1 });
+    scriptedLLM.reset();
+    scriptedLLM.script({ toolCalls: [ask('Which host was patient zero?'), ask('Was the backup server touched?')] });
+    const result = await runMultiAgentCycle(await folder('S'), settings, true, undefined, undefined, { manual: true });
+    expect(result.errors).toEqual([]);
+    const questions = (await db.agentActions.where('[investigationId+status]').equals(['S', 'pending']).toArray())
+      .map(action => `${action.agentConfigId}: ${action.toolInput.question}`);
+    expect(questions.sort()).toEqual([
+      'ap-lead-analyst: Was the backup server touched?',
+      'ap-lead-analyst: Which host was patient zero?',
+      'ap-threat-hunter: Was the backup server touched?',
+    ]);
+    expect((await db.notes.where('folderId').equals('S').toArray()).filter(note => note.tags.includes('agent-question'))).toHaveLength(2);
+    expect(String(toolResultTurns()[0][0].content)).toContain('already_pending');
   });
 
   it('every agent paused leaves the investigation waiting without an error', async () => {

@@ -168,6 +168,7 @@
   "action.destination": "يُرسل إلى: {{destination}}",
   "action.vendorLookups": "عمليات بحث لدى المورّدين",
   "action.localAgent": "وكيلك المحلي",
+  "action.hostIsIoc": "هذا الموقع مؤشر اختراق (IOC) في هذا التحقيق. قد تؤدي زيارته إلى تنبيه المهاجم.",
   "action.aiReason": "سبب الوكيل:",
   "profile.agentProfiles": "ملفات تعريف الوكيل",
   "profile.customAndBuiltin": "{{custom}} مخصص، {{builtin}} مدمج",

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db';
-import { DEFAULT_SETTINGS, type Settings, type ToolUseBlock } from '../types';
+import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type Settings, type ToolUseBlock } from '../types';
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
-import { classifyToolCall } from '../lib/tool-reach';
+import { classifyToolCall, decideToolCall } from '../lib/tool-reach';
 import { isTrustedFetchUrl } from '../lib/caddy-agent-policy';
 import { isFolderLocalOnly, isShareableFolder } from '../lib/ai-scope';
 import { ids, seedAIWorkspace } from './helpers/ai-workspace';
@@ -218,5 +218,15 @@ describe('A-REACH-6 web fetch', () => {
     const ioc = await reach('fetch_url', { url: 'https://canary-s.example/' }, 'S');
     expect(ioc.flags).toContain('host-is-ioc');
     expect((await reach('fetch_url', { url: 'https://canary-p.example/' }, 'S')).flags).not.toContain('host-is-ioc');
+  });
+
+  it('a stored IOC value that is not a string cannot break the display flag or the verdict', async () => {
+    // A bad import or sync row; the flag is display-only and must not decide anything.
+    const malformed = (id: string, type: string, value: unknown) => ({ id, folderId: 'S', type, value, confidence: 'medium', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+    await db.standaloneIOCs.bulkAdd([malformed('num', 'domain', 42), malformed('nul', 'ipv4', null), malformed('obj', 'url', { href: 'x' })] as never[]);
+    const trusted = await reach('fetch_url', { url: 'https://nvd.nist.gov/vuln/detail/CVE-2024-0001' }, 'S');
+    expect(trusted).toMatchObject({ egress: 'trusted-fetch', flags: [] });
+    expect(decideToolCall(trusted, { surface: 'agent', policy: DEFAULT_AGENT_POLICY })).toEqual({ kind: 'run' });
+    expect((await reach('fetch_url', { url: 'https://canary-s.example/' }, 'S')).flags).toContain('host-is-ioc');
   });
 });

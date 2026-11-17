@@ -168,6 +168,7 @@
   "action.destination": "Envia para: {{destination}}",
   "action.vendorLookups": "consultas a fornecedores",
   "action.localAgent": "seu agente local",
+  "action.hostIsIoc": "Este site é um IOC desta investigação. Visitá-lo pode alertar o atacante.",
   "action.aiReason": "Motivo do agente:",
   "profile.agentProfiles": "Perfis de agentes",
   "profile.customAndBuiltin": "{{custom}} personalizado(s), {{builtin}} integrado(s)",

@@ -1,9 +1,10 @@
 import { Check, X, Clock, AlertTriangle, Info, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { AgentAction } from '../../types';
+import { DEFAULT_SETTINGS, type AgentAction } from '../../types';
 import { cn, formatDate } from '../../lib/utils';
 import { getToolActionClass } from '../../lib/caddy-agent-policy';
+import { classifyToolCall } from '../../lib/tool-reach';
 
 interface AgentActionCardProps {
   action: AgentAction;
@@ -55,6 +56,22 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
     : action.toolName.startsWith('local:') ? t('action.localAgent')
     : destinationHost(action);
 
+  // Display only, read from the case's IOCs: it never blocks or approves anything.
+  const [iocHostActionId, setIocHostActionId] = useState<string>();
+  const { id, toolName, investigationId } = action;
+  // Keyed on the URL, not the input object: the inbox refresh returns new rows.
+  const { url } = action.toolInput;
+  useEffect(() => {
+    if (!isPending || toolName !== 'fetch_url') return;
+    let current = true;
+    // A fetch's reach reads only its URL, and no settings.
+    classifyToolCall({ type: 'tool_use', id, name: toolName, input: { url } }, { homeFolderId: investigationId, settings: DEFAULT_SETTINGS })
+      .then(reach => { if (current) setIocHostActionId(reach.flags.includes('host-is-ioc') ? id : undefined); })
+      .catch(() => { /* The card still shows the destination. */ });
+    return () => { current = false; };
+  }, [isPending, id, toolName, url, investigationId]);
+  const hostIsIoc = isPending && toolName === 'fetch_url' && iocHostActionId === id;
+
   return (
     <div className={cn(
       'border border-border-subtle rounded-lg p-3 transition-colors',
@@ -89,6 +106,12 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
 
       {destination && (
         <p className="text-xs text-text-secondary mt-1 ps-6 break-all">{t('action.destination', { destination })}</p>
+      )}
+      {hostIsIoc && (
+        <p className="flex items-center gap-1 text-xs text-accent-amber mt-1 ps-6">
+          <AlertTriangle size={12} className="shrink-0" />
+          {t('action.hostIsIoc')}
+        </p>
       )}
 
       {/* Rationale preview: model text, not a system statement */}

@@ -30,7 +30,7 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
     get description() { return i18n.t('builtinProfile.iocEnricher.description', { ns: 'agent' }); },
     icon: '🔍',
     role: 'specialist',
-    systemPrompt: `IOC specialist. For each IOC: use enrich_ioc (runs VirusTotal, AbuseIPDB, Shodan, etc. automatically), then fetch_url for additional OSINT. Create notes with findings. Update IOC confidence. Extract new IOCs from research. If case is empty, research the topic and create initial IOCs.`,
+    systemPrompt: `IOC specialist. For each IOC: use enrich_ioc (runs VirusTotal, AbuseIPDB, Shodan, etc. automatically); fetch_url only reference sources, never IOC hosts. Create notes with findings. Update IOC confidence. Extract new IOCs from research. If case is empty, research the topic and create initial IOCs.`,
     allowedTools: [
       'list_iocs', 'read_ioc', 'create_ioc', 'update_ioc', 'bulk_create_iocs',
       'fetch_url', 'extract_iocs', 'create_note', 'search_notes', 'search_all',
@@ -49,7 +49,7 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
     get description() { return i18n.t('builtinProfile.timelineBuilder.description', { ns: 'agent' }); },
     icon: '📅',
     role: 'specialist',
-    systemPrompt: `Timeline specialist. Extract dates from notes/IOCs/tasks. Create timeline events with ATT&CK types (initial-access, execution, persistence, etc.). Research via fetch_url to find key dates. Identify temporal gaps. Create narrative note explaining the timeline.`,
+    systemPrompt: `Timeline specialist. Extract dates from notes/IOCs/tasks. Create timeline events with ATT&CK types (initial-access, execution, persistence, etc.). Find key dates in reference sources via fetch_url. Identify temporal gaps. Create narrative note explaining the timeline.`,
     allowedTools: [
       'list_timeline_events', 'read_timeline_event', 'create_timeline_event', 'update_timeline_event',
       'search_notes', 'read_note', 'list_iocs', 'read_ioc', 'list_tasks',
@@ -100,7 +100,7 @@ Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|re
     get description() { return i18n.t('builtinProfile.reporter.description', { ns: 'agent' }); },
     icon: '📝',
     role: 'specialist',
-    systemPrompt: `Reporter. Read all data, generate structured reports via generate_report or create_note. Include IOC stats, timeline coverage, task completion, open questions. Recommend next steps. Use fetch_url for context if data is sparse.`,
+    systemPrompt: `Reporter. Read all data, generate structured reports via generate_report or create_note. Include IOC stats, timeline coverage, task completion, open questions. Recommend next steps. Use fetch_url on reference sources if data is sparse.`,
     allowedTools: [
       'get_investigation_summary', 'search_notes', 'read_note', 'search_all',
       'list_tasks', 'read_task', 'list_iocs', 'read_ioc',
@@ -138,7 +138,7 @@ Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|re
   {
     id: 'ap-threat-hunter', get name() { return i18n.t('builtinProfile.threatHunter.name', { ns: 'agent' }); }, icon: '🎯', role: 'specialist',
     get description() { return i18n.t('builtinProfile.threatHunter.description', { ns: 'agent' }); },
-    systemPrompt: `You are a Threat Hunter. Proactively hunt for threats using hypothesis-driven methodology. Map findings to MITRE ATT&CK techniques. Look for behavioral patterns, not just IOCs. Create hypotheses as notes, test them via research (fetch_url), document results. Build timeline events for discovered activity. Focus on what automated tools miss.`,
+    systemPrompt: `You are a Threat Hunter. Proactively hunt for threats using hypothesis-driven methodology. Map findings to MITRE ATT&CK techniques. Look for behavioral patterns, not just IOCs. Create hypotheses as notes, test them via enrich_ioc (never fetch IOC hosts), document results. Build timeline events for discovered activity. Focus on what automated tools miss.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true, seriousness: 50, verbosity: 50, creativity: 70, riskTolerance: 80 },
     priority: 12, source: 'builtin', createdAt: 0, updatedAt: 0,
@@ -146,7 +146,7 @@ Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|re
   {
     id: 'ap-malware-analyst', get name() { return i18n.t('builtinProfile.malwareAnalyst.name', { ns: 'agent' }); }, icon: '🦠', role: 'specialist',
     get description() { return i18n.t('builtinProfile.malwareAnalyst.description', { ns: 'agent' }); },
-    systemPrompt: `You are a Malware Analyst. Analyze malware indicators: research hashes via fetch_url/enrich_ioc, identify malware families, extract C2 infrastructure, map capabilities to ATT&CK. Create IOCs for discovered indicators. Document analysis methodology and findings in notes. Link related samples and infrastructure.`,
+    systemPrompt: `You are a Malware Analyst. Analyze malware indicators: research hashes via enrich_ioc (never fetch IOC hosts), identify malware families, extract C2 infrastructure, map capabilities to ATT&CK. Create IOCs for discovered indicators. Document analysis methodology and findings in notes. Link related samples and infrastructure.`,
     allowedTools: ['list_iocs', 'read_ioc', 'create_ioc', 'update_ioc', 'fetch_url', 'enrich_ioc', 'create_note', 'search_notes', 'read_note', 'get_investigation_summary', 'search_all', 'link_entities', 'create_timeline_event', 'extract_iocs', 'list_integrations'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true, seriousness: 70, verbosity: 70, creativity: 40, riskTolerance: 40 },
     priority: 13, source: 'builtin', createdAt: 0, updatedAt: 0,
@@ -154,7 +154,7 @@ Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|re
   {
     id: 'ap-network-forensics', get name() { return i18n.t('builtinProfile.networkForensics.name', { ns: 'agent' }); }, icon: '🌐', role: 'specialist',
     get description() { return i18n.t('builtinProfile.networkForensics.description', { ns: 'agent' }); },
-    systemPrompt: `You are a Network Forensics specialist. Analyze network-related IOCs: IPs, domains, URLs. Research C2 infrastructure via fetch_url/enrich_ioc. Trace lateral movement patterns. Create timeline events for network activity. Map communication flows. Identify beaconing patterns and data exfiltration indicators.`,
+    systemPrompt: `You are a Network Forensics specialist. Analyze network-related IOCs: IPs, domains, URLs. Research C2 infrastructure via enrich_ioc; never fetch IOC hosts. Trace lateral movement patterns. Create timeline events for network activity. Map communication flows. Identify beaconing patterns and data exfiltration indicators.`,
     allowedTools: ['list_iocs', 'read_ioc', 'create_ioc', 'update_ioc', 'fetch_url', 'enrich_ioc', 'create_note', 'search_notes', 'read_note', 'get_investigation_summary', 'search_all', 'link_entities', 'create_timeline_event', 'list_timeline_events', 'list_integrations'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true, seriousness: 70, verbosity: 60, creativity: 30, riskTolerance: 40 },
     priority: 14, source: 'builtin', createdAt: 0, updatedAt: 0,
@@ -162,7 +162,7 @@ Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|re
   {
     id: 'ap-digital-forensics', get name() { return i18n.t('builtinProfile.digitalForensics.name', { ns: 'agent' }); }, icon: '🔬', role: 'specialist',
     get description() { return i18n.t('builtinProfile.digitalForensics.description', { ns: 'agent' }); },
-    systemPrompt: `You are a Digital Forensics specialist. Analyze forensic artifacts: file paths, registry keys, process execution, memory artifacts. Document evidence chain of custody. Create detailed timeline events with precise timestamps. Research file hashes and paths via fetch_url. Preserve evidence integrity in analysis notes. Flag artifacts that require physical evidence collection.`,
+    systemPrompt: `You are a Digital Forensics specialist. Analyze forensic artifacts: file paths, registry keys, process execution, memory artifacts. Document evidence chain of custody. Create detailed timeline events with precise timestamps. Research hashes via enrich_ioc, paths in reference sources. Preserve evidence integrity in analysis notes. Flag artifacts that require physical evidence collection.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true, seriousness: 80, verbosity: 70, creativity: 20, riskTolerance: 20 },
     priority: 16, source: 'builtin', createdAt: 0, updatedAt: 0,
@@ -170,7 +170,7 @@ Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|re
   {
     id: 'ap-vulnerability-analyst', get name() { return i18n.t('builtinProfile.vulnerabilityAnalyst.name', { ns: 'agent' }); }, icon: '🛡️', role: 'specialist',
     get description() { return i18n.t('builtinProfile.vulnerabilityAnalyst.description', { ns: 'agent' }); },
-    systemPrompt: `You are a Vulnerability Analyst. Research CVEs via fetch_url (NVD, exploit-db). Assess exploitability and impact. Prioritize patching by business risk. Map vulnerabilities to the investigation's attack surface. Create IOCs for vulnerable software versions. Document remediation recommendations. Track patch status as tasks.`,
+    systemPrompt: `You are a Vulnerability Analyst. Research CVEs via fetch_url (NVD, CISA, MITRE). Assess exploitability and impact. Prioritize patching by business risk. Map vulnerabilities to the investigation's attack surface. Create IOCs for vulnerable software versions. Document remediation recommendations. Track patch status as tasks.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true, seriousness: 60, verbosity: 60, creativity: 40, riskTolerance: 50 },
     priority: 17, source: 'builtin', createdAt: 0, updatedAt: 0,
