@@ -111,6 +111,23 @@ describe('D-NAMES-1 and D-NAMES-3 at every transport', () => {
     expect(toolUses(requests[1].payload).map(block => block.name)).toEqual([aliasOf(requests[1].payload, `[SOC Two] Synthetic ${LONG}`)]);
   });
 
+  it('useLLM decodes an aliased dynamic call on a continuation turn as well as the first', async () => {
+    installExtension();
+    const tools = [...TOOL_DEFINITIONS.slice(0, 2), ...getHostToolDefinitions(settings)];
+    replies = [
+      payload => ({ stopReason: 'tool_use', contentBlocks: [{ type: 'tool_use', id: 'call-1', name: aliasOf(payload, `[SOC Two] Synthetic ${LONG}`), input: { q: 1 } }] }),
+      payload => ({ stopReason: 'tool_use', contentBlocks: [{ type: 'tool_use', id: 'call-2', name: aliasOf(payload, '[Local Agent] Synthetic triage'), input: { q: 2 } }] }),
+    ];
+    const executor = vi.fn().mockResolvedValue({ result: 'ok', isError: false });
+    const complete = vi.fn();
+    const { result } = renderHook(() => useLLM());
+    act(() => { result.current.sendAgentRequest({ provider: 'anthropic', model: 'fixture', apiKey: 'synthetic-key', messages: [{ role: 'user', content: 'Check the hosts.' }], tools }, executor, complete); });
+    await vi.waitFor(() => expect(complete).toHaveBeenCalled());
+    expect(executor.mock.calls.map(([call]) => call.name)).toEqual([`host:soc-2:${LONG}`, 'local:triage']);
+    expect(requests).toHaveLength(3);
+    for (const { payload } of requests) for (const name of outgoingNames(payload)) expect(name).toMatch(PROVIDER_SAFE);
+  });
+
   it('an agent cycle sends provider-safe names and decodes a skill call before the allowlist and the queue', async () => {
     installExtension();
     await db.folders.add(folder);
