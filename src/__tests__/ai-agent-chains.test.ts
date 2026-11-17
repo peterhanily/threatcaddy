@@ -9,7 +9,7 @@ import { db } from '../db';
 import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentPolicy, type AgentProfile, type AgentSoul, type Folder } from '../types';
 import { buildAgentToolset, runAgentCycle } from '../lib/caddy-agent';
 import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
-import { executeApprovedAction } from '../lib/agent-action-approval';
+import { bulkApproveActions, executeApprovedAction, previewBulkApprove } from '../lib/agent-action-approval';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { CROSS_CASE_READ_TOOLS, getToolActionClass } from '../lib/caddy-agent-policy';
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
@@ -169,6 +169,26 @@ describe('B-CHAIN-4 a person approves the queued fetch', () => {
     expect((await executeApprovedAction(fetch)).isError).toBe(false);
     expect(egress.fetchUrlPosts()).toEqual([COLLECTOR]);
     expect((await db.agentActions.get(fetch.id))?.status).toBe('executed');
+  });
+
+  it('approve all runs routine creates and leaves egress, spawn, reflect and server rows for individual review', async () => {
+    await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY, autoApproveCreate: false } });
+    await deploy('ap-ciso');
+    scriptedLLM.script(...ATTACK);
+    await runMultiAgentCycle(await folder('S'), settings, true);
+    await db.agentActions.add({ id: 'srv:imported', investigationId: 'S', threadId: 't', toolName: 'create_note', toolInput: { title: 'Server note' },
+      rationale: 'Imported by 2.0.2', status: 'pending', createdAt: 1 });
+    const pending = async () => (await db.agentActions.toArray()).filter(action => action.status === 'pending').map(action => action.toolName).sort();
+    expect(await pending()).toEqual(['create_note', 'create_note', 'fetch_url', 'reflect_on_performance', 'spawn_agent']);
+
+    expect(await previewBulkApprove('S')).toEqual({ routine: 1, review: 4 });
+    expect(await bulkApproveActions('S')).toEqual({ executed: 1, failed: 0, skipped: 4 });
+    expect(await pending()).toEqual(['create_note', 'fetch_url', 'reflect_on_performance', 'spawn_agent']);
+    expect((await db.agentActions.get('srv:imported'))?.status).toBe('pending');
+    expect(egress.fetchUrlPosts()).toEqual([]);
+    expect((await db.notes.where('folderId').equals('S').toArray()).filter(note => note.title === 'Collected findings')).toHaveLength(1);
+    expect(await db.agentDeployments.count()).toBe(1);
+    expect((await db.folders.get('S'))?.agentStatus).toBe('waiting');
   });
 });
 

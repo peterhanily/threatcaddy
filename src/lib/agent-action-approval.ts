@@ -17,7 +17,12 @@ import { isShareableFolder } from './ai-scope';
 import { mintHumanApproval } from './human-approval';
 import { toolExecutionError, type ToolExecutionConstraints, type ToolExecutionResult } from './llm-tool-execution';
 import { SUPERVISOR_ACTION_PROFILE, SUPERVISOR_TOOLS, getSupervisorToolPermission } from './supervisor-tool-policy';
+import { classifyToolCall, isRoutineReach } from './tool-reach';
 import { workspaceStorageKey } from './workspace-profiles';
+
+function storedSettings(): Settings {
+  try { return JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}'); } catch { return {} as Settings; }
+}
 
 /** Re-derive what the proposing agent may do today; the stored row is not trusted. */
 async function approvalConstraints(action: AgentAction, toolUse: ToolUseBlock): Promise<ToolExecutionConstraints | string> {
@@ -40,11 +45,9 @@ async function approvalConstraints(action: AgentAction, toolUse: ToolUseBlock): 
 
   const profile = await resolveAgentProfile(action.agentConfigId);
   if (action.agentConfigId && !profile) return 'The agent profile is no longer available.';
-  let settings: Settings;
-  try { settings = JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}'); } catch { settings = {} as Settings; }
   const { effectiveAllowedTools } = buildAgentToolset({
     profile, baseTools: TOOL_DEFINITIONS, delegationTools: DELEGATION_TOOL_DEFINITIONS, executiveTools: EXECUTIVE_TOOL_DEFINITIONS,
-    hostTools: getHostToolDefinitions(settings), getActionClass: getToolActionClass,
+    hostTools: getHostToolDefinitions(storedSettings()), getActionClass: getToolActionClass,
     homeShareable: await isShareableFolder(action.investigationId),
   });
   if (!effectiveAllowedTools.has(action.toolName)) return `Tool "${action.toolName}" is not available to this agent.`;
@@ -108,19 +111,49 @@ export async function rejectAction(actionId: string): Promise<void> {
   });
 }
 
+const pendingActions = (investigationId: string) => db.agentActions
+  .where('[investigationId+status]')
+  .equals([investigationId, 'pending'])
+  .toArray();
+
+/** "Approve all" covers routine rows only: nothing that leaves this device,
+ * changes agents, reaches another investigation or came from a server. */
+async function isRoutineAction(action: AgentAction, settings: Settings): Promise<boolean> {
+  if (action.id.startsWith('srv:')) return false;
+  const call: ToolUseBlock = { type: 'tool_use', id: action.id, name: action.toolName, input: action.toolInput };
+  try {
+    return isRoutineReach(await classifyToolCall(call, { homeFolderId: action.investigationId, settings }));
+  } catch {
+    return false;
+  }
+}
+
+/** How many pending rows "Approve all" would run, and how many need individual review. */
+export async function previewBulkApprove(investigationId: string): Promise<{ routine: number; review: number }> {
+  const settings = storedSettings();
+  const pending = await pendingActions(investigationId);
+  let routine = 0;
+  for (const action of pending) if (await isRoutineAction(action, settings)) routine++;
+  return { routine, review: pending.length - routine };
+}
+
 /**
- * Bulk approve all pending actions for an investigation.
+ * Approve every routine pending action for an investigation; the rest stay
+ * pending for individual review.
  */
-export async function bulkApproveActions(investigationId: string): Promise<{ executed: number; failed: number }> {
-  const pending = await db.agentActions
-    .where('[investigationId+status]')
-    .equals([investigationId, 'pending'])
-    .toArray();
+export async function bulkApproveActions(investigationId: string): Promise<{ executed: number; failed: number; skipped: number }> {
+  const settings = storedSettings();
+  const pending = await pendingActions(investigationId);
 
   let executed = 0;
   let failed = 0;
+  let skipped = 0;
 
   for (const action of pending) {
+    if (!await isRoutineAction(action, settings)) {
+      skipped++;
+      continue;
+    }
     try {
       const result = await executeApprovedAction(action);
       if (result.isError) failed++;
@@ -131,8 +164,9 @@ export async function bulkApproveActions(investigationId: string): Promise<{ exe
     }
   }
 
-  // Update agent status — reflect failures
-  await db.folders.update(investigationId, { agentStatus: failed > 0 ? 'error' : 'idle' });
+  // The investigation keeps waiting while anything is left for review.
+  const remaining = await db.agentActions.where('[investigationId+status]').equals([investigationId, 'pending']).count();
+  await db.folders.update(investigationId, { agentStatus: remaining > 0 ? 'waiting' : 'idle' });
 
-  return { executed, failed };
+  return { executed, failed, skipped };
 }
