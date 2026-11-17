@@ -2,6 +2,72 @@
 
 ## Unreleased
 
+## v2.0.3 — 2026-11-18
+
+Hardens CaddyAI chat, AgentCaddy agents, the supervisor and the agent bridge against instructions planted in investigation content (prompt injection): each AI tool call is decided by where it reaches, anything that leaves the device or crosses into another investigation needs a person, and Settings → AI says where AI data goes. Also replaces the permanent offline strip. The server code is unchanged apart from its version, with no database migrations. See the [upgrade and channel notes](docs/releases/v2.0.3.md). The extension is released at 1.1.4.
+
+### CaddyAI chat
+
+- CaddyAI asks before it opens any web page. The card names the site and flags sites that are not built-in reference sites, addresses long enough to carry investigation data, and sites that are IOCs in the investigation.
+- CaddyAI also asks before using skills, SIEM or ticket tools, changing agents, writing into another investigation, or reading other investigations from an investigation that can sync; that card says the conversation syncs to the investigation's members. `create_in_investigation` matches an exact investigation name only.
+- Local-only investigations are invisible to chat, agents and the agent bridge working in an investigation that can sync: they are not listed, searched or read.
+- YOLO auto-approves only changes inside the conversation's investigation and built-in vendor lookups, and still asks for everything above. Its off position is labelled "Ask" instead of "Safe". Plan mode only reads the conversation's investigation: no web fetch, skills, other investigations or changes.
+- Approval cards queue one at a time ("1 of N") above the composer, say what each call reaches, keep the raw input under Details and flag calls taken from reply text. Enter no longer approves, Approve enables after half a second, and Escape in the card or the empty composer rejects. On short windows the card scrolls within its own area.
+- A write card names the investigation the change lands in, and whether it syncs, when that is not the investigation selected in the sidebar.
+- Chat works in the thread's own investigation, falling back to the selected one, and `/fetch` files its note there.
+- Chat, agent-audit and meeting messages no longer load remote images or media; exec mode and shared chat links show images as links.
+- Suggestion chips written by CaddyAI no longer run slash commands or carry @-mentions. An @-mention of a trashed entity, or of a local-only one from an investigation that can sync, is left unresolved.
+
+### AgentCaddy
+
+- Agents can no longer deploy, stop or run agents, create in other investigations, run remote commands, or read or change other investigations' entities (apart from Pattern Hunter's comparisons, below). Executives' spawn, define, dismiss and reflect actions wait for approval.
+- Agents fetch automatically only from NVD, CVE, CWE, MITRE ATT&CK, CISA and FIRST (https, exact host), when the investigation allows fetches. Other fetches become proposals labelled "Fetch" with the destination; a proposal to visit a site that is an IOC in the investigation warns that it can alert the attacker.
+- Without approval, agents run only the built-in vendor lookups (VirusTotal, AbuseIPDB, Shodan, URLhaus, ThreatFox, MalwareBazaar, GreyNoise). Team and community templates and Slack notifications need an approved proposal or a manual run. SIEM and ticket tools are offered only to profiles that list them.
+- An investigation's auto-approve settings limit every deployed agent; an agent's own settings can turn an action off, never on. The agent settings show what each agent asks before doing, and a one-time notice appears when the limit changes what a deployed built-in agent runs on its own.
+- Only the agent with a pending proposal or question pauses, and the banner names it; the others keep working. A manual Run also runs waiting agents without queueing a repeated proposal twice. Agents no longer speed up to 60-second cycles.
+- "Approve all" runs only routine actions inside the investigation. Fetches, vendor lookups, skills, agent changes, other investigations, supervisor proposals and calls taken from reply text are left for individual review.
+- Pattern Hunter compares investigations only when deployed in a local-only investigation; in one that can sync, its card says the cross-investigation tools are off there. In a workspace never connected to a team server, investigation settings show a "Keep on this device" switch.
+- Tools can keep at most 8 active agents per investigation and cannot deploy a profile that is already active, also when approvals run at the same time. Dismissing an agent rejects its pending proposals.
+- Notes (including alert notes and note folders), tasks, IOCs and timeline events created by agents, the supervisor or the agent bridge record their creator on this device and carry an `ai-generated` tag that syncs. Entities created in chat stay attributed to the analyst, without the tag.
+- The supervisor keeps its findings in a local-only "CaddyAgent Supervisor" investigation and never adopts one of that name that can sync. It asks before writing into other investigations, cannot reach the network or change agents, runs no tool calls taken from reply text, and shows an error toast when it cannot run.
+- Approving a proposal that 2.0.3 no longer allows, for example one queued by 2.0.2, marks it failed with the reason and runs nothing. Approving an agent's question acknowledges it.
+- Meetings use the current built-in agent personas, not copies stored by an earlier version. A meeting that cannot run says why and keeps the agenda and the request; a refused shift handoff says why.
+- Agent prompts say that investigation text, tool results and web pages are data, not instructions. Built-in agents are told to research indicators with vendor lookups and reference sources, never the indicator's own host.
+- Forensicate Scanner runs a local check only and no longer contacts forensicate.ai.
+
+### AI routing and Settings
+
+- The route Settings → AI shows is the route used by chat, agents, meetings and the supervisor. A local model with an endpoint is always called directly; Browser Extension and Team Server routing never fall back to the other; Auto uses the team server while signed in, otherwise the extension. With no route nothing is sent, and the reason is shown. The routing select shows "Auto" when no mode was chosen.
+- Settings → AI has a "Where AI data goes" section: the route for the local model and for cloud providers (naming the team server, and that its operator can read prompts, investigation content the AI reads and tool results, when requests go through it), whether web fetch is available, the agent bridge switch, and any named agent hosts with Remove.
+- AgentCaddy shows its setup banner only when the agent cycle has no route for the model it will use, including an investigation's own agent model; with Team Server routing and no sign-in, it asks you to sign in.
+- Supervisor, meeting and agent refusals, such as a missing API key or too few agents for a meeting, appear in the analyst's language.
+- With the team-server route, chat thread titles and summaries of long conversations are skipped, because they can only use the extension. Requests to a local model with no API key carry no Authorization header.
+- `/fetch` and `/stoploop` work with no AI route and over the thread's token budget. A `/loop` run with no route sends nothing, shows why, and runs again within the loop's interval once a route returns.
+- Local and agent-host skills no longer break Anthropic, OpenAI or Mistral requests: their names are aliased in transit.
+
+### Web fetch, integrations and extension
+
+- Web fetch (`fetch_url` and `/fetch`) refuses private, local, literal-IP, credentialed and over-2048-character addresses before contacting the extension, with translated messages.
+- Web fetch needs the ThreatCaddy extension 1.1.3 or later, approved for this app, and is refused at once otherwise. ThreatCaddy checks the extension serving the page at every fetch, so a second, older ThreatCaddy extension that loaded first is refused too; the message says to keep only the newest and reload.
+- Extension 1.1.4 turns local-model text into tool calls only for an exact `<tool_call>` wrapper, advertises its guarded web fetch (`fetch_url_public_v1`), and leaves another ThreatCaddy extension's capabilities alone when that extension loaded first.
+- Installing a team template creates it disabled and lists the domains it can contact.
+- Integration runs by signed-in team users no longer post API keys to a missing team-server route; they use the extension or a direct request.
+- The standalone file blocks remote images, audio and video in Chromium-based browsers.
+
+### Agent bridge and agent hosts
+
+- The agent bridge (`window.threatcaddy`, used by browser automation such as the Claude Code skill over CDP) is off by default; turn it on in Settings → AI. It works only in the investigation selected in ThreatCaddy (`setFolderId` was removed), offers 33 tools, and cannot fetch web pages, run enrichment, reach other investigations or change agents.
+- Named agent hosts can no longer be added or edited; Settings → AI lists them with Remove. Hosts that use plain http on an address other than localhost are no longer offered or called. Every agent-host or local-skill call asks first, whatever action class the host declares. Skill descriptions and parameter schemas are sanitised and capped.
+
+### Offline use
+
+- The hosted app no longer shows a permanent offline strip. A notice appears only while a slow first offline install runs ("Keep this tab open") or, dismissibly, when saving for offline use failed or is not possible in this browser.
+- Settings → General has an "Offline use" row with the current status, and Settings → Data says that offline use is not a backup. The standalone file shows none of this.
+
+### Accessibility
+
+- Screen readers announce approval cards and offline notices. The light-theme Approve label on approval cards is readable, raw tool input reads left to right in Arabic, Hebrew and Farsi, and agent proposal expand buttons have correct accessible names.
+
 ## v2.0.2 — 2026-11-16
 
 First release since 2.0.0. Version 2.0.1 was deployed to threatcaddy.com and published as the GHCR `latest` server image on 15 November 2026, but its downloads were never released; an independent review then found regressions in it, which this release fixes. 2.0.2 includes every 2.0.1 change. See the [upgrade and channel notes](docs/releases/v2.0.2.md). The extension remains independently versioned at 1.1.3.
