@@ -4,7 +4,7 @@ Integration templates are declarative JSON workflows. Installed integrations pai
 
 ## Availability and triggers
 
-The browser runs integrations through explicit callers: IOC run menus, bulk enrichment, imported-IOC enrichment, and the enrichment tool used by chat. Declaring a trigger does not install a general entity listener, scheduler, or webhook endpoint.
+The browser runs integrations through explicit callers: IOC run menus, bulk enrichment, imported-IOC enrichment, and the enrichment tool used by CaddyAI and agents. Declaring a trigger does not install a general entity listener, scheduler, or webhook endpoint. When that tool runs without a person's approval (an agent's auto-approved call, or YOLO chat), it runs only the built-in passive vendor lookups (VirusTotal, AbuseIPDB, Shodan, URLhaus, ThreatFox, MalwareBazaar and GreyNoise templates); other installed integrations, including team and community templates and Slack notifications, are skipped as needing approval.
 
 | Declaration | Current behavior |
 |---|---|
@@ -55,7 +55,7 @@ This complete template makes no network requests and does not create entities:
 
 The full schema is in `src/types/integration-types.ts`; runtime validation is in `src/lib/integration-plan.ts`. Configuration validates declared types/options and preserves valid `false` and `0` values. Defaults apply to missing values, not every falsy value.
 
-JSON imports always receive a fresh local ID, preserving any installed definition with the supplied ID. Catalog/team installation refuses collisions with stored or built-in templates, including IDs still referenced by installations. There is no automatic replacement/update path: import a separate JSON copy, review it, and configure it explicitly. Import errors preserve the pasted draft.
+JSON imports always receive a fresh local ID, preserving any installed definition with the supplied ID. Catalog/team installation refuses collisions with stored or built-in templates, including IDs still referenced by installations. There is no automatic replacement/update path: import a separate JSON copy, review it, and configure it explicitly. Import errors preserve the pasted draft. A team template is installed disabled, and a message lists the domains it can contact; review it, then enable it on the Installed tab.
 
 ## Execution graph and limits
 
@@ -119,7 +119,7 @@ The words `and` and `or` combine conditions left to right without operator prece
 
 Methods are `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`. URL, headers, query parameters, and body support substitution. Body encoding is `json`, `form`, or `text`; response decoding is `json` or `text`. The default timeout is 30 seconds. Configured retries are bounded and use increasing backoff for eligible status codes.
 
-Client transport may use the configured team proxy, the extension, or direct browser fetch. Direct fetch remains subject to browser CORS and the application's content security policy; not every declared endpoint will be reachable. Direct response bodies are bounded at 5 MiB, including streamed bodies, and cancellation remains active through body consumption.
+Client transport uses the extension's proxy when the extension offers `proxy_fetch`, and a direct browser fetch otherwise. There is no team-server proxy, so no transport sends API keys to the team server. Direct fetch remains subject to browser CORS and the application's content security policy; not every declared endpoint will be reachable. Direct response bodies are bounded at 5 MiB, including streamed bodies, and cancellation remains active through body consumption.
 
 `requiredDomains` is a bare-hostname allowlist checked before dispatch. It is not by itself a DNS-aware private-network/SSRF defense. Each transport has its own additional restrictions. Only actual dispatched HTTP attempts count toward API usage.
 

@@ -5,9 +5,9 @@
 The ThreatCaddy browser extension (Chrome MV3 / Firefox) serves two purposes:
 
 1. **Clip capture** -- Select text on any web page, right-click or press a keyboard shortcut, and save it as a Markdown clip to be imported into ThreatCaddy.
-2. **LLM proxy** -- The ThreatCaddy web app routes AI API calls (Anthropic, OpenAI, Gemini, Mistral, local endpoints) through the extension's background service worker to bypass CORS restrictions. This enables streaming LLM responses directly in the browser without a backend relay.
+2. **LLM proxy** -- The ThreatCaddy web app routes AI API calls (Anthropic, OpenAI, Gemini, Mistral, local endpoints) through the extension's background service worker to bypass CORS restrictions. This enables streaming LLM responses directly in the browser without a backend relay. When a local model endpoint is configured in the app, the app sends chat, agent, meeting and supervisor requests to it directly instead; chat titles and conversation summaries still go to it through the extension.
 
-All captured data stays in `chrome.storage.local`. The extension makes no network requests except those explicitly initiated by the user (sending clips to the target app, or proxying LLM API calls with user-provided keys).
+All captured data stays in `chrome.storage.local`. The extension makes network requests only for an approved ThreatCaddy app: sending clips to it, proxying its AI requests with the keys it supplies, and fetching the web pages and integration requests it asks for. Clipping and sending clips are user actions. CaddyAI and agent web fetches need the analyst's approval, except that deployed agents fetch a fixed list of reference sites (NVD, CVE, CWE, MITRE ATT&CK, CISA, FIRST) without per-call approval when the investigation allows fetches, which it does by default.
 
 ### Architecture
 
@@ -81,7 +81,7 @@ The web app and the extension communicate through a multi-hop message chain:
 
 | Message Type | Fields | Description |
 |-------------|--------|-------------|
-| `TC_EXTENSION_READY` | `protocolVersion`, `capabilities` | Signals extension presence. Sent on load, BFCache restore, visibility change, and in response to `TC_EXTENSION_PING`. |
+| `TC_EXTENSION_READY` | `protocolVersion`, `capabilities` | Signals extension presence. Sent only while the app is approved in the extension: after the approval check on load and whenever approvals change, on BFCache restore, visibility change, and in response to `TC_EXTENSION_PING`. |
 | `TC_LLM_CHUNK` | `requestId`, `content` | A streamed text chunk from the LLM. |
 | `TC_LLM_DONE` | `requestId`, `stopReason`, `contentBlocks` | LLM stream completed. `contentBlocks` contains structured blocks (text, tool_use). `stopReason` is normalized to `end_turn`, `tool_use`, or `max_tokens`. |
 | `TC_LLM_ERROR` | `requestId`, `error` | LLM request failed. |
@@ -123,25 +123,27 @@ Port names follow the pattern `llm-<requestId>`.
 
 ### Protocol Versioning
 
-`bridge.js` declares a `TC_PROTOCOL_VERSION` (currently `1`) and a `TC_CAPABILITIES` array (`['llm_streaming', 'fetch_url', 'clip_import']`). These are sent in every `TC_EXTENSION_READY` message so the web app can detect which features the installed extension supports and degrade gracefully if the version is older.
+`bridge.js` declares a `TC_PROTOCOL_VERSION` (currently `1`) and a `TC_CAPABILITIES` array. In 1.1.4 it is `['llm_streaming', 'fetch_url', 'fetch_url_public_v1', 'clip_import', 'clip_import_ack_v2', 'proxy_fetch', 'proxy_fetch_abort', 'notification_ack']`. Once the background confirms that the app is approved, the bridge publishes the list on `document.documentElement.dataset.tcBridgeCaps` and sends it in `TC_EXTENSION_READY`, so the web app can detect which features the installed extension supports and degrade gracefully if the version is older. It removes the attribute while it rechecks approval.
+
+The app sends `TC_FETCH_URL` only to an extension whose capabilities include `fetch_url_public_v1` or `clip_import_ack_v2` (1.1.3 or later), which refuse private destinations and redirects. Besides the attribute, it checks at call time: it posts `TC_EXTENSION_PING` and fetches only if a `TC_EXTENSION_READY` reply arrives and every reply carries one of those capabilities. Otherwise it refuses with a message to install or update the extension.
 
 ### Duplicate Injection Guard
 
-`bridge.js` uses `document.documentElement.dataset.tcBridgeLoaded` to prevent double-initialization when both static `content_scripts` and dynamic `executeScript` inject it onto the same page. If already loaded, it re-sends `TC_EXTENSION_READY` and exits.
+`bridge.js` uses `document.documentElement.dataset.tcBridgeLoaded` to prevent double-initialization when both static `content_scripts` and dynamic `executeScript` inject it onto the same page. If it is already loaded by the same extension, the new copy re-checks app approval and, while the app is still approved, republishes the capabilities and re-sends `TC_EXTENSION_READY`. If a different installed ThreatCaddy extension loaded the bridge first, the new copy does nothing: that extension's listeners serve the page and its capabilities stand.
 
 ### Extension Context Validation
 
-Before processing any message, `bridge.js` calls `isExtensionValid()` which checks `chrome.runtime.id`. If the extension context has been invalidated (e.g., extension updated or unloaded), it returns an error to the web app instead of silently failing.
+Before processing any message, `bridge.js` calls `isExtensionValid()`, which requires the app to be approved and checks `chrome.runtime.id`. If the extension context has been invalidated (e.g., extension updated or unloaded), it returns an error to the web app instead of silently failing.
 
 ### Host Permission Model
 
 LLM API origins are declared as `optional_host_permissions` rather than granted by default. The background worker calls `ensureLLMPermission(url)` before every LLM API call, throwing an error if the permission hasn't been granted. Users enable these permissions via toggle switches in the popup UI.
 
-Similarly, URL fetching (`FETCH_URL`) checks `chrome.permissions.contains` for the target origin before fetching, and requests permission if not yet granted.
+Similarly, URL fetching (`FETCH_URL`) checks `chrome.permissions.contains` for the target origin before fetching. Without that permission it returns `errorUrlPermissionRequired` and does not prompt.
 
 ### URL Validation
 
-The `FETCH_URL` handler validates that the URL uses `http:` or `https:` protocol before fetching. The `SEND_TO_TARGET` handler validates `http:`, `https:`, or `file:` protocols.
+The `FETCH_URL` handler accepts only credential-free `http:` or `https:` URLs with a public hostname: literal IP addresses, single-label names and names ending in `.localhost`, `.local`, `.internal`, `.home` or `.lan` are refused. A name that resolves to a private address is not detected, because the extension cannot pin DNS. Before posting `TC_FETCH_URL`, the app applies the same rule and also refuses URLs longer than 2048 characters. The `SEND_TO_TARGET` handler validates `http:`, `https:`, or `file:` protocols.
 
 ## Background Worker
 
@@ -161,9 +163,11 @@ Accepts long-lived port connections (name prefix `llm-`) and streams responses f
 
 All providers use SSE streaming. Responses are normalized to a common format: `chunk` messages with text content, followed by a `done` message with `stopReason` (`end_turn`, `tool_use`, or `max_tokens`) and `contentBlocks` (text and tool_use blocks). Tool call arguments are accumulated across deltas and parsed into JSON on completion.
 
+For a local model that returns no structured tool calls, 1.1.4 reads tool calls from the reply text only when they use the exact `<tool_call>{"name":"…","arguments":{…}}</tool_call>` wrapper and name a tool offered in the request; JSON in code fences or other tags is ignored. These calls get `text_tc_` ids, and the app treats them as taken from reply text: writes, outbound calls, agent changes and reads of other investigations never run without approval. Approval does not widen what the agent or the supervisor that proposed a call may do; an agent's approved read of another investigation's entity, for example, is still refused.
+
 ### CORS Proxy (URL Fetch)
 
-Fetches arbitrary URLs with a 15-second timeout, converts the HTML response to Markdown using a regex-based `htmlToText()` function (strips scripts, styles, nav, header, footer; converts headings, links, lists, code blocks), and returns `{ title, content }`. Output is truncated to 50 KB.
+Fetches public URLs (see [URL Validation](#url-validation)) with a 15-second timeout, `redirect: 'error'`, `credentials: 'omit'` and a 5 MiB response cap, converts the HTML response to Markdown using a regex-based `htmlToText()` function (strips scripts, styles, nav, header, footer; converts headings, links, lists, code blocks), and returns `{ title, content }`. Output is truncated to 50 KB.
 
 ### Clip Capture and Storage
 

@@ -1,6 +1,6 @@
 # ThreatCaddy — Claude Desktop (MCP Server)
 
-Future: MCP server that exposes ThreatCaddy's 29 tools for Claude Desktop.
+Future: MCP server that exposes the ThreatCaddy agent bridge's 33 tools (see [`../claude-code/SKILL.md`](../claude-code/SKILL.md)) for Claude Desktop.
 
 ## Status
 

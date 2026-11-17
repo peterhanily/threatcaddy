@@ -200,6 +200,14 @@ All responses include:
 
 In-memory sliding window rate limiting, keyed by IP address. Limits are configurable per endpoint.
 
+### 5.6 AI Routing and Tool Approval
+
+**Routing.** `resolveRoute` (`src/lib/llm-router.ts`) picks the route for chat, agent cycles, meetings and the supervisor, and the Settings → AI "Where AI data goes" section describes the same result. A local model with an endpoint is called directly; chat titles and conversation summaries (`generateChatTitle`, `summarizeConversation` in `src/lib/chat-utils.ts`) still go to it through the extension. Browser Extension and Team Server modes use only that route. Auto uses the team server when the workspace has a signed-in session (a server URL alone is not one), otherwise the extension. With no route, nothing is sent. The team server's operator can read the prompts, investigation content and tool results that go through it.
+
+**Tool calls.** Investigation content can carry instructions aimed at the model, so a call is judged by where it reaches, not by why the model made it. `classifyToolCall` (`src/lib/tool-reach.ts`) records whether a call writes, makes an outbound request (web fetch, vendor lookups, skills, SIEM or ticket calls), reaches another investigation, changes agents, or was taken from reply text. `decideToolCall` turns that into run, ask or deny for each surface: chat in Act, YOLO or Plan mode, agents, the supervisor and the agent bridge. Decision sites use it to show a chat approval card or queue an agent proposal; `dispatchTool` runs it again for every call, and runs a call that needs a person only with a single-use `HumanApproval` bound to that call's name, input and investigation. Only the chat card handler and the agent action queue mint one (an import-boundary test enforces this). For agents, the investigation's saved auto-approve settings are a ceiling on each agent's own settings (`resolveEffectivePolicy`), and `buildAgentToolset` remains the single list of tools an agent is offered and may run.
+
+**Local-only investigations** are invisible to AI calls made from an investigation that can sync, meaning any investigation that is not local-only, whether or not a team server is bound yet.
+
 ---
 
 ## 6. WebSocket Protocol
@@ -251,17 +259,20 @@ The Agent Bridge exposes a `window.threatcaddy` API surface that AI agents can i
 
 ### 8.1 Capabilities
 
-The bridge provides 29 tools organized into five categories:
+The bridge is off unless **Agent bridge** is turned on under Settings → AI → Where AI data goes. The setting stays on the device and is not part of backups. The bridge works only in the investigation selected in ThreatCaddy; `setFolderId` throws. It provides 33 tools, listed in [`agents/claude-code/SKILL.md`](../agents/claude-code/SKILL.md):
 
-- **Search and Read** (10 tools) -- Query and retrieve investigation data.
+- **Search and Read** (10 tools) -- Query and retrieve data in the selected investigation.
 - **Create and Update** (11 tools) -- Mutate notes, tasks, IOCs, timeline events, and other entities.
-- **Analysis** (2 tools) -- Perform analytical operations on investigation data.
-- **Web** (1 tool) -- Web-based lookups.
-- **Cross-Investigation** (5 tools) -- Operations that span multiple folders.
+- **Analysis** (3 tools) -- IOC extraction, graph analysis and a local prompt-injection check.
+- **Knowledge and Alerts** (3 tools) -- Investigation knowledge base and alert notes.
+- **Note Folders** (4 tools) -- Create, delete, list and move into note folders.
+- **Status** (2 tools) -- List configured integrations (without running them) and deployed agents.
+
+Web fetch, enrichment, SIEM, ticket, skill, cross-investigation and agent-lifecycle tools are not offered, and the dispatcher's bridge surface refuses any call that would reach the network, another investigation or agent configuration. `investigations()` lists investigation names; from an investigation that can sync, it leaves out local-only ones.
 
 ### 8.2 Security
 
-Authentication uses a nonce-based challenge: the bridge generates a random nonce at startup, and agents must present it with each request.
+`exec` and `investigations` calls must present the nonce the bridge generates at startup. The nonce is published on `window.__tcNonce` for the CDP daemon, so any script on the page can read it; it is not an authentication boundary. The limits are the bridge switch, the selected investigation and the bridge surface of the decision table (section 5.6). While the bridge is on, reads and writes inside the selected investigation run without further approval. The workspace must be unlocked.
 
 ### 8.3 Architecture
 
@@ -389,7 +400,7 @@ Drizzle ORM with the postgres.js driver provides a SQL-like TypeScript API that 
 
 Hosted builds preserve the natural dynamic-import graph. Whiteboard, graph and map engines are deferred; event maps load only when coordinates are displayed. `build/startup-budget.ts` checks the complete static entry dependency graph, raw/gzip JavaScript and CSS budgets, and the service worker's per-chunk precache limit. It fails builds if a heavy feature becomes eager. Its test metadata stays in ignored `node_modules/.cache/threatcaddy/`, not the published site. Browser tests then open the actual lazy features and check persistence and rendering.
 
-The PWA still precaches its packaged module graph and fonts, including CJK subsets, for offline use. This background download is larger than foreground startup. The passive offline notice observes the existing worker's installation state without changing registration, requesting persistence, clearing caches or reloading unsaved work. An installed worker indicates that a matching worker has activated, not an integrity check, a guarantee of the newest release, or a backup. Browsers can evict storage; remote services still need connectivity. The self-contained standalone edition does not use this hosted-worker notice.
+The PWA still precaches its packaged module graph and fonts, including CJK subsets, for offline use. This background download is larger than foreground startup. The app observes the existing worker's installation state without changing registration, requesting persistence, clearing caches or reloading unsaved work. It shows a notice only when the analyst should act: while a slow first install runs, or, dismissibly, when an install failed or the browser cannot keep the app offline. Settings → General → Offline use states the current status, and Settings → Data notes that offline use is not a backup. An installed worker indicates that a matching worker has activated, not an integrity check, a guarantee of the newest release, or a backup. Browsers can evict storage; remote services still need connectivity. The self-contained standalone edition shows none of this.
 
 For reproducible local lab measurements, build the hosted app and run `node scripts/measure-startup.mjs --dir dist --out /tmp/threatcaddy-startup.json`. It uses disposable Chromium contexts, a gzip loopback server, cold and HTTP-cache-warm visits, and a fixed throttled mobile profile. Service workers are blocked in this measurement to isolate foreground startup. These synthetic results are not real-user percentiles or field INP. Real installed/offline behavior has separate browser acceptance tests.
 
