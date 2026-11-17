@@ -760,7 +760,7 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId: string |
       iocValue: ioc.value,
       iocType: ioc.type,
       integrationsRun: 0,
-      message: `No enabled integrations match IOC type "${ioc.type}". Use fetch_url for manual enrichment, or configure integrations in Settings > Integrations.`,
+      message: `No enabled integrations match IOC type "${ioc.type}". Configure integrations in Settings → Integrations; do not fetch the indicator's own host.`,
     });
   }
 
