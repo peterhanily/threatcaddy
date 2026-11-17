@@ -108,6 +108,7 @@ describe('A-REACH-2 by-id scope', () => {
     ['review_completed_task', { taskId: [P.task] }], ['enrich_ioc', { iocId: [P.ioc] }],
     ['delete_note_folder', { folderId: [P.note] }], ['move_to_folder', { noteId: [P.note] }],
     ['link_entities', { links: [{ sourceType: 'note', sourceId: [ids('S').note], targetType: 'note', targetId: [P.note] }] }],
+    ['link_entities', { links: [{ sourceType: ['note'], sourceId: P.note, targetType: 'note', targetId: ids('S').note }] }],
     ['create_in_investigation', { investigationId: ['P'], entityType: 'note', data: {} }],
     ['create_in_investigation', { investigationName: ['Private case'], entityType: 'note', data: {} }],
   ] as Array<[string, Record<string, unknown>]>)('%s with an array id resolves the row the executor will reach', async (name, input) => {

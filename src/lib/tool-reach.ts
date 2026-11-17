@@ -72,8 +72,8 @@ async function resolveTargets(name: string, input: Record<string, unknown>): Pro
     for (const link of input.links as unknown[]) {
       if (!link || typeof link !== 'object') continue;
       const { sourceType, sourceId, targetType, targetId } = link as Record<string, unknown>;
-      const sourceTable = LINK_TABLE.get(text(sourceType));
-      const targetTable = LINK_TABLE.get(text(targetType));
+      const sourceTable = LINK_TABLE.get(arg(sourceType));
+      const targetTable = LINK_TABLE.get(arg(targetType));
       if (sourceTable) rows.push(await getRow(sourceTable, sourceId));
       if (targetTable) rows.push(await getRow(targetTable, targetId));
     }

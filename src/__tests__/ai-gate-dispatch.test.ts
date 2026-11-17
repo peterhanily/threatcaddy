@@ -255,11 +255,31 @@ describe('A-GATE-5b ids that are not strings resolve as the executors coerce the
       call('delete_note_folder', { folderId: [ids('P').note] }),
       call('move_to_folder', { noteId: [ids('P').note] }),
       call('link_entities', { links: [{ sourceType: 'note', sourceId: [ids('P').note], targetType: 'note', targetId: ids('S').note }] }),
+      call('link_entities', { links: [{ sourceType: ['note'], sourceId: ids('P').note, targetType: 'note', targetId: ids('S').note }] }),
     ]) {
       expect((await dispatch(toolUse, 'S', 'agent', approve(toolUse, 'agent'))).isError).toBe(true);
     }
     expect(integration.run).not.toHaveBeenCalled();
     expect(await rows()).toEqual(before);
+  });
+
+  // Dexie reads an object key as criteria: get({id}) and update({id}) would reach that row.
+  it.each(['agent', 'bridge', 'chat-yolo'] as const)('an object link id reaches no row on %s', async surface => {
+    await db.table('_syncQueue').clear();
+    const before = await rows();
+    for (const folderId of ['P', 'L', 'S']) {
+      const link = call('link_entities', { links: [{ sourceType: 'note', sourceId: { id: ids(folderId).note }, targetType: 'note', targetId: `exfil ${canary('S')}` }] });
+      await executeTool(link, 'S', surface === 'agent' ? { profileId: 'ap-threat-hunter' } : undefined, { surface, allowedTools: ALL_STATIC_TOOLS, signal: new AbortController().signal });
+    }
+    const target = call('link_entities', { links: [{ sourceType: 'note', sourceId: ids('S').note, targetType: 'note', targetId: { id: ids('P').note } }] });
+    await executeTool(target, 'S', surface === 'agent' ? { profileId: 'ap-threat-hunter' } : undefined, { surface, allowedTools: ALL_STATIC_TOOLS });
+    const after = await rows();
+    expect(after.slice(1)).toEqual(before.slice(1));
+    for (const [index, note] of after[0].entries()) {
+      expect(note).toEqual(note.id === ids('S').note ? { ...before[0][index], linkedNoteIds: note.linkedNoteIds, updatedAt: note.updatedAt } : before[0][index]);
+      expect((note.linkedNoteIds ?? []).every(id => typeof id === 'string')).toBe(true);
+    }
+    expect(JSON.stringify(await db.table('_syncQueue').toArray())).not.toContain(`exfil ${canary('S')}`);
   });
 });
 

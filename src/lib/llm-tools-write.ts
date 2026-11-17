@@ -317,7 +317,7 @@ export async function executeUpdateTimelineEvent(input: Record<string, unknown>)
 }
 
 export async function executeLinkEntities(input: Record<string, unknown>): Promise<string> {
-  const links = input.links as Array<Record<string, string>>;
+  const links = input.links as Array<Record<string, unknown>>;
   if (!Array.isArray(links) || links.length === 0) {
     return JSON.stringify({ error: 'links array is required' });
   }
@@ -326,7 +326,9 @@ export async function executeLinkEntities(input: Record<string, unknown>): Promi
   const errors: string[] = [];
 
   for (const link of links) {
-    const { sourceType, sourceId, targetType, targetId } = link;
+    // Coerce as the other executors do (and as the reach classifier assumes): Dexie
+    // treats an object key as criteria, so {id: X} would reach row X.
+    const [sourceType, sourceId, targetType, targetId] = [link?.sourceType, link?.sourceId, link?.targetType, link?.targetId].map(value => String(value || ''));
     try {
       await addLink(sourceType, sourceId, targetType, targetId);
       linked++;
