@@ -500,6 +500,32 @@ describe('provenance of AI-created entities', () => {
     expect(agentTask).toMatchObject({ title: 'Agent task', createdBy: 'agent:🤖 CaddyAgent (Analyst)', tags: ['ai-generated'] });
     expect(chatTask).toMatchObject({ title: 'Chat task', createdBy: 'Analyst', tags: [] });
   });
+
+  it('tags agent alert and note-folder notes, and attributes chat ones to the analyst without the tag', async () => {
+    const alert = call('ingest_alert', { source: 'edr', title: 'Critical: ransomware on DC01', severity: 'critical' });
+    const folder = call('create_note_folder', { name: 'Triage' });
+    const created = async (surface: ToolSurface) => {
+      const options = surface === 'agent' ? { surface, agentContext: {} } : { surface };
+      const alertNote = await db.notes.get(JSON.parse((await execTool(alert, 'S', options)).result).noteId);
+      const folderNote = await db.notes.get(JSON.parse((await execTool(folder, 'S', options)).result).folderId);
+      return [alertNote, folderNote].map(note => ({ createdBy: note?.createdBy, tags: note?.tags }));
+    };
+    expect(await created('agent')).toEqual([
+      { createdBy: 'agent:🤖 CaddyAgent (Analyst)', tags: ['alert', 'source:edr', 'severity:critical', 'ai-generated'] },
+      { createdBy: 'agent:🤖 CaddyAgent (Analyst)', tags: ['chat-folder', 'icon:📁', 'ai-generated'] },
+    ]);
+    expect(await created('chat-act')).toEqual([
+      { createdBy: 'Analyst', tags: ['alert', 'source:edr', 'severity:critical'] },
+      { createdBy: 'Analyst', tags: ['chat-folder', 'icon:📁'] },
+    ]);
+  });
+
+  it('labels supervisor and bridge creates as AI and tags them, with no agent context', async () => {
+    const supervisor = await execTool(call('create_task', { title: 'Supervisor task' }), 'L2', { surface: 'supervisor' });
+    const bridge = await execTool(call('create_ioc', { type: 'domain', value: 'bridge.example' }), 'S', { surface: 'bridge' });
+    expect(await db.tasks.get(JSON.parse(supervisor.result).id)).toMatchObject({ createdBy: 'agent:🛰️ CaddyAgent Supervisor (Analyst)', tags: ['ai-generated'] });
+    expect(await db.standaloneIOCs.get(JSON.parse(bridge.result).id)).toMatchObject({ createdBy: 'agent:🔌 Agent bridge (Analyst)', tags: ['ai-generated'] });
+  });
 });
 
 describe('A-GATE-9 Forensicate scan is local', () => {

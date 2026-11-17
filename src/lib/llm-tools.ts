@@ -10,6 +10,7 @@ import { sanitizeSoulText } from './soul-text';
 import { MAX_ACTIVE_DEPLOYMENTS_PER_INVESTIGATION } from './caddy-agent-policy';
 import { PASSIVE_LOOKUP_TEMPLATE_IDS } from './builtin-integrations';
 import { getReadOnlyEntityError } from './tool-entity-policy';
+import { withCreatorTags } from './tool-creator';
 import { workspaceStorageKey } from './workspace-profiles';
 import Dexie from 'dexie';
 import { getToolBinding, isDynamicTool } from './tool-binding';
@@ -210,6 +211,8 @@ export async function buildSystemPrompt(folder?: Folder, customPrompt?: string, 
 // ── Dispatcher ─────────────────────────────────────────────────────────
 
 const TOOL_SURFACES: ReadonlySet<string> = new Set<ToolSurface>(['chat-act', 'chat-yolo', 'chat-plan', 'agent', 'supervisor', 'bridge']);
+/** Creator labels for the AI surfaces that call with no agent context (D11). */
+const SURFACE_AGENT_LABELS: Partial<Record<ToolSurface, string>> = { supervisor: '🛰️ CaddyAgent Supervisor', bridge: '🔌 Agent bridge' };
 
 const atomicLocalTools = new Set(['create_note', 'update_note', 'create_task', 'update_task', 'create_ioc', 'update_ioc',
   'bulk_create_iocs', 'create_timeline_event', 'update_timeline_event', 'link_entities', 'generate_report',
@@ -289,11 +292,12 @@ async function dispatchTool(
   } catch { operatorName = _settings.displayName || 'Analyst'; }
 
   // One creator label per call, passed to the executors. Any agent context,
-  // legacy {} included, is attributed to an agent.
+  // legacy {} included, is attributed to an agent, and so are the supervisor and
+  // the bridge, which run without one. Only the label changes for those two.
   let agentRole: string | undefined;
-  let creator = operatorName;
+  let agentLabel = SURFACE_AGENT_LABELS[constraints.surface];
   if (agentContext) {
-    let agentLabel = '🤖 CaddyAgent';
+    agentLabel = '🤖 CaddyAgent';
     if (agentContext.profileId) {
       const profile = await resolveAgentProfile(agentContext.profileId);
       if (!profile) return toolExecutionError('The agent profile is no longer available.');
@@ -372,12 +376,12 @@ async function dispatchTool(
       case 'call_meeting':                  result = await executeCallMeeting(inp, folderId); break;
       case 'notify_human':                   result = await executeNotifyHuman(inp, folderId, constraints.signal); break;
       case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId, constraints.signal); break;
-      case 'ingest_alert':                   result = await executeIngestAlert(inp, folderId); break;
+      case 'ingest_alert':                   result = await executeIngestAlert(inp, folderId, creator); break;
       case 'deploy_agent':                   result = await executeDeployAgent(inp, folderId); break;
       case 'stop_agent':                     result = await executeStopAgent(inp, folderId); break;
       case 'list_deployed_agents':           result = await executeListDeployedAgents(folderId); break;
       case 'run_agent_cycle':                result = await executeRunAgentCycle(folderId); break;
-      case 'create_note_folder':             result = await executeCreateNoteFolder(inp, folderId); break;
+      case 'create_note_folder':             result = await executeCreateNoteFolder(inp, folderId, creator); break;
       case 'delete_note_folder':             result = await executeDeleteNoteFolder(inp); break;
       case 'move_to_folder':                 result = await executeMoveToFolder(inp); break;
       case 'list_folders':                   result = await executeListFolders(inp, folderId); break;
@@ -1224,7 +1228,7 @@ async function executeCreateTicket(inp: Record<string, unknown>, folderId?: stri
 
 // ── Alert Ingestion ──────────────────────────────────────────────────
 
-async function executeIngestAlert(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeIngestAlert(inp: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const source = String(inp.source || '');
   const title = String(inp.title || '');
   const description = String(inp.description || '');
@@ -1250,10 +1254,11 @@ async function executeIngestAlert(inp: Record<string, unknown>, folderId?: strin
     folderId,
     title: `[${source.toUpperCase()}] ${title}`,
     content,
-    tags: ['alert', `source:${source}`, `severity:${severity}`],
+    tags: withCreatorTags(['alert', `source:${source}`, `severity:${severity}`], creator),
     pinned: severity === 'critical' || severity === 'high',
     trashed: false,
     archived: false,
+    createdBy: creator,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   });
@@ -1267,7 +1272,7 @@ async function executeIngestAlert(inp: Record<string, unknown>, folderId?: strin
 
 // ── Folder Management ────────────────────────────────────────────────
 
-async function executeCreateNoteFolder(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeCreateNoteFolder(inp: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const name = String(inp.name || '').trim();
   if (!name) return JSON.stringify({ error: 'name is required' });
   if (!folderId) return JSON.stringify({ error: 'No active investigation' });
@@ -1279,11 +1284,12 @@ async function executeCreateNoteFolder(inp: Record<string, unknown>, folderId?: 
     folderId,
     title: name,
     content: '',
-    tags: ['chat-folder', `icon:${icon}`],
+    tags: withCreatorTags(['chat-folder', `icon:${icon}`], creator),
     isFolder: true,
     pinned: false,
     trashed: false,
     archived: false,
+    createdBy: creator,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   });
