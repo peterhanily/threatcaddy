@@ -6,6 +6,8 @@ Clip text, images, and selections from web pages into ThreatCaddy. Works on Chro
 
 **[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh)**
 
+At the time of ThreatCaddy 2.0.3 the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch (it needs 1.1.3 or later). For web fetch, use the manual install below, which is version 1.1.4, approve ThreatCaddy in its popup (see [Usage](#usage)), and keep only that extension enabled.
+
 <details>
 <summary>Manual install (developer mode)</summary>
 
