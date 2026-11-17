@@ -503,17 +503,21 @@ describe('a dismissed agent leaves no proposal to approve', () => {
     expect(await db.notes.where('title').equals('Late proposal').count()).toBe(0);
   });
 
-  /** Approves the CISO's dismissal of Threat Hunter while the cycle classifies the named tool call. */
-  async function dismissHunterDuring(toolName: string) {
+  /** Approves the CISO's dismissal of Threat Hunter at the nth reach check of the named tool call: the
+   * cycle checks first, the dispatcher second (while the call runs). With refuse, that check fails. */
+  async function dismissHunterDuring(toolName: string, nth = 1, refuse = false) {
     await onShift('dep-hunter', 'ap-threat-hunter'); await onShift('dep-ciso', 'ap-ciso');
     const dismissal: AgentAction = { id: 'dismissal', investigationId: 'S', threadId: 't', agentConfigId: 'ap-ciso', toolName: 'dismiss_agent', rationale: 'Proposed',
       toolInput: { agentName: builtin('ap-threat-hunter').name, reason: 'Repeatedly ignored the scope of the investigation.', evidence: 'Three off-scope notes.' },
       status: 'pending', createdAt: 1 };
     await db.agentActions.add(dismissal);
     const classify = toolReach.classifyToolCall;
-    let dismissed: Promise<unknown> | undefined;
+    let checks = 0;
     vi.spyOn(toolReach, 'classifyToolCall').mockImplementation(async (call, context) => {
-      if (call.name === toolName && !dismissed) await (dismissed = executeApprovedAction(dismissal));
+      if (call.name === toolName && ++checks === nth) {
+        await executeApprovedAction(dismissal);
+        if (refuse) throw new Error('Reach check failed.');
+      }
       return classify(call, context);
     });
   }
@@ -550,6 +554,34 @@ describe('a dismissed agent leaves no proposal to approve', () => {
     expect(await hunterActions()).toEqual([]);
     expect(scriptedLLM.requests).toHaveLength(1);
     expect(result.summary?.errorHistogram).toEqual({ fetch_url: 1, read_note: 1 });
+  });
+
+  it('a dismissal while the turn\'s last call runs sends no further model request', async () => {
+    await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY } });
+    await dismissHunterDuring('read_note', 2);
+    scriptedLLM.script(
+      { toolCalls: [{ name: 'read_note', input: { id: ids('S').note } }] },
+      { toolCalls: [{ name: 'fetch_url', input: { url: NVD } }] },
+    );
+    await runAgentCycle(await folder('S'), settings, true, undefined, builtin('ap-threat-hunter'), await db.agentDeployments.get('dep-hunter'));
+
+    expect(await db.agentDeployments.get('dep-hunter')).toBeUndefined();
+    expect(scriptedLLM.requests).toHaveLength(1);
+    expect(egress.fetchUrlPosts()).toEqual([]);
+  });
+
+  it('a dismissal during a turn whose calls are all refused sends no further model request', async () => {
+    await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY } });
+    await dismissHunterDuring('read_note', 1, true);
+    scriptedLLM.script(
+      { toolCalls: [{ name: 'read_note', input: { id: ids('S').note } }] },
+      { toolCalls: [{ name: 'fetch_url', input: { url: NVD } }] },
+    );
+    await runAgentCycle(await folder('S'), settings, true, undefined, builtin('ap-threat-hunter'), await db.agentDeployments.get('dep-hunter'));
+
+    expect(scriptedLLM.requests).toHaveLength(1);
+    expect(egress.fetchUrlPosts()).toEqual([]);
+    expect(await hunterActions()).toEqual([]);
   });
 
   it('a proposal of an agent no longer deployed here runs neither alone nor by Approve all; legacy, supervisor, paused and resting rows do', async () => {
