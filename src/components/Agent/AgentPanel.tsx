@@ -13,7 +13,7 @@ import { loadAgentPolicy } from '../../lib/agent-profile-resolver';
 import { CROSS_CASE_READ_TOOLS, resolveEffectivePolicy } from '../../lib/caddy-agent-policy';
 import { isShareableFolder } from '../../lib/ai-scope';
 import { workspaceStorageKey } from '../../lib/workspace-profiles';
-import { hasServerSession, resolveRoute } from '../../lib/llm-router';
+import { hasServerSession, resolveRoute, UNAVAILABLE_ROUTE_ERRORS } from '../../lib/llm-router';
 import { resolveAgentModel, resolveConfiguredProvider } from '../../lib/caddy-agent';
 import { useAuth } from '../../contexts/AuthContext';
 import { AgentActionCard } from './AgentActionCard';
@@ -460,7 +460,8 @@ function InvestigationAgentPanel({
           <AlertTriangle size={12} className="shrink-0 mt-0.5" />
           <div className="flex-1">
             <span>{error}</span>
-            {(error.includes('API key') || error.includes('timed out') || error.includes(t('refusal.noApiKey', { provider: agentProvider }))) && onOpenSettings && (
+            {(error.includes('API key') || error.includes('timed out') || error.includes(t('refusal.noApiKey', { provider: agentProvider }))
+              || Object.values(UNAVAILABLE_ROUTE_ERRORS).some(key => error.includes(tSettings(key)))) && onOpenSettings && (
               <button onClick={() => onOpenSettings('ai')} className="block text-accent-blue hover:underline mt-0.5">{t('panel.openAISettingsLink')}</button>
             )}
           </div>

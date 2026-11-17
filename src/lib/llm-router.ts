@@ -155,7 +155,7 @@ export function resolveRoute(settings: Settings, env: { extensionAvailable: bool
   return { route: 'unavailable', reason: 'none' };
 }
 
-const UNAVAILABLE_ROUTE_ERRORS = {
+export const UNAVAILABLE_ROUTE_ERRORS = {
   'no-extension': 'ai.dataFlow.errorNoExtension',
   'no-server': 'ai.dataFlow.errorNoServer',
   none: 'ai.dataFlow.errorNone',

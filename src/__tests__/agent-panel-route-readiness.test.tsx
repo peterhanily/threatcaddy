@@ -7,6 +7,7 @@ import { workspaceStorageKey } from '../lib/workspace-profiles';
 import i18n from '../i18n';
 import enSettings from '../../public/locales/en/settings.json';
 import deAgent from '../../public/locales/de/agent.json';
+import deSettings from '../../public/locales/de/settings.json';
 
 vi.mock('../components/Agent/AgentProfilePicker', () => ({ AgentProfilePicker: () => null }));
 vi.mock('../components/Agent/AgentMeetingPanel', () => ({ AgentMeetingPanel: () => null }));
@@ -104,6 +105,22 @@ describe('AgentCaddy readiness follows the investigation’s agent model, as the
       const refusal = `${deAgent['refusal.noApiKey'].replace('{{provider}}', 'openai')} ${deAgent['refusal.configuredProviders'].replace('{{providers}}', 'anthropic')}`;
       const onOpenSettings = vi.fn();
       render(<AgentPanel folder={withModel('gpt-5.4')} settings={{ ...DEFAULT_SETTINGS, llmAnthropicApiKey: 'synthetic-key' }} agentError={refusal} onOpenSettings={onOpenSettings} />);
+      await act(async () => {});
+      fireEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: deAgent['panel.openAISettingsLink'] }));
+      expect(onOpenSettings).toHaveBeenCalledExactlyOnceWith('ai');
+    } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
+  });
+
+  it('a run refused because the investigation model has no route offers the AI settings in the analyst’s language', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+    i18n.addResourceBundle('de', 'settings', deSettings, true, true);
+    await i18n.changeLanguage('de');
+    try {
+      const onOpenSettings = vi.fn();
+      // The default local model has a route, so the panel is open; the cloud model has none.
+      render(<AgentPanel folder={withModel('claude-sonnet-4-6')} settings={{ ...DEFAULT_SETTINGS, ...twoRoutes, llmDefaultProvider: 'local' }}
+        agentError={`[Lead Analyst] ${deSettings['ai.dataFlow.errorNone']}`} onOpenSettings={onOpenSettings} />);
       await act(async () => {});
       fireEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: deAgent['panel.openAISettingsLink'] }));
       expect(onOpenSettings).toHaveBeenCalledExactlyOnceWith('ai');
