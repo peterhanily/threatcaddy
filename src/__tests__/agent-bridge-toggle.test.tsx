@@ -1,5 +1,5 @@
 /** Design D10: the Settings → AI switch, saved through the normal settings path, is what turns window.threatcaddy on and off. */
-import { render, screen } from '@testing-library/react';
+import { act, render, renderHook, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
@@ -56,5 +56,24 @@ describe('agent bridge switch in Settings → AI', () => {
     expect(toggle).toHaveAttribute('aria-checked', 'false');
     expect(savedSettings().agentBridgeEnabled).toBe(false);
     await expect(bridge().exec(nonce, 'create_note', { title: 'Refused again', content: 'x' })).rejects.toThrow('Turn on the agent bridge');
+  });
+
+  it('a tab loaded while the bridge was on does not turn it back on when another setting changes', async () => {
+    localStorage.setItem(workspaceStorageKey('threatcaddy-settings'), JSON.stringify({ agentBridgeEnabled: true }));
+    const stale = renderHook(() => useSettings());
+    // Another tab turns the bridge off.
+    localStorage.setItem(workspaceStorageKey('threatcaddy-settings'), JSON.stringify({ agentBridgeEnabled: false }));
+    act(() => stale.result.current.updateSettings({ theme: 'light' }));
+    expect(savedSettings()).toMatchObject({ theme: 'light', agentBridgeEnabled: false });
+    expect(stale.result.current.settings.agentBridgeEnabled).toBe(false);
+    await expect(bridge().exec(nonce, 'create_note', { title: 'Refused', content: 'x' })).rejects.toThrow('Turn on the agent bridge');
+  });
+
+  it('a stale tab can still turn the bridge on or off itself', () => {
+    const stale = renderHook(() => useSettings());
+    act(() => stale.result.current.updateSettings({ agentBridgeEnabled: true }));
+    expect(savedSettings().agentBridgeEnabled).toBe(true);
+    act(() => stale.result.current.updateSettings(current => ({ agentBridgeEnabled: !current.agentBridgeEnabled })));
+    expect(savedSettings().agentBridgeEnabled).toBe(false);
   });
 });
