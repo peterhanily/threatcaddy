@@ -43,7 +43,7 @@ describe('team template installation', () => {
     await waitFor(() => expect(mocks.createInstallation).toHaveBeenCalledOnce());
     expect(mocks.installTemplate).toHaveBeenCalledWith(expect.objectContaining({ id: 'team-fixture', source: 'team' }), true);
     expect(mocks.createInstallation).toHaveBeenCalledWith('team-fixture', {}, { enabled: false });
-    const [, message] = mocks.addToast.mock.calls.at(-1)!;
+    const [, message] = mocks.addToast.mock.calls.at(-1) ?? [];
     expect(message).toContain('Fictional team lookup');
     expect(message).toContain('intel.example.test, files.example.test');
     expect(message).toMatch(/disabled/i);

@@ -8,7 +8,7 @@ const STORE_1_1_1_CAPS = 'llm_streaming,fetch_url,clip_import,proxy_fetch';
 const HEAD_CAPS = 'llm_streaming,fetch_url,clip_import,clip_import_ack_v2,proxy_fetch,proxy_fetch_abort,notification_ack';
 
 function bridgeFetches(post: ReturnType<typeof vi.spyOn>) {
-  return post.mock.calls.filter(([message]) => (message as { type?: string })?.type === 'TC_FETCH_URL');
+  return post.mock.calls.filter(([message]: unknown[]) => (message as { type?: string })?.type === 'TC_FETCH_URL');
 }
 
 let post: ReturnType<typeof vi.spyOn>;
