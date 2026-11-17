@@ -15,6 +15,9 @@
   "hub.sharedWithMe": "Shared With Me",
   "hub.noShared": "No shared investigations \u2014 ask a team member to invite you",
   "hub.disconnected": "Server disconnected \u2014 remote investigations unavailable",
+  "supervisor.briefing": "Supervisor Briefing",
+  "supervisor.sharedIocPatterns_one": "{{count}} shared IOC pattern",
+  "supervisor.sharedIocPatterns_other": "{{count}} shared IOC patterns",
 
   "card.actions": "Actions",
   "card.settings": "Settings",

@@ -12,8 +12,8 @@ import type { AgentAction, Folder, Note } from '../../types';
 import { cn, formatDate } from '../../lib/utils';
 import { db } from '../../db';
 import { getToolActionClass } from '../../lib/caddy-agent-policy';
+import { findSupervisorFolder } from '../../lib/caddy-agent-supervisor';
 
-const SUPERVISOR_FOLDER_NAME = 'CaddyAgent Supervisor';
 const RECENT_LIMIT = 50;
 
 interface AgentDashboardProps {
@@ -54,6 +54,9 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
     (async () => {
       setLoading(true);
 
+      // The supervisor's own local-only folder; an older synced one with its name is an ordinary investigation.
+      const supFolder = await findSupervisorFolder();
+
       // Find folders with agent activity
       const folderMap = new Map(folders.map(f => [f.id, f]));
 
@@ -76,7 +79,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
       const summaries: AgentFolderSummary[] = [];
       for (const [folderId, actions] of byFolder) {
         const folder = folderMap.get(folderId);
-        if (!folder || folder.name === SUPERVISOR_FOLDER_NAME) continue;
+        if (!folder || folder.id === supFolder?.id) continue;
         const pendingCount = actions.filter(a => a.status === 'pending').length;
         summaries.push({ folder, pendingCount, recentActions: actions.slice(0, 5) });
       }
@@ -94,14 +97,13 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
       const globalFeed = allActions
         .filter(a => {
           const f = folderMap.get(a.investigationId);
-          return f && f.name !== SUPERVISOR_FOLDER_NAME;
+          return f && f.id !== supFolder?.id;
         })
         .slice(0, 20)
         .map(a => ({ ...a, folderName: folderMap.get(a.investigationId)?.name || 'Unknown' }));
       setRecentGlobal(globalFeed);
 
       // Supervisor notes
-      const supFolder = folders.find(f => f.name === SUPERVISOR_FOLDER_NAME);
       if (supFolder) {
         setSupervisorFolderId(supFolder.id);
         const notes = await db.notes
@@ -118,7 +120,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
   }, [folders]);
 
   const totalPending = agentFolders.reduce((sum, f) => sum + f.pendingCount, 0);
-  const activeAgents = folders.filter(f => f.agentEnabled && f.name !== SUPERVISOR_FOLDER_NAME).length;
+  const activeAgents = folders.filter(f => f.agentEnabled && f.id !== supervisorFolderId).length;
 
   if (loading) {
     return (

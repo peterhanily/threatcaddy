@@ -1,25 +1,25 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bot, ChevronRight, AlertTriangle } from 'lucide-react';
 import { db } from '../../db';
 import type { Note } from '../../types';
 import { formatDate } from '../../lib/utils';
-
-const SUPERVISOR_FOLDER_NAME = 'CaddyAgent Supervisor';
+import { findSupervisorFolder } from '../../lib/caddy-agent-supervisor';
 
 /**
  * Compact supervisor summary card for the Investigations Hub.
  * Shows the latest supervisor finding note and shared IOC alerts.
  */
 export function SupervisorSummary({ onOpenSupervisor }: { onOpenSupervisor?: (folderId: string) => void }) {
+  const { t } = useTranslation('investigations');
   const [latestNote, setLatestNote] = useState<Note | null>(null);
   const [supervisorFolderId, setSupervisorFolderId] = useState<string | null>(null);
   const [sharedIocCount, setSharedIocCount] = useState(0);
 
   useEffect(() => {
     (async () => {
-      const folder = await db.folders
-        .filter(folder => folder.name === SUPERVISOR_FOLDER_NAME)
-        .first();
+      // The local-only folder the supervisor writes to, never a synced one with its name.
+      const folder = await findSupervisorFolder();
 
       if (!folder) return;
       setSupervisorFolderId(folder.id);
@@ -68,11 +68,11 @@ export function SupervisorSummary({ onOpenSupervisor }: { onOpenSupervisor?: (fo
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-2">
             <Bot size={14} className="text-accent-blue" />
-            <span className="text-xs font-semibold text-text-primary">Supervisor Briefing</span>
+            <span className="text-xs font-semibold text-text-primary">{t('supervisor.briefing')}</span>
             {sharedIocCount > 0 && (
               <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-accent-amber/10 text-accent-amber">
                 <AlertTriangle size={10} />
-                {sharedIocCount} shared IOC pattern{sharedIocCount !== 1 ? 's' : ''}
+                {t('supervisor.sharedIocPatterns', { count: sharedIocCount })}
               </span>
             )}
           </div>
