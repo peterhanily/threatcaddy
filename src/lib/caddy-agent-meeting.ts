@@ -9,7 +9,7 @@ import { nanoid } from 'nanoid';
 import type { AgentDeployment, AgentMeeting, AgentProfile, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider, MeetingPurpose, MeetingStructuredOutput } from '../types';
 import { TOOL_DEFINITIONS } from './llm-tool-defs';
 import { buildSystemPrompt } from './llm-tools';
-import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
+import { hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, unavailableRouteError } from './llm-router';
 import { BUILTIN_AGENT_PROFILES } from './builtin-agent-profiles';
 
 export interface AgentMeetingResult {
@@ -73,7 +73,8 @@ function callLLM(opts: {
       },
       onError: (error: string) => reject(new Error(error || 'LLM request failed')),
     };
-    if (opts.useServerProxy) sendViaServer(request, callbacks);
+    if (opts.provider === 'local' && opts.endpoint) sendDirectToLocal(request, callbacks);
+    else if (opts.useServerProxy) sendViaServer(request, callbacks);
     else sendViaExtension(request, callbacks);
   });
 
@@ -207,16 +208,13 @@ export async function runAgentMeeting(
     ? Math.min(requestedRounds, 3)
     : Math.min(requestedRounds, DEFAULT_MAX_ROUNDS);
 
-  // Resolve provider (same fallback as agent cycle)
-  const serverConnected = !!settings.serverUrl;
-  const routingMode = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
-  const useServerProxy = routingMode === 'server';
-
+  // Resolve provider (same fallback as agent cycle) and route (local endpoint first, strict explicit modes)
+  const routeEnv = { extensionAvailable, serverSession: hasServerSession(settings) };
   let provider = (settings.llmDefaultProvider || 'anthropic') as LLMProvider;
   let model = settings.llmDefaultModel || 'claude-sonnet-4-6';
 
   // Fallback to first provider with a key
-  if (!useServerProxy && !getApiKeyForProvider(provider, settings)) {
+  if (resolveRoute(settings, { ...routeEnv, provider }).route !== 'server' && !getApiKeyForProvider(provider, settings)) {
     const providers: { p: LLMProvider; key: keyof Settings }[] = [
       { p: 'anthropic', key: 'llmAnthropicApiKey' }, { p: 'openai', key: 'llmOpenAIApiKey' },
       { p: 'gemini', key: 'llmGeminiApiKey' }, { p: 'mistral', key: 'llmMistralApiKey' },
@@ -226,6 +224,9 @@ export async function runAgentMeeting(
     }
     if (settings.llmLocalEndpoint?.trim()) { provider = 'local'; model = settings.llmLocalModelName || 'llama3'; }
   }
+  const route = resolveRoute(settings, { ...routeEnv, provider });
+  if (route.route === 'unavailable') return { meetingId: '', threadId: '', roundsCompleted: 0, error: unavailableRouteError(route.reason) };
+  const useServerProxy = route.route === 'server';
 
   const apiKey = useServerProxy ? 'server-proxy' : (getApiKeyForProvider(provider, settings) || '');
   if (!useServerProxy && !apiKey) {

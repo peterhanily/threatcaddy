@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { LLMProvider, ContentBlock, ToolUseBlock, ToolCallRecord } from '../types';
 import { isWriteTool } from '../lib/llm-tool-defs';
 import { sendViaServer, sendDirectToLocal } from '../lib/llm-router';
+import { decodeBlocks, encodeRequest } from '../lib/tool-name-alias';
 import { nanoid } from 'nanoid';
 import { registerLockParticipant } from '../lib/workspace-lock';
 import { retainLockedChatResult, type ChatRecoveryTarget } from '../lib/locked-chat-recovery';
@@ -55,15 +56,17 @@ export interface ExtensionInfo {
   capabilities: string[];
 }
 
-/** Dispatch an LLM request via extension bridge or server proxy */
+/** Dispatch an LLM request via extension bridge or server proxy. Returns the
+ * tool-name decoder for an extension request; the router decodes the others. */
 function dispatchLLMRequest(
   requestId: string,
   opts: SendRequestOptions,
   messages: SendRequestOptions['messages'],
   signal: AbortSignal,
-) {
+): ((name: string) => string) | undefined {
   if (signal.aborted) return;
-  if (opts.useServerProxy) {
+  // A local model with an endpoint is always called directly, even with a server session.
+  if (opts.useServerProxy && !(opts.provider === 'local' && opts.endpoint)) {
     // Route through server — the server response events will be picked up by
     // the existing message listener because sendViaServer posts TC_LLM_* events
     sendViaServer(
@@ -89,6 +92,11 @@ function dispatchLLMRequest(
       signal,
     );
   } else {
+    let encoded: ReturnType<typeof encodeRequest<{ messages: SendRequestOptions['messages']; tools?: ToolDef[] }>>;
+    try { encoded = encodeRequest({ messages, tools: opts.tools }); } catch (error) {
+      window.postMessage({ type: 'TC_LLM_ERROR', requestId, error: error instanceof Error ? error.message : 'Invalid tool names.' }, postMessageOrigin());
+      return;
+    }
     const abort = () => window.postMessage({ type: 'TC_LLM_ABORT', requestId }, postMessageOrigin());
     const complete = (event: MessageEvent) => {
       if (event.source === window && event.data?.requestId === requestId && ['TC_LLM_DONE', 'TC_LLM_ERROR'].includes(event.data.type)) cleanup();
@@ -103,13 +111,14 @@ function dispatchLLMRequest(
       payload: {
         provider: opts.provider,
         model: opts.model,
-        messages,
+        messages: encoded.req.messages,
         apiKey: opts.apiKey,
         systemPrompt: opts.systemPrompt,
-        tools: opts.tools,
+        tools: encoded.req.tools,
         endpoint: opts.endpoint,
       },
     }, postMessageOrigin());
+    return encoded.decode;
   }
 }
 
@@ -129,6 +138,7 @@ export function useLLM() {
   const requestIdRef = useRef<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
   const rafRef = useRef<number | null>(null);
+  const decodeRef = useRef<((name: string) => string) | undefined>(undefined);
   const agentStateRef = useRef<{
     opts: SendRequestOptions;
     messages: SendRequestOptions['messages'];
@@ -334,7 +344,7 @@ export function useLLM() {
       requestIdRef.current = requestId;
       setActiveRequestId(requestId);
 
-      dispatchLLMRequest(requestId, state.opts, state.messages, state.signal);
+      decodeRef.current = dispatchLLMRequest(requestId, state.opts, state.messages, state.signal);
     } catch (err) {
       if (state?.aborted || (state && agentStateRef.current !== state)) return;
       console.error('useLLM: handleDone error', err);
@@ -388,7 +398,7 @@ export function useLLM() {
           setStreamingContent(accumulatedRef.current);
         }
         const stopReason: string = event.data.stopReason || 'end_turn';
-        const contentBlocks: ContentBlock[] = event.data.contentBlocks || [];
+        const contentBlocks = (decodeRef.current ? decodeBlocks(event.data.contentBlocks || [], decodeRef.current) : event.data.contentBlocks || []) as ContentBlock[];
         const eventUsage: TokenUsage | undefined = event.data.usage ? { input: event.data.usage.input || 0, output: event.data.usage.output || 0 } : undefined;
         handleDoneRef.current?.(stopReason, contentBlocks, eventUsage);
         return;
@@ -459,7 +469,7 @@ export function useLLM() {
       toolExecutor,
     };
 
-    dispatchLLMRequest(requestId, opts, opts.messages, controller.signal);
+    decodeRef.current = dispatchLLMRequest(requestId, opts, opts.messages, controller.signal);
 
     return requestId;
   }, [cancelCurrent]);

@@ -76,7 +76,7 @@ function executeLoopPrompt(loop: ChatLoop): Promise<string> {
     const abort = () => finish('Loop request was cancelled or timed out.');
     const timer = setTimeout(() => controller.abort(), LOOP_TIMEOUT_MS);
     controller.signal.addEventListener('abort', abort, { once: true });
-    const send = loop.useServerProxy ? sendViaServer : loop.provider === 'local' && loop.endpoint ? sendDirectToLocal : sendViaExtension;
+    const send = loop.provider === 'local' && loop.endpoint ? sendDirectToLocal : loop.useServerProxy ? sendViaServer : sendViaExtension;
     send({ provider: loop.provider, model: loop.model, messages: [{ role: 'user', content: loop.prompt }], apiKey: loop.apiKey, systemPrompt: loop.systemPrompt, endpoint: loop.endpoint }, {
       onChunk: content => { accumulated += content; if (accumulated.length > 200_000) controller.abort(); },
       onDone: (_reason, blocks) => finish(undefined, blocks.filter((block): block is { type: 'text'; text: string } => !!block && typeof block === 'object' && 'type' in block && block.type === 'text' && 'text' in block && typeof block.text === 'string').map(block => block.text).join('\n\n')),

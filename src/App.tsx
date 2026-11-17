@@ -2421,7 +2421,7 @@ const AppInner = memo(function AppInner({
             import('./lib/sync-middleware').then(({ markFolderLocalOnly }) => {
               markFolderLocalOnly(folderId, newLocalOnly);
             });
-            if (!newLocalOnly) {
+            if (!newLocalOnly && auth.connected) {
               // Re-sync folder to server when enabling sync
               import('./lib/sync-engine').then(({ syncEngine }) => {
                 syncEngine.syncFolder(folderId);
