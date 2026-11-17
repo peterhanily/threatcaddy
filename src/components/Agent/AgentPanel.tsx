@@ -13,6 +13,8 @@ import { loadAgentPolicy } from '../../lib/agent-profile-resolver';
 import { CROSS_CASE_READ_TOOLS, resolveEffectivePolicy } from '../../lib/caddy-agent-policy';
 import { isShareableFolder } from '../../lib/ai-scope';
 import { workspaceStorageKey } from '../../lib/workspace-profiles';
+import { hasServerSession, resolveRoute } from '../../lib/llm-router';
+import { useAuth } from '../../contexts/AuthContext';
 import { AgentActionCard } from './AgentActionCard';
 import { AgentProfilePicker } from './AgentProfilePicker';
 import { AgentMeetingPanel } from './AgentMeetingPanel';
@@ -156,7 +158,9 @@ function InvestigationAgentPanel({
     settings.llmMistralApiKey?.trim() ||
     settings.llmLocalEndpoint?.trim()
   );
-  const hasServerProxy = !!settings.serverUrl;
+  // The agent cycle's route: a stored sign-in is the server session. useAuth re-renders on sign-in and sign-out.
+  useAuth();
+  const hasServerProxy = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession() }).route === 'server';
   const hasLocalLLM = !!settings.llmLocalEndpoint?.trim();
   const isReady = (extensionAvailable || hasServerProxy || hasLocalLLM) && (hasApiKey || hasServerProxy);
 
