@@ -1,9 +1,11 @@
 /** A-BRIDGE-1 through the real dispatcher: the bridge only works inside the selected investigation. */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import { installAgentBridge, syncBridgeFolderId } from '../lib/agent-bridge';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
-import { AGENT_NEVER_TOOLS, EXPLICIT_ONLY_TOOLS } from '../lib/caddy-agent-policy';
+import { AGENT_NEVER_TOOLS, EXPLICIT_ONLY_TOOLS, isEgressToolName } from '../lib/caddy-agent-policy';
 import { canary, ids, seedAIWorkspace } from './helpers/ai-workspace';
 import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
 
@@ -28,6 +30,20 @@ describe('A-BRIDGE-1 with the bridge on and the shared investigation selected', 
     const tools = bridge().tools();
     expect(tools).toContain('create_note');
     for (const name of [...AGENT_NEVER_TOOLS, ...EXPLICIT_ONLY_TOOLS]) expect(tools).not.toContain(name);
+  });
+
+  it('lists no tool that reaches the network, since the bridge refuses every one', () => {
+    const tools = bridge().tools();
+    expect(tools.filter(isEgressToolName)).toEqual([]);
+    expect(tools).not.toContain('fetch_url');
+    expect(tools).not.toContain('enrich_ioc');
+  });
+
+  it('the Claude Code skill documents exactly the tools the bridge lists', () => {
+    const skill = readFileSync(join(process.cwd(), 'agents', 'claude-code', 'SKILL.md'), 'utf8');
+    const documented = [...skill.matchAll(/^- \*\*([a-z_]+)\*\*/gm)].map(match => match[1]);
+    expect([...documented].sort()).toEqual([...bridge().tools()].sort());
+    expect(skill).toContain(`## Available Tools (${bridge().tools().length})`);
   });
 
   it('refuses web fetch and cross-investigation search', async () => {

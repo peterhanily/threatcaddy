@@ -9,13 +9,13 @@
  *   script can read it too. It is not an authentication boundary; the limits are:
  * - Scope: only the investigation selected in ThreatCaddy (no re-scoping), and the
  *   dispatcher's bridge surface refuses web, vendor, skill and cross-investigation
- *   reach. Agent lifecycle, cross-case, SIEM and ticket tools are not offered.
+ *   reach. Agent lifecycle, cross-case, web, enrichment, SIEM and ticket tools are not offered.
  * - Audit logging: every tool call is logged to IndexedDB activityLog.
  */
 
 import { executeTool } from './llm-tools';
 import { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
-import { AGENT_NEVER_TOOLS, EXPLICIT_ONLY_TOOLS } from './caddy-agent-policy';
+import { AGENT_NEVER_TOOLS, EXPLICIT_ONLY_TOOLS, isEgressToolName } from './caddy-agent-policy';
 import { isFolderLocalOnly, isShareableFolder } from './ai-scope';
 import { workspaceStorageKey } from './workspace-profiles';
 import { db } from '../db';
@@ -42,9 +42,10 @@ interface ThreatCaddyBridge {
 let activeFolderId: string | undefined;
 let bridgeNonce: string | undefined;
 
-/** In-scope tools only; the dispatcher's bridge surface enforces the rest. */
+/** In-scope tools only; the dispatcher's bridge surface enforces the rest.
+ * Network tools are left out because the bridge surface refuses every call. */
 const BRIDGE_TOOLS: ReadonlySet<string> = new Set(TOOL_DEFINITIONS.map(t => t.name)
-  .filter(name => !AGENT_NEVER_TOOLS.has(name) && !EXPLICIT_ONLY_TOOLS.has(name)));
+  .filter(name => !AGENT_NEVER_TOOLS.has(name) && !EXPLICIT_ONLY_TOOLS.has(name) && !isEgressToolName(name)));
 
 /** Read at call time, like the dispatcher reads settings. */
 function isBridgeEnabled(): boolean {
