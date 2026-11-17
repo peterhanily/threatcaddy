@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../i18n';
 import deIntegrations from '../../public/locales/de/integrations.json';
+import enIntegrations from '../../public/locales/en/integrations.json';
 import { executeFetchUrl } from '../lib/llm-tools-analysis';
 // The `/fetch` chat command calls the bridge through this re-export.
 import { fetchViaExtensionBridge } from '../lib/llm-tools';
@@ -96,6 +97,22 @@ describe('SPA web fetch guard', () => {
       expect(de['fetch.updateExtension']).toContain('1.1.3');
       expect(bridgeFetches(post)).toHaveLength(0);
     } finally { await i18n.changeLanguage('en'); }
+  });
+
+  it('loads the integrations namespace before refusing, as hosted builds do not bundle it', async () => {
+    const reads: string[] = [];
+    vi.spyOn(i18n.services.backendConnector.backend, 'read').mockImplementation((...args: unknown[]) => {
+      const [language, namespace, callback] = args as [string, string, ((error: null, data: unknown) => void)?];
+      reads.push(`${language}/${namespace}`);
+      const data = namespace === 'integrations' ? enIntegrations : {};
+      return new Promise(resolve => setTimeout(() => { callback?.(null, data); resolve(data); }));
+    });
+    i18n.removeResourceBundle('en', 'integrations');
+    try {
+      document.documentElement.dataset.tcBridgeCaps = HEAD_CAPS;
+      expect(await fetchViaExtensionBridge('http://127.0.0.1/')).toEqual({ success: false, error: enIntegrations['fetch.privateTarget'] });
+      expect(reads).toContain('en/integrations');
+    } finally { i18n.addResourceBundle('en', 'integrations', enIntegrations, true, true); }
   });
 
   it('reads the capabilities at call time', async () => {
