@@ -46,7 +46,7 @@ describe('A-APPR re-derivation on approval', () => {
     const action = await queue({ agentConfigId: 'ap-threat-hunter', toolName: 'create_in_investigation', toolInput: { investigationId: 'P', entityType: 'note', data: { title: 'x' } } });
     const result = await executeApprovedAction(action);
     expect(result.isError).toBe(true);
-    expect(errorOf(result)).toBe('Tool "create_in_investigation" is not available to this agent.');
+    expect(errorOf(result)).toBe('This agent can no longer use create_in_investigation, so nothing ran.');
     expect(await db.notes.where('folderId').equals('P').count()).toBe(1);
   });
 
@@ -82,8 +82,39 @@ describe('A-APPR re-derivation on approval', () => {
     const orphan = await queue({ agentConfigId: 'deleted-profile', toolName: 'create_note', toolInput: { title: 'x' } });
     const refused = await executeApprovedAction(orphan);
     expect(refused.isError).toBe(true);
-    expect(errorOf(refused)).toBe('The agent profile is no longer available.');
+    expect(errorOf(refused)).toBe('The agent that proposed this no longer exists, so nothing ran.');
     expect(await db.notes.where('title').equals('x').count()).toBe(0);
+  });
+
+  it('says in the analyst’s language why a refused proposal did not run', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+    await i18n.changeLanguage('de');
+    try {
+      const server: AgentAction = { id: 'srv:remote-2', investigationId: 'S', threadId: 'thread', toolName: 'create_note', toolInput: { title: 'x' }, rationale: 'server', status: 'pending', createdAt: 1 };
+      await db.agentActions.add(server);
+      expect(errorOf(await executeApprovedAction(server))).toBe(deAgent['refusal.serverProposal']);
+      const gone = await queue({ investigationId: 'gone', toolName: 'create_note', toolInput: { title: 'x' } });
+      expect(errorOf(await executeApprovedAction(gone))).toBe(deAgent['refusal.investigationUnavailable']);
+      await db.folders.update('P', { status: 'archived' });
+      const archived = await queue({ investigationId: 'P', toolName: 'create_note', toolInput: { title: 'x' } });
+      expect(errorOf(await executeApprovedAction(archived))).toBe(deAgent['refusal.investigationUnavailable']);
+      await deploy('deleted-profile');
+      const orphan = await queue({ agentConfigId: 'deleted-profile', toolName: 'create_note', toolInput: { title: 'x' } });
+      expect(errorOf(await executeApprovedAction(orphan))).toBe(deAgent['refusal.profileGone']);
+      await deploy('ap-threat-hunter');
+      const crossWrite = await queue({ agentConfigId: 'ap-threat-hunter', toolName: 'create_in_investigation', toolInput: { investigationId: 'L', entityType: 'note', data: { title: 'x' } } });
+      expect(errorOf(await executeApprovedAction(crossWrite))).toBe(deAgent['refusal.toolNotAllowed'].replace('{{tool}}', 'create_in_investigation'));
+      // A supervisor update filed under L whose IOC lives in S.
+      const moved = await queue({ investigationId: 'L', agentConfigId: SUPERVISOR_ACTION_PROFILE, toolName: 'update_ioc', toolInput: { id: ids('S').ioc, confidence: 'high' } });
+      expect(errorOf(await executeApprovedAction(moved))).toBe(deAgent['refusal.targetMoved']);
+      expect(await db.notes.where('title').equals('x').count()).toBe(0);
+      expect((await db.standaloneIOCs.get(ids('S').ioc))?.confidence).toBe('medium');
+
+      const question = await queue({ toolName: 'ask_human', toolInput: { question: 'Isolate the host?' } });
+      await executeApprovedAction(question);
+      expect(await db.agentActions.get(question.id)).toMatchObject({ status: 'executed', resultSummary: deAgent['action.questionAcknowledged'] });
+    } finally { await i18n.changeLanguage('en'); }
   });
 
   it('says in the analyst’s language that a dismissed agent’s proposal cannot run', async () => {

@@ -94,13 +94,14 @@ describe('B-UI-1 action cards name the action class and where it reaches', () =>
     expect(screen.queryByText(iocHostWarning)).not.toBeInTheDocument();
   });
 
-  it('enrichment, skills and delegation say what they are', () => {
+  it('enrichment, skills and delegation say what they are', async () => {
     render(<>
       <AgentActionCard action={action({ toolName: 'enrich_ioc', toolInput: { iocId: ids('S').ioc } })} />
       <AgentActionCard action={action({ toolName: 'host:soc1:scan', status: 'executed' })} />
       <AgentActionCard action={action({ toolName: 'delegate_task', status: 'failed' })} />
     </>);
-    expect(screen.getByText('Sends to: vendor lookups')).toBeInTheDocument();
+    // No lookup is installed in this workspace.
+    expect(await screen.findByText('Nothing is sent: no enabled lookup applies to canary-s.example.')).toBeInTheDocument();
     expect(screen.getByText('Sends to: soc1')).toBeInTheDocument();
     expect(screen.getByText('Delegate')).toBeInTheDocument();
     expect(screen.getByText('Executed')).toBeInTheDocument();

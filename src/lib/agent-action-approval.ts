@@ -34,11 +34,12 @@ async function proposerRemoved(action: AgentAction): Promise<boolean> {
     .filter(deployment => deployment.profileId === action.agentConfigId).first();
 }
 
-/** Re-derive what the proposing agent may do today; the stored row is not trusted. */
+/** Re-derive what the proposing agent may do today; the stored row is not trusted.
+ * A refusal is the failed row's reason in the inbox, so it is in the analyst's language. */
 async function approvalConstraints(action: AgentAction, toolUse: ToolUseBlock): Promise<ToolExecutionConstraints | string> {
-  if (action.id.startsWith('srv:')) return 'Server proposals are history only and cannot be approved here.';
+  if (action.id.startsWith('srv:')) return await agentRefusal('refusal.serverProposal');
   const folder = await db.folders.get(action.investigationId);
-  if (!folder || folder.status === 'archived') return 'Approved actions require an existing, non-archived investigation.';
+  if (!folder || folder.status === 'archived') return await agentRefusal('refusal.investigationUnavailable');
   if (await proposerRemoved(action)) return await agentRefusal('refusal.proposerRemoved');
   const approval = mintHumanApproval(toolUse, action.investigationId, 'action-queue');
 
@@ -48,20 +49,20 @@ async function approvalConstraints(action: AgentAction, toolUse: ToolUseBlock): 
       validateScope: async call => {
         const permission = await getSupervisorToolPermission(call, action.investigationId);
         if (permission.kind === 'denied') return permission.error;
-        if (permission.investigationId !== action.investigationId) return 'The action target moved to another investigation. Review a new proposal before applying it.';
+        if (permission.investigationId !== action.investigationId) return await agentRefusal('refusal.targetMoved');
         // The analyst's explicit approval satisfies the remaining policy gate.
       },
     };
   }
 
   const profile = await resolveAgentProfile(action.agentConfigId);
-  if (action.agentConfigId && !profile) return 'The agent profile is no longer available.';
+  if (action.agentConfigId && !profile) return await agentRefusal('refusal.profileGone');
   const { effectiveAllowedTools } = buildAgentToolset({
     profile, baseTools: TOOL_DEFINITIONS, delegationTools: DELEGATION_TOOL_DEFINITIONS, executiveTools: EXECUTIVE_TOOL_DEFINITIONS,
     hostTools: getHostToolDefinitions(storedSettings()), getActionClass: getToolActionClass,
     homeShareable: await isShareableFolder(action.investigationId),
   });
-  if (!effectiveAllowedTools.has(action.toolName)) return `Tool "${action.toolName}" is not available to this agent.`;
+  if (!effectiveAllowedTools.has(action.toolName)) return await agentRefusal('refusal.toolNotAllowed', { tool: action.toolName });
   return { surface: 'agent', allowedTools: effectiveAllowedTools, toolBinding: action.toolBinding, approval };
 }
 
@@ -97,7 +98,7 @@ export async function executeApprovedAction(action: AgentAction): Promise<ToolEx
   const acknowledged = action.toolName === 'ask_human' && !action.id.startsWith('srv:');
   const constraints = acknowledged ? undefined : await approvalConstraints(action, toolUse);
   const result = !constraints
-    ? { result: 'Question acknowledged.', isError: false }
+    ? { result: await agentRefusal('action.questionAcknowledged'), isError: false }
     : typeof constraints === 'string'
       ? toolExecutionError(constraints)
       : await executeTool(toolUse, action.investigationId,

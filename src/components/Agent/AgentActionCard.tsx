@@ -2,6 +2,7 @@ import { Check, X, Clock, AlertTriangle, Info, ChevronDown, ChevronRight, Pencil
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_SETTINGS, type AgentAction } from '../../types';
+import { db } from '../../db';
 import { cn, formatDate } from '../../lib/utils';
 import { getToolActionClass } from '../../lib/caddy-agent-policy';
 import { classifyToolCall } from '../../lib/tool-reach';
@@ -39,6 +40,15 @@ function destinationHost(action: AgentAction): string | undefined {
   if (action.toolName.startsWith('host:')) return action.toolName.split(':')[1];
 }
 
+/** A failed row stores toolExecutionError's {"error": ...} wrapper (older rows too): show its text. */
+function failureReason(summary: string): string {
+  try {
+    const parsed: unknown = JSON.parse(summary);
+    if (parsed && typeof parsed === 'object' && typeof (parsed as { error?: unknown }).error === 'string') return (parsed as { error: string }).error;
+  } catch { /* Not the wrapper: show it as stored. */ }
+  return summary;
+}
+
 export function AgentActionCard({ action, onApprove, onEditApprove, onReject, onViewReasoning }: AgentActionCardProps) {
   const { t } = useTranslation('agent');
   const [expanded, setExpanded] = useState(false);
@@ -51,26 +61,45 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
   const statusInfo = STATUS_CONFIG[action.status] || STATUS_CONFIG.pending;
   const StatusIcon = statusInfo.icon;
   const isPending = action.status === 'pending';
-  // Where the action sends data, for actions that leave this device.
-  const destination = action.toolName === 'enrich_ioc' ? t('action.vendorLookups')
+  // Where the action sends data, for actions that leave this device. A pending
+  // enrichment names its lookups below, once they are known.
+  const destination = action.toolName === 'enrich_ioc' ? undefined
     : action.toolName.startsWith('local:') ? t('action.localAgent')
     : destinationHost(action);
 
   // Display only, read from the case's IOCs: it never blocks or approves anything.
   const [iocHostActionId, setIocHostActionId] = useState<string>();
+  /** The lookups approving a pending enrichment runs, found as the chat card finds them. */
+  const [lookup, setLookup] = useState<{ actionId: string; iocId: string; value: string; vendors: string[] }>();
   const { id, toolName, investigationId } = action;
-  // Keyed on the URL, not the input object: the inbox refresh returns new rows.
+  // Keyed on the URL and IOC id, not the input object: the inbox refresh returns new rows.
   const { url } = action.toolInput;
+  const iocId = String(action.toolInput.iocId || '');
   useEffect(() => {
-    if (!isPending || toolName !== 'fetch_url') return;
+    if (!isPending || (toolName !== 'fetch_url' && toolName !== 'enrich_ioc')) return;
     let current = true;
-    // A fetch's reach reads only its URL, and no settings.
-    classifyToolCall({ type: 'tool_use', id, name: toolName, input: { url } }, { homeFolderId: investigationId, settings: DEFAULT_SETTINGS })
-      .then(reach => { if (current) setIocHostActionId(reach.flags.includes('host-is-ioc') ? id : undefined); })
-      .catch(() => { /* The card still shows the destination. */ });
+    if (toolName === 'fetch_url') {
+      // A fetch's reach reads only its URL, and no settings.
+      classifyToolCall({ type: 'tool_use', id, name: toolName, input: { url } }, { homeFolderId: investigationId, settings: DEFAULT_SETTINGS })
+        .then(reach => { if (current) setIocHostActionId(reach.flags.includes('host-is-ioc') ? id : undefined); })
+        .catch(() => { /* The card still shows the destination. */ });
+    } else {
+      (async () => {
+        // An enrichment's reach reads only the IOC and the enabled integrations, and no settings.
+        const reach = await classifyToolCall({ type: 'tool_use', id, name: toolName, input: { iocId } }, { homeFolderId: investigationId, settings: DEFAULT_SETTINGS });
+        const ioc = iocId ? await db.standaloneIOCs.get(iocId) : undefined;
+        // Approval runs no lookup for an IOC that is gone or filed in another investigation.
+        const runs = !!ioc && !ioc.trashed && ioc.folderId === investigationId;
+        if (current) setLookup({ actionId: id, iocId, value: String(ioc?.value ?? iocId), vendors: runs ? reach.destinations : [] });
+      })().catch(() => { /* The card keeps its neutral line. */ });
+    }
     return () => { current = false; };
-  }, [isPending, id, toolName, url, investigationId]);
+  }, [isPending, id, toolName, url, iocId, investigationId]);
   const hostIsIoc = isPending && toolName === 'fetch_url' && iocHostActionId === id;
+  const lookupLine = !isPending || toolName !== 'enrich_ioc' ? undefined
+    : lookup?.actionId !== id || lookup.iocId !== iocId ? t('action.lookupChecking')
+    : lookup.vendors.length ? t('action.lookupDestinations', { value: lookup.value, vendors: lookup.vendors.join(', ') })
+    : t('action.lookupNone', { value: lookup.value });
 
   return (
     <div className={cn(
@@ -107,6 +136,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
       {destination && (
         <p className="text-xs text-text-secondary mt-1 ps-6 break-all">{t('action.destination', { destination })}</p>
       )}
+      {lookupLine && <p className="text-xs text-text-secondary mt-1 ps-6 break-words">{lookupLine}</p>}
       {hostIsIoc && (
         <p className="flex items-center gap-1 text-xs text-accent-amber mt-1 ps-6">
           <AlertTriangle size={12} className="shrink-0" />
@@ -125,16 +155,22 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
           <div>
             <span className="text-[10px] text-text-muted uppercase tracking-wide">{t('action.input')}</span>
             <pre dir="ltr" className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32">
-              {JSON.stringify(action.toolInput, null, 2).substring(0, 5000)}
+              {JSON.stringify(action.toolInput, null, 2)}
             </pre>
           </div>
 
           {action.resultSummary && (
             <div>
               <span className="text-[10px] text-text-muted uppercase tracking-wide">{t('action.result')}</span>
-              <pre dir="ltr" className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32">
-                {action.resultSummary}
-              </pre>
+              {action.status === 'failed' ? (
+                <p dir="auto" className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32 whitespace-pre-wrap break-words">
+                  {failureReason(action.resultSummary)}
+                </p>
+              ) : (
+                <pre dir="ltr" className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32">
+                  {action.resultSummary}
+                </pre>
+              )}
             </div>
           )}
 
