@@ -25,7 +25,7 @@ import { generateChatTitle } from '../../lib/chat-utils';
 import { truncateConversation, summarizeConversation, MAX_CONTEXT_MESSAGES } from '../../lib/chat-utils';
 import { db } from '../../db';
 import { useChatLoops } from '../../hooks/useChatLoops';
-import { hasLoopsForThread } from '../../lib/chat-loop';
+import { hasLoopsForThread, type LoopTransport } from '../../lib/chat-loop';
 import { resolveMentions } from '../../lib/chat-mentions';
 import { executeCheckpointedTool, restoreCheckpoint } from '../../lib/checkpoints';
 import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCustomSlashCommands';
@@ -258,6 +258,21 @@ export function ChatView({
     }
   }, []);
 
+  // Where a prompt to this provider goes now (the route Settings → AI shows), or why it cannot be sent.
+  // Chat sends and every /loop run use it, so a schedule never keeps the route it started with.
+  const resolveTransport = useCallback(async (provider: LLMProvider): Promise<LoopTransport> => {
+    const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(), provider });
+    if (route.route === 'unavailable') return { error: await unavailableRouteError(route.reason) };
+    // The server has its own keys.
+    if (route.route === 'server') return { useServerProxy: true, apiKey: 'server-proxy' };
+    if (provider === 'local' && !settings.llmLocalEndpoint) return { error: t('view.errorNoLocalEndpoint') };
+    const apiKey = getApiKeyForProvider(provider, settings);
+    if (!apiKey) return { error: t('view.errorNoApiKey', { provider: getProviderLabel(provider) }) };
+    return { useServerProxy: false, apiKey, endpoint: provider === 'local' ? settings.llmLocalEndpoint : undefined };
+  }, [settings, extensionAvailable, getApiKeyForProvider, getProviderLabel, t]);
+  const resolveTransportRef = useRef(resolveTransport);
+  useEffect(() => { resolveTransportRef.current = resolveTransport; }, [resolveTransport]);
+
   const handleSend = useCallback(async (text: string, onCommitted?: () => void) => {
     if (!activeThread || readingImages) return;
     setLocalError(null);
@@ -265,41 +280,26 @@ export function ChatView({
 
     const provider = activeThread.provider;
     const currentTokenTotal = activeThread.messages.reduce((sum, message) => sum + (message.tokenCount ? message.tokenCount.input + message.tokenCount.output : 0), 0);
-    // The route Settings → AI shows, resolved for this send.
-    const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(), provider });
-    const useServerProxy = route.route === 'server';
 
     // CTI slash commands run allowlisted host tools directly (no LLM call), so they
     // must NOT be gated behind the LLM route / API-key / token-budget checks below.
     const isDirectCtiCommand = parseCtiSlashCommand(text) !== null;
-    // /fetch <url> saves a page through the extension and calls no model, so the AI route does not gate it.
+    // /fetch <url> saves a page through the extension and /stoploop stops schedules; neither calls a model,
+    // so the AI route and API key do not gate them.
     const isFetchCommand = /^\/fetch\s+https?:\/\/\S+$/i.test(text);
+    const isStopLoopCommand = /^\/stoploop$/i.test(text);
 
-    // No route: say why and send nothing.
-    if (route.route === 'unavailable' && !isDirectCtiCommand && !isFetchCommand) {
-      setLocalError(await unavailableRouteError(route.reason));
+    // No route or no key: say why and send nothing.
+    const transport = isDirectCtiCommand || isFetchCommand || isStopLoopCommand ? { useServerProxy: false, apiKey: undefined } : await resolveTransport(provider);
+    if ('error' in transport) {
+      setLocalError(transport.error);
       setErrorHasSettingsLink(true);
       return;
     }
-
-    // Validate API key (skip when routing through server — server has its own keys)
-    if (!useServerProxy && !isDirectCtiCommand) {
-      if (provider === 'local' && !settings.llmLocalEndpoint) {
-        setLocalError(t('view.errorNoLocalEndpoint'));
-        setErrorHasSettingsLink(true);
-        return;
-      }
-      const apiKey = getApiKeyForProvider(provider, settings);
-      if (!apiKey) {
-        setLocalError(t('view.errorNoApiKey', { provider: getProviderLabel(provider) }));
-        setErrorHasSettingsLink(true);
-        return;
-      }
-    }
-    const apiKey = useServerProxy ? 'server-proxy' : getApiKeyForProvider(provider, settings);
+    const { useServerProxy, apiKey } = transport;
 
     // Hard token budget cap — prevent sending when over budget
-    if (!isDirectCtiCommand && settings.llmTokenBudget && currentTokenTotal > settings.llmTokenBudget) {
+    if (!isDirectCtiCommand && !isStopLoopCommand && settings.llmTokenBudget && currentTokenTotal > settings.llmTokenBudget) {
       setLocalError(t('view.errorOverBudget', `Token budget exceeded (${currentTokenTotal.toLocaleString()} / ${settings.llmTokenBudget.toLocaleString()}). Start a new thread or increase the budget in Settings > AI.`));
       return;
     }
@@ -422,6 +422,7 @@ export function ChatView({
         systemPrompt: await buildSystemPrompt(homeFolder, settings.llmSystemPrompt, activeThread.provider),
         endpoint: activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined,
         useServerProxy,
+        transport: () => resolveTransportRef.current(provider),
         onMessage: onAddMessage,
       });
       const confirmMsg: ChatMessage = {
@@ -435,7 +436,7 @@ export function ChatView({
     }
 
     // Intercept /stoploop — stop all loops for this thread
-    if (text.match(/^\/stoploop$/i)) {
+    if (isStopLoopCommand) {
       const count = stopAllForThread(activeThread.id);
       const confirmMsg: ChatMessage = {
         id: nanoid(),
@@ -498,11 +499,15 @@ export function ChatView({
     const maxMessages = settings.llmMaxContextMessages || MAX_CONTEXT_MESSAGES;
     const truncatedTextMessages = truncateConversation(textMessages, maxMessages, activeThread.contextSummary);
 
-    // Trigger async summarization of truncated messages for future use. It goes through
-    // the extension only, so it never runs while chat goes through the team server.
+    // Title and summary requests go through the extension only, so they never run while chat goes through
+    // the team server. The extension sends any key it gets as a bearer token, so a local model without a
+    // key of its own gets none (chat's 'local' placeholder is for sendDirectToLocal, which drops it).
+    const extensionApiKey = provider === 'local' ? settings.llmLocalApiKey?.trim() || '' : apiKey!;
+
+    // Trigger async summarization of truncated messages for future use.
     if (!useServerProxy && textMessages.length > maxMessages && !activeThread.contextSummary) {
       const truncatedPortion = textMessages.slice(2, -(maxMessages - 2));
-      summarizeConversation(truncatedPortion, activeThread.provider, activeThread.model, apiKey!, activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined)
+      summarizeConversation(truncatedPortion, activeThread.provider, activeThread.model, extensionApiKey, activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined)
         .then((summary) => {
           if (summary) onUpdateThread(activeThread.id, { contextSummary: summary });
         })
@@ -623,7 +628,7 @@ export function ChatView({
           const titleApiKey = getApiKeyForProvider(activeThread.provider, settings);
           if (titleApiKey) {
             const titleEndpoint = activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined;
-            generateChatTitle(text, content, activeThread.provider, activeThread.model, titleApiKey, titleEndpoint)
+            generateChatTitle(text, content, activeThread.provider, activeThread.model, extensionApiKey, titleEndpoint)
               .then((title) => {
                 if (title) onUpdateThread(activeThread.id, { title });
               })
@@ -633,7 +638,7 @@ export function ChatView({
       },
       { threadId: activeThread.id, messageId: assistantMessageId, model: activeThread.model, provider: activeThread.provider },
     );
-  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread, pendingImages, setPendingImages, readingImages, customCommands, extensionAvailable, settleApproval, t]);
+  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, resolveTransport, startLoop, stopAllForThread, pendingImages, setPendingImages, readingImages, customCommands, settleApproval, t]);
 
   const handleModelChange = useCallback((model: string, provider: LLMProvider) => {
     if (activeThread) {

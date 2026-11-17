@@ -17,6 +17,8 @@ const state = vi.hoisted(() => ({
   signedIn: false,
   folder: { id: 'case', name: 'Case', order: 0, createdAt: 1 } as Folder,
   input: { onSend: async () => {} } as { onSend: (text: string) => Promise<void>; route?: string },
+  startLoop: vi.fn((_opts: { transport: () => Promise<unknown> }) => ({ id: 'loop', intervalMs: 30_000, formattedInterval: '30s' })),
+  stopAllForThread: vi.fn((_threadId: string) => 1),
 }));
 const { answer } = vi.hoisted(() => ({
   answer: (_request: unknown, callbacks: LLMRouteCallbacks) => { callbacks.onChunk('Answer.'); callbacks.onDone('end_turn', [{ type: 'text', text: 'Answer.' }]); return 'request'; },
@@ -35,7 +37,7 @@ vi.mock('../contexts/AuthContext', () => ({ useAuth: () => (state.signedIn
 vi.mock('../contexts/NavigationContext', () => ({ useNavigation: () => ({ selectedChatThreadId: 'thread', setSelectedChatThreadId: vi.fn() }) }));
 vi.mock('../contexts/InvestigationContext', () => ({ useInvestigation: () => ({ selectedFolderId: state.folder.id, selectedFolder: state.folder }) }));
 vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: vi.fn() }) }));
-vi.mock('../hooks/useChatLoops', () => ({ useChatLoops: () => ({ loops: [], startLoop: vi.fn(), stopAllForThread: vi.fn() }) }));
+vi.mock('../hooks/useChatLoops', () => ({ useChatLoops: () => ({ loops: [], startLoop: state.startLoop, stopAllForThread: state.stopAllForThread }) }));
 vi.mock('../hooks/useCustomSlashCommands', () => ({ useCustomSlashCommands: () => ({ commands: [] }), interpolateTemplate: (template: string) => template }));
 vi.mock('../components/Chat/ChatInput', () => ({ ChatInput: (props: typeof state.input) => { state.input = props; return null; } }));
 vi.mock('../components/Chat/ChatMessage', () => ({ ChatMessageBubble: () => null }));
@@ -72,9 +74,10 @@ const message = (id: string, role: 'user' | 'assistant'): ChatMessage => ({ id, 
 const makeThread = (provider: ChatThread['provider'], messages: ChatMessage[] = []): ChatThread => ({ id: 'thread', title: 'Synthetic chat', folderId: 'case',
   model: provider === 'local' ? 'llama3' : 'synthetic-model', provider, messages, tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
 const onAddMessage = vi.fn().mockResolvedValue(undefined);
-const renderChat = (settings: Partial<Settings>, thread = makeThread('anthropic')) => render(<ChatView threads={[thread]}
+const chat = (settings: Partial<Settings>, thread = makeThread('anthropic')) => <ChatView threads={[thread]}
   settings={{ ...DEFAULT_SETTINGS, ...settings }} onCreateThread={vi.fn()} onUpdateThread={vi.fn()} onAddMessage={onAddMessage}
-  onTrashThread={vi.fn()} onOpenSettings={vi.fn()} />);
+  onTrashThread={vi.fn()} onOpenSettings={vi.fn()} />;
+const renderChat = (settings: Partial<Settings>, thread = makeThread('anthropic')) => render(chat(settings, thread));
 
 beforeEach(() => {
   discardAllComposerDrafts();
@@ -181,5 +184,56 @@ describe('chat routes where Settings says', () => {
     await waitFor(() => expect(helper).toHaveBeenCalledOnce());
     expect(extensionRequests).toHaveLength(1);
     expect(sendViaServer).not.toHaveBeenCalled();
+  });
+  it('/fetch calls no model, so it needs no API key: with the extension and no key it still fetches the page', async () => {
+    renderChat({ llmRoutingMode: 'auto' });
+    announceExtension();
+    await act(async () => { await state.input.onSend('/fetch https://example.test/report'); });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(fetchViaExtensionBridge).toHaveBeenCalledExactlyOnceWith('https://example.test/report');
+    expect(extensionRequests).toEqual([]);
+  });
+
+  it('/stoploop calls no model, so it stops the schedules while no AI route is available', async () => {
+    renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'server' });
+    announceExtension();
+    expect(state.input.route).toBe('unavailable');
+    await act(async () => { await state.input.onSend('/stoploop'); });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(state.stopAllForThread).toHaveBeenCalledExactlyOnceWith('thread');
+  });
+
+  it('every /loop run goes where Settings → AI shows at that moment, not where the loop started', async () => {
+    const view = renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'auto' });
+    announceExtension();
+    await act(async () => { await state.input.onSend('/loop 30s Check the feed'); });
+    expect(state.startLoop).toHaveBeenCalledOnce();
+    const { transport } = state.startLoop.mock.calls[0][0];
+    await expect(transport()).resolves.toEqual({ useServerProxy: false, apiKey: 'synthetic-key' });
+    // The analyst switches to Team Server routing while signed out: the next run sends nothing and says why.
+    view.rerender(chat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'server' }));
+    await expect(transport()).resolves.toEqual({ error: enSettings['ai.dataFlow.errorNoServer'] });
+    // After signing in, runs go through the team server.
+    signIn();
+    await expect(transport()).resolves.toEqual({ useServerProxy: true, apiKey: 'server-proxy' });
+  });
+
+  // The extension sends any key it is given to a local model as a bearer token.
+  it.each(helpers)('a local model with no key of its own: the chat %s gives the extension no key', async (name, helper, earlier) => {
+    renderChat({ llmRoutingMode: 'auto', llmLocalEndpoint: 'http://localhost:11434/v1', llmLocalModelName: 'llama3', llmMaxContextMessages: 2 },
+      makeThread('local', [...earlier]));
+    announceExtension();
+    await act(async () => { await state.input.onSend('What happened?'); });
+    await waitFor(() => expect(helper).toHaveBeenCalledOnce());
+    expect((vi.mocked(helper).mock.calls[0] as unknown[])[name === 'title' ? 4 : 3]).toBe('');
+  });
+
+  it.each(helpers)('a local model with its own key: the chat %s gives the extension that key', async (name, helper, earlier) => {
+    renderChat({ llmRoutingMode: 'auto', llmLocalEndpoint: 'http://localhost:11434/v1', llmLocalModelName: 'llama3', llmLocalApiKey: 'synthetic-local-key',
+      llmMaxContextMessages: 2 }, makeThread('local', [...earlier]));
+    announceExtension();
+    await act(async () => { await state.input.onSend('What happened?'); });
+    await waitFor(() => expect(helper).toHaveBeenCalledOnce());
+    expect((vi.mocked(helper).mock.calls[0] as unknown[])[name === 'title' ? 4 : 3]).toBe('synthetic-local-key');
   });
 });
