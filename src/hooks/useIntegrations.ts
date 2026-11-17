@@ -126,6 +126,7 @@ export function useIntegrations() {
   const createInstallation = useCallback(async (
     templateId: string,
     config: Record<string, unknown>,
+    opts?: { enabled?: boolean },
   ): Promise<InstalledIntegration> => {
     const template = await db.integrationTemplates.get(templateId) ?? templates.find((t) => t.id === templateId);
     const now = Date.now();
@@ -133,7 +134,7 @@ export function useIntegrations() {
       id: nanoid(),
       templateId,
       name: template?.name ?? 'Integration',
-      enabled: true,
+      enabled: opts?.enabled ?? true,
       config,
       scopeType: 'all',
       scopeFolderIds: [],
@@ -221,11 +222,12 @@ export function useIntegrations() {
   );
 
   const getInstallationsForIOCType = useCallback(
-    (iocType: string): Array<{ installation: InstalledIntegration; template: IntegrationTemplate }> => {
+    (iocType: string, folderId?: string): Array<{ installation: InstalledIntegration; template: IntegrationTemplate }> => {
       const results: Array<{ installation: InstalledIntegration; template: IntegrationTemplate }> = [];
 
       for (const installation of installations) {
         if (!installation.enabled) continue;
+        if (folderId && installation.scopeType === 'investigation' && !installation.scopeFolderIds?.includes(folderId)) continue;
 
         const template = templates.find((t) => t.id === installation.templateId);
         if (!template) continue;

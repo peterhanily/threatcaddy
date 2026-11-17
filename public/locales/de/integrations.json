@@ -1,6 +1,8 @@
 {
   "catalog.teamInvalid": "Einige Teamvorlagen sind ungültig und wurden nicht geladen.",
   "catalog.teamUnavailable": "Teamvorlagen konnten nicht geladen werden. Prüfe deine Verbindung und aktualisiere die Liste.",
+  "team.installedDisabled": "{{name}} wurde deaktiviert installiert. Es kann Daten senden an: {{domains}}. Prüfe es und aktiviere es dann im Tab „Installiert“.",
+  "team.installedDisabledNoDomains": "{{name}} wurde deaktiviert installiert. Es sendet keine Webanfragen. Prüfe es und aktiviere es dann im Tab „Installiert“.",
   "builtin.vtIpLookup.name": "VirusTotal IP-Abfrage",
   "builtin.vtIpLookup.description": "IP-Adresse bei VirusTotal abfragen, um Reputation, Geolokalisierung und Analysestatistiken abzurufen.",
   "builtin.vtIpLookup.config.apiKey.label": "API-Schlüssel",

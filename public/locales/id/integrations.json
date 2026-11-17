@@ -1,6 +1,8 @@
 {
   "catalog.teamInvalid": "Beberapa templat tim tidak valid dan tidak dimuat.",
   "catalog.teamUnavailable": "Templat tim tidak dapat dimuat. Periksa koneksi Anda dan muat ulang.",
+  "team.installedDisabled": "{{name}} dipasang dalam keadaan nonaktif. Integrasi ini dapat mengirim data ke: {{domains}}. Tinjau terlebih dahulu, lalu aktifkan di tab Terpasang.",
+  "team.installedDisabledNoDomains": "{{name}} dipasang dalam keadaan nonaktif. Integrasi ini tidak membuat permintaan web. Tinjau terlebih dahulu, lalu aktifkan di tab Terpasang.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "Cari alamat IP di VirusTotal untuk mendapatkan reputasi, geolokasi, dan statistik analisis.",
   "builtin.vtIpLookup.config.apiKey.label": "API Key",

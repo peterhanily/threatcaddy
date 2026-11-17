@@ -1,6 +1,8 @@
 {
   "catalog.teamInvalid": "一部のチームテンプレートは無効なため読み込まれませんでした。",
   "catalog.teamUnavailable": "チームテンプレートを読み込めませんでした。接続を確認して更新してください。",
+  "team.installedDisabled": "{{name}} は無効の状態でインストールされました。次の宛先にデータを送信する可能性があります: {{domains}}。内容を確認してから、[インストール済み] タブで有効にしてください。",
+  "team.installedDisabledNoDomains": "{{name}} は無効の状態でインストールされました。Web リクエストは送信しません。内容を確認してから、[インストール済み] タブで有効にしてください。",
   "builtin.vtIpLookup.name": "VirusTotal IP ルックアップ",
   "builtin.vtIpLookup.description": "IPアドレスをVirusTotalで照会して評判、ジオロケーション、分析統計を取得します。",
   "builtin.vtIpLookup.config.apiKey.label": "APIキー",

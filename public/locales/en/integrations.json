@@ -1,6 +1,8 @@
 {
   "catalog.teamInvalid": "Some team templates are invalid and were not loaded.",
   "catalog.teamUnavailable": "Team templates could not be loaded. Check your connection and refresh.",
+  "team.installedDisabled": "{{name}} was installed disabled. It can send data to: {{domains}}. Review it, then enable it on the Installed tab.",
+  "team.installedDisabledNoDomains": "{{name}} was installed disabled. It makes no web requests. Review it, then enable it on the Installed tab.",
   "config.selectPlaceholder": "Select...",
   "config.togglePassword": "Show or hide {{label}}",
   "config.requiredField": "{{label}} is required.",

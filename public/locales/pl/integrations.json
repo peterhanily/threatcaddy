@@ -1,6 +1,8 @@
 {
   "catalog.teamInvalid": "Niektóre szablony zespołu są nieprawidłowe i nie zostały wczytane.",
   "catalog.teamUnavailable": "Nie udało się wczytać szablonów zespołu. Sprawdź połączenie i odśwież.",
+  "team.installedDisabled": "Integracja {{name}} została zainstalowana jako wyłączona. Może wysyłać dane do: {{domains}}. Sprawdź ją, a następnie włącz na karcie Zainstalowane.",
+  "team.installedDisabledNoDomains": "Integracja {{name}} została zainstalowana jako wyłączona. Nie wysyła żadnych żądań sieciowych. Sprawdź ją, a następnie włącz na karcie Zainstalowane.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "Sprawdzanie adresu IP w VirusTotal: reputacja, geolokalizacja i statystyki analizy.",
   "builtin.vtIpLookup.config.apiKey.label": "Klucz API",

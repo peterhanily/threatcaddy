@@ -1,6 +1,8 @@
 {
   "catalog.teamInvalid": "بعض قوالب الفريق غير صالحة ولم يتم تحميلها.",
   "catalog.teamUnavailable": "تعذر تحميل قوالب الفريق. تحقق من اتصالك وأعد التحميل.",
+  "team.installedDisabled": "{{name}} ثُبِّت معطَّلًا. يمكنه إرسال البيانات إلى: {{domains}}. راجعه، ثم فعّله من علامة التبويب «مثبَّت».",
+  "team.installedDisabledNoDomains": "{{name}} ثُبِّت معطَّلًا. لا يرسل أي طلبات ويب. راجعه، ثم فعّله من علامة التبويب «مثبَّت».",
   "builtin.vtIpLookup.name": "بحث VirusTotal عن IP",
   "builtin.vtIpLookup.description": "ابحث عن عنوان IP على VirusTotal للحصول على السمعة والموقع الجغرافي وإحصائيات التحليل.",
   "builtin.vtIpLookup.config.apiKey.label": "مفتاح API",

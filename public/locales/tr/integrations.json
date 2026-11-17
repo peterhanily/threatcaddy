@@ -1,6 +1,8 @@
 {
   "catalog.teamInvalid": "Bazı ekip şablonları geçersiz ve yüklenmedi.",
   "catalog.teamUnavailable": "Ekip şablonları yüklenemedi. Bağlantınızı kontrol edip yenileyin.",
+  "team.installedDisabled": "{{name}} devre dışı olarak yüklendi. Şu adreslere veri gönderebilir: {{domains}}. İnceleyin, ardından Yüklenmiş sekmesinde etkinleştirin.",
+  "team.installedDisabledNoDomains": "{{name}} devre dışı olarak yüklendi. Hiçbir web isteği göndermez. İnceleyin, ardından Yüklenmiş sekmesinde etkinleştirin.",
   "builtin.vtIpLookup.name": "VirusTotal IP Sorgusu",
   "builtin.vtIpLookup.description": "İtibar, coğrafi konum ve analiz istatistiklerini almak için VirusTotal'da bir IP adresi sorgulayın.",
   "builtin.vtIpLookup.config.apiKey.label": "API Anahtarı",

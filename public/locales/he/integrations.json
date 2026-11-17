@@ -1,6 +1,8 @@
 {
   "catalog.teamInvalid": "חלק מתבניות הצוות אינן תקינות ולא נטענו.",
   "catalog.teamUnavailable": "לא ניתן לטעון את תבניות הצוות. בדקו את החיבור ורעננו.",
+  "team.installedDisabled": "{{name}} הותקן במצב מושבת. הוא יכול לשלוח נתונים אל: {{domains}}. בדקו אותו, ואז הפעילו אותו בלשונית מותקן.",
+  "team.installedDisabledNoDomains": "{{name}} הותקן במצב מושבת. הוא אינו שולח בקשות אינטרנט. בדקו אותו, ואז הפעילו אותו בלשונית מותקן.",
   "builtin.vtIpLookup.name": "בדיקת IP ב-VirusTotal",
   "builtin.vtIpLookup.description": "בדוק כתובת IP ב-VirusTotal לקבלת מוניטין, מיקום גיאוגרפי וסטטיסטיקות ניתוח.",
   "builtin.vtIpLookup.config.apiKey.label": "מפתח API",

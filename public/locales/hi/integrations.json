@@ -1,6 +1,8 @@
 {
   "catalog.teamInvalid": "टीम के कुछ टेम्पलेट अमान्य हैं और लोड नहीं हुए।",
   "catalog.teamUnavailable": "टीम के टेम्पलेट लोड नहीं हो सके। अपना कनेक्शन जाँचें और रीफ़्रेश करें।",
+  "team.installedDisabled": "{{name}} अक्षम स्थिति में इंस्टॉल किया गया। यह इन पर डेटा भेज सकता है: {{domains}}। इसकी समीक्षा करें, फिर ‘इंस्टॉल किए गए’ टैब में इसे सक्षम करें।",
+  "team.installedDisabledNoDomains": "{{name}} अक्षम स्थिति में इंस्टॉल किया गया। यह कोई वेब अनुरोध नहीं भेजता। इसकी समीक्षा करें, फिर ‘इंस्टॉल किए गए’ टैब में इसे सक्षम करें।",
   "builtin.vtIpLookup.name": "VirusTotal IP लुकअप",
   "builtin.vtIpLookup.description": "VirusTotal पर एक IP पता देखें — प्रतिष्ठा, जियोलोकेशन, और विश्लेषण आँकड़े प्राप्त करें।",
   "builtin.vtIpLookup.config.apiKey.label": "API कुंजी",

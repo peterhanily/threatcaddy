@@ -1,6 +1,8 @@
 {
   "catalog.teamInvalid": "Certains modèles d’équipe sont invalides et n’ont pas été chargés.",
   "catalog.teamUnavailable": "Impossible de charger les modèles d’équipe. Vérifiez votre connexion et actualisez.",
+  "team.installedDisabled": "{{name}} a été installée désactivée. Elle peut envoyer des données à : {{domains}}. Vérifiez-la, puis activez-la dans l’onglet Installées.",
+  "team.installedDisabledNoDomains": "{{name}} a été installée désactivée. Elle n’effectue aucune requête web. Vérifiez-la, puis activez-la dans l’onglet Installées.",
   "builtin.vtIpLookup.name": "Recherche IP VirusTotal",
   "builtin.vtIpLookup.description": "Rechercher une adresse IP sur VirusTotal pour obtenir la réputation, la géolocalisation et les statistiques d'analyse.",
   "builtin.vtIpLookup.config.apiKey.label": "Clé API",
