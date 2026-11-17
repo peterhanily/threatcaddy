@@ -1,6 +1,6 @@
 # Agent Hosts
 
-An **agent host** is an external HTTP endpoint that CaddyAI and ThreatCaddy agents can call as if it were a built-in tool. Hosts let you expose local services (a SOC workstation, a forensic VM, a custom LLM) as a list of named "skills" that show up in the LLM's tool surface. A skill call sends investigation data off the device, so every call that CaddyAI or an agent makes needs a person's approval, whatever the skill declares.
+An **agent host** is an external HTTP endpoint that CaddyAI and ThreatCaddy agents can call as if it were a built-in tool. Hosts let you expose local services (a SOC workstation, a forensic VM, a custom LLM) as a list of named "skills" that show up in the LLM's tool surface. A skill call sends investigation data to another service, so every call that CaddyAI or an agent makes needs a person's approval, whatever the skill declares.
 
 There are two flavours:
 
@@ -87,7 +87,7 @@ On non-2xx, ThreatCaddy returns a synthetic `{"error": "<displayName> returned H
 
 ## Policy integration
 
-`getHostSkillActionClass(toolName)` resolves the action class for any host or local tool from the cached skill record; a missing or unknown value is `modify`. The class is metadata only. Whatever a host declares, `decideToolCall` (`src/lib/tool-reach.ts`) treats every host or local skill call as one that leaves the device: it always needs a person's approval, and the dispatcher refuses it without one. Auto-approve settings cannot change that.
+`getHostSkillActionClass(toolName)` resolves the action class for any host or local tool from the cached skill record; a missing or unknown value is `modify`. The class is metadata only. Whatever a host declares, `decideToolCall` (`src/lib/tool-reach.ts`) treats every host or local skill call as outbound ("configured" egress): it always needs a person's approval, and the dispatcher refuses it without one. Auto-approve settings cannot change that.
 
 `isWriteTool(name)` (in `llm-tool-defs.ts`) consults the same cache: a host or local skill whose class is `create` or `modify` (including a missing class) counts as a write, so the app reloads the affected views after it runs.
 
