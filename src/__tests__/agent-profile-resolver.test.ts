@@ -3,6 +3,7 @@ import { db } from '../db';
 import { DEFAULT_AGENT_POLICY, type AgentProfile, type AgentSoul } from '../types';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { listAgentProfiles, loadAgentPolicy, resolveAgentProfile } from '../lib/agent-profile-resolver';
+import i18n from '../i18n';
 
 const soul: AgentSoul = {
   identity: 'I hunt.', lessons: ['Check DNS first.'], strengths: [], weaknesses: [],
@@ -27,6 +28,29 @@ describe('agent profile resolver', () => {
     const resolved = await resolveAgentProfile(hunter.id);
     expect(resolved?.systemPrompt).toBe(hunter.systemPrompt);
     expect(resolved?.soul).toBeUndefined();
+  });
+
+  it('a builtin with a stored soul keeps following the interface language', async () => {
+    await db.agentProfiles.put(staleHunterRow);
+    const listed = (await listAgentProfiles()).find(profile => profile.id === hunter.id) as AgentProfile;
+    const resolved = await resolveAgentProfile(hunter.id) as AgentProfile;
+    // Reuse the loaded English bundles so switching language fetches nothing.
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('fr', namespace, values, true, false);
+    i18n.addResourceBundle('fr', 'agent', { 'builtinProfile.threatHunter.name': 'Chasseur de menaces', 'builtinProfile.threatHunter.description': 'Chasse guidée par hypothèses' }, true, true);
+    try {
+      await i18n.changeLanguage('fr');
+      for (const profile of [listed, resolved]) {
+        expect(profile.name).toBe('Chasseur de menaces');
+        expect(profile.description).toBe('Chasse guidée par hypothèses');
+        expect(profile.soul).toEqual(soul);
+        // Copies and serialisation see the builtin's fields, now in French, plus the soul.
+        expect({ ...profile }).toEqual({ ...hunter, soul });
+        expect(Object.keys(profile).sort()).toEqual([...Object.keys(hunter), 'soul'].sort());
+        expect(JSON.parse(JSON.stringify(profile))).toEqual(JSON.parse(JSON.stringify({ ...hunter, soul })));
+      }
+    } finally {
+      await i18n.changeLanguage('en');
+    }
   });
 
   it('takes only the soul from a materialised builtin row', async () => {
