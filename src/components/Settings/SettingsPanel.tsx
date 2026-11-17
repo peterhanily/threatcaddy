@@ -11,6 +11,7 @@ import { TemplateManager } from './TemplateManager';
 import { PlaybookManager } from './PlaybookManager';
 import { DEFAULT_SYSTEM_PROMPT } from '../../lib/llm-tools';
 import { MODELS, MODEL_PROVIDER_MAP } from '../../lib/models';
+import { hasServerSession, resolveRoute } from '../../lib/llm-router';
 import { ExportImport } from './ExportImport';
 import { useAgentProfiles } from '../../hooks/useAgentProfiles';
 import { AgentProfileManager } from '../Agent/AgentProfileManager';
@@ -726,7 +727,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 <label htmlFor={`${fieldId}-routing`} className="text-xs text-gray-400">{t('ai.routing')}</label>
                 <select
                   id={`${fieldId}-routing`}
-                  value={settings.llmRoutingMode || 'extension'}
+                  value={settings.llmRoutingMode ?? 'auto'}
                   onChange={(e) => onUpdateSettings({ llmRoutingMode: e.target.value as 'extension' | 'server' | 'auto' })}
                   className={selectClass}
                 >
@@ -739,13 +740,15 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 {t('ai.routingHelp')}
               </p>
 
+              <AIDataFlow settings={settings} onUpdateSettings={onUpdateSettings} />
+
               <SystemPromptEditor
                 value={settings.llmSystemPrompt}
                 onChange={(v) => onUpdateSettings({ llmSystemPrompt: v })}
               />
 
               <p className="text-[10px] text-gray-600">
-                {t('ai.keysLocalNote')}
+                {t('ai.keysRouteNote')}
               </p>
               {(settings.llmAnthropicApiKey || settings.llmOpenAIApiKey || settings.llmGeminiApiKey || settings.llmMistralApiKey) && (
                 <p className="text-[10px] text-accent-green font-medium">{t('ai.apiKeySaved')}</p>
@@ -849,6 +852,55 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
       )}
     </div>
     </div>
+  );
+}
+
+// ── Where AI data goes ──────────────────────────────────────────────────
+
+const hostOf = (url?: string) => { try { return new URL(url ?? '').host; } catch { return url ?? ''; } };
+
+/** Uses the runtime's route resolver, so the line cannot disagree with where requests go. */
+function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpdateSettings: (updates: Partial<Settings>) => void }) {
+  const { t } = useTranslation('settings');
+  const headingId = useId();
+  // The extension bridge publishes its capabilities once it has approved this page.
+  const caps = (document.documentElement.dataset.tcBridgeCaps ?? '').split(',').filter(Boolean);
+  const route = resolveRoute(settings, { extensionAvailable: caps.length > 0, serverSession: hasServerSession(settings), provider: settings.llmDefaultProvider });
+  const routeLine = route.route === 'unavailable'
+    ? t(route.reason === 'no-extension' ? 'ai.dataFlow.routeNoExtension' : route.reason === 'no-server' ? 'ai.dataFlow.routeNoServer' : 'ai.dataFlow.routeNone')
+    : route.route === 'local-direct' ? t('ai.dataFlow.routeLocal', { host: hostOf(settings.llmLocalEndpoint) })
+    : route.route === 'server' ? t('ai.dataFlow.routeServer', { host: hostOf(settings.serverUrl) })
+    : t('ai.dataFlow.routeExtension');
+  const fetchLine = !caps.length ? t('ai.dataFlow.fetchNoExtension')
+    : caps.includes('fetch_url_public_v1') || caps.includes('clip_import_ack_v2') ? t('ai.dataFlow.fetchSupported') : t('ai.dataFlow.fetchUpdate');
+  const hosts = settings.agentHosts ?? [];
+
+  return (
+    <section aria-labelledby={headingId} className="border border-gray-700 rounded-lg p-3 space-y-2">
+      <h4 id={headingId} className="text-sm text-gray-300 font-medium">{t('ai.dataFlow.title')}</h4>
+      <p className="text-xs text-gray-400">{routeLine}</p>
+      <p className="text-xs text-gray-400">{fetchLine}</p>
+      {hosts.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-xs text-gray-300">{t('ai.dataFlow.hostsTitle')}</p>
+          <p className="text-[10px] text-gray-500">{t('ai.dataFlow.hostsHelp')}</p>
+          <ul className="space-y-1">
+            {hosts.map(host => (
+              <li key={host.id} className="flex min-w-0 items-center justify-between gap-2 text-xs">
+                <span className="min-w-0 truncate text-gray-300">{host.displayName || host.name} <span className="text-gray-500">{host.url}</span></span>
+                <button
+                  onClick={() => onUpdateSettings({ agentHosts: hosts.filter(item => item.id !== host.id) })}
+                  aria-label={t('ai.dataFlow.removeHostLabel', { name: host.displayName || host.name })}
+                  className="shrink-0 rounded px-2 py-1 text-red-400 hover:bg-red-600/15 transition-colors"
+                >
+                  {t('ai.dataFlow.removeHost')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   );
 }
 

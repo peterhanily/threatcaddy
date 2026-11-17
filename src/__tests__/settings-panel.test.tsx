@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SettingsPanel } from '../components/Settings/SettingsPanel';
 import { DEFAULT_SETTINGS } from '../types';
 import type { Settings } from '../types';
+import { workspaceStorageKey } from '../lib/workspace-profiles';
 
 // Mock contexts
 vi.mock('../contexts/ToastContext', () => ({
@@ -276,5 +277,73 @@ describe('SettingsPanel', () => {
     render(<SettingsPanel {...defaultProps} />);
     clickTab('Shortcuts');
     expect(screen.getByTestId('keyboard-shortcuts')).toBeInTheDocument();
+  });
+});
+
+describe('SettingsPanel: where AI data goes', () => {
+  const renderAI = (settings: Partial<Settings> = {}, onUpdateSettings = vi.fn()) =>
+    render(<SettingsPanel {...defaultProps} initialTab="ai" onUpdateSettings={onUpdateSettings} settings={{ ...DEFAULT_SETTINGS, ...settings } as Settings} />);
+  const signIn = () => localStorage.setItem(workspaceStorageKey('threatcaddy-auth'), JSON.stringify({
+    serverUrl: 'https://team.example', accessToken: 'synthetic-access', refreshToken: 'synthetic-refresh',
+    user: { id: 'user-1', email: 'analyst@example.test', displayName: 'Analyst' },
+  }));
+  afterEach(() => { localStorage.clear(); delete document.documentElement.dataset.tcBridgeCaps; });
+
+  it('D-ROUTE-4: shows Auto when no routing mode was chosen', () => {
+    renderAI();
+    expect(screen.getByLabelText('LLM request routing')).toHaveValue('auto');
+  });
+
+  it('names the team server and its operator when Auto routes through a signed-in server', () => {
+    signIn();
+    renderAI({ serverUrl: 'https://team.example' });
+    const section = screen.getByRole('region', { name: 'Where AI data goes' });
+    expect(within(section).getByText(/team server at team\.example\. Its operator can read your prompts/)).toBeInTheDocument();
+  });
+
+  it('describes local, extension and unavailable routes truthfully', () => {
+    const view = renderAI({ llmDefaultProvider: 'local', llmLocalEndpoint: 'http://localhost:11434/v1' });
+    expect(screen.getByText(/your local model at localhost:11434/)).toBeInTheDocument();
+    view.unmount();
+    document.documentElement.dataset.tcBridgeCaps = 'llm_streaming,fetch_url,clip_import,clip_import_ack_v2,proxy_fetch';
+    const extension = renderAI({ serverUrl: 'https://team.example' });
+    expect(screen.getByText(/from the browser extension straight to your AI provider/)).toBeInTheDocument();
+    extension.unmount();
+    delete document.documentElement.dataset.tcBridgeCaps;
+    signIn();
+    renderAI({ serverUrl: 'https://team.example', llmRoutingMode: 'extension' });
+    expect(screen.getByText(/set to Browser Extension, but the extension is not available/)).toBeInTheDocument();
+  });
+
+  it.each([
+    [undefined, 'Web fetch needs the ThreatCaddy browser extension.'],
+    ['llm_streaming,fetch_url,clip_import,proxy_fetch', 'Update the extension to use web fetch.'],
+    ['llm_streaming,fetch_url,clip_import,clip_import_ack_v2,proxy_fetch', 'Web fetch: available. The extension opens only public web addresses.'],
+  ])('reports web fetch status for bridge capabilities %s', (caps, text) => {
+    if (caps) document.documentElement.dataset.tcBridgeCaps = caps;
+    renderAI();
+    expect(screen.getByText(text)).toBeInTheDocument();
+  });
+
+  it('says where keys and prompts go instead of claiming every call uses the extension', () => {
+    renderAI();
+    expect(screen.getByText(/its operator receives your prompts, attachments and tool results/)).toBeInTheDocument();
+    expect(screen.queryByText(/proxied through the browser extension/)).not.toBeInTheDocument();
+  });
+
+  it('D-HOSTS-1: lists a legacy agent host read-only, and Remove clears it', async () => {
+    const onUpdateSettings = vi.fn();
+    const keep = { id: 'keep', name: 'soc2', displayName: 'SOC Two', url: 'https://soc2.example', enabled: true, skills: [] };
+    renderAI({ agentHosts: [{ id: 'legacy', name: 'soc1', displayName: 'SOC One', url: 'http://192.168.1.50:8080', enabled: true, skills: [] }, keep] }, onUpdateSettings);
+    expect(screen.getByText('Configured agent hosts')).toBeInTheDocument();
+    expect(screen.getByText('http://192.168.1.50:8080')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /host/i })).not.toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Remove agent host SOC One' }));
+    expect(onUpdateSettings).toHaveBeenCalledExactlyOnceWith({ agentHosts: [keep] });
+  });
+
+  it('hides the agent host list when none are configured', () => {
+    renderAI();
+    expect(screen.queryByText('Configured agent hosts')).not.toBeInTheDocument();
   });
 });
