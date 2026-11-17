@@ -1216,7 +1216,7 @@ export function ChatView({
                 <div className="flex flex-col items-center justify-center h-full text-text-muted">
                   <MessageSquare size={40} className="mb-3 opacity-30" />
                   <p className="text-sm font-medium">{t('view.emptyTitle')}</p>
-                  <p className="text-xs mt-1">{t('view.emptySubtitleV2')}</p>
+                  <p className="text-xs mt-1 max-w-md px-4 text-center">{t('view.emptySubtitleV2')}</p>
                   {selectedFolder && (
                     <p className="text-xs mt-1 text-purple">
                       {t('view.emptyFolderContext', { name: selectedFolder.name })}
