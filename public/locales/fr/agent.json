@@ -55,6 +55,7 @@
   "panel.failedCount": "{{count}} échouée(s)",
   "panel.autoApprovePolicy": "Politique d'auto-approbation",
   "panel.policyCeilingNote": "Ces paramètres limitent chaque agent de cette enquête. Les paramètres propres d'un agent peuvent désactiver une action, jamais l'activer.",
+  "panel.policyUnsavedNote": "Aucune limite n'est encore enregistrée pour cette enquête. Les agents déployés utilisent leurs propres paramètres ; ceux-ci s'appliquent lorsqu'aucun agent n'est déployé. Modifier un paramètre ici en fait la limite de chaque agent.",
   "panel.reads": "Lectures",
   "panel.readsDesc": "Recherche, listage, lecture d'entités",
   "panel.enrich": "Enrichir",

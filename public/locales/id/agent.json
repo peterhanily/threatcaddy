@@ -55,6 +55,7 @@
   "panel.failedCount": "{{count}} gagal",
   "panel.autoApprovePolicy": "Kebijakan Persetujuan Otomatis",
   "panel.policyCeilingNote": "Pengaturan ini membatasi setiap agen dalam investigasi ini. Pengaturan agen itu sendiri dapat mematikan suatu tindakan, tetapi tidak pernah menyalakannya.",
+  "panel.policyUnsavedNote": "Belum ada batas yang disimpan untuk investigasi ini. Agen yang di-deploy memakai pengaturannya sendiri; pengaturan ini berlaku saat tidak ada agen yang di-deploy. Mengubah pengaturan apa pun di sini menjadikannya batas bagi setiap agen.",
   "panel.reads": "Baca",
   "panel.readsDesc": "Cari, daftar, baca entitas",
   "panel.enrich": "Perkaya",

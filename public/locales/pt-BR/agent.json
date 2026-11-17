@@ -55,6 +55,7 @@
   "panel.failedCount": "{{count}} falhou(ram)",
   "panel.autoApprovePolicy": "Política de aprovação automática",
   "panel.policyCeilingNote": "Estas configurações limitam todos os agentes desta investigação. As configurações próprias de um agente podem desativar uma ação, nunca ativá-la.",
+  "panel.policyUnsavedNote": "Nenhum limite foi salvo para esta investigação ainda. Agentes implantados usam as próprias configurações; estas se aplicam quando nenhum agente está implantado. Alterar qualquer configuração aqui as torna o limite para todos os agentes.",
   "panel.reads": "Leituras",
   "panel.readsDesc": "Pesquisar, listar, ler entidades",
   "panel.enrich": "Enriquecer",

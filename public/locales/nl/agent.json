@@ -55,6 +55,7 @@
   "panel.failedCount": "{{count}} mislukt",
   "panel.autoApprovePolicy": "Beleid voor automatisch goedkeuren",
   "panel.policyCeilingNote": "Deze instellingen begrenzen elke agent in dit onderzoek. De eigen instellingen van een agent kunnen een actie uitzetten, nooit aanzetten.",
+  "panel.policyUnsavedNote": "Voor dit onderzoek is nog geen grens opgeslagen. Geïmplementeerde agenten gebruiken hun eigen instellingen; deze gelden wanneer er geen agent is geïmplementeerd. Als u hier een instelling wijzigt, worden ze de grens voor elke agent.",
   "panel.reads": "Lezen",
   "panel.readsDesc": "Zoeken, weergeven, lezen van objecten",
   "panel.enrich": "Verrijken",

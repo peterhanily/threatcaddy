@@ -55,6 +55,7 @@
   "panel.failedCount": "{{count}}개 실패",
   "panel.autoApprovePolicy": "자동 승인 정책",
   "panel.policyCeilingNote": "이 설정은 이 조사의 모든 에이전트를 제한합니다. 에이전트 자체 설정으로 작업을 끌 수는 있지만 켤 수는 없습니다.",
+  "panel.policyUnsavedNote": "이 조사에는 아직 저장된 제한이 없습니다. 배포된 에이전트는 자체 설정을 사용하며, 이 설정은 배포된 에이전트가 없을 때 적용됩니다. 여기서 설정을 하나라도 변경하면 이 설정이 모든 에이전트의 제한이 됩니다.",
   "panel.reads": "읽기",
   "panel.readsDesc": "검색, 목록, 엔터티 읽기",
   "panel.enrich": "보강",

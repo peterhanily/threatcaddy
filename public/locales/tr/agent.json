@@ -55,6 +55,7 @@
   "panel.failedCount": "{{count}} başarısız",
   "panel.autoApprovePolicy": "Otomatik Onay Politikası",
   "panel.policyCeilingNote": "Bu ayarlar bu soruşturmadaki her ajanı sınırlar. Bir ajanın kendi ayarları bir eylemi kapatabilir, asla açamaz.",
+  "panel.policyUnsavedNote": "Bu soruşturma için henüz bir sınır kaydedilmedi. Dağıtılmış ajanlar kendi ayarlarını kullanır; bu ayarlar hiçbir ajan dağıtılmadığında geçerlidir. Burada herhangi bir ayarı değiştirmek bunları her ajan için sınır yapar.",
   "panel.reads": "Okumalar",
   "panel.readsDesc": "Ara, listele, varlıkları oku",
   "panel.enrich": "Zenginleştir",

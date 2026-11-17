@@ -55,6 +55,7 @@
   "panel.failedCount": "{{count}} thất bại",
   "panel.autoApprovePolicy": "Chính sách tự động phê duyệt",
   "panel.policyCeilingNote": "Các cài đặt này giới hạn mọi tác nhân trong điều tra này. Cài đặt riêng của một tác nhân có thể tắt một hành động, nhưng không bao giờ bật được.",
+  "panel.policyUnsavedNote": "Chưa có giới hạn nào được lưu cho điều tra này. Các tác nhân đã triển khai dùng cài đặt riêng của chúng; các cài đặt này áp dụng khi không có tác nhân nào được triển khai. Thay đổi bất kỳ cài đặt nào ở đây sẽ biến chúng thành giới hạn cho mọi tác nhân.",
   "panel.reads": "Đọc",
   "panel.readsDesc": "Tìm kiếm, liệt kê, đọc thực thể",
   "panel.enrich": "Làm phong phú",

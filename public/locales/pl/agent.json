@@ -55,6 +55,7 @@
   "panel.failedCount": "{{count}} nieudanych",
   "panel.autoApprovePolicy": "Polityka automatycznego zatwierdzania",
   "panel.policyCeilingNote": "Te ustawienia ograniczają każdego agenta w tym dochodzeniu. Własne ustawienia agenta mogą wyłączyć działanie, ale nigdy go nie włączą.",
+  "panel.policyUnsavedNote": "Dla tego dochodzenia nie zapisano jeszcze żadnego ograniczenia. Wdrożeni agenci używają własnych ustawień; te ustawienia obowiązują, gdy żaden agent nie jest wdrożony. Zmiana dowolnego ustawienia tutaj sprawia, że stają się one ograniczeniem dla każdego agenta.",
   "panel.reads": "Odczyty",
   "panel.readsDesc": "Wyszukiwanie, lista, odczyt obiektów",
   "panel.enrich": "Wzbogacanie",

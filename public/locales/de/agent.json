@@ -55,6 +55,7 @@
   "panel.failedCount": "{{count}} fehlgeschlagen",
   "panel.autoApprovePolicy": "Auto-Genehmigungsrichtlinie",
   "panel.policyCeilingNote": "Diese Einstellungen begrenzen jeden Agenten in dieser Untersuchung. Die eigenen Einstellungen eines Agenten können eine Aktion ausschalten, aber nie einschalten.",
+  "panel.policyUnsavedNote": "Für diese Untersuchung ist noch keine Begrenzung gespeichert. Eingesetzte Agenten verwenden ihre eigenen Einstellungen; diese gelten, wenn kein Agent eingesetzt ist. Wenn Sie hier eine Einstellung ändern, werden sie zur Begrenzung für jeden Agenten.",
   "panel.reads": "Lesen",
   "panel.readsDesc": "Suchen, auflisten, Entitäten lesen",
   "panel.enrich": "Anreichern",

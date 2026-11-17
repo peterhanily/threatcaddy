@@ -55,6 +55,7 @@
   "panel.failedCount": "{{count}} falliti",
   "panel.autoApprovePolicy": "Politica di approvazione automatica",
   "panel.policyCeilingNote": "Queste impostazioni limitano ogni agente di questa indagine. Le impostazioni proprie di un agente possono disattivare un'azione, mai attivarla.",
+  "panel.policyUnsavedNote": "Per questa indagine non è ancora salvato alcun limite. Gli agenti distribuiti usano le proprie impostazioni; queste si applicano quando nessun agente è distribuito. Modificare qui una qualsiasi impostazione le rende il limite per ogni agente.",
   "panel.reads": "Letture",
   "panel.readsDesc": "Cerca, elenca, leggi entità",
   "panel.enrich": "Arricchisci",

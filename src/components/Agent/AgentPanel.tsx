@@ -801,7 +801,8 @@ function PolicyEditor({ folder, settings, onFolderChanged, deployments, profiles
   return (
     <div className="px-4 py-3 border-b border-border-subtle bg-surface-raised/50 space-y-3">
       <div className="text-[11px] font-medium text-text-secondary uppercase tracking-wide">{t('panel.autoApprovePolicy')}</div>
-      <p className="text-[10px] text-text-muted">{t('panel.policyCeilingNote')}</p>
+      {/* Without a saved folder policy nothing limits deployed agents; these are the defaults a save would write. */}
+      <p className="text-[10px] text-text-muted">{folder.agentPolicy ? t('panel.policyCeilingNote') : t('panel.policyUnsavedNote')}</p>
 
       <div className="grid grid-cols-2 gap-2" role="group" aria-label={t('panel.autoApprovePolicy')}>
         {toggles.map(({ key, label, description }) => (

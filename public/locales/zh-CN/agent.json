@@ -55,6 +55,7 @@
   "panel.failedCount": "{{count}} 个失败",
   "panel.autoApprovePolicy": "自动批准策略",
   "panel.policyCeilingNote": "这些设置限制此调查中的每个代理。代理自身的设置只能关闭某项操作，不能开启。",
+  "panel.policyUnsavedNote": "此调查尚未保存任何限制。已部署的代理使用各自的设置；未部署代理时适用这些设置。在此更改任何设置都会使这些设置成为每个代理的限制。",
   "panel.reads": "读取",
   "panel.readsDesc": "搜索、列出、读取实体",
   "panel.enrich": "丰富",

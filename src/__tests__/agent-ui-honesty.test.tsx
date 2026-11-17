@@ -10,6 +10,7 @@ import { DEFAULT_AGENT_POLICY, type AgentAction, type AgentDeployment, type Fold
 import { AgentActionCard } from '../components/Agent/AgentActionCard';
 import { AgentPanel } from '../components/Agent/AgentPanel';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
+import { loadAgentPolicy } from '../lib/agent-profile-resolver';
 import { ids, seedAIWorkspace } from './helpers/ai-workspace';
 
 vi.mock('../components/Agent/AgentProfilePicker', () => ({ AgentProfilePicker: () => null }));
@@ -78,6 +79,25 @@ describe('B-UI-2 the policy editor shows the ceiling and who still asks', () => 
   it('shows no notice without an explicit folder policy', async () => {
     await renderPanel(await folder('S'), [deployment('ap-threat-hunter')]);
     expect(screen.queryByText(/now limit/)).not.toBeInTheDocument();
+  });
+
+  it('without a saved folder policy, the toggles are not presented as a limit until a change is saved', async () => {
+    const view = await renderPanel(await folder('S'), [deployment('ap-threat-hunter')]);
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle agent settings' }));
+    // Threat Hunter creates on its own: nothing limits it yet.
+    expect(await screen.findByText('Threat Hunter asks before: Modify')).toBeInTheDocument();
+    expect(screen.queryByText(/limit every agent in this investigation/)).not.toBeInTheDocument();
+    expect(screen.getByText(/No limit is saved for this investigation yet/)).toBeInTheDocument();
+    // The toggles show what an investigation without deployed agents uses.
+    const undeployed = await loadAgentPolicy('S');
+    for (const [key, label] of [['autoApproveReads', 'Reads'], ['autoApproveEnrich', 'Enrich'], ['autoApproveFetch', 'Fetch'], ['autoApproveCreate', 'Create'], ['autoApproveModify', 'Modify']] as const) {
+      expect(screen.getByRole('checkbox', { name: new RegExp(`^Auto-approve ${label}:`) })).toHaveAttribute('aria-checked', String(undeployed[key]));
+    }
+
+    await act(async () => { fireEvent.click(screen.getByRole('checkbox', { name: /^Auto-approve Reads:/ })); });
+    view.rerender(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={[deployment('ap-threat-hunter')]} />);
+    expect(await screen.findByText(/limit every agent in this investigation/)).toBeInTheDocument();
+    expect(screen.queryByText(/No limit is saved/)).not.toBeInTheDocument();
   });
 });
 

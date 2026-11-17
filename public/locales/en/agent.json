@@ -55,6 +55,7 @@
   "panel.failedCount": "{{count}} failed",
   "panel.autoApprovePolicy": "Auto-approve Policy",
   "panel.policyCeilingNote": "These settings limit every agent in this investigation. An agent's own settings can turn an action off, never on.",
+  "panel.policyUnsavedNote": "No limit is saved for this investigation yet. Deployed agents use their own settings; these apply when no agent is deployed. Changing any setting here makes them the limit for every agent.",
   "panel.reads": "Reads",
   "panel.readsDesc": "Search, list, read entities",
   "panel.enrich": "Enrich",
