@@ -83,6 +83,14 @@ describe('A-GATE-1 an exit needs an unforgeable, single-use, call-bound approval
     expect(egress.fetchUrlPosts()).toEqual([]);
   });
 
+  it('refuses an agent-surface call without an agent context, even with approval', async () => {
+    await db.tasks.update(ids('S').task, { escalated: true });
+    const update = call('update_task', { id: ids('S').task, status: 'done' });
+    const approval = mintHumanApproval(update, 'S', 'action-queue');
+    expect((await executeTool(update, 'S', undefined, { surface: 'agent', allowedTools: ALL_STATIC_TOOLS, approval })).isError).toBe(true);
+    expect((await db.tasks.get(ids('S').task))?.status).toBe('todo');
+  });
+
   it('refuses a JavaScript caller that declares an unknown surface', async () => {
     for (const surface of ['chat', 'Agent', 'constructor']) {
       const read = call('read_note', { id: ids('P').note });
