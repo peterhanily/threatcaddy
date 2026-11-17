@@ -11,10 +11,19 @@ import { AgentActionCard } from '../components/Agent/AgentActionCard';
 import { AgentPanel } from '../components/Agent/AgentPanel';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { loadAgentPolicy } from '../lib/agent-profile-resolver';
+import { classifyToolCall } from '../lib/tool-reach';
 import { ids, seedAIWorkspace } from './helpers/ai-workspace';
 
 vi.mock('../components/Agent/AgentProfilePicker', () => ({ AgentProfilePicker: () => null }));
 vi.mock('../components/Agent/AgentMeetingPanel', () => ({ AgentMeetingPanel: () => null }));
+// The real reach check, recorded so a test can wait for every check a card started.
+vi.mock('../lib/tool-reach', async orig => {
+  const actual = await orig<typeof import('../lib/tool-reach')>();
+  return { ...actual, classifyToolCall: vi.fn(actual.classifyToolCall) };
+});
+const reachChecks = vi.mocked(classifyToolCall);
+/** Wait until every reach check the cards started has finished and rendered. */
+const reachSettled = () => act(async () => { await Promise.allSettled(reachChecks.mock.results.map(result => result.value)); });
 
 const settings = { llmLocalEndpoint: 'http://localhost:11434' } as Settings;
 const action = (values: Partial<AgentAction>): AgentAction => ({ id: `action-${values.toolName}`, investigationId: 'S', threadId: 't', toolName: 'create_note',
@@ -39,22 +48,26 @@ describe('B-UI-1 action cards name the action class and where it reaches', () =>
     expect(screen.getByText('Pending')).toBeInTheDocument();
   });
 
+  const iocHostWarning = 'This site is an IOC in this investigation. Visiting it can alert the attacker.';
+
   it('a pending fetch of a host that is an IOC in the investigation carries a warning, and stays approvable', async () => {
-    const warning = 'This site is an IOC in this investigation. Visiting it can alert the attacker.';
     const onApprove = vi.fn();
     const view = render(<AgentActionCard action={action({ toolName: 'fetch_url', toolInput: { url: 'https://canary-s.example/beacon' } })} onApprove={onApprove} />);
-    expect(await screen.findByText(warning)).toBeInTheDocument();
+    expect(await screen.findByText(iocHostWarning)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Approve fetch_url action' }));
     expect(onApprove).toHaveBeenCalledOnce();
     view.unmount();
 
+    reachChecks.mockClear();
     render(<>
       <AgentActionCard action={action({ id: 'other-host', toolName: 'fetch_url', toolInput: { url: 'https://collector.example/c' } })} />
       <AgentActionCard action={action({ id: 'other-case', toolName: 'fetch_url', investigationId: 'P', toolInput: { url: 'https://canary-s.example/' } })} />
       <AgentActionCard action={action({ id: 'done', toolName: 'fetch_url', status: 'executed', toolInput: { url: 'https://canary-s.example/' } })} />
     </>);
-    await act(async () => {});
-    expect(screen.queryByText(warning)).not.toBeInTheDocument();
+    await reachSettled();
+    // Both pending cards were checked, the executed one was not, and neither warns.
+    expect(reachChecks).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(iocHostWarning)).not.toBeInTheDocument();
     expect(await db.agentActions.count()).toBe(0);
   });
 
