@@ -58,16 +58,18 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
 
   // Display only, read from the case's IOCs: it never blocks or approves anything.
   const [iocHostActionId, setIocHostActionId] = useState<string>();
-  const { id, toolName, toolInput, investigationId } = action;
+  const { id, toolName, investigationId } = action;
+  // Keyed on the URL, not the input object: the inbox refresh returns new rows.
+  const { url } = action.toolInput;
   useEffect(() => {
     if (!isPending || toolName !== 'fetch_url') return;
     let current = true;
-    // A fetch's reach reads no settings.
-    classifyToolCall({ type: 'tool_use', id, name: toolName, input: toolInput }, { homeFolderId: investigationId, settings: DEFAULT_SETTINGS })
+    // A fetch's reach reads only its URL, and no settings.
+    classifyToolCall({ type: 'tool_use', id, name: toolName, input: { url } }, { homeFolderId: investigationId, settings: DEFAULT_SETTINGS })
       .then(reach => { if (current) setIocHostActionId(reach.flags.includes('host-is-ioc') ? id : undefined); })
       .catch(() => { /* The card still shows the destination. */ });
     return () => { current = false; };
-  }, [isPending, id, toolName, toolInput, investigationId]);
+  }, [isPending, id, toolName, url, investigationId]);
   const hostIsIoc = isPending && toolName === 'fetch_url' && iocHostActionId === id;
 
   return (

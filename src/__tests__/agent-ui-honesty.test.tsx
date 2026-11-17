@@ -71,6 +71,18 @@ describe('B-UI-1 action cards name the action class and where it reaches', () =>
     expect(await db.agentActions.count()).toBe(0);
   });
 
+  it('a refresh that returns the same pending fetch does not check its reach again', async () => {
+    reachChecks.mockClear();
+    const pendingFetch = () => action({ toolName: 'fetch_url', toolInput: { url: 'https://canary-s.example/beacon' } });
+    const view = render(<AgentActionCard action={pendingFetch()} />);
+    await reachSettled();
+    // The inbox poll returns new row objects with the same content.
+    view.rerender(<AgentActionCard action={pendingFetch()} />);
+    await reachSettled();
+    expect(reachChecks).toHaveBeenCalledOnce();
+    expect(screen.getByText(iocHostWarning)).toBeInTheDocument();
+  });
+
   it('enrichment, skills and delegation say what they are', () => {
     render(<>
       <AgentActionCard action={action({ toolName: 'enrich_ioc', toolInput: { iocId: ids('S').ioc } })} />
