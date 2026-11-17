@@ -251,7 +251,7 @@
   "demoModal.removeHint": "You can remove the sample data later in Settings.",
   "offlineStatus.installingNotice": "ThreatCaddy is still saving itself for offline use. Keep this tab open.",
   "offlineStatus.failedNotice": "ThreatCaddy couldn't finish saving itself for offline use. It still works online and will try again next time you open it.",
-  "offlineStatus.unavailableNotice": "This browser can't keep ThreatCaddy available offline. It still works online, and your investigations stay saved in this browser either way.",
+  "offlineStatus.unavailableNotice": "This browser can't keep ThreatCaddy available offline. It still works online. To keep a copy of your investigations, save a backup from Settings → Data.",
   "offlineStatus.dismissNotice": "Dismiss",
   "offlineStatus.settingTitle": "Offline use",
   "offlineStatus.settingChecking": "Checking whether this browser can keep ThreatCaddy available offline.",

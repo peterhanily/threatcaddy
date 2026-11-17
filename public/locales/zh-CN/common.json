@@ -251,7 +251,7 @@
   "draftRecovery.useRemote": "使用远程 {{field}}",
   "offlineStatus.installingNotice": "ThreatCaddy 仍在保存自身以供离线使用。请保持此标签页打开。",
   "offlineStatus.failedNotice": "ThreatCaddy 未能完成保存自身以供离线使用。它仍可在线使用，并会在您下次打开时再次尝试。",
-  "offlineStatus.unavailableNotice": "此浏览器无法让 ThreatCaddy 保持离线可用。它仍可在线使用，而且无论如何，您的调查都会保存在此浏览器中。",
+  "offlineStatus.unavailableNotice": "此浏览器无法让 ThreatCaddy 保持离线可用。它仍可在线使用。如需保留调查的副本，请在 设置 → 数据 中保存备份。",
   "offlineStatus.dismissNotice": "关闭",
   "offlineStatus.settingTitle": "离线使用",
   "offlineStatus.settingChecking": "正在检查此浏览器能否让 ThreatCaddy 保持离线可用。",

@@ -251,7 +251,7 @@
   "draftRecovery.useRemote": "Uzak {{field}} değerini kullan",
   "offlineStatus.installingNotice": "ThreatCaddy çevrimdışı kullanım için kendini hâlâ kaydediyor. Bu sekmeyi açık tutun.",
   "offlineStatus.failedNotice": "ThreatCaddy çevrimdışı kullanım için kendini kaydetmeyi tamamlayamadı. Çevrimiçi çalışmaya devam ediyor ve bir dahaki sefere açtığınızda yeniden deneyecek.",
-  "offlineStatus.unavailableNotice": "Bu tarayıcı ThreatCaddy'yi çevrimdışı kullanılabilir tutamıyor. Çevrimiçi çalışmaya devam eder ve incelemeleriniz her durumda bu tarayıcıda kayıtlı kalır.",
+  "offlineStatus.unavailableNotice": "Bu tarayıcı ThreatCaddy'yi çevrimdışı kullanılabilir tutamıyor. Çevrimiçi çalışmaya devam eder. İncelemelerinizin bir kopyasını saklamak için Ayarlar → Veri bölümünden bir yedek kaydedin.",
   "offlineStatus.dismissNotice": "Kapat",
   "offlineStatus.settingTitle": "Çevrimdışı kullanım",
   "offlineStatus.settingChecking": "Bu tarayıcının ThreatCaddy'yi çevrimdışı kullanılabilir tutup tutamayacağı denetleniyor.",

@@ -251,7 +251,7 @@
   "draftRecovery.useRemote": "Dùng {{field}} từ xa",
   "offlineStatus.installingNotice": "ThreatCaddy vẫn đang tự lưu để dùng ngoại tuyến. Hãy giữ thẻ này mở.",
   "offlineStatus.failedNotice": "ThreatCaddy chưa thể hoàn tất việc tự lưu để dùng ngoại tuyến. Ứng dụng vẫn hoạt động trực tuyến và sẽ thử lại vào lần tới bạn mở ứng dụng.",
-  "offlineStatus.unavailableNotice": "Trình duyệt này không thể giữ ThreatCaddy sẵn sàng ngoại tuyến. Ứng dụng vẫn hoạt động trực tuyến, và các cuộc điều tra của bạn vẫn được lưu trong trình duyệt này dù thế nào đi nữa.",
+  "offlineStatus.unavailableNotice": "Trình duyệt này không thể giữ ThreatCaddy sẵn sàng ngoại tuyến. Ứng dụng vẫn hoạt động trực tuyến. Để giữ một bản sao các cuộc điều tra của bạn, hãy lưu bản sao lưu từ Cài đặt → Dữ liệu.",
   "offlineStatus.dismissNotice": "Bỏ qua",
   "offlineStatus.settingTitle": "Dùng ngoại tuyến",
   "offlineStatus.settingChecking": "Đang kiểm tra xem trình duyệt này có thể giữ ThreatCaddy sẵn sàng ngoại tuyến hay không.",

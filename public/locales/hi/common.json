@@ -251,7 +251,7 @@
   "draftRecovery.useRemote": "दूरस्थ {{field}} उपयोग करें",
   "offlineStatus.installingNotice": "ThreatCaddy अभी भी ऑफ़लाइन उपयोग के लिए खुद को सहेज रहा है। यह टैब खुला रखें।",
   "offlineStatus.failedNotice": "ThreatCaddy ऑफ़लाइन उपयोग के लिए खुद को सहेजना पूरा नहीं कर सका। यह ऑनलाइन काम करता रहता है और अगली बार खोलने पर फिर से कोशिश करेगा।",
-  "offlineStatus.unavailableNotice": "यह ब्राउज़र ThreatCaddy को ऑफ़लाइन उपलब्ध नहीं रख सकता। यह ऑनलाइन काम करता रहता है, और आपकी जाँचें हर हाल में इसी ब्राउज़र में सहेजी रहती हैं।",
+  "offlineStatus.unavailableNotice": "यह ब्राउज़र ThreatCaddy को ऑफ़लाइन उपलब्ध नहीं रख सकता। यह ऑनलाइन काम करता रहता है। अपनी जाँचों की एक प्रति रखने के लिए सेटिंग → डेटा से बैकअप सहेजें।",
   "offlineStatus.dismissNotice": "खारिज करें",
   "offlineStatus.settingTitle": "ऑफ़लाइन उपयोग",
   "offlineStatus.settingChecking": "जाँच की जा रही है कि क्या यह ब्राउज़र ThreatCaddy को ऑफ़लाइन उपलब्ध रख सकता है।",

@@ -251,7 +251,7 @@
   "draftRecovery.useRemote": "Використати віддалене значення «{{field}}»",
   "offlineStatus.installingNotice": "ThreatCaddy досі зберігається для роботи офлайн. Не закривайте цю вкладку.",
   "offlineStatus.failedNotice": "ThreatCaddy не вдалося завершити збереження для роботи офлайн. Онлайн він і далі працює і спробує знову, коли ви відкриєте його наступного разу.",
-  "offlineStatus.unavailableNotice": "Цей браузер не може зберегти ThreatCaddy доступним офлайн. Онлайн він і далі працює, а ваші розслідування в будь-якому разі залишаються збереженими в цьому браузері.",
+  "offlineStatus.unavailableNotice": "Цей браузер не може зберегти ThreatCaddy доступним офлайн. Онлайн він і далі працює. Щоб мати копію своїх розслідувань, збережіть резервну копію в розділі Налаштування → Дані.",
   "offlineStatus.dismissNotice": "Приховати",
   "offlineStatus.settingTitle": "Робота офлайн",
   "offlineStatus.settingChecking": "Перевіряємо, чи може цей браузер зберегти ThreatCaddy доступним офлайн.",

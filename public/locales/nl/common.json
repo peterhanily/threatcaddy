@@ -251,7 +251,7 @@
   "draftRecovery.useRemote": "Externe versie van {{field}} gebruiken",
   "offlineStatus.installingNotice": "ThreatCaddy wordt nog opgeslagen voor offline gebruik. Laat dit tabblad open.",
   "offlineStatus.failedNotice": "ThreatCaddy kon het opslaan voor offline gebruik niet voltooien. Het werkt nog steeds online en probeert het opnieuw wanneer u het de volgende keer opent.",
-  "offlineStatus.unavailableNotice": "Deze browser kan ThreatCaddy niet offline beschikbaar houden. Online werkt het nog steeds, en uw onderzoeken blijven in elk geval in deze browser opgeslagen.",
+  "offlineStatus.unavailableNotice": "Deze browser kan ThreatCaddy niet offline beschikbaar houden. Online werkt het nog steeds. Sla een back-up op via Instellingen → Gegevens om een kopie van uw onderzoeken te bewaren.",
   "offlineStatus.dismissNotice": "Sluiten",
   "offlineStatus.settingTitle": "Offline gebruik",
   "offlineStatus.settingChecking": "Controleren of deze browser ThreatCaddy offline beschikbaar kan houden.",

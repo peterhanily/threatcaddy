@@ -356,7 +356,7 @@
   "draftRecovery.useRemote": "원격 {{field}} 사용",
   "offlineStatus.installingNotice": "ThreatCaddy가 아직 오프라인 사용을 위해 스스로를 저장하는 중입니다. 이 탭을 열어 두세요.",
   "offlineStatus.failedNotice": "ThreatCaddy가 오프라인 사용을 위한 저장을 끝내지 못했습니다. 온라인에서는 계속 작동하며, 다음에 열 때 다시 시도합니다.",
-  "offlineStatus.unavailableNotice": "이 브라우저에서는 ThreatCaddy를 오프라인으로 사용할 수 있게 유지할 수 없습니다. 온라인에서는 계속 작동하며, 조사는 어느 경우든 이 브라우저에 저장된 상태로 유지됩니다.",
+  "offlineStatus.unavailableNotice": "이 브라우저에서는 ThreatCaddy를 오프라인으로 사용할 수 있게 유지할 수 없습니다. 온라인에서는 계속 작동합니다. 조사 사본을 보관하려면 설정 → 데이터에서 백업을 저장하세요.",
   "offlineStatus.dismissNotice": "닫기",
   "offlineStatus.settingTitle": "오프라인 사용",
   "offlineStatus.settingChecking": "이 브라우저에서 ThreatCaddy를 오프라인으로 사용할 수 있게 유지할 수 있는지 확인하는 중입니다.",

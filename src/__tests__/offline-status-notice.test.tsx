@@ -12,7 +12,7 @@ type ObserveOptions = Parameters<typeof observeOfflineStatus>[0];
 const DISMISSED_KEY = 'threatcaddy-offline-unavailable-dismissed';
 const INSTALLING = 'ThreatCaddy is still saving itself for offline use. Keep this tab open.';
 const FAILED = "ThreatCaddy couldn't finish saving itself for offline use. It still works online and will try again next time you open it.";
-const UNAVAILABLE = "This browser can't keep ThreatCaddy available offline. It still works online, and your investigations stay saved in this browser either way.";
+const UNAVAILABLE = "This browser can't keep ThreatCaddy available offline. It still works online. To keep a copy of your investigations, save a backup from Settings → Data.";
 const report = (status: OfflineStatus) => act(() => mocks.onChange(status));
 beforeEach(() => {
   // The status is shared for the page; start every test from an unknown status.
@@ -203,6 +203,8 @@ describe('offline use in Settings', () => {
       'offlineStatus.unavailableNotice',
     ]);
     for (const [, text] of offline) expect(text).not.toMatch(/worker|evict|cache|PWA/i);
+    // Browsers that refuse offline use often keep data only for the session, so promise nothing about it.
+    for (const [, text] of offline) expect(text).not.toMatch(/either way|stay saved/i);
   });
 });
 

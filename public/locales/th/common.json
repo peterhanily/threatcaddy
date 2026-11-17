@@ -356,7 +356,7 @@
   "draftRecovery.useRemote": "ใช้ {{field}} จากระยะไกล",
   "offlineStatus.installingNotice": "ThreatCaddy ยังคงบันทึกตัวเองเพื่อใช้งานแบบออฟไลน์ โปรดเปิดแท็บนี้ไว้",
   "offlineStatus.failedNotice": "ThreatCaddy บันทึกตัวเองเพื่อใช้งานแบบออฟไลน์ไม่เสร็จ ยังคงใช้งานออนไลน์ได้ และจะลองอีกครั้งเมื่อคุณเปิดครั้งถัดไป",
-  "offlineStatus.unavailableNotice": "เบราว์เซอร์นี้ไม่สามารถทำให้ ThreatCaddy พร้อมใช้งานแบบออฟไลน์ได้ ยังคงใช้งานออนไลน์ได้ และการสืบสวนของคุณยังคงบันทึกอยู่ในเบราว์เซอร์นี้ไม่ว่าในกรณีใด",
+  "offlineStatus.unavailableNotice": "เบราว์เซอร์นี้ไม่สามารถทำให้ ThreatCaddy พร้อมใช้งานแบบออฟไลน์ได้ ยังคงใช้งานออนไลน์ได้ หากต้องการเก็บสำเนาการสืบสวนของคุณ ให้บันทึกข้อมูลสำรองจาก การตั้งค่า → ข้อมูล",
   "offlineStatus.dismissNotice": "ปิด",
   "offlineStatus.settingTitle": "การใช้งานแบบออฟไลน์",
   "offlineStatus.settingChecking": "กำลังตรวจสอบว่าเบราว์เซอร์นี้สามารถทำให้ ThreatCaddy พร้อมใช้งานแบบออฟไลน์ได้หรือไม่",

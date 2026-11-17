@@ -251,7 +251,7 @@
   "draftRecovery.useRemote": "リモートの {{field}} を使用",
   "offlineStatus.installingNotice": "ThreatCaddy はまだオフラインで使えるように自身を保存しています。このタブを開いたままにしてください。",
   "offlineStatus.failedNotice": "ThreatCaddy をオフラインで使えるように保存する処理を完了できませんでした。オンラインでは引き続き動作し、次に開いたときにもう一度試します。",
-  "offlineStatus.unavailableNotice": "このブラウザーでは ThreatCaddy をオフラインで使える状態に保てません。オンラインでは引き続き動作し、調査はいずれの場合もこのブラウザーに保存されたままです。",
+  "offlineStatus.unavailableNotice": "このブラウザーでは ThreatCaddy をオフラインで使える状態に保てません。オンラインでは引き続き動作します。調査のコピーを残すには、設定 → データ からバックアップを保存してください。",
   "offlineStatus.dismissNotice": "閉じる",
   "offlineStatus.settingTitle": "オフラインでの利用",
   "offlineStatus.settingChecking": "このブラウザーで ThreatCaddy をオフラインで使える状態に保てるか確認しています。",

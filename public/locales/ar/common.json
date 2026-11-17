@@ -251,7 +251,7 @@
   "draftRecovery.useRemote": "استخدام القيمة البعيدة لحقل {{field}}",
   "offlineStatus.installingNotice": "لا يزال ThreatCaddy يحفظ نفسه للاستخدام دون اتصال. أبقِ علامة التبويب هذه مفتوحة.",
   "offlineStatus.failedNotice": "تعذّر على ThreatCaddy إكمال حفظ نفسه للاستخدام دون اتصال. لا يزال يعمل عبر الإنترنت، وسيحاول مرة أخرى عندما تفتحه في المرة القادمة.",
-  "offlineStatus.unavailableNotice": "لا يستطيع هذا المتصفح إبقاء ThreatCaddy متاحًا دون اتصال. لا يزال يعمل عبر الإنترنت، وتبقى تحقيقاتك محفوظة في هذا المتصفح في كلتا الحالتين.",
+  "offlineStatus.unavailableNotice": "لا يستطيع هذا المتصفح إبقاء ThreatCaddy متاحًا دون اتصال. لا يزال يعمل عبر الإنترنت. للاحتفاظ بنسخة من تحقيقاتك، احفظ نسخة احتياطية من الإعدادات ← البيانات.",
   "offlineStatus.dismissNotice": "تجاهل",
   "offlineStatus.settingTitle": "الاستخدام دون اتصال",
   "offlineStatus.settingChecking": "جارٍ التحقق مما إذا كان هذا المتصفح يستطيع إبقاء ThreatCaddy متاحًا دون اتصال.",

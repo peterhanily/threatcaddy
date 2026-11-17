@@ -251,7 +251,7 @@
   "draftRecovery.useRemote": "Użyj zdalnej wartości {{field}}",
   "offlineStatus.installingNotice": "ThreatCaddy nadal zapisuje się do użytku offline. Pozostaw tę kartę otwartą.",
   "offlineStatus.failedNotice": "ThreatCaddy nie zdołał dokończyć zapisywania się do użytku offline. Nadal działa online i spróbuje ponownie przy następnym otwarciu.",
-  "offlineStatus.unavailableNotice": "Ta przeglądarka nie może utrzymać dostępności ThreatCaddy offline. Nadal działa online, a Twoje śledztwa i tak pozostają zapisane w tej przeglądarce.",
+  "offlineStatus.unavailableNotice": "Ta przeglądarka nie może utrzymać dostępności ThreatCaddy offline. Nadal działa online. Aby zachować kopię swoich śledztw, zapisz kopię zapasową w sekcji Ustawienia → Dane.",
   "offlineStatus.dismissNotice": "Zamknij",
   "offlineStatus.settingTitle": "Korzystanie offline",
   "offlineStatus.settingChecking": "Sprawdzanie, czy ta przeglądarka może utrzymać dostępność ThreatCaddy offline.",

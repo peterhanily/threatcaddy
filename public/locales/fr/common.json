@@ -251,7 +251,7 @@
   "draftRecovery.useRemote": "Utiliser la valeur distante : {{field}}",
   "offlineStatus.installingNotice": "ThreatCaddy est encore en train de s’enregistrer pour une utilisation hors ligne. Laissez cet onglet ouvert.",
   "offlineStatus.failedNotice": "ThreatCaddy n’a pas pu terminer son enregistrement pour une utilisation hors ligne. Il fonctionne toujours en ligne et réessaiera la prochaine fois que vous l’ouvrirez.",
-  "offlineStatus.unavailableNotice": "Ce navigateur ne peut pas garder ThreatCaddy disponible hors ligne. Il fonctionne toujours en ligne, et vos enquêtes restent enregistrées dans ce navigateur dans tous les cas.",
+  "offlineStatus.unavailableNotice": "Ce navigateur ne peut pas garder ThreatCaddy disponible hors ligne. Il fonctionne toujours en ligne. Pour conserver une copie de vos enquêtes, enregistrez une sauvegarde depuis Paramètres → Données.",
   "offlineStatus.dismissNotice": "Ignorer",
   "offlineStatus.settingTitle": "Utilisation hors ligne",
   "offlineStatus.settingChecking": "Vérification de la capacité de ce navigateur à garder ThreatCaddy disponible hors ligne.",

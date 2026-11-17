@@ -251,7 +251,7 @@
   "draftRecovery.useRemote": "Entfernte Version von {{field}} verwenden",
   "offlineStatus.installingNotice": "ThreatCaddy speichert sich noch für die Offline-Nutzung. Lassen Sie diesen Tab geöffnet.",
   "offlineStatus.failedNotice": "ThreatCaddy konnte sich nicht vollständig für die Offline-Nutzung speichern. Es funktioniert weiterhin online und versucht es erneut, wenn Sie es das nächste Mal öffnen.",
-  "offlineStatus.unavailableNotice": "Dieser Browser kann ThreatCaddy nicht offline verfügbar halten. Online funktioniert es weiterhin, und Ihre Untersuchungen bleiben in jedem Fall in diesem Browser gespeichert.",
+  "offlineStatus.unavailableNotice": "Dieser Browser kann ThreatCaddy nicht offline verfügbar halten. Online funktioniert es weiterhin. Um eine Kopie Ihrer Untersuchungen zu behalten, speichern Sie ein Backup unter Einstellungen → Daten.",
   "offlineStatus.dismissNotice": "Ausblenden",
   "offlineStatus.settingTitle": "Offline-Nutzung",
   "offlineStatus.settingChecking": "Es wird geprüft, ob dieser Browser ThreatCaddy offline verfügbar halten kann.",
