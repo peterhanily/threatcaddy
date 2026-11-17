@@ -40,7 +40,7 @@ describe('meeting minutes provenance', () => {
   it('marks the minutes note as AI-made (D11)', async () => {
     const result = await runAgentMeeting(folder, [dep('d1', 'ap-threat-hunter'), dep('d2', 'ap-lead-analyst')], settings, true, 'Agenda');
     expect(result.error).toBeUndefined();
-    const minutes = await db.notes.get(result.minutesNoteId!);
+    const minutes = await db.notes.get(String(result.minutesNoteId));
     expect(minutes?.createdBy).toMatch(/^agent:/);
     expect(minutes?.tags).toContain('ai-generated');
   });

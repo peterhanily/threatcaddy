@@ -648,12 +648,12 @@ describe('provenance of AI-created entities', () => {
       // The run writes a note and an IOC through the enrichment callbacks.
       enrich: async () => {
         await db.installedIntegrations.add({ id: 'vt', templateId: 'vt-domain-lookup', name: 'vt', enabled: true, config: {}, scopeType: 'all', scopeFolderIds: [], runCount: 0, errorCount: 0, createdAt: 1, updatedAt: 1 });
-        const ran = integration.run.getMockImplementation()!;
-        integration.run.mockImplementation(async (...args: Parameters<typeof ran>) => {
+        const ran = integration.run.getMockImplementation();
+        integration.run.mockImplementation(async (...args: unknown[]) => {
           const callbacks = args[3] as { onCreateEntity: (type: string, fields: Record<string, unknown>) => Promise<string> };
           await callbacks.onCreateEntity('note', { title: 'Enrichment: example' });
           await callbacks.onCreateEntity('ioc', { type: 'ipv4', value: '203.0.113.9' });
-          return ran(...args);
+          return ran?.(...args);
         });
       },
     };
