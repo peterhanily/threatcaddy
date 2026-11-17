@@ -5,6 +5,9 @@ import { streamLLMChat } from './server-api';
 import { assertConfiguredConnection } from './connection-policy';
 import { cancellableRequest } from './request-cancellation';
 import { decodeBlocks, encodeRequest } from './tool-name-alias';
+import { readStoredAuth } from './auth-storage';
+import { workspaceStorageKey } from './workspace-profiles';
+import type { LLMProvider, Settings } from '../types';
 
 export type LLMRoutingMode = 'extension' | 'server' | 'auto';
 export interface LLMRouteRequest {
@@ -138,6 +141,31 @@ export function resolveRoutingMode(mode: LLMRoutingMode | undefined, extensionAv
   if (mode === 'extension') return extensionAvailable ? 'extension' : 'server';
   return serverConnected ? 'server' : 'extension';
 }
+
+/** A configured team server and a stored signed-in user. A server URL alone is not a session. */
+export function hasServerSession(settings: Settings): boolean {
+  return !!settings.serverUrl?.trim() && !!readStoredAuth(workspaceStorageKey('threatcaddy-auth'));
+}
+
+export type LLMRoute = { route: 'local-direct' | 'extension' | 'server' } | { route: 'unavailable'; reason: 'no-extension' | 'no-server' | 'none' };
+
+/** The route a request takes. A local model with an endpoint is always called
+ * directly; explicit modes never switch; Auto prefers a signed-in server. */
+export function resolveRoute(settings: Settings, env: { extensionAvailable: boolean; serverSession: boolean; provider?: LLMProvider }): LLMRoute {
+  if (env.provider === 'local' && settings.llmLocalEndpoint?.trim()) return { route: 'local-direct' };
+  if (settings.llmRoutingMode === 'server') return env.serverSession ? { route: 'server' } : { route: 'unavailable', reason: 'no-server' };
+  if (settings.llmRoutingMode === 'extension') return env.extensionAvailable ? { route: 'extension' } : { route: 'unavailable', reason: 'no-extension' };
+  if (env.serverSession) return { route: 'server' };
+  if (env.extensionAvailable) return { route: 'extension' };
+  return { route: 'unavailable', reason: 'none' };
+}
+
+const UNAVAILABLE_ROUTE_ERRORS = {
+  'no-extension': 'LLM routing is set to Browser Extension, but the extension is not available.',
+  'no-server': 'LLM routing is set to Team Server, but you are not signed in to a team server.',
+  none: 'No LLM route is available: install the browser extension, sign in to a team server, or configure a local model.',
+} as const;
+export const unavailableRouteError = (reason: keyof typeof UNAVAILABLE_ROUTE_ERRORS) => UNAVAILABLE_ROUTE_ERRORS[reason];
 
 export function sendViaExtension(request: LLMRouteRequest, callbacks: LLMRouteCallbacks, signal?: AbortSignal): string {
   const requestId = nanoid();

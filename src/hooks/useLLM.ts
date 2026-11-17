@@ -65,7 +65,8 @@ function dispatchLLMRequest(
   signal: AbortSignal,
 ): ((name: string) => string) | undefined {
   if (signal.aborted) return;
-  if (opts.useServerProxy) {
+  // A local model with an endpoint is always called directly, even with a server session.
+  if (opts.useServerProxy && !(opts.provider === 'local' && opts.endpoint)) {
     // Route through server — the server response events will be picked up by
     // the existing message listener because sendViaServer posts TC_LLM_* events
     sendViaServer(

@@ -22,7 +22,7 @@ describe('bounded serialized chat schedules', () => {
   });
 
   it('routes server schedules through the server without requiring an extension', () => {
-    startLoop({ ...opts, useServerProxy: true });
+    startLoop({ ...opts, provider: 'anthropic', endpoint: undefined, useServerProxy: true });
     expect(sendViaServer).toHaveBeenCalledOnce();
     expect(sendDirectToLocal).not.toHaveBeenCalled();
   });
