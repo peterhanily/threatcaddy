@@ -4,9 +4,16 @@
  * ChatView always passes onEntityClick, which turns [note:id] references into
  * links after the markdown is rendered, so every case renders with it.
  */
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChatMessageBubble } from '../components/Chat/ChatMessage';
+import { ExecChatView } from '../components/ExecMode/ExecChatView';
+import { ShareReceiver } from '../components/ExecMode/ShareReceiver';
+import { sanitizeSharePayload } from '../lib/share-data';
+import type { ChatThread } from '../types';
+
+const shared = vi.hoisted(() => ({ decode: vi.fn() }));
+vi.mock('../lib/share', () => ({ decodeSharePayload: (...args: unknown[]) => shared.decode(...args), isEncryptedShare: () => false }));
 
 afterEach(cleanup);
 
@@ -35,5 +42,25 @@ describe('C-MEDIA-1 chat messages render no remote media', () => {
     const attachment = { type: 'image' as const, name: 'screenshot.png', mimeType: 'image/png', data: 'iVBORw0KGgo=' };
     const user = render(<ChatMessageBubble role="user" content="Look" attachments={[attachment]} />);
     expect(user.container.querySelector('img')?.getAttribute('src')).toBe('data:image/png;base64,iVBORw0KGgo=');
+  });
+
+  // The same synced threads, agent audit threads included, are read in Exec mode and in shared links.
+  const thread: ChatThread = { id: 't1', title: 'Audit thread', model: 'synthetic-model', provider: 'anthropic', tags: [], trashed: false, archived: false,
+    createdAt: 1, updatedAt: 1, messages: [{ id: 'm1', role: 'assistant', content: `Result ![x](${beacon}) <img src="${beacon}">`, createdAt: 1 }] };
+  const noRemoteMedia = (html: string) => {
+    expect(html).toContain('Result');
+    expect(html).not.toMatch(/<(?:img|image|video|audio|source|picture|svg)\b/);
+  };
+
+  it('in Exec mode', () => {
+    const { container } = render(<ExecChatView chat={thread} onBack={vi.fn()} />);
+    noRemoteMedia(container.querySelector('.markdown-preview')?.outerHTML ?? '');
+  });
+
+  it('in a shared chat link', async () => {
+    shared.decode.mockResolvedValue(sanitizeSharePayload({ v: 1, s: 'chat', t: 1, d: thread }));
+    render(<ShareReceiver encodedData="chat" theme="dark" onDismiss={vi.fn()} />);
+    await screen.findByRole('heading', { name: 'Audit thread' });
+    noRemoteMedia(document.querySelector('.markdown-preview')?.outerHTML ?? '');
   });
 });

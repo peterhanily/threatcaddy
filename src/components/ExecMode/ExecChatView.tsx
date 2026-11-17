@@ -55,7 +55,8 @@ export function ExecChatView({ chat, currentIndex, totalCount, onNavigate }: Exe
 }
 
 function MessageBubble({ role, content, createdAt }: { role: 'user' | 'assistant'; content: string; createdAt: number }) {
-  const html = useMemo(() => renderMarkdown(content), [content]);
+  // Chat and agent-audit text can be model-written: images become links, so it cannot beacon when read.
+  const html = useMemo(() => renderMarkdown(content, undefined, { disableMedia: true }), [content]);
   const isUser = role === 'user';
 
   return (
