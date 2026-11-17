@@ -58,6 +58,23 @@ describe('offline notice in the app shell', () => {
     expectNoNotice();
   });
 
+  it('waits the full delay again for every later installation, for example an update after a slow first install', () => {
+    vi.useFakeTimers();
+    render(<OfflineStatusNotice />);
+    report('installing');
+    act(() => vi.advanceTimersByTime(OFFLINE_INSTALL_NOTICE_DELAY_MS));
+    expect(screen.getByRole('status')).toHaveTextContent(INSTALLING);
+    report('installed');
+    expectNoNotice();
+
+    report('installing');
+    expectNoNotice();
+    act(() => vi.advanceTimersByTime(OFFLINE_INSTALL_NOTICE_DELAY_MS - 1));
+    expectNoNotice();
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.getByRole('status')).toHaveTextContent(INSTALLING);
+  });
+
   it('keeps one live region mounted so screen readers announce a notice when its text appears', () => {
     vi.useFakeTimers();
     render(<OfflineStatusNotice />);

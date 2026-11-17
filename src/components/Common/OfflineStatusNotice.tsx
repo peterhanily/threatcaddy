@@ -60,7 +60,8 @@ function HostedOfflineNotice() {
   useEffect(() => {
     if (status !== 'installing') return;
     const timer = setTimeout(() => setInstallingDue(true), OFFLINE_INSTALL_NOTICE_DELAY_MS);
-    return () => clearTimeout(timer);
+    // Every installation waits the full delay, including an update after a slow first install.
+    return () => { clearTimeout(timer); setInstallingDue(false); };
   }, [status]);
   const shown = status === 'installing' && installingDue ? 'installing'
     : status === 'unavailable' && !dismissed ? 'unavailable' : undefined;
