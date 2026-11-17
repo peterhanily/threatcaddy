@@ -11,7 +11,8 @@ vi.mock('../lib/offline-status', async importOriginal => ({
 type ObserveOptions = Parameters<typeof observeOfflineStatus>[0];
 const DISMISSED_KEY = 'threatcaddy-offline-unavailable-dismissed';
 const INSTALLING = 'ThreatCaddy is still saving itself for offline use. Keep this tab open.';
-const UNAVAILABLE = "This browser can't keep ThreatCaddy available offline. It still works online, and your investigations stay saved in this browser either way.";
+const FAILED = "ThreatCaddy couldn't finish saving itself for offline use. It still works online and will try again next time you open it.";
+const UNAVAILABLE = "This browser can't keep ThreatCaddy available offline. It still works online. To keep a copy of your investigations, save a backup from Settings → Data.";
 const report = (status: OfflineStatus) => act(() => mocks.onChange(status));
 beforeEach(() => {
   // The status is shared for the page; start every test from an unknown status.
@@ -58,6 +59,23 @@ describe('offline notice in the app shell', () => {
     expectNoNotice();
   });
 
+  it('waits the full delay again for every later installation, for example an update after a slow first install', () => {
+    vi.useFakeTimers();
+    render(<OfflineStatusNotice />);
+    report('installing');
+    act(() => vi.advanceTimersByTime(OFFLINE_INSTALL_NOTICE_DELAY_MS));
+    expect(screen.getByRole('status')).toHaveTextContent(INSTALLING);
+    report('installed');
+    expectNoNotice();
+
+    report('installing');
+    expectNoNotice();
+    act(() => vi.advanceTimersByTime(OFFLINE_INSTALL_NOTICE_DELAY_MS - 1));
+    expectNoNotice();
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.getByRole('status')).toHaveTextContent(INSTALLING);
+  });
+
   it('keeps one live region mounted so screen readers announce a notice when its text appears', () => {
     vi.useFakeTimers();
     render(<OfflineStatusNotice />);
@@ -67,9 +85,9 @@ describe('offline notice in the app shell', () => {
     act(() => vi.advanceTimersByTime(OFFLINE_INSTALL_NOTICE_DELAY_MS));
     expect(screen.getByRole('status')).toBe(region);
     expect(region).toHaveTextContent(INSTALLING);
-    report('unavailable');
+    report('failed');
     expect(screen.getByRole('status')).toBe(region);
-    expect(region).toHaveTextContent(UNAVAILABLE);
+    expect(region).toHaveTextContent(FAILED);
     // The button is not part of the announced text.
     const dismiss = screen.getByRole('button', { name: 'Dismiss' });
     expect(region).not.toContainElement(dismiss);
@@ -88,6 +106,24 @@ describe('offline notice in the app shell', () => {
     first.unmount();
 
     render(<OfflineStatusNotice />);
+    report('unavailable');
+    expectNoNotice();
+  });
+
+  it('says a failed attempt will be retried instead of blaming the browser, and shares the dismissal', () => {
+    const first = render(<OfflineStatusNotice />);
+    report('failed');
+    expect(screen.getByRole('status')).toHaveTextContent(FAILED);
+    expect(screen.getByRole('status')).not.toHaveTextContent(/this browser can't/i);
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expectNoNotice();
+    expect(localStorage.getItem(DISMISSED_KEY)).toBe('1');
+    first.unmount();
+
+    // Both notes mean offline use can't be relied on here; one dismissal hides both.
+    render(<OfflineStatusNotice />);
+    report('failed');
+    expectNoNotice();
     report('unavailable');
     expectNoNotice();
   });
@@ -146,6 +182,9 @@ describe('offline use in Settings', () => {
     report('unconfirmed');
     expect(row).toHaveAttribute('data-status', 'unconfirmed');
     expect(row).toHaveTextContent("Offline use isn't confirmed in this browser yet. ThreatCaddy still works online and tries again next time you open it.");
+    report('failed');
+    expect(row).toHaveAttribute('data-status', 'failed');
+    expect(row).toHaveTextContent("The last attempt to save ThreatCaddy for offline use didn't finish. ThreatCaddy still works online and tries again next time you open it.");
     report('unavailable');
     expect(row).toHaveTextContent("This browser can't keep ThreatCaddy available offline, but it still works online.");
   });
@@ -158,12 +197,14 @@ describe('offline use in Settings', () => {
   it('uses no technical jargon in any offline text', () => {
     const offline = Object.entries(commonEn).filter(([key]) => key.startsWith('offlineStatus.'));
     expect(offline.map(([key]) => key).sort()).toEqual([
-      'offlineStatus.backupNote', 'offlineStatus.dismissNotice', 'offlineStatus.installingNotice',
-      'offlineStatus.settingChecking', 'offlineStatus.settingInstalled', 'offlineStatus.settingInstalling',
+      'offlineStatus.backupNote', 'offlineStatus.dismissNotice', 'offlineStatus.failedNotice', 'offlineStatus.installingNotice',
+      'offlineStatus.settingChecking', 'offlineStatus.settingFailed', 'offlineStatus.settingInstalled', 'offlineStatus.settingInstalling',
       'offlineStatus.settingTitle', 'offlineStatus.settingUnavailable', 'offlineStatus.settingUnconfirmed',
       'offlineStatus.unavailableNotice',
     ]);
     for (const [, text] of offline) expect(text).not.toMatch(/worker|evict|cache|PWA/i);
+    // Browsers that refuse offline use often keep data only for the session, so promise nothing about it.
+    for (const [, text] of offline) expect(text).not.toMatch(/either way|stay saved/i);
   });
 });
 

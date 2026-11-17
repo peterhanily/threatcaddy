@@ -1,10 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
-import { dismissInitialOverlays, createQuickNote, navigateToView } from './fixtures';
+import { dismissInitialOverlays, createQuickNote, navigateToView, waitForAppReady } from './fixtures';
 import { startOfflineOrigin } from './offline-origin';
 
 const INSTALLING_NOTICE = 'ThreatCaddy is still saving itself for offline use. Keep this tab open.';
-const UNAVAILABLE_NOTICE = "This browser can't keep ThreatCaddy available offline. It still works online, and your investigations stay saved in this browser either way.";
+const FAILED_NOTICE = "ThreatCaddy couldn't finish saving itself for offline use. It still works online and will try again next time you open it.";
+const UNAVAILABLE_NOTICE = "This browser can't keep ThreatCaddy available offline. It still works online. To keep a copy of your investigations, save a backup from Settings → Data.";
 const INSTALLED_SETTING = 'ThreatCaddy opens in this browser without an internet connection; team sync, AI and other online services still need one.';
+const FAILED_SETTING = "The last attempt to save ThreatCaddy for offline use didn't finish. ThreatCaddy still works online and tries again next time you open it.";
 const UNAVAILABLE_SETTING = "This browser can't keep ThreatCaddy available offline, but it still works online.";
 const UNCONFIRMED_SETTING = "Offline use isn't confirmed in this browser yet. ThreatCaddy still works online and tries again next time you open it.";
 
@@ -19,7 +21,7 @@ async function offlineSetting(page: Page) {
 const activeWorkerState = (page: Page) =>
   page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.active?.state ?? null);
 
-test('failed first installation says so plainly, remembers dismissal and keeps saved content', async ({ page }, testInfo) => {
+test('failed first installation says it will try again, remembers dismissal and keeps saved content', async ({ page }, testInfo) => {
   test.setTimeout(90_000);
   // The worker really starts installing, then its download fails.
   const { url, stop, failPrecache, precacheRequestCount } = await startOfflineOrigin({ precacheResponse: 'deferred' });
@@ -36,8 +38,9 @@ test('failed first installation says so plainly, remembers dismissal and keeps s
     await expect(notice).toHaveAttribute('data-status', 'installing', { timeout: 10_000 });
     failPrecache();
     // The keep-this-tab-open notice turns into the failure note at once instead of vanishing.
-    await expect(notice).toHaveAttribute('data-status', 'unavailable', { timeout: 5_000 });
-    await expect(notice.getByRole('status')).toHaveText(UNAVAILABLE_NOTICE);
+    // One failed download is not a browser limit: the note says the next open tries again.
+    await expect(notice).toHaveAttribute('data-status', 'failed', { timeout: 5_000 });
+    await expect(notice.getByRole('status')).toHaveText(FAILED_NOTICE);
     expect(await activeWorkerState(page)).toBeNull();
     await page.setViewportSize({ width: 390, height: 844 });
     // The phone layout loads lazily; measure only once it has replaced the desktop one.
@@ -60,9 +63,29 @@ test('failed first installation says so plainly, remembers dismissal and keeps s
     const row = await offlineSetting(page);
     await expect(row).toHaveAttribute('data-status', 'installing', { timeout: 10_000 });
     failPrecache();
-    await expect(row).toHaveAttribute('data-status', 'unavailable', { timeout: 5_000 });
-    await expect(row.getByRole('status')).toHaveText(UNAVAILABLE_SETTING);
+    await expect(row).toHaveAttribute('data-status', 'failed', { timeout: 5_000 });
+    await expect(row.getByRole('status')).toHaveText(FAILED_SETTING);
     await expect(notice).toHaveCount(0);
+  } finally { await stop(); }
+});
+
+test('browser without offline support says so and points to a backup instead of promising saved data', async ({ page }) => {
+  // Like a browser or window that offers no offline support at all.
+  await page.addInitScript(() => { Reflect.deleteProperty(Navigator.prototype, 'serviceWorker'); });
+  const { url, stop, serviceWorkerRequestCount } = await startOfflineOrigin();
+  try {
+    await page.goto(url);
+    // dismissInitialOverlays would click this note's Dismiss button, which is visible from the start here.
+    await waitForAppReady(page);
+    const notice = page.getByTestId('offline-notice');
+    await expect(notice).toHaveAttribute('data-status', 'unavailable');
+    await expect(notice.getByRole('status')).toHaveText(UNAVAILABLE_NOTICE);
+    await notice.getByRole('button', { name: 'Dismiss', exact: true }).click();
+    await expect(notice).toHaveCount(0);
+    const row = await offlineSetting(page);
+    await expect(row).toHaveAttribute('data-status', 'unavailable');
+    await expect(row.getByRole('status')).toHaveText(UNAVAILABLE_SETTING);
+    expect(serviceWorkerRequestCount()).toBe(0);
   } finally { await stop(); }
 });
 

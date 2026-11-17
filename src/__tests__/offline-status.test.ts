@@ -105,11 +105,12 @@ describe('passive offline installation observer', () => {
     expect(result.states.at(-1)).toBe('installed'); expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('observes redundant installation and recovers when an update is found', async () => {
+  it('reports a redundant installation as a failed attempt, not a browser limit, and recovers when an update is found', async () => {
     const container = new Container(); const registration = new Registration(); const failed = new Worker();
     registration.installing = failed; container.getRegistration.mockResolvedValue(registration);
     const result = observe(container); await flush(); failed.change('redundant');
-    expect(result.states.at(-1)).toBe('unavailable');
+    // One failed download (for example a brief server error) makes the worker redundant; the next open tries again.
+    expect(result.states.at(-1)).toBe('failed');
     const replacement = new Worker(); registration.installing = replacement; registration.dispatchEvent(new Event('updatefound'));
     expect(result.states.at(-1)).toBe('installing');
     registration.active = replacement; registration.installing = null; replacement.change('activated');
@@ -125,9 +126,9 @@ describe('passive offline installation observer', () => {
     // registration before the page receives the worker's redundant event.
     registration.installing = null; container.getRegistration.mockResolvedValue(undefined);
     failed.change('redundant');
-    expect(result.states).toEqual(['checking', 'installing', 'unavailable']);
+    expect(result.states).toEqual(['checking', 'installing', 'failed']);
     await vi.advanceTimersByTimeAsync(1000);
-    expect(result.states).toEqual(['checking', 'installing', 'unavailable']);
+    expect(result.states).toEqual(['checking', 'installing', 'failed']);
     expect(vi.getTimerCount()).toBe(0);
     const later = new Registration(); const worker = new Worker(); worker.state = 'activated'; later.active = worker;
     container.readiness.resolve(later); await flush();

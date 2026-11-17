@@ -10,8 +10,14 @@ const SETTING_TEXT = {
   installing: 'offlineStatus.settingInstalling',
   installed: 'offlineStatus.settingInstalled',
   unconfirmed: 'offlineStatus.settingUnconfirmed',
+  failed: 'offlineStatus.settingFailed',
   unavailable: 'offlineStatus.settingUnavailable',
 } as const satisfies Record<OfflineStatus, string>;
+const NOTICE_TEXT = {
+  installing: 'offlineStatus.installingNotice',
+  failed: 'offlineStatus.failedNotice',
+  unavailable: 'offlineStatus.unavailableNotice',
+} as const satisfies Partial<Record<OfflineStatus, string>>;
 
 // One observer serves the app shell and the Settings row, so Settings shows
 // the status the shell already knows instead of starting a new check. The
@@ -60,18 +66,20 @@ function HostedOfflineNotice() {
   useEffect(() => {
     if (status !== 'installing') return;
     const timer = setTimeout(() => setInstallingDue(true), OFFLINE_INSTALL_NOTICE_DELAY_MS);
-    return () => clearTimeout(timer);
+    // Every installation waits the full delay, including an update after a slow first install.
+    return () => { clearTimeout(timer); setInstallingDue(false); };
   }, [status]);
+  // Both notes mean offline use can't be relied on here, so one dismissal hides both.
   const shown = status === 'installing' && installingDue ? 'installing'
-    : status === 'unavailable' && !dismissed ? 'unavailable' : undefined;
+    : (status === 'failed' || status === 'unavailable') && !dismissed ? status : undefined;
   // One live region stays mounted: screen readers announce text put into an
   // existing region, but often miss a region inserted together with its text.
   return <div data-testid={shown && 'offline-notice'} data-status={shown}
     className={shown && 'flex min-w-0 shrink-0 flex-wrap items-center gap-x-3 border-b border-border-subtle bg-bg-surface px-3 text-xs text-text-secondary'}>
     <p role="status" className={shown && 'min-w-0 flex-1 break-words py-2'}>
-      {shown && t(shown === 'installing' ? 'offlineStatus.installingNotice' : 'offlineStatus.unavailableNotice')}
+      {shown && t(NOTICE_TEXT[shown])}
     </p>
-    {shown === 'unavailable' && <button type="button" className="min-h-11 min-w-11 shrink-0 rounded px-2 text-text-primary underline focus-visible:outline-2 focus-visible:outline-accent"
+    {shown && shown !== 'installing' && <button type="button" className="min-h-11 min-w-11 shrink-0 rounded px-2 text-text-primary underline focus-visible:outline-2 focus-visible:outline-accent"
       onClick={() => {
         try { localStorage.setItem(UNAVAILABLE_DISMISSED_KEY, '1'); } catch { /* Hide it for this page only. */ }
         setDismissed(true);
