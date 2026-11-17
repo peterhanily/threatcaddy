@@ -25,6 +25,7 @@ import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { SyncRecoveryPanel } from './SyncRecoveryPanel';
 import { IntegrationPanel } from '../Integrations/IntegrationPanel';
 import { AppearanceSettings } from './AppearanceSettings';
+import { OfflineUseSetting } from '../Common/OfflineStatusNotice';
 
 function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
   const { t } = useTranslation('settings');
@@ -484,6 +485,8 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               )}
             </div>
           )}
+
+          <OfflineUseSetting />
 
           {/* About */}
           <div className="space-y-2">

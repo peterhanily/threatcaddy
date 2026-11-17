@@ -65,17 +65,30 @@ describe('passive offline installation observer', () => {
     const container = new Container(); const registration = new Registration(); const worker = new Worker();
     registration.installing = worker; container.getRegistration.mockResolvedValue(registration);
     const result = observe(container); await flush(); await vi.advanceTimersByTimeAsync(1000);
-    expect(result.states).toEqual(['checking']);
+    expect(result.states).toEqual(['checking', 'installing']);
     expect(container.getRegistration.mock.calls.length).toBeLessThanOrEqual(5);
     expect(vi.getTimerCount()).toBe(0);
     registration.installing = null; registration.active = worker; worker.change('activated');
     expect(result.states.at(-1)).toBe('installed');
   });
 
+  it('reports a running first installation separately from looking for a registration', async () => {
+    const container = new Container(); const result = observe(container); await flush();
+    expect(result.states).toEqual(['checking']);
+    const registration = new Registration(); const worker = new Worker(); registration.installing = worker;
+    container.getRegistration.mockResolvedValue(registration); await vi.advanceTimersByTimeAsync(25);
+    expect(result.states).toEqual(['checking', 'installing']);
+    worker.change('installed'); registration.installing = null; registration.waiting = worker;
+    worker.change('activating'); registration.waiting = null; registration.active = worker;
+    expect(result.states).toEqual(['checking', 'installing']);
+    worker.change('activated');
+    expect(result.states).toEqual(['checking', 'installing', 'installed']);
+  });
+
   it('marks absent registration as unconfirmed after timeout and recovers from late ready', async () => {
     const container = new Container(); const result = observe(container);
     await vi.advanceTimersByTimeAsync(1000);
-    expect(result.states).toEqual(['checking', 'unavailable']);
+    expect(result.states).toEqual(['checking', 'unconfirmed']);
     expect(vi.getTimerCount()).toBe(0);
     const registration = new Registration(); const worker = new Worker(); worker.state = 'activated'; registration.active = worker;
     container.readiness.resolve(registration); await flush();
@@ -86,7 +99,7 @@ describe('passive offline installation observer', () => {
     const container = new Container(); const lookup = deferred<Registration | undefined>();
     container.getRegistration.mockReturnValue(lookup.promise);
     const result = observe(container); await vi.advanceTimersByTimeAsync(1000);
-    expect(result.states.at(-1)).toBe('unavailable');
+    expect(result.states.at(-1)).toBe('unconfirmed');
     const registration = new Registration(); const worker = new Worker(); worker.state = 'activated'; registration.active = worker;
     lookup.resolve(registration); await flush();
     expect(result.states.at(-1)).toBe('installed'); expect(vi.getTimerCount()).toBe(0);
@@ -98,8 +111,26 @@ describe('passive offline installation observer', () => {
     const result = observe(container); await flush(); failed.change('redundant');
     expect(result.states.at(-1)).toBe('unavailable');
     const replacement = new Worker(); registration.installing = replacement; registration.dispatchEvent(new Event('updatefound'));
-    expect(result.states.at(-1)).toBe('checking');
+    expect(result.states.at(-1)).toBe('installing');
     registration.active = replacement; registration.installing = null; replacement.change('activated');
+    expect(result.states.at(-1)).toBe('installed');
+  });
+
+  it('reports a failed first installation that the browser already dropped from the registration', async () => {
+    const container = new Container(); const registration = new Registration(); const failed = new Worker();
+    registration.installing = failed; container.getRegistration.mockResolvedValue(registration);
+    const result = observe(container); await flush();
+    expect(result.states).toEqual(['checking', 'installing']);
+    // Chromium and WebKit empty the installing slot and remove a failed first
+    // registration before the page receives the worker's redundant event.
+    registration.installing = null; container.getRegistration.mockResolvedValue(undefined);
+    failed.change('redundant');
+    expect(result.states).toEqual(['checking', 'installing', 'unavailable']);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(result.states).toEqual(['checking', 'installing', 'unavailable']);
+    expect(vi.getTimerCount()).toBe(0);
+    const later = new Registration(); const worker = new Worker(); worker.state = 'activated'; later.active = worker;
+    container.readiness.resolve(later); await flush();
     expect(result.states.at(-1)).toBe('installed');
   });
 
@@ -117,10 +148,10 @@ describe('passive offline installation observer', () => {
     active.state = 'activated'; active.scriptURL = `${scopeURL}unrelated.js`; registration.active = active;
     container.getRegistration.mockResolvedValue(registration);
     const result = observe(container); await vi.advanceTimersByTimeAsync(100);
-    expect(result.states.at(-1)).toBe('unavailable');
+    expect(result.states.at(-1)).toBe('unconfirmed');
     registration.scope = 'https://app.example.test/'; active.scriptURL = workerURL;
     container.readiness.resolve(registration); await flush();
-    expect(result.states.at(-1)).toBe('unavailable');
+    expect(result.states.at(-1)).toBe('unconfirmed');
   });
 
   it('handles rejected and synchronous browser API failures, then retries on lifecycle events', async () => {
@@ -148,7 +179,7 @@ describe('passive offline installation observer', () => {
     worker.state = 'activated'; registration.active = worker; container.getRegistration.mockResolvedValue(registration);
     const result = observe(container); await flush(); container.getRegistration.mockResolvedValue(undefined);
     result.lifecycle.dispatchEvent(new Event('focus')); await flush();
-    expect(result.states.at(-1)).toBe('unavailable'); expect(vi.getTimerCount()).toBe(0);
+    expect(result.states.at(-1)).toBe('unconfirmed'); expect(vi.getTimerCount()).toBe(0);
   });
 
   it('cleans timers/listeners and ignores async readiness after unsubscribe', async () => {
