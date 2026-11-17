@@ -15,7 +15,7 @@ import { scriptedLLM } from './helpers/scripted-llm';
 import { ids, seedAIWorkspace } from './helpers/ai-workspace';
 
 vi.mock('../lib/llm-router', async orig => {
-  const routed = (await import('./helpers/scripted-llm')).scriptedRouter(await orig());
+  const routed = (await import('./helpers/scripted-llm')).scriptedRouter(await orig<typeof import('../lib/llm-router')>());
   return { ...routed, sendDirectToLocal: vi.fn(routed.sendDirectToLocal), sendViaExtension: vi.fn(routed.sendViaExtension), sendViaServer: vi.fn(routed.sendViaServer) };
 });
 
