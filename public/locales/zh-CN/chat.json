@@ -34,7 +34,7 @@
     "exportAsNote": "导出为笔记",
     "shareChat": "分享聊天",
     "emptyTitle": "开始对话",
-    "emptySubtitle": "消息存储在本地并加密",
+    "emptySubtitleV2": "消息保存在此浏览器中。会同步的调查中的对话会共享给该调查的团队服务器，每个请求都会发送到 设置 → AI 中显示的位置。",
     "emptyFolderContext": "AI 可以在\"{{name}}\"中读取和创建实体",
     "caddyAI": "CaddyAI",
     "selectThread": "选择会话以查看对话",

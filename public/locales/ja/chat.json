@@ -34,7 +34,7 @@
     "exportAsNote": "ノートとしてエクスポート",
     "shareChat": "チャットを共有",
     "emptyTitle": "会話を始める",
-    "emptySubtitle": "メッセージはローカルに保存され、静止時に暗号化されます",
+    "emptySubtitleV2": "メッセージはこのブラウザーに保存されます。同期される調査内の会話はその調査のチームサーバーと共有され、各リクエストは設定 → AI に表示される送信先に送られます。",
     "emptyFolderContext": "AIは「{{name}}」内のエンティティを読み取り、作成できます",
     "caddyAI": "CaddyAI",
     "selectThread": "スレッドを選択して会話を表示",

@@ -158,3 +158,40 @@ describe('mode copy', () => {
     expect(deChat.mode.yoloInPlanTitle).not.toBe(`${IN_PLAN}{{setting}}`);
   }));
 });
+
+// Encryption is off by default, and a conversation in an investigation that syncs reaches its team server.
+const EMPTY_SUBTITLE = 'Messages are saved in this browser. A conversation in an investigation that syncs is shared with its team server, '
+  + 'and each request goes where Settings → AI shows.';
+describe('the empty conversation', () => {
+  it('says where messages are kept and where they go, without claiming encryption', () => {
+    renderChat('act');
+    expect(screen.getByText(EMPTY_SUBTITLE)).toBeInTheDocument();
+    expect(screen.queryByText(/encrypt/i)).toBeNull();
+  });
+
+  it('says so in the analyst’s language', () => inGerman(() => {
+    renderChat('act');
+    expect(screen.getByText(deChat.view.emptySubtitleV2)).toBeInTheDocument();
+    expect(deChat.view.emptySubtitleV2).not.toBe(EMPTY_SUBTITLE);
+  }));
+});
+
+// The strings this round added or changed are translated in every locale, none left in English.
+const chatCatalogs = import.meta.glob<{ default: Record<string, unknown> }>('../../public/locales/*/chat.json', { eager: true });
+const valueOf = (catalog: Record<string, unknown>, key: string): unknown => key in catalog ? catalog[key]
+  : key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], catalog);
+describe('the chat copy this round changed is translated', () => {
+  const KEYS = ['view.emptySubtitleV2'];
+  const english = chatCatalogs['../../public/locales/en/chat.json'].default;
+  const others = Object.entries(chatCatalogs).filter(([path]) => !path.endsWith('/en/chat.json'));
+  it('has 20 other locales', () => expect(others).toHaveLength(20));
+  it.each(others.map(([path, catalog]) => [path.split('/').at(-2), catalog.default] as const))('%s', (_language, catalog) => {
+    for (const key of KEYS) {
+      expect(typeof valueOf(english, key), key).toBe('string');
+      expect(typeof valueOf(catalog, key), key).toBe('string');
+      expect(valueOf(catalog, key), key).not.toBe(valueOf(english, key));
+    }
+    // The superseded empty-state line is gone.
+    expect(valueOf(catalog, 'view.emptySubtitle')).toBeUndefined();
+  });
+});

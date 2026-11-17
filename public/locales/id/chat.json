@@ -34,7 +34,7 @@
     "exportAsNote": "Ekspor sebagai catatan",
     "shareChat": "Bagikan obrolan",
     "emptyTitle": "Mulai percakapan",
-    "emptySubtitle": "Pesan disimpan secara lokal dan dienkripsi saat istirahat",
+    "emptySubtitleV2": "Pesan disimpan di browser ini. Percakapan dalam investigasi yang disinkronkan dibagikan ke server timnya, dan setiap permintaan dikirim ke tujuan yang ditampilkan di Pengaturan → AI.",
     "emptyFolderContext": "AI dapat membaca dan membuat entitas di \"{{name}}\"",
     "caddyAI": "CaddyAI",
     "selectThread": "Pilih utas untuk melihat percakapan",

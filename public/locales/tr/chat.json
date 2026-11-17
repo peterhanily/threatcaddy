@@ -34,7 +34,7 @@
     "exportAsNote": "Not olarak dışa aktar",
     "shareChat": "Sohbeti paylaş",
     "emptyTitle": "Bir konuşma başlat",
-    "emptySubtitle": "Mesajlar yerel olarak saklanır ve beklemede şifrelenir",
+    "emptySubtitleV2": "Mesajlar bu tarayıcıya kaydedilir. Eşitlenen bir soruşturmadaki konuşma, o soruşturmanın ekip sunucusuyla paylaşılır ve her istek Ayarlar → AI bölümünde gösterilen yere gider.",
     "emptyFolderContext": "AI, \"{{name}}\" içinde varlıkları okuyabilir ve oluşturabilir",
     "caddyAI": "CaddyAI",
     "selectThread": "Konuşmayı görüntülemek için bir konu seçin",

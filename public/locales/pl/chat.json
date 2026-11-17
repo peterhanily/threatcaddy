@@ -34,7 +34,7 @@
     "exportAsNote": "Eksportuj jako notatkę",
     "shareChat": "Udostępnij czat",
     "emptyTitle": "Rozpocznij rozmowę",
-    "emptySubtitle": "Wiadomości są przechowywane lokalnie i zaszyfrowane w stanie spoczynku",
+    "emptySubtitleV2": "Wiadomości są zapisywane w tej przeglądarce. Rozmowa w śledztwie, które jest synchronizowane, trafia na jego serwer zespołu, a każde żądanie jest wysyłane tam, gdzie wskazują Ustawienia → AI.",
     "emptyFolderContext": "AI może odczytywać i tworzyć obiekty w «{{name}}»",
     "caddyAI": "CaddyAI",
     "selectThread": "Wybierz wątek, aby wyświetlić rozmowę",

@@ -34,7 +34,7 @@
     "exportAsNote": "Xuất dưới dạng ghi chú",
     "shareChat": "Chia sẻ trò chuyện",
     "emptyTitle": "Bắt đầu cuộc trò chuyện",
-    "emptySubtitle": "Tin nhắn được lưu cục bộ và mã hóa khi lưu trữ",
+    "emptySubtitleV2": "Tin nhắn được lưu trong trình duyệt này. Cuộc trò chuyện trong một cuộc điều tra có đồng bộ sẽ được chia sẻ với máy chủ nhóm của cuộc điều tra đó, và mỗi yêu cầu được gửi tới nơi mà Cài đặt → AI hiển thị.",
     "emptyFolderContext": "AI có thể đọc và tạo thực thể trong \"{{name}}\"",
     "caddyAI": "CaddyAI",
     "selectThread": "Chọn luồng để xem cuộc trò chuyện",

@@ -34,7 +34,7 @@
     "exportAsNote": "Exporteren als notitie",
     "shareChat": "Chat delen",
     "emptyTitle": "Start een gesprek",
-    "emptySubtitle": "Berichten worden lokaal opgeslagen en versleuteld opgeslagen",
+    "emptySubtitleV2": "Berichten worden in deze browser opgeslagen. Een gesprek in een onderzoek dat synchroniseert, wordt gedeeld met de teamserver ervan, en elk verzoek gaat naar de bestemming die Instellingen → AI toont.",
     "emptyFolderContext": "AI kan objecten lezen en aanmaken in «{{name}}»",
     "caddyAI": "CaddyAI",
     "selectThread": "Selecteer een thread om het gesprek te bekijken",

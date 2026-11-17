@@ -34,7 +34,7 @@
     "exportAsNote": "Als Notiz exportieren",
     "shareChat": "Chat teilen",
     "emptyTitle": "Gespräch starten",
-    "emptySubtitle": "Nachrichten werden lokal gespeichert und verschlüsselt abgelegt",
+    "emptySubtitleV2": "Nachrichten werden in diesem Browser gespeichert. Eine Unterhaltung in einer Untersuchung, die synchronisiert wird, wird mit deren Teamserver geteilt, und jede Anfrage geht an das Ziel, das Einstellungen → KI anzeigt.",
     "emptyFolderContext": "KI kann Entitäten in \"{{name}}\" lesen und erstellen",
     "caddyAI": "CaddyAI",
     "selectThread": "Thread auswählen, um das Gespräch anzuzeigen",

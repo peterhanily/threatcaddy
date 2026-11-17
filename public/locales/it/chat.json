@@ -34,7 +34,7 @@
     "exportAsNote": "Esporta come nota",
     "shareChat": "Condividi chat",
     "emptyTitle": "Inizia una conversazione",
-    "emptySubtitle": "I messaggi sono salvati localmente e crittografati a riposo",
+    "emptySubtitleV2": "I messaggi vengono salvati in questo browser. Una conversazione in un'indagine che si sincronizza viene condivisa con il suo server del team, e ogni richiesta va dove indica Impostazioni → AI.",
     "emptyFolderContext": "L'AI può leggere e creare entità in \"{{name}}\"",
     "caddyAI": "CaddyAI",
     "selectThread": "Seleziona un thread per vedere la conversazione",

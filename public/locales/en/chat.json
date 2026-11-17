@@ -54,7 +54,7 @@
     "exportAsNote": "Export as note",
     "shareChat": "Share chat",
     "emptyTitle": "Start a conversation",
-    "emptySubtitle": "Messages are stored locally and encrypted at rest",
+    "emptySubtitleV2": "Messages are saved in this browser. A conversation in an investigation that syncs is shared with its team server, and each request goes where Settings → AI shows.",
     "emptyFolderContext": "AI can read and create entities in \"{{name}}\"",
     "caddyAI": "CaddyAI",
     "selectThread": "Select a thread to view the conversation",
