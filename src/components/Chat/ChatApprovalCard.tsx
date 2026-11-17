@@ -20,7 +20,10 @@ const TITLE_KEYS: Record<AskReason, string> = {
 const AGENT_TOOLS: ReadonlySet<string> = new Set(['deploy_agent', 'stop_agent', 'run_agent_cycle', ...AGENT_CONTROL_TOOLS]);
 
 interface Resolved { homeName?: string; targets: Array<{ name: string; shareable: boolean }>; iocValue?: string }
-const focusedItems = new WeakSet<ApprovalItem>();
+// The list footer can remount the card on any re-render: keep what the lookups
+// found and whether Details is open with the item, not in the card.
+const resolvedItems = new WeakMap<ApprovalItem, Resolved>();
+const openDetails = new WeakSet<ApprovalItem>();
 
 /** One queued chat approval. It leads with what the call reaches; the raw input is under Details.
  * No button is focused, so Enter cannot approve; Escape rejects. */
@@ -34,14 +37,13 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
   const { t } = useTranslation('chat');
   const titleId = useId();
   const cardRef = useRef<HTMLDivElement>(null);
-  const [resolved, setResolved] = useState<Resolved>({ targets: [] });
+  const [resolved, setResolved] = useState<Resolved>(() => resolvedItems.get(item) ?? { targets: [] });
   const { toolUse, reach, reason, readForeignThisRequest } = item;
 
-  // The list footer can remount the card on any re-render: focus a card once,
-  // and again only if a remount dropped the focus to the page.
+  // Take focus only when nothing has it, so the composer keeps the analyst's typing
+  // and Escape. A remount that dropped the card's focus to the page takes it back.
   useEffect(() => {
-    if (focusedItems.has(item) && document.activeElement !== document.body) return;
-    focusedItems.add(item);
+    if (document.activeElement && document.activeElement !== document.body) return;
     cardRef.current?.focus();
   }, [item]);
   useEffect(() => {
@@ -52,10 +54,12 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
         name: (await db.folders.get(id))?.name ?? id, shareable: await isShareableFolder(id) })));
       const iocId = toolUse.name === 'enrich_ioc' ? String(toolUse.input.iocId || '') : '';
       const iocValue = iocId ? (await db.standaloneIOCs.get(iocId))?.value ?? iocId : undefined;
-      if (current) setResolved({ homeName: home?.name, targets, iocValue });
+      const found = { homeName: home?.name, targets, iocValue };
+      resolvedItems.set(item, found);
+      if (current) setResolved(found);
     })().catch(() => { /* The card still shows the reach and the raw input. */ });
     return () => { current = false; };
-  }, [reach, toolUse]);
+  }, [item, reach, toolUse]);
 
   const changesAgents = !!reach.agentControl && AGENT_TOOLS.has(toolUse.name);
   const titleReason: AskReason = reason === 'agent-control' && !changesAgents ? (reach.crossWrite ? 'cross-write' : 'write') : reason;
@@ -106,7 +110,11 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
             {flags.map((line, i) => <li key={i}>{line}</li>)}
           </ul>
         )}
-        <details className="text-[10px]">
+        <details
+          className="text-[10px]"
+          open={openDetails.has(item)}
+          onToggle={event => { if (event.currentTarget.open) openDetails.add(item); else openDetails.delete(item); }}
+        >
           <summary className="cursor-pointer text-text-muted">{t('approval.details')}</summary>
           <pre className="mt-1 font-mono text-text-secondary bg-bg-deep rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
             {JSON.stringify(toolUse.input, null, 2)}

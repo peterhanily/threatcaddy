@@ -4,7 +4,7 @@
  * a card into an approval. Real tools, decision table and dispatcher.
  */
 import { act, cleanup, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import type { ComponentType } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import type { ChatThread, Folder, Settings, ToolUseBlock } from '../types';
@@ -36,8 +36,12 @@ vi.mock('../hooks/useCustomSlashCommands', () => ({ useCustomSlashCommands: () =
 vi.mock('../components/Chat/ChatInput', () => ({ ChatInput: (props: typeof state.input) => { state.input = props; return null; } }));
 vi.mock('../components/Chat/ChatMessage', () => ({ ChatMessageBubble: () => null }));
 vi.mock('../components/Agent/AgentCycleSummaryCard', () => ({ AgentCycleSummaryCard: () => null }));
-// The approval card lives in the list footer.
-vi.mock('react-virtuoso', () => ({ Virtuoso: ({ components }: { components?: { Footer?: () => ReactNode } }) => <>{components?.Footer?.()}</> }));
+// The approval card lives in the list footer. Virtuoso renders the Footer as a component, so a
+// new Footer function on each ChatView render remounts it.
+vi.mock('react-virtuoso', () => ({ Virtuoso: ({ components }: { components?: { Footer?: ComponentType } }) => {
+  const Footer = components?.Footer;
+  return Footer ? <Footer /> : null;
+} }));
 
 const makeThread = (id: string, folderId?: string): ChatThread => ({ id, title: `Chat ${id}`, folderId, model: 'synthetic-model', provider: 'anthropic',
   messages: [{ id: `${id}-m1`, role: 'user', content: 'Earlier question', createdAt: 1 }], tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
@@ -180,6 +184,37 @@ describe('the approval card', () => {
     fireEvent.keyDown(shown, { key: 'Escape' });
     expect(errorOf(await pending)).toMatch(/rejected/i);
     expect(egress.fetchUrlPosts()).toEqual([]);
+  });
+
+  it('does not take focus from the composer while the analyst types', async () => {
+    renderChat([makeThread('thread', 'S')]);
+    const handler = await sendAndGetHandler();
+    const composer = document.body.appendChild(document.createElement('textarea'));
+    try {
+      composer.focus();
+      const pending = start(handler, call('fetch_url', { url: 'https://collector.example/d' }));
+      const shown = await card();
+      expect(document.activeElement).toBe(composer);
+      fireEvent.keyDown(composer, { key: 'Escape' });
+      expect(await card()).toBe(shown);
+      fireEvent.click(within(shown).getByRole('button', { name: /reject/i }));
+      expect(errorOf(await pending)).toMatch(/rejected/i);
+    } finally { composer.remove(); }
+  });
+
+  it('keeps Details open and the investigation lines when the list re-renders', async () => {
+    const view = renderChat([makeThread('thread')]);
+    const handler = await sendAndGetHandler();
+    void start(handler, call('update_note', { id: ids('S').note, content: 'Overwritten' }));
+    const shown = await card();
+    expect(await within(shown).findByText('Shared case: syncs to its members')).toBeInTheDocument();
+    const details = shown.querySelector('details') as HTMLDetailsElement;
+    act(() => { details.open = true; details.dispatchEvent(new Event('toggle')); });
+
+    view.rerender();
+    const after = screen.getByRole('group', { name: /\?$/ });
+    expect(after.querySelector('details')).toHaveAttribute('open');
+    expect(within(after).getByText('Shared case: syncs to its members')).toBeInTheDocument();
   });
 
   it('leads with the destination and its warnings, with the raw input under Details', async () => {
