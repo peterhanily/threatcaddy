@@ -325,6 +325,16 @@ describe('SettingsPanel: where AI data goes', () => {
     expect(screen.getByText(text)).toBeInTheDocument();
   });
 
+  it('updates the route and web fetch lines when the extension publishes or withdraws its capabilities', async () => {
+    renderAI();
+    expect(screen.getByText('Web fetch needs the ThreatCaddy browser extension.')).toBeInTheDocument();
+    document.documentElement.dataset.tcBridgeCaps = 'llm_streaming,fetch_url,clip_import,clip_import_ack_v2,proxy_fetch';
+    expect(await screen.findByText('Web fetch: available. The extension opens only public web addresses.')).toBeInTheDocument();
+    expect(screen.getByText(/from the browser extension straight to your AI provider/)).toBeInTheDocument();
+    delete document.documentElement.dataset.tcBridgeCaps;
+    expect(await screen.findByText('Web fetch needs the ThreatCaddy browser extension.')).toBeInTheDocument();
+  });
+
   it('says where keys and prompts go instead of claiming every call uses the extension', () => {
     renderAI();
     expect(screen.getByText(/its operator receives your prompts, attachments and tool results/)).toBeInTheDocument();

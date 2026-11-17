@@ -1,5 +1,5 @@
 import { workspaceStorageKey } from '../../lib/workspace-profiles';
-import { useState, useCallback, useId, type KeyboardEvent } from 'react';
+import { useState, useCallback, useId, useSyncExternalStore, type KeyboardEvent } from 'react';
 import DOMPurify from 'dompurify';
 import { CodeXml, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -859,12 +859,21 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
 const hostOf = (url?: string) => { try { return new URL(url ?? '').host; } catch { return url ?? ''; } };
 
-/** Uses the runtime's route resolver, so the line cannot disagree with where requests go. */
+// The extension bridge publishes its capabilities once it has approved this page,
+// and withdraws them while it rechecks that approval.
+const subscribeBridgeCaps = (onChange: () => void) => {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-tc-bridge-caps'] });
+  return () => observer.disconnect();
+};
+const bridgeCapsSnapshot = () => document.documentElement.dataset.tcBridgeCaps ?? '';
+
+/** Describes the route resolveRoute picks. Call sites still on resolveRoutingMode
+ * (chat, agent cycles, supervisor) can differ until they migrate to it. */
 function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpdateSettings: (updates: Partial<Settings>) => void }) {
   const { t } = useTranslation('settings');
   const headingId = useId();
-  // The extension bridge publishes its capabilities once it has approved this page.
-  const caps = (document.documentElement.dataset.tcBridgeCaps ?? '').split(',').filter(Boolean);
+  const caps = useSyncExternalStore(subscribeBridgeCaps, bridgeCapsSnapshot).split(',').filter(Boolean);
   const route = resolveRoute(settings, { extensionAvailable: caps.length > 0, serverSession: hasServerSession(settings), provider: settings.llmDefaultProvider });
   const routeLine = route.route === 'unavailable'
     ? t(route.reason === 'no-extension' ? 'ai.dataFlow.routeNoExtension' : route.reason === 'no-server' ? 'ai.dataFlow.routeNoServer' : 'ai.dataFlow.routeNone')
