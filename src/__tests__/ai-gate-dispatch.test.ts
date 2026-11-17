@@ -5,12 +5,13 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
-import type { AgentProfile, AgentSoul, ToolUseBlock } from '../types';
+import type { AgentAction, AgentProfile, AgentSoul, ToolUseBlock } from '../types';
 import type { InstalledIntegration, IntegrationTemplate } from '../types/integration-types';
 import { executeTool } from '../lib/llm-tools';
 import { FORENSICATE_AGENT_PROFILE } from '../lib/forensicate-tool';
 import { BUILTIN_INTEGRATIONS } from '../lib/builtin-integrations';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
+import { bulkApproveActions } from '../lib/agent-action-approval';
 import i18n from '../i18n';
 import { mintHumanApproval, type HumanApproval } from '../lib/human-approval';
 import * as toolReach from '../lib/tool-reach';
@@ -395,6 +396,22 @@ describe('A-GATE-7 agent configuration tools', () => {
     const result = await execTool(call('dismiss_agent', { agentName: 'Threat Hunter', reason: 'Repeatedly ignored the scope of the investigation.', evidence: 'Three off-scope notes.' }), 'S');
     expect(result.isError).toBe(false);
     expect(await db.agentActions.get('act')).toBeTruthy();
+  });
+
+  it('dismissing rejects the agent\'s pending proposals in this investigation, so Approve all cannot run them', async () => {
+    await db.agentDeployments.add({ id: 'dep', investigationId: 'S', profileId: 'ap-threat-hunter', threadId: 'thread', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 });
+    const row = (id: string, extra: Partial<AgentAction> = {}): AgentAction => ({ id, investigationId: 'S', threadId: 'thread', agentConfigId: 'ap-threat-hunter',
+      toolName: 'create_note', toolInput: { title: `note ${id}` }, rationale: 'r', status: 'pending', createdAt: 1, ...extra });
+    await db.agentActions.bulkAdd([row('mine'), row('question', { toolName: 'ask_human', toolInput: { question: 'Which host?' } }),
+      row('done', { status: 'executed' }), row('elsewhere', { investigationId: 'P' }), row('colleague', { agentConfigId: 'ap-malware-analyst' })]);
+    const dismiss = call('dismiss_agent', { agentName: 'Threat Hunter', reason: 'Repeatedly ignored the scope of the investigation.', evidence: 'Three off-scope notes.' });
+    expect((await execTool(dismiss, 'S')).isError).toBe(false);
+    for (const id of ['mine', 'question']) expect(await db.agentActions.get(id)).toMatchObject({ status: 'rejected', resultSummary: 'Agent dismissed' });
+    expect(await db.agentActions.get('done')).toEqual(row('done', { status: 'executed' }));
+    expect(await db.agentActions.get('elsewhere')).toEqual(row('elsewhere', { investigationId: 'P' }));
+    expect(await db.agentActions.get('colleague')).toEqual(row('colleague', { agentConfigId: 'ap-malware-analyst' }));
+    await bulkApproveActions('S');
+    expect(await db.notes.where('title').equals('note mine').count()).toBe(0);
   });
 
   it('reflection needs an agent profile', async () => {

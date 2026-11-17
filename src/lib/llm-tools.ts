@@ -1680,10 +1680,14 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
   if (targetDeployments.length === 0) return JSON.stringify({ error: `"${agentName}" is not actively deployed in this investigation` });
 
   // Dismiss — delete deployment; its actions and audit thread stay as the record.
+  // Its pending proposals here are rejected, so no one can approve them later.
   const now = Date.now();
   for (const d of targetDeployments) {
     await db.agentDeployments.delete(d.id);
   }
+  await db.agentActions.where('[investigationId+status]').equals([folderId, 'pending'])
+    .filter(action => action.agentConfigId === targetProfile.id)
+    .modify({ status: 'rejected', resultSummary: 'Agent dismissed' });
 
   // Create after-action dismissal note
   const noteId = nanoid();
