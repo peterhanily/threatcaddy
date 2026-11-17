@@ -28,6 +28,7 @@
   "panel.statusWaiting": "wacht",
   "panel.statusPaused": "gepauzeerd",
   "panel.statusError": "fout",
+  "panel.statusIdle": "inactief",
   "panel.executePending": "{{count}} uitvoeren?",
   "panel.leftForReview": "Over voor individuele beoordeling: {{count}}",
   "panel.approveAll": "Alles goedkeuren",

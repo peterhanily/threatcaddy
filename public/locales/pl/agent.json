@@ -28,6 +28,7 @@
   "panel.statusWaiting": "oczekuje",
   "panel.statusPaused": "wstrzymany",
   "panel.statusError": "błąd",
+  "panel.statusIdle": "bezczynny",
   "panel.executePending": "Wykonać {{count}}?",
   "panel.leftForReview": "Pozostawione do indywidualnej weryfikacji: {{count}}",
   "panel.approveAll": "Zatwierdź wszystkie",

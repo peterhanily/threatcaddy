@@ -596,7 +596,7 @@ function InvestigationAgentPanel({
                       <span className="text-lg">{p.icon || '🤖'}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium text-text-primary">{p.name}</div>
-                        <div className="text-[10px] text-text-muted">{p.role}{d.supervisorDeploymentId ? ' · supervised' : ''}</div>
+                        <div className="text-[10px] text-text-muted">{p.role}{d.supervisorDeploymentId ? ` · ${t('panel.supervised')}` : ''}</div>
                         {homeShareable && p.allowedTools?.some(name => CROSS_CASE_READ_TOOLS.has(name)) && (
                           <div className="text-[9px] text-accent-amber mt-0.5">{t('panel.crossCaseOff')}</div>
                         )}
@@ -667,9 +667,9 @@ function InvestigationAgentPanel({
                         d.status === 'idle' && 'bg-surface-raised text-text-muted',
                         d.status === 'waiting' && 'bg-accent-amber/10 text-accent-amber',
                         d.status === 'error' && 'bg-red-400/10 text-red-400',
-                      )}>{d.status}</span>
+                      )}>{t(d.status === 'idle' ? 'panel.statusIdle' : STATUS_LABEL_KEYS[d.status])}</span>
                       {onRemoveDeployment && (
-                        <button onClick={() => onRemoveDeployment(d.id)} className="text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" title="Remove"><X size={12} /></button>
+                        <button onClick={() => onRemoveDeployment(d.id)} className="text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" title={t('panel.remove')}><X size={12} /></button>
                       )}
                     </div>
                   );
@@ -952,7 +952,7 @@ function AgentModelSelector({ settings, policy, onModelChange }: {
 
   return (
     <div className="flex items-center gap-3">
-      <label htmlFor="agent-model" className="text-xs text-text-muted shrink-0">Model</label>
+      <label htmlFor="agent-model" className="text-xs text-text-muted shrink-0">{t('panel.model')}</label>
       <select
         id="agent-model"
         value={policy.model || ''}

@@ -28,6 +28,7 @@
   "panel.statusWaiting": "en attente",
   "panel.statusPaused": "en pause",
   "panel.statusError": "erreur",
+  "panel.statusIdle": "inactif",
   "panel.executePending": "Exécuter {{count}} ?",
   "panel.leftForReview": "Laissées pour un examen individuel : {{count}}",
   "panel.approveAll": "Tout approuver",

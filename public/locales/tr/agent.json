@@ -28,6 +28,7 @@
   "panel.statusWaiting": "bekliyor",
   "panel.statusPaused": "duraklatıldı",
   "panel.statusError": "hata",
+  "panel.statusIdle": "boşta",
   "panel.executePending": "{{count}} işlemi çalıştır?",
   "panel.leftForReview": "Tek tek incelemeye bırakılan: {{count}}",
   "panel.approveAll": "Tümünü Onayla",

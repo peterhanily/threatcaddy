@@ -28,6 +28,7 @@
   "panel.statusWaiting": "ожидает",
   "panel.statusPaused": "приостановлен",
   "panel.statusError": "ошибка",
+  "panel.statusIdle": "простаивает",
   "panel.executePending": "Выполнить {{count}}?",
   "panel.leftForReview": "Оставлено для отдельной проверки: {{count}}",
   "panel.approveAll": "Одобрить все",

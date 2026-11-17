@@ -28,6 +28,7 @@
   "panel.statusWaiting": "очікує",
   "panel.statusPaused": "призупинено",
   "panel.statusError": "помилка",
+  "panel.statusIdle": "простоює",
   "panel.executePending": "Виконати {{count}}?",
   "panel.leftForReview": "Залишено для окремої перевірки: {{count}}",
   "panel.approveAll": "Схвалити всі",

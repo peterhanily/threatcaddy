@@ -28,6 +28,7 @@
   "panel.statusWaiting": "ממתין",
   "panel.statusPaused": "מושהה",
   "panel.statusError": "שגיאה",
+  "panel.statusIdle": "לא פעיל",
   "panel.executePending": "בצע {{count}}?",
   "panel.leftForReview": "נותרו לבדיקה פרטנית: {{count}}",
   "panel.approveAll": "אשר הכל",

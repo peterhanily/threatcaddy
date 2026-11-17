@@ -28,6 +28,7 @@
   "panel.statusWaiting": "menunggu",
   "panel.statusPaused": "dijeda",
   "panel.statusError": "kesalahan",
+  "panel.statusIdle": "diam",
   "panel.executePending": "Eksekusi {{count}}?",
   "panel.leftForReview": "Tersisa untuk ditinjau satu per satu: {{count}}",
   "panel.approveAll": "Setujui Semua",

@@ -28,6 +28,7 @@
   "panel.statusWaiting": "في الانتظار",
   "panel.statusPaused": "متوقف مؤقتًا",
   "panel.statusError": "خطأ",
+  "panel.statusIdle": "خامل",
   "panel.executePending": "تنفيذ {{count}}؟",
   "panel.leftForReview": "متروكة للمراجعة الفردية: {{count}}",
   "panel.approveAll": "الموافقة على الكل",

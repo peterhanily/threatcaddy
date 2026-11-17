@@ -28,6 +28,7 @@
   "panel.statusWaiting": "در انتظار",
   "panel.statusPaused": "متوقف‌شده",
   "panel.statusError": "خطا",
+  "panel.statusIdle": "بیکار",
   "panel.executePending": "اجرای {{count}} مورد؟",
   "panel.leftForReview": "باقی‌مانده برای بررسی جداگانه: {{count}}",
   "panel.approveAll": "تایید همه",

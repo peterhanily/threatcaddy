@@ -28,6 +28,7 @@
   "panel.statusWaiting": "đang chờ",
   "panel.statusPaused": "tạm dừng",
   "panel.statusError": "lỗi",
+  "panel.statusIdle": "nhàn rỗi",
   "panel.executePending": "Thực thi {{count}}?",
   "panel.leftForReview": "Để lại xem xét riêng: {{count}}",
   "panel.approveAll": "Chấp thuận tất cả",

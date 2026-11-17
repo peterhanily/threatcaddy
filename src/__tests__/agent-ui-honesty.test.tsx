@@ -199,6 +199,23 @@ describe('agent panel review state', () => {
       fireEvent.click(screen.getByRole('button', { name: deAgent['panel.toggleAgentSettings'] }));
       expect(await screen.findByRole('option', { name: deAgent['panel.autoUseDefault'] })).toBeInTheDocument();
       expect(screen.queryByRole('option', { name: 'Auto (use default)' })).not.toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: deAgent['panel.model'] })).toBeInTheDocument();
+    });
+
+    it('an agent row names its status, its supervision and its remove button', async () => {
+      const paused: AgentDeployment = { ...deployment('ap-threat-hunter'), status: 'paused', supervisorDeploymentId: 'dep-ap-lead-analyst' };
+      render(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES}
+        deployments={[paused, deployment('ap-ioc-enricher')]} onRemoveDeployment={vi.fn()} />);
+      await act(async () => {});
+      fireEvent.click(screen.getByRole('button', { name: `${deAgent['panel.agents']}(2)` }));
+      expect(await screen.findByText(deAgent['panel.statusPaused'])).toBeInTheDocument();
+      expect(screen.getByText(deAgent['panel.statusIdle'])).toBeInTheDocument();
+      expect(screen.queryByText('paused')).not.toBeInTheDocument();
+      expect(screen.queryByText('idle')).not.toBeInTheDocument();
+      expect(screen.getByText(new RegExp(` · ${deAgent['panel.supervised']}$`))).toBeInTheDocument();
+      expect(screen.queryByText(/ · supervised$/)).not.toBeInTheDocument();
+      expect(screen.getAllByTitle(deAgent['panel.remove'])).toHaveLength(2);
+      expect(screen.queryByTitle('Remove')).not.toBeInTheDocument();
     });
 
     it.each([[1, 'pending', 'executed', 'Keine ausstehenden Aktionen.'], [2, 'executed', 'pending', 'Keine ausgeführten Aktionen.'], [3, 'rejected', 'executed', 'Keine abgelehnten Aktionen.']] as const)(

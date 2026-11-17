@@ -28,6 +28,7 @@
   "panel.statusWaiting": "en espera",
   "panel.statusPaused": "en pausa",
   "panel.statusError": "error",
+  "panel.statusIdle": "inactivo",
   "panel.executePending": "¿Ejecutar {{count}}?",
   "panel.leftForReview": "Pendientes de revisión individual: {{count}}",
   "panel.approveAll": "Aprobar todo",

@@ -28,6 +28,7 @@
   "panel.statusWaiting": "等待中",
   "panel.statusPaused": "已暂停",
   "panel.statusError": "错误",
+  "panel.statusIdle": "空闲",
   "panel.executePending": "执行 {{count}} 个？",
   "panel.leftForReview": "留待逐项审查：{{count}}",
   "panel.approveAll": "全部批准",

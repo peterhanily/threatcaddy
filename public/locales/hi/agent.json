@@ -28,6 +28,7 @@
   "panel.statusWaiting": "प्रतीक्षारत",
   "panel.statusPaused": "रुका हुआ",
   "panel.statusError": "त्रुटि",
+  "panel.statusIdle": "निष्क्रिय",
   "panel.executePending": "{{count}} निष्पादित करें?",
   "panel.leftForReview": "अलग-अलग समीक्षा के लिए छोड़े गए: {{count}}",
   "panel.approveAll": "सभी स्वीकृत करें",

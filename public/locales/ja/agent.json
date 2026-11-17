@@ -28,6 +28,7 @@
   "panel.statusWaiting": "待機中",
   "panel.statusPaused": "一時停止中",
   "panel.statusError": "エラー",
+  "panel.statusIdle": "アイドル",
   "panel.executePending": "{{count}} 件実行？",
   "panel.leftForReview": "個別の確認待ち: {{count}}",
   "panel.approveAll": "すべて承認",

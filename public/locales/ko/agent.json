@@ -28,6 +28,7 @@
   "panel.statusWaiting": "대기 중",
   "panel.statusPaused": "일시 중지됨",
   "panel.statusError": "오류",
+  "panel.statusIdle": "유휴",
   "panel.executePending": "{{count}}개 실행?",
   "panel.leftForReview": "개별 검토 대기: {{count}}",
   "panel.approveAll": "모두 승인",

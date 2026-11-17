@@ -28,6 +28,7 @@
   "panel.statusWaiting": "กำลังรอ",
   "panel.statusPaused": "หยุดชั่วคราว",
   "panel.statusError": "ข้อผิดพลาด",
+  "panel.statusIdle": "ว่าง",
   "panel.executePending": "ดำเนินการ {{count}} รายการ?",
   "panel.leftForReview": "เหลือไว้ตรวจทานทีละรายการ: {{count}}",
   "panel.approveAll": "อนุมัติทั้งหมด",
