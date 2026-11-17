@@ -9,7 +9,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import type { ChatThread, Folder, Settings, ToolUseBlock } from '../types';
 import type { ToolExecutionResult } from '../lib/llm-tool-execution';
+import type { ApprovalItem } from '../lib/chat-tool-executor';
 import { ChatView } from '../components/Chat/ChatView';
+import { ChatApprovalCard } from '../components/Chat/ChatApprovalCard';
 import { discardAllComposerDrafts } from '../lib/chat-composer-drafts';
 import { canary, ids, seedAIWorkspace } from './helpers/ai-workspace';
 import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
@@ -179,6 +181,25 @@ describe('C-CHAT-6 the approval queue', () => {
     await approve();
     expect((await second).isError).toBe(false);
     expect(egress.fetchUrlPosts()).toEqual(['https://collector.example/a', 'https://collector.example/b']);
+  });
+
+  it('keeps Approve disabled for longer than a double click after a card appears', () => {
+    const item: ApprovalItem = { toolUse: fetchB, reason: 'egress', readForeignThisRequest: false,
+      reach: { name: 'fetch_url', write: false, homeShareable: false, crossRead: false, crossWrite: false, targetFolderIds: [],
+        hidden: false, egress: 'open-fetch', destinations: ['collector.example'], harvested: false, flags: [] } };
+    const onApprove = vi.fn();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      render(<ChatApprovalCard item={item} index={1} total={1} onApprove={onApprove} onReject={vi.fn()} />);
+      const button = screen.getByRole('button', { name: /approve/i });
+      act(() => { vi.advanceTimersByTime(300); });
+      expect(button).toBeDisabled();
+      fireEvent.click(button);
+      act(() => { vi.advanceTimersByTime(200); });
+      expect(button).toBeEnabled();
+      fireEvent.click(button);
+      expect(onApprove).toHaveBeenCalledTimes(1);
+    } finally { vi.useRealTimers(); }
   });
 
   it('a thread switch rejects every queued card and runs nothing', async () => {
