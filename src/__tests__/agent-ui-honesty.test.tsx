@@ -13,6 +13,8 @@ import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { loadAgentPolicy } from '../lib/agent-profile-resolver';
 import { classifyToolCall } from '../lib/tool-reach';
 import { ids, seedAIWorkspace } from './helpers/ai-workspace';
+import i18n from '../i18n';
+import deAgent from '../../public/locales/de/agent.json';
 
 vi.mock('../components/Agent/AgentProfilePicker', () => ({ AgentProfilePicker: () => null }));
 vi.mock('../components/Agent/AgentMeetingPanel', () => ({ AgentMeetingPanel: () => null }));
@@ -171,6 +173,30 @@ describe('agent panel review state', () => {
     fireEvent.click(await screen.findByRole('button', { name: /approve all/i }));
     expect(await screen.findByText('Execute 1?')).toBeInTheDocument();
     expect(screen.getByText('Left for individual review: 1')).toBeInTheDocument();
+  });
+
+  describe('in the analyst’s language', () => {
+    beforeEach(async () => {
+      for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+      i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+      await i18n.changeLanguage('de');
+    });
+    afterEach(async () => { await act(async () => { await i18n.changeLanguage('en'); }); });
+
+    it.each([['running', 'panel.statusRunning'], ['waiting', 'panel.statusWaiting'], ['paused', 'panel.statusPaused'], ['error', 'panel.statusError']] as const)(
+      'the %s status badge', async (status, key) => {
+        await renderPanel({ ...await folder('S'), agentStatus: status }, []);
+        expect(screen.getByText(deAgent[key])).toBeInTheDocument();
+        expect(screen.queryByText(status)).not.toBeInTheDocument();
+      });
+
+    it('the inbox filters and the automatic model choice', async () => {
+      await renderPanel(await folder('S'), []);
+      expect(screen.getAllByRole('tab').map(tab => tab.textContent)).toEqual([deAgent['panel.all'], deAgent['panel.pending'], deAgent['panel.executed'], deAgent['panel.rejected']]);
+      fireEvent.click(screen.getByRole('button', { name: deAgent['panel.toggleAgentSettings'] }));
+      expect(await screen.findByRole('option', { name: deAgent['panel.autoUseDefault'] })).toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: 'Auto (use default)' })).not.toBeInTheDocument();
+    });
   });
 
   it('a cross-case profile in a shareable investigation says its cross-case tools are off', async () => {

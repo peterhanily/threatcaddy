@@ -34,6 +34,11 @@ const POLICY_TOGGLES: { key: 'autoApproveReads' | 'autoApproveEnrich' | 'autoApp
   { key: 'autoApproveModify', labelKey: 'panel.modify', descriptionKey: 'panel.modifyDesc' },
 ];
 
+/** The header badge names every status but idle. */
+const STATUS_LABEL_KEYS: Record<Exclude<AgentStatus, 'idle'>, string> = {
+  running: 'panel.statusRunning', waiting: 'panel.statusWaiting', paused: 'panel.statusPaused', error: 'panel.statusError',
+};
+
 interface AgentPanelProps {
   folder: Folder;
   settings: Settings;
@@ -396,7 +401,7 @@ function InvestigationAgentPanel({
               displayStatus === 'error' && 'bg-red-400/10 text-red-400',
               displayStatus === 'paused' && 'bg-surface-raised text-text-muted',
             )}>
-              {displayStatus}
+              {t(STATUS_LABEL_KEYS[displayStatus])}
             </span>
           )}
           {folder.agentEnabled && (
@@ -526,7 +531,7 @@ function InvestigationAgentPanel({
               {(['all', 'pending', 'executed', 'rejected'] as const).map(f => (
                 <button key={f} role="tab" aria-selected={filter === f} onClick={() => setFilter(f)}
                   className={cn('text-[10px] px-1.5 py-0.5 rounded capitalize', filter === f ? 'bg-surface-raised text-text-primary font-medium' : 'text-text-muted hover:text-text-secondary')}
-                >{f}{f === 'pending' && pendingCount > 0 && <span className="ms-0.5 text-accent-amber">({pendingCount})</span>}</button>
+                >{t(`panel.${f}`)}{f === 'pending' && pendingCount > 0 && <span className="ms-0.5 text-accent-amber">({pendingCount})</span>}</button>
               ))}
             </div>
             {pendingCount > 0 && (confirmBulk ? (
@@ -930,6 +935,7 @@ function AgentModelSelector({ settings, policy, onModelChange }: {
   policy: AgentPolicy;
   onModelChange: (model: string | undefined) => void;
 }) {
+  const { t } = useTranslation('agent');
   // Build list of available models from configured providers
   const configuredProviders = new Set<string>();
   if (settings.llmAnthropicApiKey?.trim()) configuredProviders.add('anthropic');
@@ -950,7 +956,7 @@ function AgentModelSelector({ settings, policy, onModelChange }: {
         onChange={(e) => onModelChange(e.target.value || undefined)}
         className="flex-1 text-xs bg-surface border border-border-subtle rounded px-2 py-1.5 text-text-primary focus:outline-none focus:border-accent-blue/50"
       >
-        <option value="">Auto (use default)</option>
+        <option value="">{t('panel.autoUseDefault')}</option>
         {Array.from(new Set(availableModels.map(m => m.group))).map(group => (
           <optgroup key={group} label={group}>
             {availableModels.filter(m => m.group === group).map(m => (
