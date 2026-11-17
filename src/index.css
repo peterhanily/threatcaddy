@@ -88,6 +88,9 @@
 .light .text-gray-500 { color: #59616f; }
 .light .text-gray-600 { color: #59616f; }
 .light .text-green-400 { color: #166534; }
+/* Emerald-900: 5.3:1 or more on bg-emerald-500/20-30 over every scheme's light page, panel
+   and raised surfaces (the chat approval card's Approve label; #166534 drops to 3.9:1 there). */
+.light .text-emerald-400 { color: #064e3b; }
 .light .text-red-400 { color: #b91c1c; }
 .light .text-purple-400 { color: #6b21a8; }
 .light .text-cyan-400 { color: #0e7490; }

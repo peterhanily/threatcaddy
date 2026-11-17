@@ -83,6 +83,7 @@
     "position": "{{index}} מתוך {{total}}",
     "title": {
       "write": "לאשר שינוי בחקירה זו?",
+      "writeUnfiled": "לאשר שינוי מחוץ לכל חקירה?",
       "egress": "לשלוח נתונים אל מחוץ ל-ThreatCaddy?",
       "crossRead": "לקרוא חקירות אחרות?",
       "crossWrite": "לשנות חקירה אחרת?",

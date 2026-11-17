@@ -82,6 +82,7 @@
     "position": "{{index}} trên {{total}}",
     "title": {
       "write": "Phê duyệt thay đổi trong cuộc điều tra này?",
+      "writeUnfiled": "Phê duyệt thay đổi nằm ngoài mọi cuộc điều tra?",
       "egress": "Gửi dữ liệu ra ngoài ThreatCaddy?",
       "crossRead": "Đọc các cuộc điều tra khác?",
       "crossWrite": "Thay đổi một cuộc điều tra khác?",

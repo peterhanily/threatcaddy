@@ -82,6 +82,7 @@
     "position": "{{index}} / {{total}}",
     "title": {
       "write": "Bu soruşturmadaki değişiklik onaylansın mı?",
+      "writeUnfiled": "Hiçbir soruşturmanın dışındaki değişiklik onaylansın mı?",
       "egress": "Veriler ThreatCaddy dışına gönderilsin mi?",
       "crossRead": "Diğer soruşturmalar okunsun mu?",
       "crossWrite": "Başka bir soruşturma değiştirilsin mi?",

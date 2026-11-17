@@ -160,8 +160,8 @@
   "dashboard.recentAgentActivity": "Recent Agent Activity",
   "dashboard.auto": "auto",
 
-  "action.expandAction": "{{action}} Expand {{toolName}} action details",
-  "action.collapseAction": "{{action}} Collapse {{toolName}} action details",
+  "action.expandAction": "Expand {{toolName}} action details",
+  "action.collapseAction": "Collapse {{toolName}} action details",
   "action.input": "Input",
   "action.result": "Result",
   "action.viewReasoning": "View reasoning",

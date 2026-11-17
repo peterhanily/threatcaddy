@@ -94,6 +94,7 @@
     "position": "{{index}} of {{total}}",
     "title": {
       "write": "Approve a change to this investigation?",
+      "writeUnfiled": "Approve a change outside any investigation?",
       "egress": "Send data outside ThreatCaddy?",
       "crossRead": "Read other investigations?",
       "crossWrite": "Change another investigation?",

@@ -82,6 +82,7 @@
     "position": "第 {{index}} 项，共 {{total}} 项",
     "title": {
       "write": "批准对此调查的更改？",
+      "writeUnfiled": "批准不属于任何调查的更改？",
       "egress": "将数据发送到 ThreatCaddy 之外？",
       "crossRead": "读取其他调查？",
       "crossWrite": "更改另一个调查？",

@@ -82,6 +82,7 @@
     "position": "{{total}} 件中 {{index}} 件目",
     "title": {
       "write": "この調査への変更を承認しますか？",
+      "writeUnfiled": "どの調査にも属さない変更を承認しますか？",
       "egress": "ThreatCaddy の外部にデータを送信しますか？",
       "crossRead": "他の調査を読み取りますか？",
       "crossWrite": "別の調査を変更しますか？",

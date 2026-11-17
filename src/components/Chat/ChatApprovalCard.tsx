@@ -22,7 +22,9 @@ const AGENT_TOOLS: ReadonlySet<string> = new Set(['deploy_agent', 'stop_agent', 
 const changesAgentsOf = ({ toolUse, reach }: ApprovalItem) => !!reach.agentControl && AGENT_TOOLS.has(toolUse.name);
 function titleKeyOf(item: ApprovalItem): string {
   const { reason, reach } = item;
-  return TITLE_KEYS[reason === 'agent-control' && !changesAgentsOf(item) ? (reach.crossWrite ? 'cross-write' : 'write') : reason];
+  const key = TITLE_KEYS[reason === 'agent-control' && !changesAgentsOf(item) ? (reach.crossWrite ? 'cross-write' : 'write') : reason];
+  // An unfiled conversation's own change lands outside any investigation.
+  return key === TITLE_KEYS.write && !reach.homeFolderId ? 'approval.title.writeUnfiled' : key;
 }
 
 interface Resolved { homeName?: string; targets: Array<{ name: string; shareable: boolean }>; iocValue?: string }
@@ -77,6 +79,12 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
     summary.push(reach.destinations.length ? t('approval.lookup', { value, vendors: reach.destinations.join(', ') }) : t('approval.lookupNone', { value }));
   } else if (reach.egress === 'configured') summary.push(t('approval.sendsTo', { destination: reach.destinations.join(', ') }));
   if (changesAgents) summary.push(t('approval.agentChange'));
+  // A change in the conversation's own investigation, which the sidebar may not show. Agent
+  // deployments never sync, and an egress card already says where the data goes.
+  if (reach.write && !reach.crossWrite && reach.egress === 'none' && !changesAgents) {
+    if (resolved.homeName) summary.push(t(reach.homeShareable ? 'approval.targetSynced' : 'approval.targetLocal', { name: resolved.homeName }));
+    else if (!reach.homeFolderId) summary.push(t('approval.unfiled'));
+  }
   if (reach.crossRead && reach.targetFolderIds.length === 0) summary.push(t('approval.readsOthers'));
   for (const target of resolved.targets) summary.push(t(target.shareable ? 'approval.targetSynced' : 'approval.targetLocal', { name: target.name }));
   if (reach.flags.includes('unfiled-sink')) summary.push(t('approval.unfiled'));
@@ -105,7 +113,7 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
       </div>
       <div className="px-4 py-2.5 space-y-1.5">
         <div className="text-xs">
-          <span className="font-mono font-medium text-purple">{toolUse.name}</span>
+          <span dir="ltr" className="font-mono font-medium text-purple">{toolUse.name}</span>
         </div>
         {summary.length > 0 && (
           <ul className="space-y-0.5 text-xs text-text-primary">
@@ -119,7 +127,7 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
         )}
         <details className="text-[10px]">
           <summary className="cursor-pointer text-text-muted">{t('approval.details')}</summary>
-          <pre className="mt-1 font-mono text-text-secondary bg-bg-deep rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
+          <pre dir="ltr" className="mt-1 font-mono text-text-secondary bg-bg-deep rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
             {JSON.stringify(toolUse.input, null, 2)}
           </pre>
         </details>

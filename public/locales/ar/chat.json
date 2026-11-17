@@ -86,6 +86,7 @@
     "position": "{{index}} من {{total}}",
     "title": {
       "write": "الموافقة على تغيير في هذا التحقيق؟",
+      "writeUnfiled": "الموافقة على تغيير خارج أي تحقيق؟",
       "egress": "إرسال بيانات إلى خارج ThreatCaddy؟",
       "crossRead": "قراءة تحقيقات أخرى؟",
       "crossWrite": "تغيير تحقيق آخر؟",

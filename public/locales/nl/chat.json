@@ -82,6 +82,7 @@
     "position": "{{index}} van {{total}}",
     "title": {
       "write": "Wijziging in dit onderzoek goedkeuren?",
+      "writeUnfiled": "Wijziging buiten elk onderzoek goedkeuren?",
       "egress": "Gegevens buiten ThreatCaddy versturen?",
       "crossRead": "Andere onderzoeken lezen?",
       "crossWrite": "Een ander onderzoek wijzigen?",
