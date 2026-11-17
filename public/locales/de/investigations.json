@@ -62,7 +62,7 @@
   "detail.cloudSyncLabel": "Cloud-Synchronisierung",
   "detail.keepLocalLabel": "Auf diesem Gerät behalten",
   "detail.localOnly": "Nur lokal",
-  "detail.localOnlyDescV2": "Wird nie mit einem Team-Server synchronisiert. KI, die in synchronisierbaren Untersuchungen arbeitet, kann sie nicht sehen.",
+  "detail.localOnlyDescV2": "Wird nie mit einem Team-Server synchronisiert. KI, die in synchronisierbaren Untersuchungen arbeitet, kann sie nicht sehen. KI-Anfragen, die ihre Inhalte enthalten, folgen weiterhin der unter Einstellungen → KI angezeigten Route, die über den Team-Server laufen kann.",
   "detail.syncedToServer": "Mit Server synchronisiert",
   "detail.syncedToServerDesc": "Gemeinsame Felder werden mit dem Server synchronisiert. Sichern Sie gerätespezifische Details separat.",
   "detail.exportInvestigation": "Untersuchung exportieren",

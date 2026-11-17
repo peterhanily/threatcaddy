@@ -69,6 +69,15 @@ describe('investigation privacy copy', () => {
     expect(onToggleSync).toHaveBeenCalledExactlyOnceWith('case', true);
   });
 
+  it('says AI requests with its content still follow the AI route, which may be the team server', async () => {
+    const sentence = 'AI requests that include its content still follow the route shown in Settings → AI, which may be the team server.';
+    const view = render(panel({ serverConnected: true, onToggleSync: vi.fn() }));
+    expect(screen.getByText(/AI working in investigations that can sync cannot see it/)).toHaveTextContent(sentence);
+    view.unmount();
+    render(panel({ serverConnected: false, onToggleSync: vi.fn() }));
+    expect(await screen.findByRole('switch', { name: /Keep on this device/ })).toHaveAccessibleDescription(expect.stringContaining(sentence));
+  });
+
   it('shows no privacy control when the panel cannot change it', () => {
     render(panel({ serverConnected: false }));
     expect(screen.queryByRole('switch', { name: /Keep on this device/ })).not.toBeInTheDocument();

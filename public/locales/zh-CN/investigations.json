@@ -62,7 +62,7 @@
   "detail.cloudSyncLabel": "云同步",
   "detail.keepLocalLabel": "保留在本设备上",
   "detail.localOnly": "仅本地",
-  "detail.localOnlyDescV2": "永不同步到团队服务器。在可同步调查中工作的 AI 无法看到它。",
+  "detail.localOnlyDescV2": "永不同步到团队服务器。在可同步调查中工作的 AI 无法看到它。但包含其内容的 AI 请求仍会按 设置 → AI 中显示的路由发送，该路由可能是团队服务器。",
   "detail.syncedToServer": "已同步到服务器",
   "detail.syncedToServerDesc": "共享字段会同步到服务器。请单独备份仅保存在设备上的详情。",
   "detail.exportInvestigation": "导出调查",

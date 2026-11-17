@@ -92,7 +92,7 @@
   "detail.cloudSyncLabel": "Cloud Sync",
   "detail.keepLocalLabel": "Keep on this device",
   "detail.localOnly": "Local only",
-  "detail.localOnlyDescV2": "Never syncs to a team server. AI working in investigations that can sync cannot see it.",
+  "detail.localOnlyDescV2": "Never syncs to a team server. AI working in investigations that can sync cannot see it. AI requests that include its content still follow the route shown in Settings → AI, which may be the team server.",
   "detail.syncedToServer": "Synced to server",
   "detail.syncedToServerDesc": "Shared fields sync to the server. Keep a separate backup for device-only details.",
   "detail.exportInvestigation": "Export Investigation",

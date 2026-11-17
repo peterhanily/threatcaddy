@@ -62,7 +62,7 @@
   "detail.cloudSyncLabel": "Cloudsynchronisatie",
   "detail.keepLocalLabel": "Op dit apparaat houden",
   "detail.localOnly": "Alleen lokaal",
-  "detail.localOnlyDescV2": "Wordt nooit met een teamserver gesynchroniseerd. AI die werkt in onderzoeken die kunnen synchroniseren, kan het niet zien.",
+  "detail.localOnlyDescV2": "Wordt nooit met een teamserver gesynchroniseerd. AI die werkt in onderzoeken die kunnen synchroniseren, kan het niet zien. AI-verzoeken met de inhoud ervan volgen nog steeds de route die onder Instellingen → AI staat, en die kan via de teamserver lopen.",
   "detail.syncedToServer": "Gesynchroniseerd met server",
   "detail.syncedToServerDesc": "Gedeelde velden worden met de server gesynchroniseerd. Bewaar een aparte back-up van apparaatspecifieke details.",
   "detail.exportInvestigation": "Onderzoek exporteren",

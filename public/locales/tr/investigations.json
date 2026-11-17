@@ -62,7 +62,7 @@
   "detail.cloudSyncLabel": "Bulut Senkronizasyonu",
   "detail.keepLocalLabel": "Bu cihazda tut",
   "detail.localOnly": "Yalnızca yerel",
-  "detail.localOnlyDescV2": "Hiçbir zaman bir ekip sunucusuyla senkronize edilmez. Senkronize edilebilen soruşturmalarda çalışan yapay zekâ onu göremez.",
+  "detail.localOnlyDescV2": "Hiçbir zaman bir ekip sunucusuyla senkronize edilmez. Senkronize edilebilen soruşturmalarda çalışan yapay zekâ onu göremez. İçeriğini içeren yapay zekâ istekleri yine de Ayarlar → AI bölümünde gösterilen rotayı izler; bu rota ekip sunucusu olabilir.",
   "detail.syncedToServer": "Sunucuyla senkronize edildi",
   "detail.syncedToServerDesc": "Paylaşılan alanlar sunucuyla eşitlenir. Cihaza özel ayrıntılar için ayrı bir yedek tutun.",
   "detail.exportInvestigation": "Soruşturmayı Dışa Aktar",

@@ -62,7 +62,7 @@
   "detail.cloudSyncLabel": "클라우드 동기화",
   "detail.keepLocalLabel": "이 기기에만 보관",
   "detail.localOnly": "로컬 전용",
-  "detail.localOnlyDescV2": "팀 서버와 동기화되지 않습니다. 동기화될 수 있는 조사에서 작업하는 AI는 이 조사를 볼 수 없습니다.",
+  "detail.localOnlyDescV2": "팀 서버와 동기화되지 않습니다. 동기화될 수 있는 조사에서 작업하는 AI는 이 조사를 볼 수 없습니다. 다만 이 조사의 내용을 포함한 AI 요청은 여전히 설정 → AI에 표시된 경로를 따르며, 이 경로는 팀 서버일 수 있습니다.",
   "detail.syncedToServer": "서버에 동기화됨",
   "detail.syncedToServerDesc": "공유 필드는 서버와 동기화됩니다. 기기에만 있는 세부 정보는 별도로 백업하세요.",
   "detail.exportInvestigation": "조사 내보내기",
