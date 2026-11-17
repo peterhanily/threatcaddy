@@ -12,6 +12,11 @@ previously built image. Update the source, then run
 `docker compose build server` and
 `docker compose up -d --no-deps --force-recreate server`.
 
+2.0.3 adds no database migrations and changes no server code apart from the
+version that `/health` reports. Its changes are client-side AI hardening; see
+the [2.0.3 notes](../docs/releases/v2.0.3.md). Upgrade team clients too:
+members still on 2.0.2 do not have the client protections.
+
 Reverting code or an image does not roll back database migrations. Restoring
 data requires the matching database and file snapshot plus an explicit
 sync-history rotation; see [migration recovery](docs/migration-recovery.md) and
