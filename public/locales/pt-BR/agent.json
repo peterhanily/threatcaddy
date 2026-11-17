@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "Relator",
   "builtinProfile.reporter.description": "Sintetiza descobertas em relatórios e resumos estruturados.",
   "builtinProfile.forensicateScanner.name": "Forensicate Scanner",
-  "builtinProfile.forensicateScanner.descriptionV2": "Verificação local básica do conteúdo da investigação em busca de padrões comuns de injeção de prompt. Nada sai deste dispositivo.",
+  "builtinProfile.forensicateScanner.descriptionV2": "Verificação básica do conteúdo da investigação em busca de padrões comuns de injeção de prompt. A verificação é executada neste dispositivo; como todo agente, ele envia o que lê ao seu modelo de IA.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "Diretor de segurança da informação — risco estratégico, alocação de recursos, supervisão de agentes, relatórios ao conselho.",
   "builtinProfile.chiefOfStaff.name": "Chefe de gabinete",

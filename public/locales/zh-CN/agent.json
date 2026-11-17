@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "报告员",
   "builtinProfile.reporter.description": "将调查结果综合成结构化报告和摘要。",
   "builtinProfile.forensicateScanner.name": "Forensicate 扫描器",
-  "builtinProfile.forensicateScanner.descriptionV2": "在本地对调查内容进行基本检查，查找常见的提示注入模式。任何数据都不会离开此设备。",
+  "builtinProfile.forensicateScanner.descriptionV2": "对调查内容进行基本检查，查找常见的提示注入模式。检查在此设备上运行；但与所有代理一样，它会将读取的内容发送到您的 AI 模型。",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "首席信息安全官——战略风险、资源分配、代理监督、董事会级报告。",
   "builtinProfile.chiefOfStaff.name": "参谋长",

@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "Reporter",
   "builtinProfile.reporter.description": "Sintetizza i risultati in report e riepiloghi strutturati.",
   "builtinProfile.forensicateScanner.name": "Scanner Forensicate",
-  "builtinProfile.forensicateScanner.descriptionV2": "Controllo locale di base dei contenuti delle indagini per pattern comuni di prompt injection. Nulla lascia questo dispositivo.",
+  "builtinProfile.forensicateScanner.descriptionV2": "Controllo di base dei contenuti delle indagini per pattern comuni di prompt injection. Il controllo viene eseguito su questo dispositivo; come ogni agente, invia ciò che legge al tuo modello di IA.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "Chief Information Security Officer — rischio strategico, allocazione risorse, supervisione agenti, report per il consiglio.",
   "builtinProfile.chiefOfStaff.name": "Capo di gabinetto",

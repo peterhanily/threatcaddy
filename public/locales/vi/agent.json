@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "Phóng viên",
   "builtinProfile.reporter.description": "Tổng hợp các phát hiện thành báo cáo và tóm tắt có cấu trúc.",
   "builtinProfile.forensicateScanner.name": "Máy quét Forensicate",
-  "builtinProfile.forensicateScanner.descriptionV2": "Kiểm tra cục bộ cơ bản nội dung điều tra để tìm các mẫu tiêm nhắc lệnh phổ biến. Không có gì rời khỏi thiết bị này.",
+  "builtinProfile.forensicateScanner.descriptionV2": "Kiểm tra cơ bản nội dung điều tra để tìm các mẫu tiêm nhắc lệnh phổ biến. Việc kiểm tra chạy trên thiết bị này; như mọi tác nhân, nó gửi những gì nó đọc tới mô hình AI của bạn.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "Giám đốc An ninh Thông tin — rủi ro chiến lược, phân bổ nguồn lực, giám sát tác nhân, báo cáo cấp hội đồng.",
   "builtinProfile.chiefOfStaff.name": "Chánh văn phòng",

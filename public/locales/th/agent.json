@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "ผู้รายงาน",
   "builtinProfile.reporter.description": "สรุปผลการค้นพบเป็นรายงานและสรุปที่มีโครงสร้าง",
   "builtinProfile.forensicateScanner.name": "Forensicate สแกนเนอร์",
-  "builtinProfile.forensicateScanner.descriptionV2": "การตรวจสอบพื้นฐานในเครื่องสำหรับเนื้อหาการสืบสวนเพื่อหารูปแบบ prompt injection ทั่วไป ไม่มีข้อมูลใดออกจากอุปกรณ์นี้",
+  "builtinProfile.forensicateScanner.descriptionV2": "การตรวจสอบพื้นฐานสำหรับเนื้อหาการสืบสวนเพื่อหารูปแบบ prompt injection ทั่วไป การตรวจสอบทำงานบนอุปกรณ์นี้ แต่เช่นเดียวกับเอเจนต์ทุกตัว เอเจนต์นี้ส่งสิ่งที่อ่านไปยังโมเดล AI ของคุณ",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "ประธานเจ้าหน้าที่ฝ่ายความปลอดภัยข้อมูล——ความเสี่ยงเชิงกลยุทธ์ การจัดสรรทรัพยากร การกำกับดูแลเอเจนต์ การรายงานระดับคณะกรรมการ",
   "builtinProfile.chiefOfStaff.name": "ผู้ช่วยอาวุโส",

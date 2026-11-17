@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "Reporter",
   "builtinProfile.reporter.description": "Mensintesis temuan ke dalam laporan dan ringkasan terstruktur.",
   "builtinProfile.forensicateScanner.name": "Pemindai Forensicate",
-  "builtinProfile.forensicateScanner.descriptionV2": "Pemeriksaan lokal dasar atas konten investigasi untuk pola injeksi prompt yang umum. Tidak ada yang keluar dari perangkat ini.",
+  "builtinProfile.forensicateScanner.descriptionV2": "Pemeriksaan dasar atas konten investigasi untuk pola injeksi prompt yang umum. Pemeriksaan berjalan di perangkat ini; seperti setiap agen, agen ini mengirim apa yang dibacanya ke model AI Anda.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "Chief Information Security Officer — risiko strategis, alokasi sumber daya, pengawasan agen, pelaporan tingkat dewan.",
   "builtinProfile.chiefOfStaff.name": "Kepala Staf",

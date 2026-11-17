@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "Raporcu",
   "builtinProfile.reporter.description": "Bulguları yapılandırılmış raporlar ve özetler halinde sentezler.",
   "builtinProfile.forensicateScanner.name": "Forensicate Tarayıcı",
-  "builtinProfile.forensicateScanner.descriptionV2": "Soruşturma içeriğinin yaygın istem enjeksiyonu kalıplarına karşı temel yerel kontrolü. Bu cihazdan hiçbir şey çıkmaz.",
+  "builtinProfile.forensicateScanner.descriptionV2": "Soruşturma içeriğinin yaygın istem enjeksiyonu kalıplarına karşı temel kontrolü. Kontrol bu cihazda çalışır; her ajan gibi, okuduklarını yapay zeka modelinize gönderir.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "Baş Bilgi Güvenliği Yöneticisi — stratejik risk, kaynak dağıtımı, ajan denetimi, yönetim kurulu raporlaması.",
   "builtinProfile.chiefOfStaff.name": "Kurmay Başkanı",

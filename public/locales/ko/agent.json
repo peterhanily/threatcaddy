@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "보고자",
   "builtinProfile.reporter.description": "조사 결과를 구조화된 보고서와 요약으로 종합합니다.",
   "builtinProfile.forensicateScanner.name": "Forensicate 스캐너",
-  "builtinProfile.forensicateScanner.descriptionV2": "조사 콘텐츠에서 일반적인 프롬프트 인젝션 패턴을 로컬에서 기본 검사합니다. 이 기기 밖으로 아무것도 전송되지 않습니다.",
+  "builtinProfile.forensicateScanner.descriptionV2": "조사 콘텐츠에서 일반적인 프롬프트 인젝션 패턴을 기본 검사합니다. 검사는 이 기기에서 실행되지만, 다른 에이전트와 마찬가지로 읽은 내용을 AI 모델로 보냅니다.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "최고정보보안책임자——전략적 위험, 자원 배분, 에이전트 감독, 이사회 수준 보고.",
   "builtinProfile.chiefOfStaff.name": "비서실장",

@@ -126,7 +126,7 @@
   "builtinProfile.reporter.name": "Reporter",
   "builtinProfile.reporter.description": "Synthesizes findings into structured reports and summaries.",
   "builtinProfile.forensicateScanner.name": "Forensicate Scanner",
-  "builtinProfile.forensicateScanner.descriptionV2": "Basic local check of investigation content for common prompt-injection patterns. Nothing leaves this device.",
+  "builtinProfile.forensicateScanner.descriptionV2": "Basic check of investigation content for common prompt-injection patterns. The check runs on this device; like every agent, it sends what it reads to your AI model.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "Chief Information Security Officer — strategic risk, resource allocation, agent oversight, board-level reporting.",
   "builtinProfile.chiefOfStaff.name": "Chief of Staff",

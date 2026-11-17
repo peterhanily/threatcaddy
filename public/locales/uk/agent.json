@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "Укладач звітів",
   "builtinProfile.reporter.description": "Синтезує результати у структуровані звіти та зведення.",
   "builtinProfile.forensicateScanner.name": "Forensicate Scanner",
-  "builtinProfile.forensicateScanner.descriptionV2": "Базова локальна перевірка вмісту розслідування на поширені паттерни ін'єкцій у промпти. Ніщо не залишає цей пристрій.",
+  "builtinProfile.forensicateScanner.descriptionV2": "Базова перевірка вмісту розслідування на поширені паттерни ін'єкцій у промпти. Перевірка виконується на цьому пристрої; як і будь-який агент, він надсилає прочитане до вашої моделі ШІ.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "Директор з інформаційної безпеки — стратегічні ризики, розподіл ресурсів, нагляд за агентами, звітність для керівництва.",
   "builtinProfile.chiefOfStaff.name": "Начальник штабу",

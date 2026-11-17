@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "レポーター",
   "builtinProfile.reporter.description": "調査結果を構造化レポートとサマリーにまとめます。",
   "builtinProfile.forensicateScanner.name": "Forensicateスキャナー",
-  "builtinProfile.forensicateScanner.descriptionV2": "調査コンテンツに一般的なプロンプトインジェクションのパターンがないかをローカルで簡易チェックします。このデバイスから何も送信されません。",
+  "builtinProfile.forensicateScanner.descriptionV2": "調査コンテンツに一般的なプロンプトインジェクションのパターンがないかを簡易チェックします。チェック自体はこのデバイスで実行されますが、他のエージェントと同様に、読み取った内容を AI モデルに送信します。",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "最高情報セキュリティ責任者——戦略的リスク、リソース配分、エージェント監督、取締役会レベルの報告。",
   "builtinProfile.chiefOfStaff.name": "チーフオブスタッフ",

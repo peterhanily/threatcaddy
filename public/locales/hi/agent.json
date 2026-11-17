@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "रिपोर्टर",
   "builtinProfile.reporter.description": "निष्कर्षों को संरचित रिपोर्ट और सारांश में संकलित करता है।",
   "builtinProfile.forensicateScanner.name": "Forensicate स्कैनर",
-  "builtinProfile.forensicateScanner.descriptionV2": "सामान्य प्रॉम्प्ट इंजेक्शन पैटर्न के लिए जाँच सामग्री की बुनियादी स्थानीय जाँच। इस डिवाइस से कुछ भी बाहर नहीं जाता।",
+  "builtinProfile.forensicateScanner.descriptionV2": "सामान्य प्रॉम्प्ट इंजेक्शन पैटर्न के लिए जाँच सामग्री की बुनियादी जाँच। यह जाँच इसी डिवाइस पर चलती है; हर एजेंट की तरह, यह जो पढ़ता है उसे आपके AI मॉडल को भेजता है।",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "मुख्य सूचना सुरक्षा अधिकारी — रणनीतिक जोखिम, संसाधन आवंटन, एजेंट पर्यवेक्षण, बोर्ड-स्तरीय रिपोर्टिंग।",
   "builtinProfile.chiefOfStaff.name": "चीफ ऑफ स्टाफ",

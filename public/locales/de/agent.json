@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "Berichterstatter",
   "builtinProfile.reporter.description": "Fasst Erkenntnisse in strukturierten Berichten und Zusammenfassungen zusammen.",
   "builtinProfile.forensicateScanner.name": "Forensicate Scanner",
-  "builtinProfile.forensicateScanner.descriptionV2": "Einfache lokale Prüfung von Untersuchungsinhalten auf gängige Prompt-Injection-Muster. Nichts verlässt dieses Gerät.",
+  "builtinProfile.forensicateScanner.descriptionV2": "Einfache Prüfung von Untersuchungsinhalten auf gängige Prompt-Injection-Muster. Die Prüfung läuft auf diesem Gerät; wie jeder Agent sendet der Scanner, was er liest, an Ihr KI-Modell.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "Chief Information Security Officer — strategisches Risiko, Ressourcenzuweisung, Agenten-Oversight, Vorstandsberichte.",
   "builtinProfile.chiefOfStaff.name": "Stabschef",

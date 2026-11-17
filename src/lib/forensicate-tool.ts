@@ -1,5 +1,6 @@
 // Forensicate Scanner for ThreatCaddy: a basic local check of text for common
-// prompt-injection patterns. Nothing leaves this device.
+// prompt-injection patterns. The check sends nothing; the agent that runs it
+// sends what it reads to the AI model, like every agent.
 
 import type { AgentProfile } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
@@ -65,7 +66,7 @@ function performBasicCheck(text: string): BasicCheckResult {
 export const FORENSICATE_AGENT_PROFILE: AgentProfile = {
   id: 'ap-forensicate-scanner',
   get name() { return i18n.t('builtinProfile.forensicateScanner.name', { ns: 'agent' }); },
-  // descriptionV2 says the scan is local (every locale has it; the old key is gone).
+  // descriptionV2 says the scan is local and the agent still sends what it reads to the model.
   get description() { return i18n.t('builtinProfile.forensicateScanner.descriptionV2', { ns: 'agent' }); },
   icon: '🛡️',
   role: 'specialist',

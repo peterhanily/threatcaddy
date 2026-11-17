@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "Rapporteur",
   "builtinProfile.reporter.description": "Synthetiseert bevindingen in gestructureerde rapporten en samenvattingen.",
   "builtinProfile.forensicateScanner.name": "Forensicate Scanner",
-  "builtinProfile.forensicateScanner.descriptionV2": "Eenvoudige lokale controle van onderzoeksinhoud op veelvoorkomende prompt-injectiepatronen. Er verlaat niets dit apparaat.",
+  "builtinProfile.forensicateScanner.descriptionV2": "Eenvoudige controle van onderzoeksinhoud op veelvoorkomende prompt-injectiepatronen. De controle draait op dit apparaat; zoals elke agent stuurt deze agent wat hij leest naar uw AI-model.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "Chief Information Security Officer — strategisch risico, resourceverdeling, agenttoezicht, bestuursrapportage.",
   "builtinProfile.chiefOfStaff.name": "Chef de cabinet",

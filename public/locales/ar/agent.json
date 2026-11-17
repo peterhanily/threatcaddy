@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "المراسل",
   "builtinProfile.reporter.description": "يُلخّص النتائج في تقارير وملخصات منظمة.",
   "builtinProfile.forensicateScanner.name": "Forensicate Scanner",
-  "builtinProfile.forensicateScanner.descriptionV2": "فحص محلي أساسي لمحتوى التحقيق بحثًا عن أنماط حقن التعليمات الشائعة. لا يغادر أي شيء هذا الجهاز.",
+  "builtinProfile.forensicateScanner.descriptionV2": "فحص أساسي لمحتوى التحقيق بحثًا عن أنماط حقن التعليمات الشائعة. يجري الفحص على هذا الجهاز؛ ومثل كل وكيل، يرسل ما يقرؤه إلى نموذج الذكاء الاصطناعي الخاص بك.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "كبير مسؤولي أمن المعلومات — المخاطر الاستراتيجية وتخصيص الموارد والإشراف على الوكلاء وتقارير مجلس الإدارة.",
   "builtinProfile.chiefOfStaff.name": "رئيس الأركان",

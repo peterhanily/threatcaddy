@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "כותב דוחות",
   "builtinProfile.reporter.description": "מסכם ממצאים לדוחות וסיכומים מובנים.",
   "builtinProfile.forensicateScanner.name": "Forensicate Scanner",
-  "builtinProfile.forensicateScanner.descriptionV2": "בדיקה מקומית בסיסית של תוכן החקירה לאיתור דפוסים נפוצים של הזרקת הוראות. שום דבר לא יוצא מהמכשיר הזה.",
+  "builtinProfile.forensicateScanner.descriptionV2": "בדיקה בסיסית של תוכן החקירה לאיתור דפוסים נפוצים של הזרקת הוראות. הבדיקה רצה במכשיר הזה; כמו כל סוכן, הוא שולח את מה שהוא קורא למודל הבינה המלאכותית שלך.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "מנהל אבטחת מידע ראשי — סיכון אסטרטגי, הקצאת משאבים, פיקוח סוכנים, דיווח לדירקטוריון.",
   "builtinProfile.chiefOfStaff.name": "ראש מטה",

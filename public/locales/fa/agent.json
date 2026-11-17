@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "گزارشگر",
   "builtinProfile.reporter.description": "یافته‌ها را در گزارش‌ها و خلاصه‌های ساختاریافته ترکیب می‌کند.",
   "builtinProfile.forensicateScanner.name": "اسکنر Forensicate",
-  "builtinProfile.forensicateScanner.descriptionV2": "بررسی محلی پایه محتوای تحقیق برای الگوهای رایج تزریق پرامپت. هیچ چیزی از این دستگاه خارج نمی‌شود.",
+  "builtinProfile.forensicateScanner.descriptionV2": "بررسی پایه محتوای تحقیق برای الگوهای رایج تزریق پرامپت. این بررسی روی همین دستگاه اجرا می‌شود؛ اما مانند هر عامل، آنچه را می‌خواند به مدل هوش مصنوعی شما می‌فرستد.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "مدیر ارشد امنیت اطلاعات — ریسک استراتژیک، تخصیص منابع، نظارت بر عاملان، گزارش‌دهی سطح هیئت مدیره.",
   "builtinProfile.chiefOfStaff.name": "رئیس ستاد",

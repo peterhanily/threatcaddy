@@ -110,7 +110,7 @@
   "builtinProfile.reporter.name": "Twórca raportów",
   "builtinProfile.reporter.description": "Syntetyzuje wyniki w ustrukturyzowane raporty i podsumowania.",
   "builtinProfile.forensicateScanner.name": "Forensicate Scanner",
-  "builtinProfile.forensicateScanner.descriptionV2": "Podstawowe lokalne sprawdzanie zawartości dochodzenia pod kątem typowych wzorców wstrzykiwania promptów. Nic nie opuszcza tego urządzenia.",
+  "builtinProfile.forensicateScanner.descriptionV2": "Podstawowe sprawdzanie zawartości dochodzenia pod kątem typowych wzorców wstrzykiwania promptów. Sprawdzanie działa na tym urządzeniu; jak każdy agent, wysyła on to, co czyta, do Twojego modelu AI.",
   "builtinProfile.ciso.name": "CISO",
   "builtinProfile.ciso.description": "Dyrektor ds. bezpieczeństwa informacji — strategiczne ryzyko, alokacja zasobów, nadzór nad agentami, raportowanie zarządcze.",
   "builtinProfile.chiefOfStaff.name": "Szef sztabu",
