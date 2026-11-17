@@ -77,7 +77,8 @@
     "switchedToPlanV2": "Beralih ke mode rencana. CaddyAI hanya membaca dan menjelaskan hal lain sebagai rencana.",
     "askLabel": "Tanya",
     "yoloOnTitleV2": "YOLO aktif: perubahan dan pencarian vendor bawaan berjalan tanpa bertanya. Halaman web, skill, integrasi lain, serta perubahan pada investigasi lain atau agen tetap memerlukan persetujuan Anda, begitu juga membaca investigasi lain dari investigasi yang dapat disinkronkan.",
-    "yoloOffTitleV2": "CaddyAI bertanya sebelum setiap perubahan, halaman web, pencarian vendor, skill, atau integrasi lain, dan sebelum membaca investigasi lain dari investigasi yang dapat disinkronkan. Klik untuk mengaktifkan YOLO: perubahan dan pencarian vendor bawaan lalu berjalan tanpa bertanya, kecuali perubahan pada investigasi lain atau agen."
+    "yoloOffTitleV2": "CaddyAI bertanya sebelum setiap perubahan, halaman web, pencarian vendor, skill, atau integrasi lain, dan sebelum membaca investigasi lain dari investigasi yang dapat disinkronkan. Klik untuk mengaktifkan YOLO: perubahan dan pencarian vendor bawaan lalu berjalan tanpa bertanya, kecuali perubahan pada investigasi lain atau agen.",
+    "yoloInPlanTitle": "Dalam mode rencana, CaddyAI hanya membaca; sakelar Tanya/YOLO hanya berlaku dalam mode aksi. {{setting}}"
   },
   "approval": {
     "position": "{{index}} dari {{total}}",

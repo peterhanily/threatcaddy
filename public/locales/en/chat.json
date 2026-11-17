@@ -97,7 +97,8 @@
     "switchedToPlanV2": "Switched to Plan mode. CaddyAI only reads and describes anything else as a plan.",
     "askLabel": "Ask",
     "yoloOnTitleV2": "YOLO is on: changes and built-in vendor lookups run without asking. Web pages, skills, other integrations, and changes to other investigations or to agents still need your approval, as does reading other investigations from an investigation that can sync.",
-    "yoloOffTitleV2": "CaddyAI asks before each change, web page, vendor lookup, skill or other integration, and before reading other investigations from an investigation that can sync. Click to turn on YOLO: changes and built-in vendor lookups then run without asking, except changes to other investigations or to agents."
+    "yoloOffTitleV2": "CaddyAI asks before each change, web page, vendor lookup, skill or other integration, and before reading other investigations from an investigation that can sync. Click to turn on YOLO: changes and built-in vendor lookups then run without asking, except changes to other investigations or to agents.",
+    "yoloInPlanTitle": "In Plan mode CaddyAI only reads; the Ask/YOLO switch applies only in Act mode. {{setting}}"
   },
   "approval": {
     "position": "{{index}} of {{total}}",

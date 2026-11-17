@@ -83,6 +83,7 @@
   "mode.askLabel": "확인",
   "mode.yoloOnTitleV2": "YOLO 켜짐: 변경과 기본 제공 공급업체 조회는 확인 없이 실행됩니다. 웹 페이지, 스킬, 기타 연동, 다른 조사나 에이전트에 대한 변경은 여전히 승인이 필요하며, 동기화될 수 있는 조사에서 다른 조사를 읽을 때도 마찬가지입니다.",
   "mode.yoloOffTitleV2": "CaddyAI는 변경, 웹 페이지, 공급업체 조회, 스킬, 기타 연동마다 확인을 요청하고, 동기화될 수 있는 조사에서 다른 조사를 읽기 전에도 확인을 요청합니다. 클릭하여 YOLO 켜기: 그러면 변경과 기본 제공 공급업체 조회가 확인 없이 실행되며, 다른 조사나 에이전트에 대한 변경은 예외입니다.",
+  "mode.yoloInPlanTitle": "계획 모드에서 CaddyAI는 읽기만 하므로 확인/YOLO 스위치는 실행 모드에서만 적용됩니다. {{setting}}",
   "view.tokSuffix": "토큰",
   "view.tokenTotal": "총 토큰: {{total}}",
   "view.tokenTotalBudget": "총 토큰: {{total}} / {{budget}} 예산",

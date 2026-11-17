@@ -1143,7 +1143,9 @@ export function ChatView({
                       ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
                       : 'bg-surface-raised border-border-subtle text-text-muted hover:text-text-secondary'
                   )}
-                  title={yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2')}
+                  title={threadMode === 'plan'
+                    ? t('mode.yoloInPlanTitle', { setting: yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2') })
+                    : yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2')}
                 >
                   <Shield size={10} />
                   {yoloMode ? t('view.yoloLabel') : t('mode.askLabel')}

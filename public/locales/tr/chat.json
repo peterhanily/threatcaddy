@@ -77,7 +77,8 @@
     "switchedToPlanV2": "Plan moduna geçildi. CaddyAI yalnızca okur ve diğer her şeyi bir plan olarak açıklar.",
     "askLabel": "Sor",
     "yoloOnTitleV2": "YOLO açık: değişiklikler ve yerleşik sağlayıcı sorguları sormadan çalışır. Web sayfaları, beceriler, diğer entegrasyonlar ve diğer soruşturmalarda ya da ajanlarda yapılan değişiklikler yine onayınızı gerektirir; senkronize edilebilen bir soruşturmadan diğer soruşturmaları okumak da öyle.",
-    "yoloOffTitleV2": "CaddyAI her değişiklikten, web sayfasından, sağlayıcı sorgusundan, beceriden veya diğer entegrasyondan önce sorar; senkronize edilebilen bir soruşturmadan diğer soruşturmaları okumadan önce de sorar. YOLO'yu açmak için tıklayın: değişiklikler ve yerleşik sağlayıcı sorguları artık sormadan çalışır; diğer soruşturmalarda ya da ajanlarda yapılan değişiklikler hariç."
+    "yoloOffTitleV2": "CaddyAI her değişiklikten, web sayfasından, sağlayıcı sorgusundan, beceriden veya diğer entegrasyondan önce sorar; senkronize edilebilen bir soruşturmadan diğer soruşturmaları okumadan önce de sorar. YOLO'yu açmak için tıklayın: değişiklikler ve yerleşik sağlayıcı sorguları artık sormadan çalışır; diğer soruşturmalarda ya da ajanlarda yapılan değişiklikler hariç.",
+    "yoloInPlanTitle": "Plan modunda CaddyAI yalnızca okur; Sor/YOLO anahtarı yalnızca Eylem modunda geçerlidir. {{setting}}"
   },
   "approval": {
     "position": "{{index}} / {{total}}",

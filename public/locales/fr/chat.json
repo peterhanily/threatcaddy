@@ -78,7 +78,8 @@
     "switchedToPlanV2": "Basculé en mode Planification. CaddyAI se contente de lire et décrit tout le reste sous forme de plan.",
     "askLabel": "Demander",
     "yoloOnTitleV2": "YOLO activé : les modifications et les recherches intégrées auprès des fournisseurs s'exécutent sans demander. Les pages web, les compétences, les autres intégrations et les modifications d'autres enquêtes ou des agents nécessitent toujours votre approbation, tout comme la lecture d'autres enquêtes depuis une enquête synchronisable.",
-    "yoloOffTitleV2": "CaddyAI demande avant chaque modification, page web, recherche auprès des fournisseurs, compétence ou autre intégration, et avant de lire d'autres enquêtes depuis une enquête synchronisable. Cliquez pour activer YOLO : les modifications et les recherches intégrées auprès des fournisseurs s'exécutent alors sans demander, sauf les modifications d'autres enquêtes ou des agents."
+    "yoloOffTitleV2": "CaddyAI demande avant chaque modification, page web, recherche auprès des fournisseurs, compétence ou autre intégration, et avant de lire d'autres enquêtes depuis une enquête synchronisable. Cliquez pour activer YOLO : les modifications et les recherches intégrées auprès des fournisseurs s'exécutent alors sans demander, sauf les modifications d'autres enquêtes ou des agents.",
+    "yoloInPlanTitle": "En mode Planification, CaddyAI se contente de lire ; le sélecteur Demander/YOLO ne s'applique qu'en mode Action. {{setting}}"
   },
   "approval": {
     "position": "{{index}} sur {{total}}",

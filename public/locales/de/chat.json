@@ -77,7 +77,8 @@
     "switchedToPlanV2": "In den Planmodus gewechselt. CaddyAI liest nur und beschreibt alles andere als Plan.",
     "askLabel": "Fragen",
     "yoloOnTitleV2": "YOLO ist an: Änderungen und integrierte Anbieterabfragen laufen ohne Nachfrage. Webseiten, Skills, andere Integrationen sowie Änderungen an anderen Untersuchungen oder an Agenten brauchen weiterhin Ihre Genehmigung, ebenso das Lesen anderer Untersuchungen aus einer synchronisierbaren Untersuchung.",
-    "yoloOffTitleV2": "CaddyAI fragt vor jeder Änderung, Webseite und Anbieterabfrage, vor jedem Skill und jeder anderen Integration nach sowie vor dem Lesen anderer Untersuchungen aus einer synchronisierbaren Untersuchung. Klicken, um YOLO einzuschalten: Änderungen und integrierte Anbieterabfragen laufen dann ohne Nachfrage, außer Änderungen an anderen Untersuchungen oder an Agenten."
+    "yoloOffTitleV2": "CaddyAI fragt vor jeder Änderung, Webseite und Anbieterabfrage, vor jedem Skill und jeder anderen Integration nach sowie vor dem Lesen anderer Untersuchungen aus einer synchronisierbaren Untersuchung. Klicken, um YOLO einzuschalten: Änderungen und integrierte Anbieterabfragen laufen dann ohne Nachfrage, außer Änderungen an anderen Untersuchungen oder an Agenten.",
+    "yoloInPlanTitle": "Im Planmodus liest CaddyAI nur; der Schalter Fragen/YOLO gilt nur im Ausführungsmodus. {{setting}}"
   },
   "approval": {
     "position": "{{index}} von {{total}}",

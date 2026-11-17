@@ -78,7 +78,8 @@
     "switchedToPlanV2": "Cambiado a modo Planificación. CaddyAI solo lee y describe todo lo demás como un plan.",
     "askLabel": "Preguntar",
     "yoloOnTitleV2": "YOLO activado: los cambios y las consultas integradas a proveedores se ejecutan sin preguntar. Las páginas web, las habilidades, otras integraciones y los cambios en otras investigaciones o en los agentes siguen necesitando su aprobación, igual que leer otras investigaciones desde una investigación que puede sincronizarse.",
-    "yoloOffTitleV2": "CaddyAI pregunta antes de cada cambio, página web, consulta a proveedores, habilidad u otra integración, y antes de leer otras investigaciones desde una investigación que puede sincronizarse. Haga clic para activar YOLO: los cambios y las consultas integradas a proveedores pasarán a ejecutarse sin preguntar, salvo los cambios en otras investigaciones o en los agentes."
+    "yoloOffTitleV2": "CaddyAI pregunta antes de cada cambio, página web, consulta a proveedores, habilidad u otra integración, y antes de leer otras investigaciones desde una investigación que puede sincronizarse. Haga clic para activar YOLO: los cambios y las consultas integradas a proveedores pasarán a ejecutarse sin preguntar, salvo los cambios en otras investigaciones o en los agentes.",
+    "yoloInPlanTitle": "En el modo Planificación, CaddyAI solo lee; el interruptor Preguntar/YOLO solo se aplica en el modo Acción. {{setting}}"
   },
   "approval": {
     "position": "{{index}} de {{total}}",

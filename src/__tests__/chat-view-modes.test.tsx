@@ -84,6 +84,8 @@ const ASK_TITLE = 'CaddyAI asks before each change, web page, vendor lookup, ski
   + 'other investigations or to agents.';
 const YOLO_TITLE = 'YOLO is on: changes and built-in vendor lookups run without asking. Web pages, skills, other integrations, and changes to other '
   + 'investigations or to agents still need your approval, as does reading other investigations from an investigation that can sync.';
+// Plan refuses every change and every call that leaves ThreatCaddy, whatever the switch says (decision table row 2).
+const IN_PLAN = 'In Plan mode CaddyAI only reads; the Ask/YOLO switch applies only in Act mode. ';
 
 async function inGerman(run: () => void) {
   for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
@@ -128,6 +130,14 @@ describe('mode copy', () => {
     expect(screen.getByRole('button', { name: 'YOLO' })).toHaveAttribute('title', YOLO_TITLE);
   });
 
+  it('says in Plan mode that the Ask/YOLO switch applies only in Act mode', () => {
+    renderChat('plan');
+    const toggle = screen.getByRole('button', { name: 'Ask' });
+    expect(toggle).toHaveAttribute('title', IN_PLAN + ASK_TITLE);
+    fireEvent.click(toggle);
+    expect(screen.getByRole('button', { name: 'YOLO' })).toHaveAttribute('title', IN_PLAN + YOLO_TITLE);
+  });
+
   it('shows the mode descriptions in the analyst’s language', () => inGerman(() => {
     renderChat('act');
     expect(screen.getByRole('button', { name: deChat.view.actMode }).title).toBe(deChat.view.actModeTitleV2);
@@ -138,6 +148,8 @@ describe('mode copy', () => {
     cleanup();
     renderChat('plan');
     expect(screen.getByRole('button', { name: deChat.view.planMode }).title).toBe(deChat.mode.planTitleV2);
+    expect(screen.getByRole('button', { name: deChat.mode.askLabel }).title)
+      .toBe(deChat.mode.yoloInPlanTitle.replace('{{setting}}', deChat.mode.yoloOffTitleV2));
     expect([deChat.view.actModeTitleV2, deChat.mode.yoloOffTitleV2, deChat.mode.yoloOnTitleV2, deChat.mode.planTitleV2])
       .not.toEqual(expect.arrayContaining([ACT_TITLE, ASK_TITLE, YOLO_TITLE, PLAN_TITLE]));
   }));

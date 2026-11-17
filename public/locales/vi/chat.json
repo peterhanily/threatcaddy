@@ -77,7 +77,8 @@
     "switchedToPlanV2": "Đã chuyển sang chế độ lên kế hoạch. CaddyAI chỉ đọc và mô tả mọi thứ khác dưới dạng kế hoạch.",
     "askLabel": "Hỏi",
     "yoloOnTitleV2": "YOLO đang bật: các thay đổi và tra cứu nhà cung cấp tích hợp sẵn chạy mà không hỏi. Trang web, kỹ năng, các tích hợp khác và thay đổi đối với cuộc điều tra khác hoặc tác tử vẫn cần bạn phê duyệt, cũng như việc đọc các cuộc điều tra khác từ một cuộc điều tra có thể đồng bộ.",
-    "yoloOffTitleV2": "CaddyAI hỏi trước mỗi thay đổi, trang web, tra cứu nhà cung cấp, kỹ năng hoặc tích hợp khác, và trước khi đọc các cuộc điều tra khác từ một cuộc điều tra có thể đồng bộ. Nhấp để bật YOLO: khi đó các thay đổi và tra cứu nhà cung cấp tích hợp sẵn chạy mà không hỏi, trừ thay đổi đối với cuộc điều tra khác hoặc tác tử."
+    "yoloOffTitleV2": "CaddyAI hỏi trước mỗi thay đổi, trang web, tra cứu nhà cung cấp, kỹ năng hoặc tích hợp khác, và trước khi đọc các cuộc điều tra khác từ một cuộc điều tra có thể đồng bộ. Nhấp để bật YOLO: khi đó các thay đổi và tra cứu nhà cung cấp tích hợp sẵn chạy mà không hỏi, trừ thay đổi đối với cuộc điều tra khác hoặc tác tử.",
+    "yoloInPlanTitle": "Ở chế độ lên kế hoạch, CaddyAI chỉ đọc; công tắc Hỏi/YOLO chỉ áp dụng ở chế độ hành động. {{setting}}"
   },
   "approval": {
     "position": "{{index}} trên {{total}}",
