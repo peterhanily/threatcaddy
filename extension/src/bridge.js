@@ -47,8 +47,10 @@ async function refreshAppApproval() {
 
 // Guard against duplicate injection (static content_scripts + dynamic executeScript)
 if (document.documentElement.dataset.tcBridgeLoaded) {
-  // Already loaded — just re-signal readiness and bail out
-  if (chrome && chrome.runtime && chrome.runtime.id) {
+  // Already loaded — just re-signal readiness and bail out. Only this isolated world's own earlier
+  // run may republish capabilities (it set `ports`): when another installed ThreatCaddy extension
+  // loaded the bridge, its listeners serve the page and its capabilities must stand.
+  if (ports instanceof Map && chrome && chrome.runtime && chrome.runtime.id) {
     refreshAppApproval();
   }
 } else {
