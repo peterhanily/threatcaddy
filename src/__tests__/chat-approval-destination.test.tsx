@@ -107,7 +107,11 @@ describe('C2-2 a write card names the investigation that changes', () => {
     renderChat();
     const handler = await sendAndGetHandler();
     const pending = start(handler, call('create_note', { title: 'Unfiled note', content: 'x' }));
-    expect(await within(await card()).findByText('Outside any investigation: stays on this device')).toBeInTheDocument();
+    const shown = await card();
+    // The title does not claim an investigation the change is outside of.
+    expect(within(shown).getByText('Approve a change outside any investigation?')).toBeInTheDocument();
+    expect(within(shown).queryByText('Approve a change to this investigation?')).toBeNull();
+    expect(await within(shown).findByText('Outside any investigation: stays on this device')).toBeInTheDocument();
     await approve();
     expect((await pending).isError).toBe(false);
     expect(await notesTitled('Unfiled note')).toEqual([expect.objectContaining({ folderId: undefined })]);

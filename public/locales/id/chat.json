@@ -82,6 +82,7 @@
     "position": "{{index}} dari {{total}}",
     "title": {
       "write": "Setujui perubahan pada investigasi ini?",
+      "writeUnfiled": "Setujui perubahan di luar investigasi mana pun?",
       "egress": "Kirim data ke luar ThreatCaddy?",
       "crossRead": "Baca investigasi lain?",
       "crossWrite": "Ubah investigasi lain?",

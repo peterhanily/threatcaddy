@@ -83,6 +83,7 @@
     "position": "{{index}} sur {{total}}",
     "title": {
       "write": "Approuver une modification de cette enquête ?",
+      "writeUnfiled": "Approuver une modification hors de toute enquête ?",
       "egress": "Envoyer des données hors de ThreatCaddy ?",
       "crossRead": "Lire d'autres enquêtes ?",
       "crossWrite": "Modifier une autre enquête ?",

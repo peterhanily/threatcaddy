@@ -84,6 +84,7 @@
     "position": "{{index}} z {{total}}",
     "title": {
       "write": "Zatwierdzić zmianę w tym śledztwie?",
+      "writeUnfiled": "Zatwierdzić zmianę poza jakimkolwiek śledztwem?",
       "egress": "Wysłać dane poza ThreatCaddy?",
       "crossRead": "Odczytać inne śledztwa?",
       "crossWrite": "Zmienić inne śledztwo?",

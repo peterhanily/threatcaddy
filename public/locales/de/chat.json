@@ -82,6 +82,7 @@
     "position": "{{index}} von {{total}}",
     "title": {
       "write": "Änderung an dieser Untersuchung genehmigen?",
+      "writeUnfiled": "Änderung außerhalb jeder Untersuchung genehmigen?",
       "egress": "Daten aus ThreatCaddy heraus senden?",
       "crossRead": "Andere Untersuchungen lesen?",
       "crossWrite": "Eine andere Untersuchung ändern?",

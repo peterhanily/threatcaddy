@@ -112,6 +112,7 @@
   "view.reject": "거부",
   "approval.position": "{{total}}개 중 {{index}}",
   "approval.title.write": "이 조사의 변경을 승인하시겠습니까?",
+  "approval.title.writeUnfiled": "어떤 조사에도 속하지 않는 변경을 승인하시겠습니까?",
   "approval.title.egress": "ThreatCaddy 외부로 데이터를 보내시겠습니까?",
   "approval.title.crossRead": "다른 조사를 읽으시겠습니까?",
   "approval.title.crossWrite": "다른 조사를 변경하시겠습니까?",

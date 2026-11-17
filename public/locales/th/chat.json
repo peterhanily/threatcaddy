@@ -112,6 +112,7 @@
   "view.reject": "ปฏิเสธ",
   "approval.position": "{{index}} จาก {{total}}",
   "approval.title.write": "อนุมัติการเปลี่ยนแปลงในการสืบสวนนี้?",
+  "approval.title.writeUnfiled": "อนุมัติการเปลี่ยนแปลงที่อยู่นอกการสืบสวนใด ๆ?",
   "approval.title.egress": "ส่งข้อมูลออกนอก ThreatCaddy?",
   "approval.title.crossRead": "อ่านการสืบสวนอื่น?",
   "approval.title.crossWrite": "เปลี่ยนแปลงการสืบสวนอื่น?",

@@ -22,7 +22,9 @@ const AGENT_TOOLS: ReadonlySet<string> = new Set(['deploy_agent', 'stop_agent', 
 const changesAgentsOf = ({ toolUse, reach }: ApprovalItem) => !!reach.agentControl && AGENT_TOOLS.has(toolUse.name);
 function titleKeyOf(item: ApprovalItem): string {
   const { reason, reach } = item;
-  return TITLE_KEYS[reason === 'agent-control' && !changesAgentsOf(item) ? (reach.crossWrite ? 'cross-write' : 'write') : reason];
+  const key = TITLE_KEYS[reason === 'agent-control' && !changesAgentsOf(item) ? (reach.crossWrite ? 'cross-write' : 'write') : reason];
+  // An unfiled conversation's own change lands outside any investigation.
+  return key === TITLE_KEYS.write && !reach.homeFolderId ? 'approval.title.writeUnfiled' : key;
 }
 
 interface Resolved { homeName?: string; targets: Array<{ name: string; shareable: boolean }>; iocValue?: string }
