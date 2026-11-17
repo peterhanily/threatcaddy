@@ -286,7 +286,7 @@ describe('B-CHAIN-8 calls parsed out of model text', () => {
     ] });
     await runMultiAgentCycle(await folder('S'), settings, true);
     const notes = async (title: string) => (await db.notes.toArray()).filter(note => note.title === title);
-    const harvested = (await actionsFor('create_note')).find(action => action.toolInput.title === 'Harvested')!;
+    const [harvested] = (await actionsFor('create_note')).filter(action => action.toolInput.title === 'Harvested');
 
     expect(await previewBulkApprove('S')).toEqual({ routine: 1, review: 1 });
     expect(await bulkApproveActions('S')).toEqual({ executed: 1, failed: 0, skipped: 1 });
