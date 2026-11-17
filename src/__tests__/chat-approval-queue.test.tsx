@@ -129,17 +129,25 @@ describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
     for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
     i18n.addResourceBundle('de', 'chat', deChat, true, true);
     await act(async () => { await i18n.changeLanguage('de'); });
+    const addNote = vi.spyOn(db.notes, 'add');
     try {
       const { props } = renderChat([makeThread('thread', 'S')]);
       await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/advisory'); });
       await act(async () => { await state.input.onSend('/fetch https://intranet.local/x'); });
+      // The page arrives but its note cannot be saved.
+      addNote.mockRejectedValueOnce(new Error('Synthetic storage failure'));
+      await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/second'); });
       const replies = props.onAddMessage.mock.calls.map(([, message]) => message).filter(message => message.role === 'assistant');
       expect(replies.map(message => message.content)).toEqual([
         'Notiz **Fixture page** aus https://www.cisa.gov/advisory erstellt',
         `URL konnte nicht abgerufen werden: ${i18n.t('fetch.privateTarget', { ns: 'integrations' })}`,
+        'URL konnte nicht abgerufen werden: Synthetic storage failure',
       ]);
-      expect(egress.fetchUrlPosts()).toEqual(['https://www.cisa.gov/advisory']);
-    } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
+      expect(egress.fetchUrlPosts()).toEqual(['https://www.cisa.gov/advisory', 'https://www.cisa.gov/second']);
+    } finally {
+      addNote.mockRestore();
+      await act(async () => { await i18n.changeLanguage('en'); });
+    }
   });
 
   it('Export as note files the note in the thread\'s investigation from the global view', async () => {
@@ -148,6 +156,15 @@ describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
     const exported = db.notes.where('title').equals('Chat Export: Chat thread');
     await waitFor(async () => expect(await exported.count()).toBe(1));
     expect(await exported.first()).toMatchObject({ folderId: 'S', tags: ['chat-export'] });
+  });
+
+  it('Export as note files an unfiled thread\'s note in the selected investigation', async () => {
+    state.folder = { id: 'P', name: 'Private case', order: 1, createdAt: 1 };
+    renderChat([makeThread('thread')]);
+    fireEvent.click(screen.getByTitle('Export as note'));
+    const exported = db.notes.where('title').equals('Chat Export: Chat thread');
+    await waitFor(async () => expect(await exported.count()).toBe(1));
+    expect(await exported.first()).toMatchObject({ folderId: 'P', tags: ['chat-export'] });
   });
 
   it('an unfiled thread in the global view reads freely and names the investigation a change would reach', async () => {
