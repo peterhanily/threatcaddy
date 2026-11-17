@@ -2,8 +2,9 @@
  * opaque browser CSP failure. This does not loosen browser-enforced policy. */
 export function assertConfiguredConnection(url: string): void {
   if (typeof document === 'undefined') return;
-  const csp = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-  if (!csp) return; // Standalone and test environments have no build CSP.
+  const csp = document.querySelector<HTMLMetaElement>('meta[http-equiv="Content-Security-Policy"]');
+  // Only the hosted policy limits connections; the standalone file's policy limits images only.
+  if (!csp || !/(?:^|;)\s*(?:connect|default)-src\b/i.test(csp.content)) return;
   const endpoint = new URL(url, window.location.href);
   if (endpoint.origin === window.location.origin || ['localhost', '127.0.0.1'].includes(endpoint.hostname)) return;
   const configured = document.querySelector<HTMLMetaElement>('meta[name="threatcaddy-connect-origins"]')?.content.split(/\s+/) ?? [];
