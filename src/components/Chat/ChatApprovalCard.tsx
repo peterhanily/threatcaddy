@@ -3,6 +3,7 @@ import { Check, Shield, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { db } from '../../db';
 import { isShareableFolder } from '../../lib/ai-scope';
+import { isSyncWorkspaceBound } from '../../lib/sync-workspace';
 import { AGENT_CONTROL_TOOLS } from '../../lib/caddy-agent-policy';
 import type { ApprovalItem } from '../../lib/chat-tool-executor';
 import type { AskReason } from '../../lib/tool-reach';
@@ -27,7 +28,8 @@ function titleKeyOf(item: ApprovalItem): string {
   return key === TITLE_KEYS.write && !reach.homeFolderId ? 'approval.title.writeUnfiled' : key;
 }
 
-interface Resolved { homeName?: string; targets: Array<{ name: string; shareable: boolean }>; iocValue?: string }
+/** bound: a team server is connected, so an investigation that is not local-only syncs now, not later. */
+interface Resolved { homeName?: string; targets: Array<{ name: string; shareable: boolean }>; iocValue?: string; bound?: boolean }
 /** How long a card that has just appeared keeps Approve disabled. The second click of a double
  * click on the previous card lands on this one's Approve before the analyst has read it. */
 const APPROVE_DELAY_MS = 500;
@@ -66,12 +68,14 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
         name: (await db.folders.get(id))?.name ?? id, shareable: await isShareableFolder(id) })));
       const iocId = toolUse.name === 'enrich_ioc' ? String(toolUse.input.iocId || '') : '';
       const iocValue = iocId ? (await db.standaloneIOCs.get(iocId))?.value ?? iocId : undefined;
-      if (current) setResolved({ homeName: home?.name, targets, iocValue });
+      const bound = await isSyncWorkspaceBound();
+      if (current) setResolved({ homeName: home?.name, targets, iocValue, bound });
     })().catch(() => { /* The card still shows the reach and the raw input. */ });
     return () => { current = false; };
   }, [reach, toolUse]);
 
   const changesAgents = changesAgentsOf(item);
+  const shareableKey = resolved.bound ? 'approval.targetSynced' : 'approval.targetSyncsLater';
   const summary: string[] = [];
   if (reach.egress === 'open-fetch' || reach.egress === 'trusted-fetch') summary.push(t('approval.opensPage', { host: reach.destinations[0] }));
   else if (reach.egress === 'vendor') {
@@ -82,13 +86,15 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
   // A change in the conversation's own investigation, which the sidebar may not show. Agent
   // deployments never sync, and an egress card already says where the data goes.
   if (reach.write && !reach.crossWrite && reach.egress === 'none' && !changesAgents) {
-    if (resolved.homeName) summary.push(t(reach.homeShareable ? 'approval.targetSynced' : 'approval.targetLocal', { name: resolved.homeName }));
+    if (resolved.homeName) summary.push(t(reach.homeShareable ? shareableKey : 'approval.targetLocal', { name: resolved.homeName }));
     else if (!reach.homeFolderId) summary.push(t('approval.unfiled'));
   }
   if (reach.crossRead && reach.targetFolderIds.length === 0) summary.push(t('approval.readsOthers'));
-  for (const target of resolved.targets) summary.push(t(target.shareable ? 'approval.targetSynced' : 'approval.targetLocal', { name: target.name }));
+  for (const target of resolved.targets) summary.push(t(target.shareable ? shareableKey : 'approval.targetLocal', { name: target.name }));
   if (reach.flags.includes('unfiled-sink')) summary.push(t('approval.unfiled'));
-  if (reach.crossRead && reach.homeShareable && resolved.homeName) summary.push(t('approval.conversationSyncs', { name: resolved.homeName }));
+  if (reach.crossRead && reach.homeShareable && resolved.homeName) {
+    summary.push(t(resolved.bound ? 'approval.conversationSyncs' : 'approval.conversationSyncsLater', { name: resolved.homeName }));
+  }
 
   const flags: string[] = [];
   if (reach.flags.includes('untrusted-host')) flags.push(t('approval.flag.untrustedHost'));

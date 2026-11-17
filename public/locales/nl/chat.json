@@ -98,9 +98,11 @@
     "agentChange": "Wijzigt de AI-agents die in dit onderzoek werken.",
     "readsOthers": "Leest andere onderzoeken, niet alleen dit.",
     "targetSynced": "{{name}}: wordt gesynchroniseerd met de leden",
+    "targetSyncsLater": "{{name}}: blijft op dit apparaat totdat er een teamserver is verbonden",
     "targetLocal": "{{name}}: blijft op dit apparaat",
     "unfiled": "Buiten elk onderzoek: blijft op dit apparaat",
     "conversationSyncs": "Wat het leest wordt deel van dit gesprek, dat wordt gesynchroniseerd met de leden van «{{name}}».",
+    "conversationSyncsLater": "Wat het leest wordt deel van dit gesprek, dat met de leden van «{{name}}» wordt gesynchroniseerd zodra er een teamserver is verbonden.",
     "flag": {
       "untrustedHost": "Geen van de ingebouwde referentiesites.",
       "urlCarriesData": "Het adres is lang genoeg om onderzoeksgegevens mee te nemen.",

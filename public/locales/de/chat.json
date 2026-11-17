@@ -98,9 +98,11 @@
     "agentChange": "Ändert die KI-Agenten, die in dieser Untersuchung arbeiten.",
     "readsOthers": "Liest andere Untersuchungen, nicht nur diese.",
     "targetSynced": "{{name}}: wird mit ihren Mitgliedern synchronisiert",
+    "targetSyncsLater": "{{name}}: bleibt auf diesem Gerät, bis ein Teamserver verbunden ist",
     "targetLocal": "{{name}}: bleibt auf diesem Gerät",
     "unfiled": "Außerhalb jeder Untersuchung: bleibt auf diesem Gerät",
     "conversationSyncs": "Was es liest, wird Teil dieser Unterhaltung, die mit den Mitgliedern von \"{{name}}\" synchronisiert wird.",
+    "conversationSyncsLater": "Was es liest, wird Teil dieser Unterhaltung, die mit den Mitgliedern von \"{{name}}\" synchronisiert wird, sobald ein Teamserver verbunden ist.",
     "flag": {
       "untrustedHost": "Keine der integrierten Referenzseiten.",
       "urlCarriesData": "Die Adresse ist lang genug, um Untersuchungsdaten zu transportieren.",

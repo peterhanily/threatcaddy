@@ -98,9 +98,11 @@
     "agentChange": "Mengubah agen AI yang bekerja di investigasi ini.",
     "readsOthers": "Membaca investigasi lain, bukan hanya yang ini.",
     "targetSynced": "{{name}}: disinkronkan ke anggotanya",
+    "targetSyncsLater": "{{name}}: tetap di perangkat ini sampai server tim terhubung",
     "targetLocal": "{{name}}: tetap di perangkat ini",
     "unfiled": "Di luar investigasi mana pun: tetap di perangkat ini",
     "conversationSyncs": "Apa yang dibacanya menjadi bagian dari percakapan ini, yang disinkronkan ke anggota \"{{name}}\".",
+    "conversationSyncsLater": "Apa yang dibacanya menjadi bagian dari percakapan ini, yang akan disinkronkan ke anggota \"{{name}}\" begitu server tim terhubung.",
     "flag": {
       "untrustedHost": "Bukan salah satu situs referensi bawaan.",
       "urlCarriesData": "Alamatnya cukup panjang untuk membawa data investigasi.",

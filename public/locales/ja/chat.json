@@ -98,9 +98,11 @@
     "agentChange": "この調査で作業している AI エージェントを変更します。",
     "readsOthers": "この調査だけでなく、他の調査も読み取ります。",
     "targetSynced": "{{name}}：メンバーと同期されます",
+    "targetSyncsLater": "{{name}}：チームサーバーが接続されるまでこのデバイスに留まります",
     "targetLocal": "{{name}}：このデバイスに留まります",
     "unfiled": "どの調査にも属さない：このデバイスに留まります",
     "conversationSyncs": "読み取った内容はこの会話の一部になり、「{{name}}」のメンバーと同期されます。",
+    "conversationSyncsLater": "読み取った内容はこの会話の一部になり、チームサーバーが接続されると「{{name}}」のメンバーと同期されます。",
     "flag": {
       "untrustedHost": "組み込みの参照サイトではありません。",
       "urlCarriesData": "このアドレスは調査データを運べるほど長いです。",

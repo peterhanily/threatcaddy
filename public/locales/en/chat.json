@@ -118,9 +118,11 @@
     "agentChange": "Changes the AI agents working in this investigation.",
     "readsOthers": "Reads other investigations, not only this one.",
     "targetSynced": "{{name}}: syncs to its members",
+    "targetSyncsLater": "{{name}}: stays on this device until a team server is connected",
     "targetLocal": "{{name}}: stays on this device",
     "unfiled": "Outside any investigation: stays on this device",
     "conversationSyncs": "What it reads becomes part of this conversation, which syncs to the members of \"{{name}}\".",
+    "conversationSyncsLater": "What it reads becomes part of this conversation, which syncs to the members of \"{{name}}\" once a team server is connected.",
     "flag": {
       "untrustedHost": "Not one of the built-in reference sites.",
       "urlCarriesData": "The address is long enough to carry investigation data.",

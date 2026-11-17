@@ -98,9 +98,11 @@
     "agentChange": "更改在此调查中工作的 AI 代理。",
     "readsOthers": "读取其他调查，而不仅是此调查。",
     "targetSynced": "{{name}}：与其成员同步",
+    "targetSyncsLater": "{{name}}：在连接团队服务器之前保留在此设备上",
     "targetLocal": "{{name}}：保留在此设备上",
     "unfiled": "不属于任何调查：保留在此设备上",
     "conversationSyncs": "它读取的内容会成为此对话的一部分，而此对话会与“{{name}}”的成员同步。",
+    "conversationSyncsLater": "它读取的内容会成为此对话的一部分，而连接团队服务器后，此对话会与“{{name}}”的成员同步。",
     "flag": {
       "untrustedHost": "不是内置参考网站之一。",
       "urlCarriesData": "此地址长度足以携带调查数据。",

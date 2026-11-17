@@ -99,9 +99,11 @@
     "agentChange": "Altera os agentes de IA que trabalham nesta investigação.",
     "readsOthers": "Lê outras investigações, não apenas esta.",
     "targetSynced": "{{name}}: sincroniza com seus membros",
+    "targetSyncsLater": "{{name}}: permanece neste dispositivo até que um servidor da equipe seja conectado",
     "targetLocal": "{{name}}: permanece neste dispositivo",
     "unfiled": "Fora de qualquer investigação: permanece neste dispositivo",
     "conversationSyncs": "O que ela ler passa a fazer parte desta conversa, que sincroniza com os membros de \"{{name}}\".",
+    "conversationSyncsLater": "O que ela ler passa a fazer parte desta conversa, que vai sincronizar com os membros de \"{{name}}\" assim que um servidor da equipe for conectado.",
     "flag": {
       "untrustedHost": "Não é um dos sites de referência integrados.",
       "urlCarriesData": "O endereço é longo o suficiente para carregar dados da investigação.",

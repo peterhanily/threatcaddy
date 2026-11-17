@@ -85,10 +85,12 @@ function contrastOf(locator: Locator) {
   });
 }
 
-test('in the global view, a write card names the investigation it changes and that it syncs', async ({ page, context, baseURL }) => {
+// No team server is connected here, so the card does not claim that the investigation syncs.
+test('in the global view, a write card names the investigation it changes and that it stays on this device', async ({ page, context, baseURL }) => {
   const { card, external, errors } = await openWriteCard(page, context, baseURL);
   await expect(card.getByText('Approve a change to this investigation?', { exact: true })).toBeVisible();
-  await expect(card.getByRole('listitem').filter({ hasText: 'Fictional Case Alpha: syncs to its members' })).toHaveCount(1);
+  await expect(card.getByRole('listitem').filter({ hasText: 'Fictional Case Alpha: stays on this device until a team server is connected' })).toHaveCount(1);
+  await expect(card.getByText(/syncs to its members/)).toHaveCount(0);
   await card.getByRole('button', { name: 'Approve', exact: true }).click();
   await expect(page.getByText('Fictional answer.')).toBeVisible();
   const rows = await readRows(page, ['notes']);

@@ -98,9 +98,11 @@
     "agentChange": "Bu soruşturmada çalışan AI ajanlarını değiştirir.",
     "readsOthers": "Yalnızca bunu değil, diğer soruşturmaları da okur.",
     "targetSynced": "{{name}}: üyeleriyle eşitlenir",
+    "targetSyncsLater": "{{name}}: bir ekip sunucusu bağlanana kadar bu cihazda kalır",
     "targetLocal": "{{name}}: bu cihazda kalır",
     "unfiled": "Hiçbir soruşturmanın dışında: bu cihazda kalır",
     "conversationSyncs": "Okudukları bu konuşmanın parçası olur; bu konuşma \"{{name}}\" üyeleriyle eşitlenir.",
+    "conversationSyncsLater": "Okudukları bu konuşmanın parçası olur; bu konuşma, bir ekip sunucusu bağlandığında \"{{name}}\" üyeleriyle eşitlenir.",
     "flag": {
       "untrustedHost": "Yerleşik başvuru sitelerinden biri değil.",
       "urlCarriesData": "Adres, soruşturma verisi taşıyabilecek kadar uzun.",

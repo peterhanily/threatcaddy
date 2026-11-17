@@ -28,6 +28,7 @@ import { useChatLoops } from '../../hooks/useChatLoops';
 import { hasLoopsForThread, type LoopTransport } from '../../lib/chat-loop';
 import { hasMentionToken, resolveMentions } from '../../lib/chat-mentions';
 import { isShareableFolder } from '../../lib/ai-scope';
+import { isSyncWorkspaceBound } from '../../lib/sync-workspace';
 import { executeCheckpointedTool, restoreCheckpoint } from '../../lib/checkpoints';
 import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCustomSlashCommands';
 import { useToast } from '../../contexts/ToastContext';
@@ -378,9 +379,10 @@ export function ChatView({
             createdAt: now,
             updatedAt: now,
           });
-          // Say where the note went: the sidebar may show another investigation, or none.
+          // Say where the note went: the sidebar may show another investigation, or none. Nothing syncs before a team server is connected.
+          const shareableKey = await isSyncWorkspaceBound() ? 'approval.targetSynced' : 'approval.targetSyncsLater';
           const destination = homeFolderId
-            ? t(await isShareableFolder(homeFolderId) ? 'approval.targetSynced' : 'approval.targetLocal', { name: (await db.folders.get(homeFolderId))?.name ?? homeFolderId })
+            ? t(await isShareableFolder(homeFolderId) ? shareableKey : 'approval.targetLocal', { name: (await db.folders.get(homeFolderId))?.name ?? homeFolderId })
             : t('approval.unfiled');
           const confirmMsg: ChatMessage = {
             id: nanoid(),

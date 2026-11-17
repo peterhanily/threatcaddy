@@ -100,9 +100,11 @@
     "agentChange": "Zmienia agentów AI pracujących w tym śledztwie.",
     "readsOthers": "Odczytuje inne śledztwa, nie tylko to.",
     "targetSynced": "{{name}}: synchronizowane z członkami",
+    "targetSyncsLater": "{{name}}: pozostaje na tym urządzeniu do czasu połączenia serwera zespołu",
     "targetLocal": "{{name}}: pozostaje na tym urządzeniu",
     "unfiled": "Poza jakimkolwiek śledztwem: pozostaje na tym urządzeniu",
     "conversationSyncs": "To, co odczyta, stanie się częścią tej rozmowy, która jest synchronizowana z członkami «{{name}}».",
+    "conversationSyncsLater": "To, co odczyta, stanie się częścią tej rozmowy, która zostanie zsynchronizowana z członkami «{{name}}» po połączeniu serwera zespołu.",
     "flag": {
       "untrustedHost": "To nie jest żadna z wbudowanych witryn referencyjnych.",
       "urlCarriesData": "Adres jest na tyle długi, że może przenosić dane ze śledztwa.",
