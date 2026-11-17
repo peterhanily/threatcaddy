@@ -26,7 +26,7 @@ import { classifyToolCall, decideToolCall, type Verdict } from './tool-reach';
 import { sanitizeSoulText } from './soul-text';
 import { hasServerSession, resolveRoute, sendViaExtension, sendViaServer, sendDirectToLocal, unavailableRouteError } from './llm-router';
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
-import { getHostToolDefinitions } from './agent-hosts';
+import { getHostToolDefinitions, isHttpsOrLoopback } from './agent-hosts';
 import { calculateCost, tokenCount } from './model-pricing';
 import { cancellableRequest } from './request-cancellation';
 import { getToolBinding } from './tool-binding';
@@ -252,7 +252,7 @@ Score: ${soul.lifetimeMetrics.performanceScore}/100 across ${soul.lifetimeMetric
 
   // Agent skill summary (local + remote hosts)
   const localSkills = (_settings.llmLocalSkills || []);
-  const hosts = (_settings.agentHosts || []).filter(h => h.enabled && h.skills.length > 0);
+  const hosts = (_settings.agentHosts || []).filter(h => h.enabled && h.skills.length > 0 && isHttpsOrLoopback(h.url));
   const skillParts: string[] = [];
   if (localSkills.length > 0) skillParts.push(`Local Agent (${localSkills.map(s => s.name).join(', ')})`);
   for (const h of hosts) skillParts.push(`${h.displayName} (${h.skills.map(s => s.name).join(', ')})`);

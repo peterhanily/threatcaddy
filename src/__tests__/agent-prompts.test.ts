@@ -86,6 +86,20 @@ describe('lean agent prompts', () => {
     for (const label of ['[Local Agent] ', '[SOC One] ']) expect(descriptions.filter(description => description.startsWith(label))).toHaveLength(1);
   });
 
+  it('names no skills of a host on plain http away from this computer, which the agent is not offered', async () => {
+    const skill = (name: string) => ({ name, description: `Synthetic ${name}`, parameters: { type: 'object' as const, properties: {}, required: [] } });
+    const host = (name: string, displayName: string, url: string, skillName: string) => ({ id: name, name, displayName, url, enabled: true, skills: [skill(skillName)] });
+    const withHosts = { ...settings, agentHosts: [host('lab', 'Lab Host', 'http://10.0.0.5:8080', 'quarantine'),
+      host('soc1', 'SOC One', 'https://soc1.example', 'isolate'), host('loop', 'Loop Host', 'http://127.0.0.1:8080', 'scan')] };
+    scriptedLLM.reset();
+    await runAgentCycle(await db.folders.get('S') as Folder, withHosts, true);
+    const [request] = scriptedLLM.requests;
+    expect(request.systemPrompt).toContain('AGENT SKILLS: SOC One (isolate); Loop Host (scan). Use the tools');
+    expect(request.systemPrompt).not.toContain('Lab Host');
+    const descriptions = (request.tools as Array<{ description: string }>).map(tool => tool.description);
+    expect(descriptions.filter(description => description.startsWith('[Lab Host] '))).toEqual([]);
+  });
+
   it('caps the investigation description in the cycle prompt at 2 000 characters', async () => {
     await db.folders.update('S', { description: `${'D'.repeat(2000)}OVERFLOW` });
     const request = await promptFor('ap-threat-hunter');
