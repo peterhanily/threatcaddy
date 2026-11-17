@@ -50,6 +50,9 @@ describe('investigation details text', () => {
     expect(screen.getByText('1 Notiz')).toBeInTheDocument();
     expect(screen.getByText('2 Aufgaben')).toBeInTheDocument();
     expect(screen.getByText(`Erstellt ${formatFullDate(CREATED)}`)).toBeInTheDocument();
+    // The classification and PAP selects' empty choice uses the existing detail.none key.
+    expect(screen.getAllByRole('option', { name: (deInvestigations as Record<string, string>)['detail.none'] })).toHaveLength(2);
+    expect(screen.queryByRole('option', { name: 'None' })).toBeNull();
   });
 
   it('translates every count key it adds', () => {

@@ -230,7 +230,7 @@ export function InvestigationDetailPanel({
                 onChange={(e) => onUpdate(folder.id, { clsLevel: e.target.value || undefined })}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
               >
-                <option value="">None</option>
+                <option value="">{t('detail.none')}</option>
                 {effectiveClsLevels.map((v) => (
                   <option key={v} value={v}>{v}</option>
                 ))}
@@ -243,7 +243,7 @@ export function InvestigationDetailPanel({
                 onChange={(e) => onUpdate(folder.id, { papLevel: e.target.value || undefined })}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
               >
-                <option value="">None</option>
+                <option value="">{t('detail.none')}</option>
                 <option value="PAP:WHITE">PAP:WHITE</option>
                 <option value="PAP:GREEN">PAP:GREEN</option>
                 <option value="PAP:AMBER">PAP:AMBER</option>
