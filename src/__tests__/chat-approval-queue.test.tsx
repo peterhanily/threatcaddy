@@ -123,6 +123,14 @@ describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
     expect(state.send).not.toHaveBeenCalled();
   });
 
+  it('Export as note files the note in the thread\'s investigation from the global view', async () => {
+    renderChat([makeThread('thread', 'S')]);
+    fireEvent.click(screen.getByTitle('Export as note'));
+    const exported = db.notes.where('title').equals('Chat Export: Chat thread');
+    await waitFor(async () => expect(await exported.count()).toBe(1));
+    expect(await exported.first()).toMatchObject({ folderId: 'S', tags: ['chat-export'] });
+  });
+
   it('an unfiled thread in the global view reads freely and names the investigation a change would reach', async () => {
     renderChat([makeThread('thread')]);
     const handler = await sendAndGetHandler();

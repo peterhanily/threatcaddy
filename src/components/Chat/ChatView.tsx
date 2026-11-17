@@ -646,7 +646,7 @@ export function ChatView({
       id: noteId,
       title: `Chat Export: ${activeThread.title}`,
       content,
-      folderId: selectedFolderId || undefined,
+      folderId: activeThread.folderId ?? (selectedFolderId || undefined),
       tags: ['chat-export'],
       pinned: false,
       archived: false,
