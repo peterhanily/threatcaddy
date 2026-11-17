@@ -98,6 +98,8 @@ describe('SPA web fetch guard', () => {
     expect(JSON.parse(await executeFetchUrl({ url: `${longest}a` })).error).toBe(tooLong.error);
     expect(await fetchViaExtensionBridge(`http://127.0.0.1/${'a'.repeat(2048)}`))
       .toEqual({ success: false, error: enIntegrations['fetch.privateTarget'] });
+    // 719 characters as typed; the bound is on the href, where each space becomes %20.
+    expect(await fetchViaExtensionBridge(`https://x.example/${' '.repeat(700)}a`)).toEqual(tooLong);
     expect(bridgeFetches(post)).toHaveLength(0);
     expect((await fetchViaExtensionBridge(longest)).success).toBe(true);
     expect(bridgeFetches(post)).toHaveLength(1);
@@ -140,7 +142,20 @@ describe('SPA web fetch guard', () => {
       document.documentElement.dataset.tcBridgeCaps = HEAD_CAPS;
       expect(await fetchViaExtensionBridge('http://127.0.0.1/')).toEqual({ success: false, error: enIntegrations['fetch.privateTarget'] });
       expect(reads).toContain('en/integrations');
-    } finally { i18n.addResourceBundle('en', 'integrations', enIntegrations, true, true); }
+
+      reads.length = 0;
+      i18n.removeResourceBundle('en', 'integrations');
+      post.mockImplementation(() => {});
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      const pending = fetchViaExtensionBridge('https://nvd.nist.gov/vuln/detail/CVE-2024-3094');
+      await vi.advanceTimersByTimeAsync(20000);
+      await vi.runAllTimersAsync(); // the mocked backend read answers on its own timer
+      expect(await pending).toEqual({ success: false, error: enIntegrations['fetch.bridgeTimeout'] });
+      expect(reads).toContain('en/integrations');
+    } finally {
+      vi.useRealTimers();
+      i18n.addResourceBundle('en', 'integrations', enIntegrations, true, true);
+    }
   });
 
   it('reads the capabilities at call time', async () => {
