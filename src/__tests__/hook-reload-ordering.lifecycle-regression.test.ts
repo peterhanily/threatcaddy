@@ -141,6 +141,20 @@ for (const list of globalLists) describe(`${list.name} reload ordering`, () => {
   });
 });
 
+it('lists a builtin with a stored soul row once, from code, with that soul', async () => {
+  const soul = { identity: 'Hunts with hypotheses.', lessons: [], strengths: [], weaknesses: [], updatedAt: 1,
+    lifetimeMetrics: { investigationsWorked: 1, totalCycles: 1, totalToolCalls: 1, tasksCompleted: 0, tasksRejected: 0, meetingsAttended: 0, performanceScore: 50 } };
+  queries.profiles.mockResolvedValue([{ ...profile('ap-threat-hunter'), systemPrompt: 'Frozen prompt', source: 'builtin', soul }, profile('custom')]);
+  const { result } = renderHook(useAgentProfiles);
+  await act(async () => {});
+  const hunters = result.current.profiles.filter(row => row.id === 'ap-threat-hunter');
+  expect(hunters).toHaveLength(1);
+  expect(hunters[0]).toMatchObject({ role: 'specialist', soul });
+  expect(hunters[0].systemPrompt).not.toBe('Frozen prompt');
+  expect(result.current.userProfiles.map(row => row.id)).toEqual(['custom']);
+  expect(result.current.profiles).toHaveLength(result.current.builtinProfiles.length + 1);
+});
+
 it('coalesces profile refresh events and clears the pending timer on unmount', async () => {
   vi.useFakeTimers();
   const { unmount } = renderHook(useAgentProfiles);

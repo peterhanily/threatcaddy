@@ -160,10 +160,11 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
         if (!current()) return;
 
-        // Per-agent status: determine folder-level status from individual results
+        // Per-agent status: determine folder-level status from individual results.
+        // Agents skipped while their proposal awaits review keep it waiting.
         const results = Array.from(multiResult.deploymentResults.values());
         const succeeded = results.filter(r => !r.error);
-        const anyWaiting = results.some(r => r.proposed.length > 0);
+        const anyWaiting = multiResult.waitingForReview.length > 0 || results.some(r => r.proposed.length > 0);
         const allFailed = results.length > 0 && succeeded.length === 0;
 
         if (multiResult.errors.length > 0) {
@@ -185,7 +186,15 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
           }
         }
       } else {
-        // Legacy single-agent mode
+        // Legacy single-agent mode pauses only for its own proposals: rows
+        // without an agent profile (deployed agents and the supervisor have one).
+        const ownPending = await db.agentActions.where('[investigationId+status]').equals([freshFolder.id, 'pending'])
+          .filter(action => !action.agentConfigId).count();
+        if (!current()) return;
+        if (ownPending > 0) {
+          updateAgentStatus('waiting');
+          return;
+        }
         setStreamingContent('');
         const result = await runAgentCycle(freshFolder, settingsRef.current, callbacks.current.extensionAvailable, (status) => {
           if (current()) setProgress(status);
@@ -290,7 +299,8 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
         intervalMs = ERROR_RETRY_BASE_MS * Math.pow(2, errorRetryCount.current - 1);
       }
 
-      // Adaptive scheduling based on agent metrics (multi-agent mode)
+      // Adaptive scheduling based on agent metrics (multi-agent mode): agents
+      // whose actions mostly wait for review slow down. Nothing speeds up.
       try {
         const deployments = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
         if (!current()) return;
@@ -298,11 +308,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
           const totalProposed = deployments.reduce((s, d) => s + (d.metrics?.toolCallsProposed || 0), 0);
           const totalExecuted = deployments.reduce((s, d) => s + (d.metrics?.toolCallsExecuted || 0), 0);
           const total = totalProposed + totalExecuted;
-          if (total > 10) {
-            const successRate = totalExecuted / total;
-            if (successRate > 0.9) intervalMs = Math.max(60_000, intervalMs * 0.5); // boost
-            else if (successRate < 0.5) intervalMs *= 2; // throttle
-          }
+          if (total > 10 && totalExecuted / total < 0.5) intervalMs *= 2; // throttle
         }
       } catch { /* non-critical */ }
       if (!current()) return;
@@ -313,12 +319,11 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     const tick = async () => {
       if (!current()) return;
       try {
-        // Re-check persisted enablement and pending approvals after each wait.
+        // Re-check persisted enablement after each wait. Pending approvals pause
+        // only the agent that proposed them (runMultiAgentCycle, legacy branch).
         const freshFolder = await db.folders.get(folderId);
         if (!current() || !freshFolder?.agentEnabled) return;
-        const pendingCount = await db.agentActions.where('[investigationId+status]').equals([folderId, 'pending']).count();
-        if (!current()) return;
-        if (pendingCount === 0) await executeCycle(true);
+        await executeCycle(true);
       } catch (err) {
         if (current()) console.error('[AgentCaddy] cycle failed:', err);
       }

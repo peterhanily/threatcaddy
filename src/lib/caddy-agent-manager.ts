@@ -6,7 +6,7 @@
 import { db } from '../db';
 import type { AgentCycleOutcome, AgentDeployment, AgentMetrics, AgentProfile, Folder, Settings } from '../types';
 import { runAgentCycle, type AgentCycleResult } from './caddy-agent';
-import { BUILTIN_AGENT_PROFILES } from './builtin-agent-profiles';
+import { listAgentProfiles } from './agent-profile-resolver';
 import { shouldBlockNewCycle } from './agent-handoff';
 import { cancellableRequest } from './request-cancellation';
 import { tokenCount } from './model-pricing';
@@ -14,13 +14,8 @@ import { tokenCount } from './model-pricing';
 export interface MultiAgentCycleResult {
   deploymentResults: Map<string, AgentCycleResult>;
   errors: string[];
-}
-
-/** Resolve a profile by ID from user DB or builtins. */
-async function resolveProfile(profileId: string): Promise<AgentProfile | undefined> {
-  const userProfile = await db.agentProfiles.get(profileId);
-  if (userProfile) return userProfile;
-  return BUILTIN_AGENT_PROFILES.find(p => p.id === profileId);
+  /** Profiles skipped this cycle because a proposal of theirs awaits review. */
+  waitingForReview: string[];
 }
 
 /**
@@ -57,22 +52,37 @@ async function runMultiAgentCycleInner(
     .toArray();
   signal.throwIfAborted();
 
+  // Only the agent whose proposal awaits review pauses. Legacy rows (no
+  // profile) and supervisor rows match no deployment, so they pause none.
+  const awaitingReview = new Set((await db.agentActions
+    .where('[investigationId+status]').equals([folder.id, 'pending'])
+    .toArray()).map(action => action.agentConfigId));
+  signal.throwIfAborted();
+
   // Skip deployments the server owns or that haven't finished reconciling after
   // a handoff — starting a cycle on those would race against the server or act
   // on stale local state.
-  const activeDeployments = deployments.filter(
+  const runnable = deployments.filter(
     d => d.status !== 'paused' && d.shift !== 'resting' && !shouldBlockNewCycle(d),
   );
+  const waitingForReview = [...new Set(runnable.filter(d => awaitingReview.has(d.profileId)).map(d => d.profileId))];
+  const activeDeployments = runnable.filter(d => !awaitingReview.has(d.profileId));
 
   if (activeDeployments.length === 0) {
-    return { deploymentResults: new Map(), errors: ['No active agent deployments'] };
+    if (waitingForReview.length > 0) {
+      await db.folders.update(folder.id, { agentStatus: 'waiting' });
+      return { deploymentResults: new Map(), errors: [], waitingForReview };
+    }
+    return { deploymentResults: new Map(), errors: ['No active agent deployments'], waitingForReview };
   }
 
-  // Resolve profiles for all deployments
+  // Resolve profiles for all deployments. Builtins come from code; a stored
+  // builtin row contributes only its soul.
+  const profiles = new Map((await listAgentProfiles()).map(profile => [profile.id, profile]));
+  signal.throwIfAborted();
   const deploymentProfiles: { deployment: AgentDeployment; profile: AgentProfile }[] = [];
   for (const d of activeDeployments) {
-    const profile = await resolveProfile(d.profileId);
-    signal.throwIfAborted();
+    const profile = profiles.get(d.profileId);
     if (profile) {
       deploymentProfiles.push({ deployment: d, profile });
     }
@@ -210,5 +220,5 @@ async function runMultiAgentCycleInner(
     }
   }
 
-  return { deploymentResults, errors };
+  return { deploymentResults, errors, waitingForReview };
 }
