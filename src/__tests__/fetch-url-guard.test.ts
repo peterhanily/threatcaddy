@@ -37,6 +37,11 @@ describe('SPA web fetch guard', () => {
     'http://[::1]/',
     'http://intranet/',
     'http://nas.local/',
+    'http://nas.local./',
+    'http://a.localhost/',
+    'http://metadata.google.internal/',
+    'http://router.home/',
+    'http://pc.lan/',
     'https://u:p@x.example/',
     `https://x.example/${'a'.repeat(2049 - 'https://x.example/'.length)}`,
   ])('rejects %s before anything reaches the extension', async url => {
