@@ -8,9 +8,10 @@ import { standaloneHtml } from './build/standalone-html'
 import { dependencyProvenance } from './build/dependency-provenance'
 
 /** The hosted policy's script and connect hosts do not fit a file:// page, but
- * images keep a policy: notes and chat cannot load remote images (beacons);
- * map tiles, pasted screenshots and whiteboard images still load. */
-const STANDALONE_IMAGE_CSP = '<meta http-equiv="Content-Security-Policy" content="img-src \'self\' data: blob: https://*.basemaps.cartocdn.com">';
+ * images and media keep a policy: notes and chat cannot load remote images,
+ * audio or video (beacons); map tiles, pasted screenshots and whiteboard images
+ * still load. */
+const STANDALONE_MEDIA_CSP ='<meta http-equiv="Content-Security-Policy" content="img-src \'self\' data: blob: https://*.basemaps.cartocdn.com; media-src \'self\' data: blob:">';
 
 function stripCSPForSingleFile(): Plugin {
   return {
@@ -21,7 +22,7 @@ function stripCSPForSingleFile(): Plugin {
         const hostedCSP = /<meta\s+http-equiv="Content-Security-Policy"[^>]*\/?\s*>/i;
         if (!hostedCSP.test(html)) throw new Error('Standalone build expects the hosted Content-Security-Policy meta to replace.');
         return html
-          .replace(hostedCSP, STANDALONE_IMAGE_CSP)
+          .replace(hostedCSP, STANDALONE_MEDIA_CSP)
           // The hosted stale-chunk guard is unnecessary for a monolithic file.
           .replace(/<script\s+src="\.\/chunk-reload-guard\.js"[^>]*>\s*<\/script>/i, '');
       },

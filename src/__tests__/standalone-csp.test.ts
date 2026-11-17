@@ -1,15 +1,16 @@
 // @vitest-environment node
 /**
  * C-CSP-1: the standalone file drops the hosted CSP, whose connect-src and
- * script hosts do not apply to a file:// page, but keeps an image policy so
- * notes and chat cannot load remote images. Map tiles stay allowed.
+ * script hosts do not apply to a file:// page, but keeps an image and media
+ * policy so notes and chat cannot load remote images, audio or video. Map
+ * tiles stay allowed.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { IndexHtmlTransformContext, Plugin, PluginOption } from 'vite';
 import { describe, expect, it } from 'vitest';
 
-const IMAGE_POLICY = '<meta http-equiv="Content-Security-Policy" content="img-src \'self\' data: blob: https://*.basemaps.cartocdn.com">';
+const STANDALONE_POLICY = '<meta http-equiv="Content-Security-Policy" content="img-src \'self\' data: blob: https://*.basemaps.cartocdn.com; media-src \'self\' data: blob:">';
 const INDEX_HTML = resolve(__dirname, '../../index.html');
 
 /** The transform the standalone build applies to index.html (it uses no plugin context). */
@@ -22,14 +23,24 @@ async function standaloneTransform(): Promise<(html: string) => unknown> {
   return html => handler(html, { path: '/index.html', filename: INDEX_HTML } as IndexHtmlTransformContext);
 }
 
-describe('C-CSP-1 standalone image policy', () => {
-  it('replaces the hosted CSP with an image-only policy inside <head>', async () => {
+describe('C-CSP-1 standalone image and media policy', () => {
+  it('replaces the hosted CSP with an image and media policy inside <head>', async () => {
     const html = String(await (await standaloneTransform())(readFileSync(INDEX_HTML, 'utf8')));
-    expect(html.split(IMAGE_POLICY)).toHaveLength(2);
+    expect(html.split(STANDALONE_POLICY)).toHaveLength(2);
     expect(html.match(/http-equiv="Content-Security-Policy"/g)).toHaveLength(1);
     expect(html).not.toMatch(/default-src|connect-src|script-src/);
-    expect(html.indexOf(IMAGE_POLICY)).toBeLessThan(html.indexOf('</head>'));
-    expect(html.indexOf(IMAGE_POLICY)).toBeGreaterThan(html.indexOf('<meta charset="UTF-8" />'));
+    expect(html.indexOf(STANDALONE_POLICY)).toBeLessThan(html.indexOf('</head>'));
+    expect(html.indexOf(STANDALONE_POLICY)).toBeGreaterThan(html.indexOf('<meta charset="UTF-8" />'));
+  });
+
+  it('limits remote images and remote audio or video, and nothing else', async () => {
+    const html = String(await (await standaloneTransform())(readFileSync(INDEX_HTML, 'utf8')));
+    const content = html.match(/http-equiv="Content-Security-Policy" content="([^"]*)"/)?.[1] ?? '';
+    const directives = Object.fromEntries(content.split(';').map(part => part.trim().split(/\s+/)).map(([name, ...sources]) => [name, sources]));
+    expect(directives).toEqual({
+      'img-src': ["'self'", 'data:', 'blob:', 'https://*.basemaps.cartocdn.com'],
+      'media-src': ["'self'", 'data:', 'blob:'],
+    });
   });
 
   it('fails the build if the hosted CSP it replaces is missing', async () => {

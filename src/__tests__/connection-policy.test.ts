@@ -1,5 +1,5 @@
 /**
- * The standalone file now carries an image-only CSP. The connection preflight
+ * The standalone file now carries an image and media CSP. The connection preflight
  * must keep treating it as a build without connection limits, while the hosted
  * policy (connect-src) still refuses unconfigured origins.
  */
@@ -27,8 +27,8 @@ const LAN_LLM = 'http://192.168.1.50:11434/v1/chat/completions';
 const TEAM_SERVER = 'https://team.example/api/auth/login';
 
 describe('assertConfiguredConnection', () => {
-  it('allows any endpoint in the standalone file, whose policy only limits images', () => {
-    setPolicy("img-src 'self' data: blob: https://*.basemaps.cartocdn.com");
+  it('allows any endpoint in the standalone file, whose policy only limits images and media', () => {
+    setPolicy("img-src 'self' data: blob: https://*.basemaps.cartocdn.com; media-src 'self' data: blob:");
     expect(() => assertConfiguredConnection(LAN_LLM)).not.toThrow();
     expect(() => assertConfiguredConnection(TEAM_SERVER)).not.toThrow();
   });
