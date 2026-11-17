@@ -53,7 +53,10 @@ describe('chat write approval', () => {
 
     let pending!: Promise<ToolExecutionResult>;
     act(() => { pending = handleTool({ type: 'tool_use', id: 'toolu_1', name: 'create_note', input: { title: 'Approved finding', content: 'Beacon seen' } }, new AbortController().signal); });
-    fireEvent.click(await screen.findByRole('button', { name: /approve/i }));
+    const approve = await screen.findByRole('button', { name: /approve/i });
+    // A card that just appeared ignores Approve for a moment.
+    await waitFor(() => expect(approve).toBeEnabled(), { timeout: 3000 });
+    fireEvent.click(approve);
     const result = await pending;
 
     expect(result.isError).toBe(false);

@@ -66,6 +66,12 @@ function start(handler: ToolHandler, toolUse: ToolUseBlock, signal = new AbortCo
 // The card is named by its title; the Details disclosure is an unnamed group.
 const card = () => screen.findByRole('group', { name: /\?$/ });
 const queryCard = () => screen.queryByRole('group', { name: /\?$/ });
+// A card that just appeared ignores Approve for a moment; wait it out, as a reading analyst does.
+async function approve() {
+  const button = screen.getByRole('button', { name: /approve/i });
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+}
 
 let egress: EgressSpy;
 beforeEach(async () => {
@@ -96,7 +102,7 @@ describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
     expect(within(shown).getByText('Read other investigations?')).toBeInTheDocument();
     // Investigation names are looked up after the card appears.
     expect(await within(shown).findByText(/syncs to the members of "Shared case"/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /approve/i }));
+    await approve();
     const result = await search;
     expect(result.isError).toBe(false);
     expect(result.result).not.toContain(canary('L'));
@@ -131,14 +137,35 @@ describe('C-CHAT-6 the approval queue', () => {
     expect(screen.getAllByRole('group', { name: /\?$/ })).toHaveLength(1);
     expect(screen.getByText(/collector\.example\/a/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /approve/i }));
+    await approve();
     expect((await first).isError).toBe(false);
     await waitFor(() => expect(screen.getByText(/collector\.example\/b/)).toBeInTheDocument());
     expect(screen.queryByText('1 of 2')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /approve/i }));
+    await approve();
     expect((await second).isError).toBe(false);
     expect(egress.fetchUrlPosts()).toEqual(['https://collector.example/a', 'https://collector.example/b']);
     expect(queryCard()).toBeNull();
+  });
+
+  it('a double click on Approve approves only the card the analyst saw', async () => {
+    renderChat([makeThread('thread', 'S')]);
+    const handler = await sendAndGetHandler();
+    const first = start(handler, fetchA);
+    let secondSettled = false;
+    const second = start(handler, fetchB).finally(() => { secondSettled = true; });
+    await waitFor(() => expect(screen.getByText('1 of 2')).toBeInTheDocument());
+
+    await approve();
+    // The second click lands where the next card's Approve button has just appeared.
+    fireEvent.click(screen.getByRole('button', { name: /approve/i }));
+    expect((await first).isError).toBe(false);
+    expect(within(screen.getByRole('group', { name: /\?$/ })).getByText(/collector\.example\/b/)).toBeInTheDocument();
+    expect(secondSettled).toBe(false);
+    expect(egress.fetchUrlPosts()).toEqual(['https://collector.example/a']);
+
+    await approve();
+    expect((await second).isError).toBe(false);
+    expect(egress.fetchUrlPosts()).toEqual(['https://collector.example/a', 'https://collector.example/b']);
   });
 
   it('a thread switch rejects every queued card and runs nothing', async () => {

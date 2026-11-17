@@ -20,6 +20,9 @@ const TITLE_KEYS: Record<AskReason, string> = {
 const AGENT_TOOLS: ReadonlySet<string> = new Set(['deploy_agent', 'stop_agent', 'run_agent_cycle', ...AGENT_CONTROL_TOOLS]);
 
 interface Resolved { homeName?: string; targets: Array<{ name: string; shareable: boolean }>; iocValue?: string }
+/** How long a card that has just appeared keeps Approve disabled. The second click of a double
+ * click on the previous card lands on this one's Approve before the analyst has read it. */
+const APPROVE_DELAY_MS = 500;
 
 /** One queued chat approval. It leads with what the call reaches; the raw input is under Details.
  * No button is focused, so Enter cannot approve; Escape rejects. */
@@ -34,7 +37,13 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
   const titleId = useId();
   const cardRef = useRef<HTMLDivElement>(null);
   const [resolved, setResolved] = useState<Resolved>({ targets: [] });
+  const [approvable, setApprovable] = useState<ApprovalItem | null>(null);
   const { toolUse, reach, reason, readForeignThisRequest } = item;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setApprovable(item), APPROVE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [item]);
 
   // Take focus only when nothing has it, so the composer keeps the analyst's typing.
   useEffect(() => {
@@ -113,7 +122,8 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
           <button
             type="button"
             onClick={onApprove}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors"
+            disabled={approvable !== item}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
           >
             <Check size={12} /> {t('view.approve')}
           </button>
