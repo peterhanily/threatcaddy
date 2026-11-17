@@ -226,6 +226,7 @@
   "meeting.start": "Bắt đầu",
   "meeting.participationInfo": "{{count}} tác nhân sẽ tham gia. Mỗi tác nhân có {{rounds}} vòng để đóng góp. Biên bản được lưu dưới dạng ghi chú.",
   "meeting.meetingInProgress": "Cuộc họp đang diễn ra...",
+  "meeting.couldNotRun": "Không thể tiến hành cuộc họp: {{error}}",
   "meeting.deploy2Plus": "Triển khai 2+ hồ sơ tác nhân để bắt đầu cuộc họp.",
   "meeting.viewMinutes": "Xem biên bản",
   "meeting.viewDiscussion": "Xem thảo luận",

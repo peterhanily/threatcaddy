@@ -226,6 +226,7 @@
   "meeting.start": "शुरू करें",
   "meeting.participationInfo": "{{count}} एजेंट भाग लेंगे। प्रत्येक के पास {{rounds}} राउंड हैं। मिनट नोट के रूप में सहेजे जाएंगे।",
   "meeting.meetingInProgress": "मीटिंग चल रही है...",
+  "meeting.couldNotRun": "मीटिंग नहीं चल सकी: {{error}}",
   "meeting.deploy2Plus": "मीटिंग शुरू करने के लिए 2+ एजेंट प्रोफ़ाइल तैनात करें।",
   "meeting.viewMinutes": "मिनट देखें",
   "meeting.viewDiscussion": "चर्चा देखें",

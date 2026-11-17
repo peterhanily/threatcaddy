@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => {
   const collection = { remove: vi.fn(), removeClass: vi.fn().mockReturnThis(), addClass: vi.fn().mockReturnThis(), unselect: vi.fn().mockReturnThis() };
   const graph = { on: vi.fn((name: string, ...args: unknown[]) => { handlers.set(name + (typeof args[0] === 'string' ? ':' + args[0] : ''), args.at(-1) as (event: unknown) => void); }),
     elements: () => collection, batch: (fn: () => void) => fn(), layout: () => ({ run: vi.fn() }), fit: vi.fn(), destroy: vi.fn() };
-  return { handlers, graph, cytoscape: vi.fn(() => graph), cycle: vi.fn(), meeting: vi.fn() };
+  return { handlers, graph, cytoscape: vi.fn(() => graph), cycle: vi.fn(), meeting: vi.fn(), toast: vi.fn() };
 });
 vi.mock('cytoscape', () => ({ default: Object.assign(mocks.cytoscape, { use: vi.fn() }) }));
 vi.mock('cytoscape-cose-bilkent', () => ({ default: {} }));
@@ -16,7 +16,8 @@ vi.mock('../lib/caddy-agent', () => ({ runAgentCycle: mocks.cycle }));
 vi.mock('../lib/caddy-agent-manager', () => ({ runMultiAgentCycle: vi.fn() }));
 vi.mock('../lib/caddy-agent-supervisor', () => ({ runSupervisorCycle: vi.fn(), sendEscalationNotification: vi.fn() }));
 vi.mock('../lib/caddy-agent-meeting', () => ({ runAgentMeeting: mocks.meeting, runHandoffCall: vi.fn() }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string, options?: { error?: string }) => options?.error ? `${key}: ${options.error}` : key }) }));
+vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: mocks.toast }) }));
 import GraphCanvas from '../components/Graph/GraphCanvas';
 import { AgentMeetingPanel } from '../components/Agent/AgentMeetingPanel';
 import { useCaddyAgent } from '../hooks/useCaddyAgent';
@@ -73,10 +74,11 @@ describe('committed callback bindings', () => {
     await waitFor(async () => expect((await db.notes.get('request'))?.trashed).toBe(true));
     const saved = await db.notes.get('request');
     expect(saved?.trashedAt).toBe(saved?.updatedAt);
+    expect(mocks.toast).not.toHaveBeenCalled();
   });
 
-  it('keeps a meeting request pending when the meeting could not run', async () => {
-    mocks.meeting.mockResolvedValue({ meetingId: '', threadId: '', roundsCompleted: 0, error: 'LLM routing is set to Browser Extension, but the extension is not available.' });
+  it('keeps a meeting request pending and says why when the meeting could not run', async () => {
+    mocks.meeting.mockResolvedValue({ meetingId: '', threadId: '', roundsCompleted: 0, error: 'Synthetic route refusal.' });
     await db.notes.add({ id: 'request', folderId: 'one', title: 'Meeting Request: Review', content: '**Agenda:** Review', tags: ['meeting-request'],
       pinned: false, trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
     const deployments = ['a', 'b'].map(id => ({ id, investigationId: 'one', profileId: id, status: 'idle', order: 0, createdAt: 1, updatedAt: 1 } as AgentDeployment));
@@ -85,10 +87,23 @@ describe('committed callback bindings', () => {
     await waitFor(() => expect(mocks.meeting).toHaveBeenCalledOnce());
     expect(await screen.findByRole('button', { name: 'meeting.run' })).toBeEnabled();
     expect((await db.notes.get('request'))?.trashed).toBe(false);
+    expect(mocks.toast).toHaveBeenCalledExactlyOnceWith('error', 'meeting.couldNotRun: Synthetic route refusal.');
   });
 
-  it('keeps the typed agenda when a started meeting could not run', async () => {
-    mocks.meeting.mockResolvedValue({ meetingId: '', threadId: '', roundsCompleted: 0, error: 'LLM routing is set to Browser Extension, but the extension is not available.' });
+  it('keeps the typed agenda and says why when a started meeting could not run', async () => {
+    mocks.meeting.mockResolvedValue({ meetingId: '', threadId: '', roundsCompleted: 0, error: 'Synthetic route refusal.' });
+    const deployments = ['a', 'b'].map(id => ({ id, investigationId: 'one', profileId: id, status: 'idle', order: 0, createdAt: 1, updatedAt: 1 } as AgentDeployment));
+    render(<AgentMeetingPanel folder={folder('one')} deployments={deployments} settings={DEFAULT_SETTINGS} extensionAvailable={false} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'meeting.startMeeting' }));
+    fireEvent.change(screen.getByPlaceholderText('meeting.meetingAgendaPlaceholder'), { target: { value: 'Review the phishing timeline' } });
+    fireEvent.click(screen.getByRole('button', { name: 'meeting.start' }));
+    await waitFor(() => expect(mocks.meeting).toHaveBeenCalledOnce());
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledExactlyOnceWith('error', 'meeting.couldNotRun: Synthetic route refusal.'));
+    fireEvent.click(await screen.findByRole('button', { name: 'meeting.startMeeting' }));
+    expect(screen.getByPlaceholderText('meeting.meetingAgendaPlaceholder')).toHaveValue('Review the phishing timeline');
+  });
+
+  it('shows no error when a started meeting ran', async () => {
     const deployments = ['a', 'b'].map(id => ({ id, investigationId: 'one', profileId: id, status: 'idle', order: 0, createdAt: 1, updatedAt: 1 } as AgentDeployment));
     render(<AgentMeetingPanel folder={folder('one')} deployments={deployments} settings={DEFAULT_SETTINGS} extensionAvailable={false} />);
     fireEvent.click(await screen.findByRole('button', { name: 'meeting.startMeeting' }));
@@ -96,6 +111,7 @@ describe('committed callback bindings', () => {
     fireEvent.click(screen.getByRole('button', { name: 'meeting.start' }));
     await waitFor(() => expect(mocks.meeting).toHaveBeenCalledOnce());
     fireEvent.click(await screen.findByRole('button', { name: 'meeting.startMeeting' }));
-    expect(screen.getByPlaceholderText('meeting.meetingAgendaPlaceholder')).toHaveValue('Review the phishing timeline');
+    expect(screen.getByPlaceholderText('meeting.meetingAgendaPlaceholder')).toHaveValue('');
+    expect(mocks.toast).not.toHaveBeenCalled();
   });
 });

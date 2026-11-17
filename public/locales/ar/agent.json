@@ -226,6 +226,7 @@
   "meeting.start": "بدء",
   "meeting.participationInfo": "سيشارك {{count}} وكيل. يحصل كل منهم على {{rounds}} جولة للمساهمة. يتم حفظ المحضر كملاحظة.",
   "meeting.meetingInProgress": "الاجتماع جارٍ...",
+  "meeting.couldNotRun": "تعذّر عقد الاجتماع: {{error}}",
   "meeting.deploy2Plus": "انشر ملفَّي تعريف وكيل أو أكثر لبدء اجتماع.",
   "meeting.viewMinutes": "عرض المحضر",
   "meeting.viewDiscussion": "عرض النقاش",

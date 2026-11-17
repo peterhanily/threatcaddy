@@ -226,6 +226,7 @@
   "meeting.start": "Iniciar",
   "meeting.participationInfo": "Participarán {{count}} agentes. Cada uno tiene {{rounds}} ronda(s) para contribuir. Las actas se guardan como nota.",
   "meeting.meetingInProgress": "Reunión en progreso...",
+  "meeting.couldNotRun": "No se pudo celebrar la reunión: {{error}}",
   "meeting.deploy2Plus": "Despliegue 2+ perfiles de agentes para iniciar una reunión.",
   "meeting.viewMinutes": "Ver actas",
   "meeting.viewDiscussion": "Ver discusión",

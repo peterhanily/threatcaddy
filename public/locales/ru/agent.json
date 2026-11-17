@@ -226,6 +226,7 @@
   "meeting.start": "Начать",
   "meeting.participationInfo": "{{count}} агент(ов) примут участие. Каждому выделено {{rounds}} раунд(ов) для вклада. Протокол сохраняется в виде заметки.",
   "meeting.meetingInProgress": "Совещание идёт...",
+  "meeting.couldNotRun": "Не удалось провести совещание: {{error}}",
   "meeting.deploy2Plus": "Разверните 2+ профиля агентов для начала совещания.",
   "meeting.viewMinutes": "Просмотреть протокол",
   "meeting.viewDiscussion": "Просмотреть обсуждение",

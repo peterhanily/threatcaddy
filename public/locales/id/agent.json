@@ -226,6 +226,7 @@
   "meeting.start": "Mulai",
   "meeting.participationInfo": "{{count}} agen akan berpartisipasi. Masing-masing mendapat {{rounds}} putaran untuk berkontribusi. Notulen disimpan sebagai catatan.",
   "meeting.meetingInProgress": "Rapat sedang berlangsung...",
+  "meeting.couldNotRun": "Rapat tidak dapat dijalankan: {{error}}",
   "meeting.deploy2Plus": "Deploy 2+ profil agen untuk memulai rapat.",
   "meeting.viewMinutes": "Lihat notulen",
   "meeting.viewDiscussion": "Lihat diskusi",

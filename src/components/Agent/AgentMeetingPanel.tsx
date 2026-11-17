@@ -9,6 +9,7 @@ import type { AgentDeployment, AgentMeeting, Folder, Note, Settings, MeetingPurp
 import { cn, formatDate } from '../../lib/utils';
 import { db } from '../../db';
 import { runAgentMeeting, runHandoffCall } from '../../lib/caddy-agent-meeting';
+import { useToast } from '../../contexts/ToastContext';
 
 /** Valid meeting purposes surfaced in the UI. Kept in sync with MeetingPurpose.
  *  Labels/hints resolved at render time via i18n so all 21 locales work. */
@@ -48,6 +49,7 @@ export function AgentMeetingPanel({
   onNavigateToChat, onNavigateToNote, onEntitiesChanged,
 }: AgentMeetingPanelProps) {
   const { t } = useTranslation('agent');
+  const { addToast } = useToast();
   const [meetings, setMeetings] = useState<AgentMeeting[]>([]);
   const [pendingRequests, setPendingRequests] = useState<Note[]>([]);
   const [running, setRunning] = useState(false);
@@ -94,8 +96,9 @@ export function AgentMeetingPanel({
 
     setRunning(false);
     setProgress('');
-    // A meeting that could not run (no LLM route, no key) keeps the typed agenda.
-    if (!result.error) setAgenda('');
+    // A meeting that could not run (no LLM route, no key) keeps the typed agenda and says why.
+    if (result.error) addToast('error', t('meeting.couldNotRun', { error: result.error }));
+    else setAgenda('');
     onEntitiesChanged?.();
   };
 
@@ -111,8 +114,8 @@ export function AgentMeetingPanel({
         (speaker, status) => setProgress(`${speaker}: ${status}`),
         reqPurpose,
       );
-      // A meeting that could not run (no LLM route, no key) leaves the request pending.
-      if (result.error) return;
+      // A meeting that could not run (no LLM route, no key) leaves the request pending and says why.
+      if (result.error) { addToast('error', t('meeting.couldNotRun', { error: result.error })); return; }
       // Trash the request note so it doesn't linger as pending.
       const trashedAt = Date.now();
       await db.notes.update(req.id, { trashed: true, trashedAt, updatedAt: trashedAt });
@@ -123,7 +126,7 @@ export function AgentMeetingPanel({
       setProgress('');
       onEntitiesChanged?.();
     }
-  }, [deployments, folder, settings, extensionAvailable, onEntitiesChanged]);
+  }, [deployments, folder, settings, extensionAvailable, onEntitiesChanged, addToast, t]);
 
   const handleDismissRequest = async (req: Note) => {
     await db.notes.update(req.id, { trashed: true, trashedAt: Date.now(), updatedAt: Date.now() });

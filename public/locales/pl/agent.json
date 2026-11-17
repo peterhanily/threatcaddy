@@ -226,6 +226,7 @@
   "meeting.start": "Rozpocznij",
   "meeting.participationInfo": "{{count}} agent(ów) weźmie udział. Każdy ma {{rounds}} rundę/rundy na wkład. Protokół jest zapisywany jako notatka.",
   "meeting.meetingInProgress": "Spotkanie w toku...",
+  "meeting.couldNotRun": "Nie udało się przeprowadzić spotkania: {{error}}",
   "meeting.deploy2Plus": "Wdróż 2+ profile agentów, aby rozpocząć spotkanie.",
   "meeting.viewMinutes": "Wyświetl protokół",
   "meeting.viewDiscussion": "Wyświetl dyskusję",

@@ -226,6 +226,7 @@
   "meeting.start": "เริ่ม",
   "meeting.participationInfo": "เอเจนต์ {{count}} ตัวจะเข้าร่วม แต่ละตัวมี {{rounds}} รอบในการมีส่วนร่วม รายงานการประชุมจะบันทึกเป็นโน้ต",
   "meeting.meetingInProgress": "การประชุมกำลังดำเนินอยู่...",
+  "meeting.couldNotRun": "ไม่สามารถจัดการประชุมได้: {{error}}",
   "meeting.deploy2Plus": "ติดตั้งโปรไฟล์เอเจนต์อย่างน้อย 2 รายการเพื่อเริ่มการประชุม",
   "meeting.viewMinutes": "ดูรายงานการประชุม",
   "meeting.viewDiscussion": "ดูการอภิปราย",
