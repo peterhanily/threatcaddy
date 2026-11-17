@@ -6,7 +6,7 @@ test.use({ serviceWorkers: 'block' });
 
 // In the All Investigations view (nothing selected), CaddyAI asks to write a note in the thread's
 // investigation. Only the local model is a fixture: it calls create_note once, then answers.
-async function openWriteCard(page: Page, context: BrowserContext, baseURL: string | undefined, options: { theme?: 'dark' | 'light'; language?: string } = {}) {
+async function openWriteCard(page: Page, context: BrowserContext, baseURL: string | undefined, options: { theme?: 'dark' | 'light'; language?: string; unfiled?: boolean } = {}) {
   const origin = new URL('/', baseURL).origin;
   const external: string[] = [];
   const errors: string[] = [];
@@ -34,7 +34,7 @@ async function openWriteCard(page: Page, context: BrowserContext, baseURL: strin
   const now = Date.now();
   await seedRows(page, {
     folders: [{ id: 'fictional-case', name: 'Fictional Case Alpha', order: 0, status: 'active', tags: [], createdAt: now, updatedAt: now }],
-    chatThreads: [{ id: 'fictional-thread', title: 'Fictional chat', folderId: 'fictional-case', provider: 'local', model: 'fictional-local-model',
+    chatThreads: [{ id: 'fictional-thread', title: 'Fictional chat', folderId: options.unfiled ? undefined : 'fictional-case', provider: 'local', model: 'fictional-local-model',
       messages: [], mode: 'act', tags: [], trashed: false, archived: false, createdAt: now, updatedAt: now }],
   });
   await page.evaluate(({ theme, language }) => {
@@ -94,6 +94,20 @@ test('in the global view, a write card names the investigation it changes and th
   const rows = await readRows(page, ['notes']);
   expect((rows.notes as Array<{ title: string; folderId?: string }>).filter(note => note.title === 'Fictional destination note'))
     .toEqual([expect.objectContaining({ folderId: 'fictional-case' })]);
+  expect(external).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test('an unfiled thread\'s write card says the change lands outside any investigation', async ({ page, context, baseURL }) => {
+  const { card, external, errors } = await openWriteCard(page, context, baseURL, { unfiled: true });
+  await expect(card.getByText('Approve a change outside any investigation?', { exact: true })).toBeVisible();
+  await expect(card.getByRole('listitem').filter({ hasText: 'Outside any investigation: stays on this device' })).toHaveCount(1);
+  await card.getByRole('button', { name: 'Approve', exact: true }).click();
+  await expect(page.getByText('Fictional answer.')).toBeVisible();
+  const rows = await readRows(page, ['notes']);
+  const notes = (rows.notes as Array<{ title: string; folderId?: string }>).filter(note => note.title === 'Fictional destination note');
+  expect(notes).toHaveLength(1);
+  expect(notes[0].folderId).toBeUndefined();
   expect(external).toEqual([]);
   expect(errors).toEqual([]);
 });
