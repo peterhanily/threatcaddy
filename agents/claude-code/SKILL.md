@@ -31,10 +31,12 @@ scripts/tc.mjs status
 scripts/tc.mjs investigations
 ```
 
-### Set active investigation
+### Show the active investigation
+
+The bridge works only in the investigation selected in ThreatCaddy. Select it in the app, then check it:
 
 ```bash
-scripts/tc.mjs folder <investigation_id>
+scripts/tc.mjs folder
 ```
 
 ### Execute a tool

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ execute: vi.fn(), folders: vi.fn(), log: vi.fn(), ready: vi.fn(), enabled: vi.fn(), metadata: vi.fn(), key: vi.fn() }));
 vi.mock('../lib/llm-tools', () => ({ executeTool: mocks.execute }));
 vi.mock('../lib/llm-tool-defs', () => ({ TOOL_DEFINITIONS: [{ name: 'search_notes' }], isWriteTool: () => false }));
-vi.mock('../db', () => ({ db: { folders: { toArray: mocks.folders }, activityLog: { add: mocks.log } } }));
+vi.mock('../db', () => ({ db: { folders: { toArray: mocks.folders, get: async () => undefined }, activityLog: { add: mocks.log } } }));
 vi.mock('../lib/workspace-initialization', () => ({ isWorkspaceInitialized: mocks.ready }));
 vi.mock('../lib/encryptionStore', () => ({ isEncryptionEnabled: mocks.enabled, getEncryptionMeta: mocks.metadata }));
 vi.mock('../lib/encryptionMiddleware', () => ({ ENCRYPTION_COVERAGE_VERSION: 2, getSessionKey: mocks.key }));

@@ -258,10 +258,6 @@ async function runDaemon(targetId, wsUrl) {
         case 'folder_get':
           result = await evalInPage(cdp, sessionId, 'window.threatcaddy.folderId()');
           break;
-        case 'folder_set':
-          await evalInPage(cdp, sessionId, `window.threatcaddy.setFolderId(${JSON.stringify(tcNonce)}, ${JSON.stringify(args[0])})`);
-          result = `Active investigation set to: ${args[0]}`;
-          break;
         case 'tools':
           result = await evalInPage(cdp, sessionId, 'JSON.stringify(window.threatcaddy.tools())');
           break;
@@ -385,7 +381,7 @@ Usage: tc <command> [args]
 
   status                              Check bridge connection and version
   investigations                      List all investigations
-  folder [id]                         Get or set the active investigation
+  folder                              Show the investigation selected in ThreatCaddy
   tools                               List available tool names
   exec <tool_name> '<json_input>'     Execute a CaddyAI tool
   stop                                Stop the background daemon
@@ -394,7 +390,7 @@ Usage: tc <command> [args]
 Examples:
   tc status
   tc investigations
-  tc folder abc123
+  tc folder
   tc exec search_notes '{"query": "malware"}'
   tc exec create_note '{"title": "Finding", "content": "# APT29 activity detected"}'
   tc exec bulk_create_iocs '{"iocs": [{"type":"ipv4","value":"10.0.0.1","confidence":"high"}]}'
@@ -464,6 +460,12 @@ async function main() {
     return;
   }
 
+  // The bridge follows the investigation selected in ThreatCaddy (bridge 1.2.0).
+  if (cmd === 'folder' && args[1]) {
+    console.error('The agent bridge follows the investigation selected in ThreatCaddy. Select it in the app; `tc folder` shows it.');
+    process.exit(1);
+  }
+
   // Check for existing daemon first — if one is running, use it directly
   const daemons = listDaemonSockets();
   let conn;
@@ -525,11 +527,7 @@ async function main() {
       daemonCmd = 'investigations'; daemonArgs = [];
       break;
     case 'folder':
-      if (args[1]) {
-        daemonCmd = 'folder_set'; daemonArgs = [args[1]];
-      } else {
-        daemonCmd = 'folder_get'; daemonArgs = [];
-      }
+      daemonCmd = 'folder_get'; daemonArgs = [];
       break;
     case 'tools':
       daemonCmd = 'tools'; daemonArgs = [];

@@ -9,7 +9,7 @@ import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
 
 vi.mock('../lib/workspace-initialization', () => ({ isWorkspaceInitialized: () => true }));
 
-type Bridge = { exec(nonce: string, name: string, input: Record<string, unknown>): Promise<string>; tools(): string[]; setFolderId(nonce: string, id: string): void };
+type Bridge = { exec(nonce: string, name: string, input: Record<string, unknown>): Promise<string>; tools(): string[]; setFolderId(nonce: string, id: string): void; investigations(nonce: string): Promise<string> };
 const bridge = () => (window as unknown as { threatcaddy: Bridge }).threatcaddy;
 
 let egress: EgressSpy;
@@ -46,6 +46,17 @@ describe('A-BRIDGE-1 with the bridge on and the shared investigation selected', 
 
   it('cannot see local-only investigations', async () => {
     await expect(bridge().exec(nonce, 'read_note', { id: ids('L').note })).rejects.toThrow(/not found/i);
+    await expect(bridge().exec(nonce, 'read_note', { id: [ids('L').note] })).rejects.toThrow(/not found/i);
+    const listed = JSON.parse(await bridge().investigations(nonce)) as Array<{ id: string }>;
+    expect(listed.map(folder => folder.id).sort()).toEqual(['P', 'S']);
+  });
+
+  it('lists every investigation from a local-only one, and none while the bridge is off', async () => {
+    syncBridgeFolderId('L2');
+    const listed = JSON.parse(await bridge().investigations(nonce)) as Array<{ id: string }>;
+    expect(listed.map(folder => folder.id).sort()).toEqual(['L', 'L2', 'P', 'S']);
+    localStorage.setItem(workspaceStorageKey('threatcaddy-settings'), JSON.stringify({ agentBridgeEnabled: false }));
+    await expect(bridge().investigations(nonce)).rejects.toThrow('Turn on the agent bridge');
   });
 
   it('runs in-scope work and cannot be re-scoped', async () => {

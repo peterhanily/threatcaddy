@@ -16,6 +16,7 @@
 import { executeTool } from './llm-tools';
 import { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
 import { AGENT_NEVER_TOOLS, EXPLICIT_ONLY_TOOLS } from './caddy-agent-policy';
+import { isFolderLocalOnly, isShareableFolder } from './ai-scope';
 import { workspaceStorageKey } from './workspace-profiles';
 import { db } from '../db';
 import type { Settings, ToolUseBlock } from '../types';
@@ -32,7 +33,7 @@ interface ThreatCaddyBridge {
   folderId: () => string | undefined;
   /** Retired: the bridge follows the investigation selected in ThreatCaddy. Always throws. */
   setFolderId: (nonce: string, id: string | undefined) => void;
-  /** List investigations with basic metadata. Requires valid nonce. */
+  /** List investigations with basic metadata. Requires valid nonce and the bridge turned on. */
   investigations: (nonce: string) => Promise<string>;
   /** Bridge version for compatibility checks */
   version: string;
@@ -131,7 +132,11 @@ const bridge: ThreatCaddyBridge = {
   async investigations(nonce: string): Promise<string> {
     validateNonce(nonce);
     requireReadyWorkspace();
-    const folders = await db.folders.toArray();
+    if (!isBridgeEnabled()) throw new Error('Turn on the agent bridge in Settings → AI');
+    // From a shareable investigation, local-only investigations do not exist.
+    const hideLocalOnly = await isShareableFolder(activeFolderId);
+    const folders = [];
+    for (const folder of await db.folders.toArray()) if (!hideLocalOnly || !await isFolderLocalOnly(folder)) folders.push(folder);
     return JSON.stringify(folders.map(f => ({
       id: f.id,
       name: f.name,
