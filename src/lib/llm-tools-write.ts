@@ -363,7 +363,7 @@ async function addLink(sourceType: string, sourceId: string, targetType: string,
   }
 }
 
-export async function executeGenerateReport(input: Record<string, unknown>, folderId?: string): Promise<string> {
+export async function executeGenerateReport(input: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   if (!folderId) {
     return JSON.stringify({ error: 'No investigation selected.' });
   }
@@ -439,6 +439,7 @@ export async function executeGenerateReport(input: Record<string, unknown>, fold
     pinned: true,
     archived: false,
     trashed: false,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   };

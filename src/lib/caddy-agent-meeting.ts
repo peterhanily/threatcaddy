@@ -450,7 +450,7 @@ ${PARTICIPANT_CONFIDENCE_INSTRUCTION}`;
       title: `${purpose === 'freeform' ? 'Meeting' : purpose}: ${agenda.substring(0, 60)}`,
       content: noteContent,
       folderId: folder.id,
-      tags: ['agent-meeting', 'meeting-minutes', `meeting-purpose:${purpose}`],
+      tags: ['agent-meeting', 'meeting-minutes', `meeting-purpose:${purpose}`, 'ai-generated'],
       pinned: false,
       archived: false,
       trashed: false,

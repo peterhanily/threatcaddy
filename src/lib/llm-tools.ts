@@ -354,7 +354,7 @@ async function dispatchTool(
       case 'create_timeline_event':   result = await executeCreateTimelineEvent(inp, folderId, creator); break;
       case 'update_timeline_event':   result = await executeUpdateTimelineEvent(inp); break;
       case 'link_entities':           result = await executeLinkEntities(inp); break;
-      case 'generate_report':         result = await executeGenerateReport(inp, folderId); break;
+      case 'generate_report':         result = await executeGenerateReport(inp, folderId, creator); break;
       case 'extract_iocs':            result = executeExtractIOCs(inp); break;
       case 'fetch_url':               result = await executeFetchUrl(inp); break;
       case 'list_investigations':           result = await executeListInvestigations(inp, visibility); break;
@@ -362,20 +362,20 @@ async function dispatchTool(
       case 'search_across_investigations':  result = await executeSearchAcrossInvestigations(inp, visibility); break;
       case 'create_in_investigation':       result = await executeCreateInInvestigation(inp, creator); break;
       case 'compare_investigations':        result = await executeCompareInvestigations(inp, visibility); break;
-      case 'enrich_ioc':                    result = await executeEnrichIOC(inp, folderId, constraints.signal, { passiveOnly: !humanApproved }); break;
+      case 'enrich_ioc':                    result = await executeEnrichIOC(inp, folderId, constraints.signal, { passiveOnly: !humanApproved, creator }); break;
       case 'list_integrations':             result = await executeListIntegrations(inp); break;
       case 'review_completed_task':          result = await executeReviewCompletedTask(inp, folderId, agentContext?.profileId, creator); break;
-      case 'delegate_task':                 result = await executeDelegateTask(inp, folderId); break;
+      case 'delegate_task':                 result = await executeDelegateTask(inp, folderId, creator); break;
       case 'list_agent_activity':           result = await executeListAgentActivity(inp, folderId); break;
-      case 'update_knowledge':               result = await executeUpdateKnowledge(inp, folderId); break;
+      case 'update_knowledge':               result = await executeUpdateKnowledge(inp, folderId, creator); break;
       case 'recall_knowledge':               result = await executeRecallKnowledge(inp, folderId); break;
-      case 'ask_human':                     result = await executeAskHuman(inp, folderId, constraints.signal, agentContext?.profileId); break;
+      case 'ask_human':                     result = await executeAskHuman(inp, folderId, constraints.signal, agentContext?.profileId, creator); break;
       case 'run_remote_command':            result = JSON.stringify({ error: 'Remote command execution is unavailable in this deployment.' }); break;
       case 'query_siem':                    result = await executeQuerySiem(inp, _settings, constraints.signal); break;
-      case 'create_ticket':                 result = await executeCreateTicket(inp, folderId, _settings, constraints.signal); break;
-      case 'call_meeting':                  result = await executeCallMeeting(inp, folderId); break;
-      case 'notify_human':                   result = await executeNotifyHuman(inp, folderId, constraints.signal); break;
-      case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId, constraints.signal); break;
+      case 'create_ticket':                 result = await executeCreateTicket(inp, folderId, _settings, constraints.signal, creator); break;
+      case 'call_meeting':                  result = await executeCallMeeting(inp, folderId, creator); break;
+      case 'notify_human':                   result = await executeNotifyHuman(inp, folderId, constraints.signal, creator); break;
+      case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId, constraints.signal, creator); break;
       case 'ingest_alert':                   result = await executeIngestAlert(inp, folderId, creator); break;
       case 'deploy_agent':                   result = await executeDeployAgent(inp, folderId); break;
       case 'stop_agent':                     result = await executeStopAgent(inp, folderId); break;
@@ -387,7 +387,7 @@ async function dispatchTool(
       case 'list_folders':                   result = await executeListFolders(inp, folderId); break;
       case 'spawn_agent':                    result = await executeSpawnAgent(inp, folderId); break;
       case 'define_specialist':              result = await executeDefineSpecialist(inp, folderId); break;
-      case 'dismiss_agent':                  result = await executeDismissAgent(inp, folderId); break;
+      case 'dismiss_agent':                  result = await executeDismissAgent(inp, folderId, creator); break;
       case 'reflect_on_performance':         result = await executeReflectOnPerformance(inp, agentContext?.profileId); break;
       case 'read_soul':                      result = await executeReadSoul(inp, agentContext?.profileId, agentRole); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
@@ -519,7 +519,7 @@ async function executeReviewCompletedTask(
       title: `⚠️ Escalation: ${task.title}`,
       content: `## Escalation — Human Review Required\n\n**Task:** ${task.title}\n**Reason:** ${quality === 'serious-failure' ? 'Serious failure (escalated immediately)' : `${newRejectionCount} rejections — automatic escalation`}\n**Latest feedback:** ${feedback}\n**Requested change:** ${requestedDelta}\n\n### Rejection history\n${newHistory.map((r, i) => `${i + 1}. [${new Date(r.at).toISOString()}] ${r.quality}: ${r.requestedDelta}`).join('\n')}\n\nAgents can no longer re-claim this task until a human intervenes (set escalated=false or close the task).`,
       folderId,
-      tags: ['agent-review', 'escalation', 'needs-human-review'],
+      tags: withCreatorTags(['agent-review', 'escalation', 'needs-human-review'], creator),
       pinned: true, archived: false, trashed: false,
       reviewRequired: true,
       createdBy: creator || 'agent:lead-reviewer',
@@ -555,7 +555,7 @@ async function executeReviewCompletedTask(
     title: `After-Action ${newRejectionCount}/${REJECTION_ESCALATION_THRESHOLD}: ${task.title}`,
     content: `## After-Action Review\n\n**Task:** ${task.title}\n**Verdict:** Needs Redo (rejection ${newRejectionCount}/${REJECTION_ESCALATION_THRESHOLD})\n**Requested change:** ${requestedDelta}\n**Feedback:** ${feedback}\n\nOne more rejection will auto-escalate this task to a human.`,
     folderId,
-    tags: ['agent-review', 'after-action'],
+    tags: withCreatorTags(['agent-review', 'after-action'], creator),
     pinned: false, archived: false, trashed: false,
     createdBy: creator || 'agent:lead-reviewer',
     createdAt: Date.now(), updatedAt: Date.now(),
@@ -598,7 +598,7 @@ async function injectAgentFeedback(task: { title: string; assignedDeploymentId?:
 
 const MAX_DELEGATION_DEPTH = 3;
 
-async function executeDelegateTask(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeDelegateTask(inp: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   if (!folderId) return JSON.stringify({ error: 'No investigation context' });
 
   const title = String(inp.title || '');
@@ -645,9 +645,9 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
     status: 'todo' as const,
     priority: priority.value ?? 'medium',
     completed: false,
-    tags: ['agent-delegated'],
+    tags: withCreatorTags(['agent-delegated'], creator),
     assignedDeploymentId: targetDeploymentId,
-    createdBy: 'agent:lead',
+    createdBy: creator,
     trashed: false,
     archived: false,
     order: 0,
@@ -708,7 +708,7 @@ async function executeListAgentActivity(inp: Record<string, unknown>, folderId?:
 
 // ── Integration / Enrichment Tools ────────────────────────────────────
 
-async function executeEnrichIOC(inp: Record<string, unknown>, folderId: string | undefined, signal: AbortSignal | undefined, opts: { passiveOnly: boolean }): Promise<string> {
+async function executeEnrichIOC(inp: Record<string, unknown>, folderId: string | undefined, signal: AbortSignal | undefined, opts: { passiveOnly: boolean; creator?: string }): Promise<string> {
   const iocId = String(inp.iocId || '');
   if (!iocId) return JSON.stringify({ error: 'iocId is required' });
 
@@ -782,9 +782,9 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId: string |
                 title: String(fields.title || `Enrichment: ${ioc.value}`),
                 content: String(fields.content || ''),
                 folderId,
-                tags: ['agent-enrichment', ...(Array.isArray(fields.tags) ? fields.tags : [])],
+                tags: withCreatorTags(['agent-enrichment', ...(Array.isArray(fields.tags) ? fields.tags : [])], opts.creator),
                 pinned: false, archived: false, trashed: false,
-                createdBy: 'agent:enrichment',
+                createdBy: opts.creator,
                 createdAt: Date.now(), updatedAt: Date.now(),
               });
             } else if (type === 'ioc' || type === 'standaloneIOC') {
@@ -796,8 +796,9 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId: string |
                 value: String(fields.value || ''),
                 confidence: normalizeEnum(fields.confidence, CONFIDENCE_VALUES) ?? 'medium',
                 folderId,
-                tags: ['agent-enrichment'],
+                tags: withCreatorTags(['agent-enrichment'], opts.creator),
                 trashed: false, archived: false,
+                createdBy: opts.creator,
                 createdAt: Date.now(), updatedAt: Date.now(),
               });
             }
@@ -891,7 +892,7 @@ async function executeListIntegrations(inp: Record<string, unknown>): Promise<st
 
 // ── Autonomy Tools (call_meeting, notify_human, declare_war_bridge) ──
 
-async function executeCallMeeting(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeCallMeeting(inp: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   if (!folderId) return JSON.stringify({ error: 'No investigation context' });
   const agenda = String(inp.agenda || '');
   if (!agenda) return JSON.stringify({ error: 'agenda is required' });
@@ -925,16 +926,16 @@ async function executeCallMeeting(inp: Record<string, unknown>, folderId?: strin
     title: `Meeting Request: ${agenda.substring(0, 60)}`,
     content: `## Agent Meeting Requested\n\n**Purpose:** ${purpose}\n**Agenda:** ${agenda}\n**Requested at:** ${new Date().toISOString()}\n\nThis meeting was requested by an agent and will be facilitated during the next agent cycle.`,
     folderId,
-    tags: ['agent-meeting', 'meeting-request', `meeting-purpose:${purpose}`],
+    tags: withCreatorTags(['agent-meeting', 'meeting-request', `meeting-purpose:${purpose}`], creator),
     pinned: false, archived: false, trashed: false,
-    createdBy: 'agent:lead',
+    createdBy: creator,
     createdAt: Date.now(), updatedAt: Date.now(),
   });
 
   return JSON.stringify({ success: true, noteId, purpose, message: `Meeting requested (purpose: ${purpose}). Will be scheduled on next cycle.` });
 }
 
-async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal): Promise<string> {
+async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal, creator?: string): Promise<string> {
   const message = String(inp.message || '');
   const severity = String(inp.severity || 'warning');
   if (!message) return JSON.stringify({ error: 'message is required' });
@@ -947,10 +948,10 @@ async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: strin
     title: `${severityEmoji} Agent Alert: ${message.substring(0, 60)}`,
     content: `## Agent Notification\n\n**Severity:** ${severity}\n**Time:** ${new Date().toISOString()}\n\n${message}`,
     folderId,
-    tags: ['agent-notification', `severity:${severity}`],
+    tags: withCreatorTags(['agent-notification', `severity:${severity}`], creator),
     pinned: severity !== 'info',
     archived: false, trashed: false,
-    createdBy: 'agent:notification',
+    createdBy: creator,
     createdAt: Date.now(), updatedAt: Date.now(),
   });
 
@@ -960,7 +961,7 @@ async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: strin
   return JSON.stringify({ success: true, noteId, severity, desktopNotificationAccepted, message: 'In-app alert note created.' });
 }
 
-async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal): Promise<string> {
+async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal, creator?: string): Promise<string> {
   if (!folderId) return JSON.stringify({ error: 'No investigation context' });
   const situation = String(inp.situation || '');
   const immediateActions = String(inp.immediateActions || '');
@@ -973,9 +974,9 @@ async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: 
     title: `🚨 WAR BRIDGE: ${situation.substring(0, 60)}`,
     content: `## WAR BRIDGE DECLARED\n\n**Situation:** ${situation}\n\n**Immediate Actions Required:**\n${immediateActions || 'Pending assessment'}\n\n**Declared at:** ${new Date().toISOString()}\n\n---\n\nAll agents should focus on this critical situation. Human operator review required immediately.`,
     folderId,
-    tags: ['war-bridge', 'escalation', 'critical', 'needs-human-review'],
+    tags: withCreatorTags(['war-bridge', 'escalation', 'critical', 'needs-human-review'], creator),
     pinned: true, archived: false, trashed: false,
-    createdBy: 'agent:war-bridge',
+    createdBy: creator,
     createdAt: Date.now(), updatedAt: Date.now(),
   });
 
@@ -992,7 +993,7 @@ async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: 
 
 const KNOWLEDGE_TAG = 'agent-knowledge-base';
 
-async function executeUpdateKnowledge(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeUpdateKnowledge(inp: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const key = String(inp.key || '');
   const value = String(inp.value || '');
   const category = String(inp.category || 'finding');
@@ -1029,9 +1030,9 @@ async function executeUpdateKnowledge(inp: Record<string, unknown>, folderId?: s
       title: 'Investigation Knowledge Base',
       content: JSON.stringify(knowledge, null, 2),
       folderId,
-      tags: [KNOWLEDGE_TAG],
+      tags: withCreatorTags([KNOWLEDGE_TAG], creator),
       pinned: false, archived: false, trashed: false,
-      createdBy: 'agent:knowledge',
+      createdBy: creator,
       createdAt: Date.now(), updatedAt: Date.now(),
     });
   }
@@ -1063,7 +1064,7 @@ async function executeRecallKnowledge(inp: Record<string, unknown>, folderId?: s
 
 // ── Agent-Human Collaboration ─────────────────────────────────────────
 
-async function executeAskHuman(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal, profileId?: string): Promise<string> {
+async function executeAskHuman(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal, profileId?: string, creator?: string): Promise<string> {
   const question = String(inp.question || '');
   const context = String(inp.context || '');
   const options = String(inp.options || '');
@@ -1118,9 +1119,9 @@ async function executeAskHuman(inp: Record<string, unknown>, folderId?: string, 
     title: `❓ Agent Question: ${question.substring(0, 50)}`,
     content: `## Agent Needs Your Input\n\n**Question:** ${question}\n\n${context ? `**Context:** ${context}\n\n` : ''}${options ? `**Suggested options:** ${options}\n\n` : ''}Please respond in the AgentCaddy inbox.`,
     folderId,
-    tags: ['agent-question'],
+    tags: withCreatorTags(['agent-question'], creator),
     pinned: true, archived: false, trashed: false,
-    createdBy: 'agent:question',
+    createdBy: creator,
     createdAt: Date.now(), updatedAt: Date.now(),
   });
 
@@ -1166,7 +1167,7 @@ async function executeQuerySiem(inp: Record<string, unknown>, settings?: Setting
   } finally { clearTimeout(timer); request.dispose(); }
 }
 
-async function executeCreateTicket(inp: Record<string, unknown>, folderId?: string, settings?: Settings, signal?: AbortSignal): Promise<string> {
+async function executeCreateTicket(inp: Record<string, unknown>, folderId?: string, settings?: Settings, signal?: AbortSignal, creator?: string): Promise<string> {
   const title = String(inp.title || '');
   const description = String(inp.description || '');
   const priority = String(inp.priority || 'medium');
@@ -1185,8 +1186,8 @@ async function executeCreateTicket(inp: Record<string, unknown>, folderId?: stri
       await db.tasks.add({
         id: taskId, title: `[TICKET] ${title}`, description,
         folderId, status: 'todo' as const, priority: local.value ?? 'medium',
-        completed: false, tags: ['external-ticket'], order: 0, trashed: false, archived: false,
-        createdBy: 'agent:ticket', createdAt: Date.now(), updatedAt: Date.now(),
+        completed: false, tags: withCreatorTags(['external-ticket'], creator), order: 0, trashed: false, archived: false,
+        createdBy: creator, createdAt: Date.now(), updatedAt: Date.now(),
       });
       return JSON.stringify({ success: true, taskId, external: false, message: 'No ticketing system configured — created as local task.' });
     }
@@ -1673,7 +1674,7 @@ async function executeDefineSpecialist(inp: Record<string, unknown>, folderId?: 
 
 // ── Agent Dismissal ──────────────────────────────────────────────────
 
-async function executeDismissAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeDismissAgent(inp: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const agentName = String(inp.agentName || '').trim();
   const reason = String(inp.reason || '').trim();
   const evidence = String(inp.evidence || '').trim();
@@ -1719,10 +1720,11 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
       '',
       `*This is a formal record of agent dismissal for performance tracking.*`,
     ].filter(Boolean).join('\n'),
-    tags: ['agent-dismissal', `agent:${targetProfile.name}`],
+    tags: withCreatorTags(['agent-dismissal', `agent:${targetProfile.name}`], creator),
     pinned: true,
     trashed: false,
     archived: false,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   });

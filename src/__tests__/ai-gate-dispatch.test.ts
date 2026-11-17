@@ -18,7 +18,7 @@ import { mintHumanApproval, type HumanApproval } from '../lib/human-approval';
 import * as toolReach from '../lib/tool-reach';
 import type { ToolSurface } from '../lib/tool-reach';
 import { canary, ids, rowsContain, seedAIWorkspace } from './helpers/ai-workspace';
-import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
+import { HEAD_BRIDGE_CAPS, installEgressSpy, type EgressSpy } from './helpers/egress-spy';
 import { ALL_STATIC_TOOLS, execTool } from './helpers/tool-exec';
 
 const integration = vi.hoisted(() => ({ run: vi.fn() }));
@@ -616,6 +616,62 @@ describe('provenance of AI-created entities', () => {
     const bridge = await execTool(call('create_ioc', { type: 'domain', value: 'bridge.example' }), 'S', { surface: 'bridge' });
     expect(await db.tasks.get(JSON.parse(supervisor.result).id)).toMatchObject({ createdBy: 'agent:🛰️ CaddyAgent Supervisor (Analyst)', tags: ['ai-generated'] });
     expect(await db.standaloneIOCs.get(JSON.parse(bridge.result).id)).toMatchObject({ createdBy: 'agent:🔌 Agent bridge (Analyst)', tags: ['ai-generated'] });
+  });
+
+  describe('every other note, task and IOC a tool makes', () => {
+    // Without the notification acknowledgement, desktop notices fall back at once.
+    beforeEach(() => { egress.restore(); egress = installEgressSpy(HEAD_BRIDGE_CAPS.filter(cap => cap !== 'notification_ack')); });
+    const setups: Record<string, () => Promise<unknown>> = {
+      dismiss: () => db.agentDeployments.add({ id: 'dep', investigationId: 'S', profileId: 'ap-threat-hunter', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 }),
+      // The run writes a note and an IOC through the enrichment callbacks.
+      enrich: async () => {
+        await db.installedIntegrations.add({ id: 'vt', templateId: 'vt-domain-lookup', name: 'vt', enabled: true, config: {}, scopeType: 'all', scopeFolderIds: [], runCount: 0, errorCount: 0, createdAt: 1, updatedAt: 1 });
+        const ran = integration.run.getMockImplementation()!;
+        integration.run.mockImplementation(async (...args: Parameters<typeof ran>) => {
+          const callbacks = args[3] as { onCreateEntity: (type: string, fields: Record<string, unknown>) => Promise<string> };
+          await callbacks.onCreateEntity('note', { title: 'Enrichment: example' });
+          await callbacks.onCreateEntity('ioc', { type: 'ipv4', value: '203.0.113.9' });
+          return ran(...args);
+        });
+      },
+    };
+    const reject = (quality: string) => call('review_completed_task', { taskId: ids('S').task, quality, feedback: 'Redo it', requestedDelta: 'Add the DNS resolution history for the domain.' });
+    const made = async (toolUse: ToolUseBlock, surface: ToolSurface, setup?: string) => {
+      await setups[setup ?? '']?.();
+      const rows = async () => [...await db.notes.toArray(), ...await db.tasks.toArray(), ...await db.standaloneIOCs.toArray()];
+      const before = new Set((await rows()).map(row => row.id));
+      const result = await execTool(toolUse, 'S', surface === 'agent' ? { surface, agentContext: {} } : { surface });
+      expect(result.isError, result.result).toBe(false);
+      return (await rows()).filter(row => !before.has(row.id)).map(row => ({ createdBy: row.createdBy, aiGenerated: row.tags.includes('ai-generated') }));
+    };
+    const agentMade = { createdBy: 'agent:🤖 CaddyAgent (Analyst)', aiGenerated: true };
+
+    it.each([
+      ['declare_war_bridge', call('declare_war_bridge', { situation: 'Ransomware on DC01 confirmed', immediateActions: 'Isolate DC01' })],
+      ['notify_human', call('notify_human', { message: 'Domain admin logon at 03:00', severity: 'critical' })],
+      ['call_meeting', call('call_meeting', { agenda: 'Containment of DC01' })],
+      ['ask_human', call('ask_human', { question: 'May we isolate DC01?' })],
+      ['update_knowledge', call('update_knowledge', { key: 'c2', value: 'evil.example' })],
+      ['delegate_task', call('delegate_task', { title: 'Hunt', description: 'Sweep hosts', assignToProfile: 'Threat Hunter' })],
+      ['a needs-redo review', reject('needs-redo')],
+      ['an escalating review', reject('serious-failure')],
+      ['create_ticket with no ticketing system', call('create_ticket', { title: 'Isolate DC01', description: 'Ransomware' })],
+      ['enrich_ioc', call('enrich_ioc', { iocId: ids('S').ioc }), 'enrich'],
+      ['dismiss_agent', call('dismiss_agent', { agentName: 'Threat Hunter', reason: 'Repeatedly ignored the scope of the investigation.', evidence: 'Three off-scope notes.' }), 'dismiss'],
+      ['generate_report', call('generate_report', { title: 'Interim report' })],
+    ] as const)('an agent\'s %s is attributed to it and tagged', async (_label, toolUse, setup?: string) => {
+      const rows = await made(toolUse, 'agent', setup);
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows).toEqual(rows.map(() => agentMade));
+    });
+
+    it.each([
+      ['update_knowledge', call('update_knowledge', { key: 'c2', value: 'evil.example' })],
+      ['create_ticket with no ticketing system', call('create_ticket', { title: 'Isolate DC01', description: 'Ransomware' })],
+      ['enrich_ioc', call('enrich_ioc', { iocId: ids('S').ioc }), 'enrich'],
+    ] as const)('a chat %s is attributed to the analyst without the tag', async (_label, toolUse, setup?: string) => {
+      expect(await made(toolUse, 'chat-act', setup)).toEqual(setup ? [{ createdBy: 'Analyst', aiGenerated: false }, { createdBy: 'Analyst', aiGenerated: false }] : [{ createdBy: 'Analyst', aiGenerated: false }]);
+    });
   });
 });
 
