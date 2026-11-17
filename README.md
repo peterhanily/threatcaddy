@@ -234,7 +234,7 @@ Three optional permissions — each toggled from the popup:
 | Permission | What it enables |
 |------------|----------------|
 | **Allow CaddyAI** | Grants the extension access to LLM provider APIs (Anthropic, OpenAI, Google, Mistral) so the browser can proxy AI requests from the app |
-| **Allow URL fetching** | Enables web fetch for `/fetch` and CaddyAI's `fetch_url` tool (public addresses only). The app calls a configured local LLM endpoint directly, not through the extension |
+| **Allow URL fetching** | Enables web fetch for `/fetch` and CaddyAI's `fetch_url` tool (public addresses only). The app sends chat, agent, meeting and supervisor requests to a configured local LLM endpoint directly, not through the extension; chat titles and conversation summaries still reach it through the extension, which needs that endpoint saved in its local-AI setting |
 | **Allow file URL access** | Required to send clips to `file://` standalone builds. Managed in `chrome://extensions` → ThreatCaddy — the toggle in the popup shows the current state |
 
 #### Standalone File Support

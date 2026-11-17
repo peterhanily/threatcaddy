@@ -5,7 +5,7 @@
 The ThreatCaddy browser extension (Chrome MV3 / Firefox) serves two purposes:
 
 1. **Clip capture** -- Select text on any web page, right-click or press a keyboard shortcut, and save it as a Markdown clip to be imported into ThreatCaddy.
-2. **LLM proxy** -- The ThreatCaddy web app routes AI API calls (Anthropic, OpenAI, Gemini, Mistral, local endpoints) through the extension's background service worker to bypass CORS restrictions. This enables streaming LLM responses directly in the browser without a backend relay. When a local model endpoint is configured in the app, the app calls it directly instead.
+2. **LLM proxy** -- The ThreatCaddy web app routes AI API calls (Anthropic, OpenAI, Gemini, Mistral, local endpoints) through the extension's background service worker to bypass CORS restrictions. This enables streaming LLM responses directly in the browser without a backend relay. When a local model endpoint is configured in the app, the app sends chat, agent, meeting and supervisor requests to it directly instead; chat titles and conversation summaries still go to it through the extension.
 
 All captured data stays in `chrome.storage.local`. The extension makes network requests only for an approved ThreatCaddy app: sending clips to it, proxying its AI requests with the keys it supplies, and fetching the web pages and integration requests it asks for. Clipping and sending clips are user actions. CaddyAI and agent web fetches need the analyst's approval, except that deployed agents fetch a fixed list of reference sites (NVD, CVE, CWE, MITRE ATT&CK, CISA, FIRST) without per-call approval when the investigation allows fetches, which it does by default.
 

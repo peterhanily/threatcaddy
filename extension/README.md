@@ -35,7 +35,7 @@ Clip text, images, and selections from web pages into ThreatCaddy. Works on Chro
 - **Rich content** — Preserves formatting, links, and inline images as Markdown
 - **Confirmation bubble** — Visual feedback after each capture
 - **Send to ThreatCaddy** — Confirm the destination workspace and transfer captured clips with per-clip save receipts
-- **LLM Proxy** — Routes CaddyAI API calls from the web app through the extension's background script, bypassing CORS restrictions for Anthropic, OpenAI, Gemini and Mistral. When a local LLM endpoint is configured in the app, the app calls it directly, not through the extension
+- **LLM Proxy** — Routes CaddyAI API calls from the web app through the extension's background script, bypassing CORS restrictions for Anthropic, OpenAI, Gemini and Mistral. When a local LLM endpoint is configured in the app, the app sends chat, agent, meeting and supervisor requests to it directly; chat titles and conversation summaries still reach it through the extension (see the local-AI setting below)
 - **Web fetch** — Fetches public web pages for CaddyAI and agents. ThreatCaddy 2.0.3 uses web fetch only with extension 1.1.3 or later; if more than one ThreatCaddy extension is installed, keep only the newest enabled and reload the app tab
 
 ## Usage
