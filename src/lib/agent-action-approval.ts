@@ -12,6 +12,7 @@ import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIO
 import { getToolActionClass } from './caddy-agent-policy';
 import { buildAgentToolset } from './caddy-agent';
 import { getHostToolDefinitions } from './agent-hosts';
+import { agentRefusal } from './llm-router';
 import { resolveAgentProfile } from './agent-profile-resolver';
 import { isShareableFolder } from './ai-scope';
 import { mintHumanApproval } from './human-approval';
@@ -38,7 +39,7 @@ async function approvalConstraints(action: AgentAction, toolUse: ToolUseBlock): 
   if (action.id.startsWith('srv:')) return 'Server proposals are history only and cannot be approved here.';
   const folder = await db.folders.get(action.investigationId);
   if (!folder || folder.status === 'archived') return 'Approved actions require an existing, non-archived investigation.';
-  if (await proposerRemoved(action)) return 'This agent is no longer deployed in this investigation, so its proposal cannot run.';
+  if (await proposerRemoved(action)) return await agentRefusal('refusal.proposerRemoved');
   const approval = mintHumanApproval(toolUse, action.investigationId, 'action-queue');
 
   if (action.agentConfigId === SUPERVISOR_ACTION_PROFILE) {

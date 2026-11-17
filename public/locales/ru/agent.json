@@ -238,6 +238,7 @@
   "refusal.noApiKey": "Для {{provider}} не настроен API-ключ.",
   "refusal.configuredProviders": "Настроенные провайдеры: {{providers}}. Задайте модель агента в настройках AgentCaddy.",
   "refusal.noActiveDeployments": "В этом расследовании нет активных развёрнутых агентов.",
+  "refusal.proposerRemoved": "Этот агент больше не развёрнут в этом расследовании, поэтому его предложение нельзя выполнить.",
   "meeting.deploy2Plus": "Разверните 2+ профиля агентов для начала совещания.",
   "meeting.viewMinutes": "Просмотреть протокол",
   "meeting.viewDiscussion": "Просмотреть обсуждение",

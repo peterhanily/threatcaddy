@@ -238,6 +238,7 @@
   "refusal.noApiKey": "Chưa cấu hình khóa API cho {{provider}}.",
   "refusal.configuredProviders": "Nhà cung cấp đã cấu hình: {{providers}}. Hãy đặt mô hình tác nhân trong cài đặt AgentCaddy.",
   "refusal.noActiveDeployments": "Không có tác nhân đã triển khai nào đang hoạt động trong điều tra này.",
+  "refusal.proposerRemoved": "Tác nhân này không còn được triển khai trong điều tra này, nên không thể thực hiện đề xuất của nó.",
   "meeting.deploy2Plus": "Triển khai 2+ hồ sơ tác nhân để bắt đầu cuộc họp.",
   "meeting.viewMinutes": "Xem biên bản",
   "meeting.viewDiscussion": "Xem thảo luận",

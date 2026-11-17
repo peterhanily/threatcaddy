@@ -238,6 +238,7 @@
   "refusal.noApiKey": "לא הוגדר מפתח API עבור {{provider}}.",
   "refusal.configuredProviders": "ספקים מוגדרים: {{providers}}. הגדר את מודל הסוכן בהגדרות AgentCaddy.",
   "refusal.noActiveDeployments": "אין סוכן פרוס פעיל בחקירה זו.",
+  "refusal.proposerRemoved": "סוכן זה כבר אינו פרוס בחקירה זו, ולכן לא ניתן להריץ את ההצעה שלו.",
   "meeting.deploy2Plus": "פרוס 2+ פרופילי סוכן להתחלת פגישה.",
   "meeting.viewMinutes": "צפה בפרוטוקול",
   "meeting.viewDiscussion": "צפה בדיון",

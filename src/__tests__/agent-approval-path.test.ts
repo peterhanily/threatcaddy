@@ -11,6 +11,8 @@ import { executeTool } from '../lib/llm-tools';
 import { SUPERVISOR_ACTION_PROFILE, SUPERVISOR_TOOLS, validateSupervisorDispatch } from '../lib/supervisor-tool-policy';
 import { ids, seedAIWorkspace } from './helpers/ai-workspace';
 import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
+import i18n from '../i18n';
+import deAgent from '../../public/locales/de/agent.json';
 
 const queue = (proposal: Partial<AgentAction> & Pick<AgentAction, 'toolName' | 'toolInput'>) =>
   queueAgentAction({ investigationId: 'S', threadId: 'thread', rationale: 'Proposed by an agent', ...proposal }).then(({ action }) => action);
@@ -82,6 +84,21 @@ describe('A-APPR re-derivation on approval', () => {
     expect(refused.isError).toBe(true);
     expect(errorOf(refused)).toBe('The agent profile is no longer available.');
     expect(await db.notes.where('title').equals('x').count()).toBe(0);
+  });
+
+  it('says in the analyst’s language that a dismissed agent’s proposal cannot run', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+    await i18n.changeLanguage('de');
+    try {
+      // Threat Hunter has no deployment in S: it was dismissed after proposing.
+      const action = await queue({ agentConfigId: 'ap-threat-hunter', toolName: 'create_note', toolInput: { title: 'From a dismissed agent' } });
+      const refused = await executeApprovedAction(action);
+      expect(refused.isError).toBe(true);
+      expect(errorOf(refused)).toBe(deAgent['refusal.proposerRemoved']);
+      expect(await db.agentActions.get(action.id)).toMatchObject({ status: 'failed' });
+      expect(await db.notes.where('title').equals('From a dismissed agent').count()).toBe(0);
+    } finally { await i18n.changeLanguage('en'); }
   });
 
   it('approving an agent question acknowledges it without asking again', async () => {

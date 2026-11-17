@@ -238,6 +238,7 @@
   "refusal.noApiKey": "Nie skonfigurowano klucza API dla {{provider}}.",
   "refusal.configuredProviders": "Skonfigurowani dostawcy: {{providers}}. Ustaw model agenta w ustawieniach AgentCaddy.",
   "refusal.noActiveDeployments": "Żaden wdrożony agent nie jest aktywny w tym dochodzeniu.",
+  "refusal.proposerRemoved": "Ten agent nie jest już wdrożony w tym dochodzeniu, więc jego propozycji nie można wykonać.",
   "meeting.deploy2Plus": "Wdróż 2+ profile agentów, aby rozpocząć spotkanie.",
   "meeting.viewMinutes": "Wyświetl protokół",
   "meeting.viewDiscussion": "Wyświetl dyskusję",

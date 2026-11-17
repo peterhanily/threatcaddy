@@ -238,6 +238,7 @@
   "refusal.noApiKey": "{{provider}} için yapılandırılmış bir API anahtarı yok.",
   "refusal.configuredProviders": "Yapılandırılmış sağlayıcılar: {{providers}}. Ajan modelini AgentCaddy ayarlarından belirleyin.",
   "refusal.noActiveDeployments": "Bu soruşturmada etkin dağıtılmış ajan yok.",
+  "refusal.proposerRemoved": "Bu ajan artık bu soruşturmada dağıtılmış değil, bu nedenle önerisi çalıştırılamaz.",
   "meeting.deploy2Plus": "Toplantı başlatmak için 2+ ajan profili dağıtın.",
   "meeting.viewMinutes": "Tutanakları görüntüle",
   "meeting.viewDiscussion": "Tartışmayı görüntüle",

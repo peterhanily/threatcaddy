@@ -238,6 +238,7 @@
   "refusal.noApiKey": "هیچ کلید API برای {{provider}} پیکربندی نشده است.",
   "refusal.configuredProviders": "ارائه‌دهندگان پیکربندی‌شده: {{providers}}. مدل عامل را در تنظیمات AgentCaddy تعیین کنید.",
   "refusal.noActiveDeployments": "هیچ عامل مستقری در این تحقیق فعال نیست.",
+  "refusal.proposerRemoved": "این عامل دیگر در این تحقیق مستقر نیست، بنابراین پیشنهاد آن قابل اجرا نیست.",
   "meeting.deploy2Plus": "برای شروع جلسه ۲+ پروفایل عامل مستقر کنید.",
   "meeting.viewMinutes": "مشاهده صورتجلسه",
   "meeting.viewDiscussion": "مشاهده بحث",

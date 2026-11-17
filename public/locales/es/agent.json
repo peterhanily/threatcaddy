@@ -238,6 +238,7 @@
   "refusal.noApiKey": "No hay ninguna clave API configurada para {{provider}}.",
   "refusal.configuredProviders": "Proveedores configurados: {{providers}}. Establezca el modelo del agente en la configuración de AgentCaddy.",
   "refusal.noActiveDeployments": "Ningún agente desplegado está activo en esta investigación.",
+  "refusal.proposerRemoved": "Este agente ya no está desplegado en esta investigación, por lo que su propuesta no se puede ejecutar.",
   "meeting.deploy2Plus": "Despliegue 2+ perfiles de agentes para iniciar una reunión.",
   "meeting.viewMinutes": "Ver actas",
   "meeting.viewDiscussion": "Ver discusión",

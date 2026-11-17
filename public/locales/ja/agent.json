@@ -238,6 +238,7 @@
   "refusal.noApiKey": "{{provider}} のAPIキーが設定されていません。",
   "refusal.configuredProviders": "設定済みのプロバイダー: {{providers}}。AgentCaddy の設定でエージェントモデルを設定してください。",
   "refusal.noActiveDeployments": "この調査でアクティブなデプロイ済みエージェントはありません。",
+  "refusal.proposerRemoved": "このエージェントはこの調査にデプロイされなくなったため、その提案は実行できません。",
   "meeting.deploy2Plus": "ミーティングを開始するには 2 つ以上のエージェントプロファイルをデプロイしてください。",
   "meeting.viewMinutes": "議事録を表示",
   "meeting.viewDiscussion": "議論を表示",

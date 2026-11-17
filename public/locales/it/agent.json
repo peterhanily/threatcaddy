@@ -238,6 +238,7 @@
   "refusal.noApiKey": "Nessuna chiave API configurata per {{provider}}.",
   "refusal.configuredProviders": "Provider configurati: {{providers}}. Imposta il modello dell'agente nelle impostazioni di AgentCaddy.",
   "refusal.noActiveDeployments": "Nessun agente distribuito è attivo in questa indagine.",
+  "refusal.proposerRemoved": "Questo agente non è più distribuito in questa indagine, quindi la sua proposta non può essere eseguita.",
   "meeting.deploy2Plus": "Distribuisci 2+ profili agente per avviare una riunione.",
   "meeting.viewMinutes": "Visualizza verbale",
   "meeting.viewDiscussion": "Visualizza discussione",
