@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import i18n from '../i18n';
 import deChat from '../../public/locales/de/chat.json';
+import { renderMarkdown, sanitizeHtml } from '../lib/markdown';
 import type { ChatThread, Folder, Settings, ToolUseBlock } from '../types';
 import type { ToolExecutionResult } from '../lib/llm-tool-execution';
 import type { ApprovalItem } from '../lib/chat-tool-executor';
@@ -56,6 +57,7 @@ const makeThread = (id: string, folderId?: string): ChatThread => ({ id, title: 
 const settings = { llmAnthropicApiKey: 'synthetic-unit-test-only', llmRoutingMode: 'auto' } as Settings;
 const call = (name: string, input: Record<string, unknown>, id = `call-${name}`): ToolUseBlock => ({ type: 'tool_use', id, name, input });
 const errorOf = (result: ToolExecutionResult) => String(JSON.parse(result.result).error ?? '');
+const chatCatalogs = import.meta.glob<{ default: { fetch: { createdNote: string } } }>('../../public/locales/*/chat.json', { eager: true });
 
 function renderChat(threads: ChatThread[]) {
   const props = { settings, onCreateThread: vi.fn(), onUpdateThread: vi.fn(), onAddMessage: vi.fn().mockResolvedValue(undefined), onTrashThread: vi.fn() };
@@ -148,6 +150,21 @@ describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
       addNote.mockRestore();
       await act(async () => { await i18n.changeLanguage('en'); });
     }
+  });
+
+  it('/fetch\'s note confirmation links exactly the fetched address and bolds the page title in every language', () => {
+    const url = 'https://www.cisa.gov/advisory';
+    const title = 'CISA (AA24-123A)';
+    const rendered = Object.fromEntries(Object.entries(chatCatalogs).map(([path, catalog]) => {
+      // ChatView fills the template without escaping; the message bubble renders it as markdown without media.
+      const content = catalog.default.fetch.createdNote.replace('{{title}}', title).replace('{{url}}', url);
+      const html = document.createElement('div');
+      html.innerHTML = sanitizeHtml(renderMarkdown(content, undefined, { disableMedia: true }), { disableMedia: true });
+      return [path.split('/').at(-2), { links: [...html.querySelectorAll('a')].map(link => link.getAttribute('href')),
+        bold: [...html.querySelectorAll('strong')].map(node => node.textContent) }];
+    }));
+    expect(Object.keys(rendered)).toHaveLength(21);
+    expect(rendered).toEqual(Object.fromEntries(Object.keys(rendered).map(lng => [lng, { links: [url], bold: [title] }])));
   });
 
   it('Export as note files the note in the thread\'s investigation from the global view', async () => {
