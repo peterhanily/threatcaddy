@@ -80,8 +80,8 @@ describe('the Supervisor Briefing card', () => {
 
 describe('the AgentCaddy dashboard', () => {
   it('briefs from the local-only supervisor folder and lists an older synced one as an ordinary investigation', async () => {
-    await folderWithNote('A-old', 'OLD-FINDING');
-    await folderWithNote('Z-new', 'NEW-FINDING', { localOnly: true });
+    await folderWithNote('A-old', 'OLD-FINDING', { agentEnabled: true });
+    await folderWithNote('Z-new', 'NEW-FINDING', { localOnly: true, agentEnabled: true });
     await db.agentActions.bulkAdd([action('old-act', 'A-old', 'link_entities'), action('sup-act', 'Z-new', 'create_task')]);
     const open = vi.fn();
     const folders = (await db.folders.toArray()).sort((a, b) => a.order - b.order);
@@ -91,6 +91,7 @@ describe('the AgentCaddy dashboard', () => {
     expect(screen.queryByText('OLD-FINDING')).not.toBeInTheDocument();
     await waitFor(() => expect(container.textContent).toContain('link_entities'));
     expect(container.textContent).not.toContain('create_task');
+    expect(screen.getByText('1 active agent')).toBeInTheDocument();
     fireEvent.click(screen.getByText('NEW-FINDING'));
     expect(open).toHaveBeenLastCalledWith('Z-new');
   });
