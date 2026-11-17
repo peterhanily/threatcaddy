@@ -141,6 +141,18 @@ describe('agent hook lifecycle ownership', () => {
     expect(mocks.multi).toHaveBeenCalledOnce();
   });
 
+  it('a manual run or chat run_agent_cycle also runs deployed agents waiting for review; the timer does not', async () => {
+    const first = folder(); mocks.folders.set(first.id, first); mocks.count.mockResolvedValue(1);
+    const { result } = renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(mocks.multi).toHaveBeenCalledOnce();
+    expect(mocks.multi.mock.calls[0][5]).toEqual({ manual: false });
+    await act(async () => result.current.runOnce());
+    expect(mocks.multi.mock.calls[1][5]).toEqual({ manual: true });
+    await act(async () => { window.dispatchEvent(new CustomEvent('tc-run-agent-cycle', { detail: { folderId: first.id } })); });
+    expect(mocks.multi.mock.calls[2][5]).toEqual({ manual: true });
+  });
+
   it('B-PAUSE-1 a deployed agent\'s or the supervisor\'s proposal does not pause the legacy agent', async () => {
     const first = folder(); mocks.folders.set(first.id, first);
     mocks.pending.mockResolvedValue([{ toolName: 'fetch_url', agentConfigId: 'ap-threat-hunter' }, { toolName: 'update_ioc', agentConfigId: 'caddy-supervisor' }]);

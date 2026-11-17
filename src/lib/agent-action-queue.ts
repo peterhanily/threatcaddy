@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import { db } from '../db';
 import type { AgentAction } from '../types';
+import { canonicalJSON } from './tool-binding';
 
 /** Shared approval queue for investigation agents and the supervisor. A call
  * parsed out of model text keeps the text_tc_ marker in its row id, so "Approve
@@ -10,10 +11,11 @@ export async function queueAgentAction(
   options: { harvested?: boolean } = {},
 ): Promise<{ action: AgentAction; alreadyPending: boolean }> {
   return db.transaction('rw', db.agentActions, async () => {
-    const inputJson = JSON.stringify(proposal.toolInput);
+    // Argument order does not make a new proposal.
+    const inputJson = canonicalJSON(proposal.toolInput);
     const existing = await db.agentActions
       .where('[investigationId+status]').equals([proposal.investigationId, 'pending'])
-      .filter(action => action.agentConfigId === proposal.agentConfigId && action.toolBinding === proposal.toolBinding && action.toolName === proposal.toolName && JSON.stringify(action.toolInput) === inputJson)
+      .filter(action => action.agentConfigId === proposal.agentConfigId && action.toolBinding === proposal.toolBinding && action.toolName === proposal.toolName && canonicalJSON(action.toolInput) === inputJson)
       .first();
     if (existing) return { action: existing, alreadyPending: true };
 

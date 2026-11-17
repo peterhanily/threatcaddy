@@ -14,13 +14,14 @@ import { tokenCount } from './model-pricing';
 export interface MultiAgentCycleResult {
   deploymentResults: Map<string, AgentCycleResult>;
   errors: string[];
-  /** Profiles skipped this cycle because a proposal of theirs awaits review. */
+  /** Profiles with a proposal awaiting review. A timed cycle skips them; a manual one runs them too. */
   waitingForReview: string[];
 }
 
 /**
  * Run a single cycle for all deployed agents in an investigation.
- * Agents run concurrently via Promise.allSettled.
+ * Agents run concurrently via Promise.allSettled. `manual` is a person's run
+ * (Run, or an approved chat run_agent_cycle).
  */
 export async function runMultiAgentCycle(
   folder: Folder,
@@ -28,10 +29,11 @@ export async function runMultiAgentCycle(
   extensionAvailable: boolean,
   onProgress?: (agentName: string, status: string) => void,
   signal?: AbortSignal,
+  options: { manual?: boolean } = {},
 ): Promise<MultiAgentCycleResult> {
   const lifecycle = cancellableRequest(signal);
   try {
-    return await runMultiAgentCycleInner(folder, settings, extensionAvailable, onProgress, lifecycle.signal);
+    return await runMultiAgentCycleInner(folder, settings, extensionAvailable, onProgress, lifecycle.signal, options.manual === true);
   } finally {
     lifecycle.dispose();
   }
@@ -43,6 +45,7 @@ async function runMultiAgentCycleInner(
   extensionAvailable: boolean,
   onProgress: ((agentName: string, status: string) => void) | undefined,
   signal: AbortSignal,
+  manual: boolean,
 ): Promise<MultiAgentCycleResult> {
   signal.throwIfAborted();
   // Load all active deployments
@@ -66,7 +69,9 @@ async function runMultiAgentCycleInner(
     d => d.status !== 'paused' && d.shift !== 'resting' && !shouldBlockNewCycle(d),
   );
   const waitingForReview = [...new Set(runnable.filter(d => awaitingReview.has(d.profileId)).map(d => d.profileId))];
-  const activeDeployments = runnable.filter(d => !awaitingReview.has(d.profileId));
+  // A manual run runs waiting agents too, as 2.0.2 did. queueAgentAction answers
+  // a repeat of a pending proposal with the pending row instead of a second one.
+  const activeDeployments = manual ? runnable : runnable.filter(d => !awaitingReview.has(d.profileId));
 
   if (activeDeployments.length === 0) {
     if (waitingForReview.length > 0) {

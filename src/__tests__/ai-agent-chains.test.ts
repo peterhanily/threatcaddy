@@ -341,6 +341,31 @@ describe('B-PAUSE-1 only the agent with a pending proposal pauses', () => {
     expect(await ran()).toEqual(['ap-lead-analyst']);
   });
 
+  it('a manual run also runs the waiting agent, without queueing a second copy of its proposal', async () => {
+    await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY, autoApproveCreate: false } });
+    await deploy('ap-threat-hunter');
+    await db.agentActions.add({ id: 'held', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'create_note',
+      toolInput: { title: 'Plan', content: 'Hunt for persistence' }, rationale: 'Proposed', status: 'pending', createdAt: 1 });
+    // The same proposal again, with its arguments in another order.
+    scriptedLLM.script({ toolCalls: [{ name: 'create_note', input: { content: 'Hunt for persistence', title: 'Plan' } }] });
+    const result = await runMultiAgentCycle(await folder('S'), settings, true, undefined, undefined, { manual: true });
+    expect(result.errors).toEqual([]);
+    expect(await ran()).toEqual(['ap-threat-hunter']);
+    expect(result.waitingForReview).toEqual(['ap-threat-hunter']);
+    expect((await actionsFor('create_note')).map(action => [action.id, action.status])).toEqual([['held', 'pending']]);
+    expect(String(toolResultTurns()[0][0].content)).toContain('already_pending');
+  });
+
+  it('a timed run still skips the waiting agent', async () => {
+    await deploy('ap-threat-hunter');
+    await db.agentActions.add({ id: 'held', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'fetch_url',
+      toolInput: { url: COLLECTOR }, rationale: 'Proposed', status: 'pending', createdAt: 1 });
+    const result = await runMultiAgentCycle(await folder('S'), settings, true, undefined, undefined, { manual: false });
+    expect(result.waitingForReview).toEqual(['ap-threat-hunter']);
+    expect(scriptedLLM.requests).toEqual([]);
+    expect(await ran()).toEqual([]);
+  });
+
   it('a legacy or supervisor proposal pauses no deployment', async () => {
     await deploy('ap-threat-hunter'); await deploy('ap-lead-analyst');
     await db.agentActions.bulkAdd([
