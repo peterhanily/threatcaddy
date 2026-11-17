@@ -1,17 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { db } from '../db';
-import { DEFAULT_SETTINGS, type AgentDeployment, type Folder, type Settings } from '../types';
+import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentDeployment, type Folder, type Settings } from '../types';
 import { hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, type LLMRouteCallbacks } from '../lib/llm-router';
 import { useLLM } from '../hooks/useLLM';
 import { getAllLoops, startLoop, stopLoop } from '../lib/chat-loop';
 import { runAgentMeeting } from '../lib/caddy-agent-meeting';
-import { runAgentCycle } from '../lib/caddy-agent';
+import { resolveAgentModel, runAgentCycle } from '../lib/caddy-agent';
 import { runSupervisorCycle } from '../lib/caddy-agent-supervisor';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
 import i18n from '../i18n';
 import enSettings from '../../public/locales/en/settings.json';
 import deSettings from '../../public/locales/de/settings.json';
+import deAgent from '../../public/locales/de/agent.json';
 
 // Real resolver, recorded transports. Each transport answers at once so a meeting completes.
 const { answer } = vi.hoisted(() => ({
@@ -216,5 +217,36 @@ describe('D-ROUTE-5 agent cycles and the supervisor go where Settings says', () 
       expect((await meet({ llmRoutingMode: 'auto' }, false)).error).toBe(deSettings['ai.dataFlow.errorNone']);
       noModelCall();
     } finally { await i18n.changeLanguage('en'); }
+  });
+
+  it('says in the analyst’s language that a model has no key, or that a meeting has too few agents', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+    await i18n.changeLanguage('de');
+    const noKey = (provider: string) => deAgent['refusal.noApiKey'].replace('{{provider}}', provider);
+    const keyless: Partial<Settings> = { llmAnthropicApiKey: undefined, llmRoutingMode: 'extension' };
+    try {
+      // The supervisor uses the default provider (Anthropic), which has no key here.
+      expect((await supervise({ ...keyless, llmOpenAIApiKey: 'synthetic-openai-key' }, true)).error).toBe(noKey('anthropic'));
+      expect((await meet(keyless, true)).error).toBe(noKey('anthropic'));
+      expect((await cycle(keyless, true)).error).toBe(`${noKey('anthropic')} ${deAgent['panel.configureApiKeyDesc']}`);
+      // The investigation's agent model is an OpenAI model, and only an Anthropic key is saved.
+      await db.folders.update(folder.id, { agentPolicy: { ...DEFAULT_AGENT_POLICY, model: 'gpt-5.4' } });
+      expect((await cycle({ llmRoutingMode: 'extension' }, true)).error)
+        .toBe(`${noKey('openai')} ${deAgent['refusal.configuredProviders'].replace('{{providers}}', 'anthropic')}`);
+      const alone = await runAgentMeeting(folder, deployments.slice(0, 1), { ...DEFAULT_SETTINGS, llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'extension' }, true, 'Review the case');
+      expect(alone.error).toBe(deAgent['meeting.deploy2Plus']);
+      noModelCall();
+    } finally { await i18n.changeLanguage('en'); }
+  });
+
+  it('an investigation whose agent model is the local model runs on it directly, signed out and with no extension', async () => {
+    const settings: Partial<Settings> = { llmRoutingMode: 'auto', llmLocalModelName: 'llama3', ...local };
+    await db.folders.update(folder.id, { agentPolicy: { ...DEFAULT_AGENT_POLICY, model: 'llama3' } });
+    // The AgentCaddy panel resolves its readiness with the same helper.
+    expect(resolveAgentModel({ ...base, ...settings }, 'llama3')).toEqual({ provider: 'local', model: 'llama3' });
+    expect((await cycle(settings, false)).error).toBeUndefined();
+    expect(sendDirectToLocal).toHaveBeenCalled();
+    expect(sendViaExtension).not.toHaveBeenCalled();
   });
 });

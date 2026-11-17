@@ -229,6 +229,8 @@
   "meeting.meetingInProgress": "การประชุมกำลังดำเนินอยู่...",
   "meeting.couldNotRun": "ไม่สามารถจัดการประชุมได้: {{error}}",
   "supervisor.couldNotRun": "ไม่สามารถเรียกใช้เอเจนต์ผู้ดูแลได้: {{error}}",
+  "refusal.noApiKey": "ยังไม่ได้กำหนดค่า API Key สำหรับ {{provider}}",
+  "refusal.configuredProviders": "ผู้ให้บริการที่กำหนดค่าแล้ว: {{providers}} ตั้งค่าโมเดลของเอเจนต์ในการตั้งค่า AgentCaddy",
   "meeting.deploy2Plus": "ติดตั้งโปรไฟล์เอเจนต์อย่างน้อย 2 รายการเพื่อเริ่มการประชุม",
   "meeting.viewMinutes": "ดูรายงานการประชุม",
   "meeting.viewDiscussion": "ดูการอภิปราย",

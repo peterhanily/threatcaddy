@@ -24,7 +24,7 @@ import { isShareableFolder } from './ai-scope';
 import { loadAgentPolicy } from './agent-profile-resolver';
 import { classifyToolCall, decideToolCall, type Verdict } from './tool-reach';
 import { sanitizeSoulText } from './soul-text';
-import { hasServerSession, resolveRoute, sendViaExtension, sendViaServer, sendDirectToLocal, unavailableRouteError } from './llm-router';
+import { agentRefusal, hasServerSession, resolveRoute, sendViaExtension, sendViaServer, sendDirectToLocal, unavailableRouteError } from './llm-router';
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
 import { getHostToolDefinitions, isHttpsOrLoopback } from './agent-hosts';
 import { calculateCost, tokenCount } from './model-pricing';
@@ -111,6 +111,17 @@ export function resolveConfiguredProvider(settings: Settings): { resolvedProvide
 
   // Nothing configured — will fail with helpful error downstream
   return { resolvedProvider: defaultProvider, resolvedModel: settings.llmDefaultModel || 'claude-sonnet-4-6' };
+}
+
+/** The provider and model an agent cycle uses: the investigation's agent model, else the configured default. */
+export function resolveAgentModel(settings: Settings, policyModel?: string): { provider: LLMProvider; model: string } {
+  if (policyModel) {
+    const entry = MODEL_PROVIDER_MAP[policyModel];
+    const provider = entry ? entry : (policyModel === settings.llmLocalModelName ? 'local' : (settings.llmDefaultProvider || 'anthropic')) as LLMProvider;
+    return { provider, model: policyModel };
+  }
+  const { resolvedProvider, resolvedModel } = resolveConfiguredProvider(settings);
+  return { provider: resolvedProvider, model: resolvedModel };
 }
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -524,20 +535,7 @@ async function _runAgentCycleInner(
   const policy: AgentPolicy = await loadAgentPolicy(folder.id, { profileId: profile?.id, deploymentId: deployment?.id });
 
   // Resolve provider + model: policy override > global default > first configured
-  let provider: LLMProvider;
-  let model: string;
-
-  if (policy.model) {
-    // Policy has an explicit model set
-    const entry = MODEL_PROVIDER_MAP[policy.model];
-    provider = entry ? entry : (policy.model === settings.llmLocalModelName ? 'local' : (settings.llmDefaultProvider || 'anthropic')) as LLMProvider;
-    model = policy.model;
-  } else {
-    // Find first configured provider
-    const { resolvedProvider, resolvedModel } = resolveConfiguredProvider(settings);
-    provider = resolvedProvider;
-    model = resolvedModel;
-  }
+  const { provider, model } = resolveAgentModel(settings, policy.model);
 
   // The route Settings → AI shows: local endpoint first, strict explicit modes, a signed-in session for the server.
   const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(), provider });
@@ -549,9 +547,9 @@ async function _runAgentCycleInner(
     if (!apiKey) {
       const configured = getConfiguredProviderNames(settings);
       const hint = configured.length > 0
-        ? `Configured providers: ${configured.join(', ')}. Set the agent model in AgentCaddy settings.`
-        : 'Add an API key in Settings > AI/LLM.';
-      return { autoExecuted: [], proposed: [], threadId: '', error: `No API key for ${provider}. ${hint}` };
+        ? await agentRefusal('refusal.configuredProviders', { providers: configured.join(', ') })
+        : await agentRefusal('panel.configureApiKeyDesc');
+      return { autoExecuted: [], proposed: [], threadId: '', error: `${await agentRefusal('refusal.noApiKey', { provider })} ${hint}` };
     }
   }
 

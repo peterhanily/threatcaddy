@@ -9,7 +9,7 @@ import { nanoid } from 'nanoid';
 import type { AgentDeployment, AgentMeeting, AgentProfile, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider, MeetingPurpose, MeetingStructuredOutput } from '../types';
 import { TOOL_DEFINITIONS } from './llm-tool-defs';
 import { buildSystemPrompt } from './llm-tools';
-import { hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, unavailableRouteError } from './llm-router';
+import { agentRefusal, hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, unavailableRouteError } from './llm-router';
 import { BUILTIN_AGENT_PROFILES } from './builtin-agent-profiles';
 
 export interface AgentMeetingResult {
@@ -230,7 +230,7 @@ export async function runAgentMeeting(
 
   const apiKey = useServerProxy ? 'server-proxy' : (getApiKeyForProvider(provider, settings) || '');
   if (!useServerProxy && !apiKey) {
-    return { meetingId: '', threadId: '', roundsCompleted: 0, error: `No API key configured for ${provider}` };
+    return { meetingId: '', threadId: '', roundsCompleted: 0, error: await agentRefusal('refusal.noApiKey', { provider }) };
   }
   const endpoint = provider === 'local' ? settings.llmLocalEndpoint : undefined;
 
@@ -249,7 +249,7 @@ export async function runAgentMeeting(
   }
 
   if (participants.length < 2) {
-    return { meetingId: '', threadId: '', roundsCompleted: 0, error: 'Need at least 2 agents for a meeting' };
+    return { meetingId: '', threadId: '', roundsCompleted: 0, error: await agentRefusal('meeting.deploy2Plus') };
   }
 
   // Create meeting thread

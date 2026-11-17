@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} loop",
     "loopCount_other": "{{count}} loop",
     "stopAllLoops": "Hentikan semua loop",
+    "loopRetrying": "Mencoba lagi setelah terjadi kesalahan",
     "exportAsNote": "Ekspor sebagai catatan",
     "shareChat": "Bagikan obrolan",
     "emptyTitle": "Mulai percakapan",

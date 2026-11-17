@@ -229,6 +229,8 @@
   "meeting.meetingInProgress": "جلسه در حال برگزاری...",
   "meeting.couldNotRun": "جلسه برگزار نشد: {{error}}",
   "supervisor.couldNotRun": "عامل ناظر اجرا نشد: {{error}}",
+  "refusal.noApiKey": "هیچ کلید API برای {{provider}} پیکربندی نشده است.",
+  "refusal.configuredProviders": "ارائه‌دهندگان پیکربندی‌شده: {{providers}}. مدل عامل را در تنظیمات AgentCaddy تعیین کنید.",
   "meeting.deploy2Plus": "برای شروع جلسه ۲+ پروفایل عامل مستقر کنید.",
   "meeting.viewMinutes": "مشاهده صورتجلسه",
   "meeting.viewDiscussion": "مشاهده بحث",

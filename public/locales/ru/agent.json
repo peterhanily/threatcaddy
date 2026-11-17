@@ -229,6 +229,8 @@
   "meeting.meetingInProgress": "Совещание идёт...",
   "meeting.couldNotRun": "Не удалось провести совещание: {{error}}",
   "supervisor.couldNotRun": "Не удалось запустить агента-супервизора: {{error}}",
+  "refusal.noApiKey": "Для {{provider}} не настроен API-ключ.",
+  "refusal.configuredProviders": "Настроенные провайдеры: {{providers}}. Задайте модель агента в настройках AgentCaddy.",
   "meeting.deploy2Plus": "Разверните 2+ профиля агентов для начала совещания.",
   "meeting.viewMinutes": "Просмотреть протокол",
   "meeting.viewDiscussion": "Просмотреть обсуждение",

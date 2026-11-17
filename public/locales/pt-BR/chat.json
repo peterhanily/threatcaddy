@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} loop",
     "loopCount_other": "{{count}} loops",
     "stopAllLoops": "Parar todos os loops",
+    "loopRetrying": "Tentando novamente após erro",
     "exportAsNote": "Exportar como nota",
     "shareChat": "Compartilhar conversa",
     "emptyTitle": "Iniciar uma conversa",

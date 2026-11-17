@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} حلقه",
     "loopCount_other": "{{count}} حلقه",
     "stopAllLoops": "توقف همه حلقه‌ها",
+    "loopRetrying": "تلاش دوباره پس از خطا",
     "exportAsNote": "صدور به عنوان یادداشت",
     "shareChat": "اشتراک‌گذاری چت",
     "emptyTitle": "یک مکالمه شروع کنید",

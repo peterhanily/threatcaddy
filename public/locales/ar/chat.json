@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} حلقة",
     "loopCount_other": "{{count}} حلقات",
     "stopAllLoops": "إيقاف جميع الحلقات",
+    "loopRetrying": "إعادة المحاولة بعد خطأ",
     "exportAsNote": "تصدير كملاحظة",
     "shareChat": "مشاركة المحادثة",
     "emptyTitle": "ابدأ محادثة",

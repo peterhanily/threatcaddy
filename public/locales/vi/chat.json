@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} vòng lặp",
     "loopCount_other": "{{count}} vòng lặp",
     "stopAllLoops": "Dừng tất cả vòng lặp",
+    "loopRetrying": "Đang thử lại sau lỗi",
     "exportAsNote": "Xuất dưới dạng ghi chú",
     "shareChat": "Chia sẻ trò chuyện",
     "emptyTitle": "Bắt đầu cuộc trò chuyện",

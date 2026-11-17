@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} boucle",
     "loopCount_other": "{{count}} boucles",
     "stopAllLoops": "Arrêter toutes les boucles",
+    "loopRetrying": "Nouvelle tentative après une erreur",
     "exportAsNote": "Exporter comme note",
     "shareChat": "Partager la discussion",
     "emptyTitle": "Démarrer une conversation",

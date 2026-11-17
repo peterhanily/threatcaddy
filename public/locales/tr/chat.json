@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} döngü",
     "loopCount_other": "{{count}} döngü",
     "stopAllLoops": "Tüm döngüleri durdur",
+    "loopRetrying": "Hatadan sonra yeniden deneniyor",
     "exportAsNote": "Not olarak dışa aktar",
     "shareChat": "Sohbeti paylaş",
     "emptyTitle": "Bir konuşma başlat",

@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} ループ",
     "loopCount_other": "{{count}} ループ",
     "stopAllLoops": "すべてのループを停止",
+    "loopRetrying": "エラー後に再試行中",
     "exportAsNote": "ノートとしてエクスポート",
     "shareChat": "チャットを共有",
     "emptyTitle": "会話を始める",

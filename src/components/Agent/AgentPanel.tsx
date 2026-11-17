@@ -13,8 +13,8 @@ import { loadAgentPolicy } from '../../lib/agent-profile-resolver';
 import { CROSS_CASE_READ_TOOLS, resolveEffectivePolicy } from '../../lib/caddy-agent-policy';
 import { isShareableFolder } from '../../lib/ai-scope';
 import { workspaceStorageKey } from '../../lib/workspace-profiles';
-import { hasServerSession, resolveRoute } from '../../lib/llm-router';
-import { resolveConfiguredProvider } from '../../lib/caddy-agent';
+import { hasServerSession, resolveRoute, UNAVAILABLE_ROUTE_ERRORS } from '../../lib/llm-router';
+import { resolveAgentModel, resolveConfiguredProvider } from '../../lib/caddy-agent';
 import { useAuth } from '../../contexts/AuthContext';
 import { AgentActionCard } from './AgentActionCard';
 import { AgentProfilePicker } from './AgentProfilePicker';
@@ -163,10 +163,15 @@ function InvestigationAgentPanel({
   // The route an agent cycle takes for the model it will use: a stored sign-in is the server session.
   // useAuth re-renders on sign-in and sign-out.
   useAuth();
-  const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(), provider: resolveConfiguredProvider(settings).resolvedProvider });
+  const routeEnv = { extensionAvailable, serverSession: hasServerSession() };
+  const agentProvider = resolveAgentModel(settings, folder.agentPolicy?.model).provider;
+  const route = resolveRoute(settings, { ...routeEnv, provider: agentProvider });
+  // An investigation model with no route keeps the panel open while the default model has one:
+  // the model selector here is the fix, and a run says why it cannot go.
+  const defaultRoute = resolveRoute(settings, { ...routeEnv, provider: resolveConfiguredProvider(settings).resolvedProvider });
   const hasServerProxy = route.route === 'server';
   const needsSignIn = route.route === 'unavailable' && route.reason === 'no-server';
-  const isReady = hasServerProxy || (route.route !== 'unavailable' && hasApiKey);
+  const isReady = hasServerProxy || ((route.route !== 'unavailable' || defaultRoute.route !== 'unavailable') && hasApiKey);
 
   // Load actions for this investigation (paginated)
   const [agentTasks, setAgentTasks] = useState<Task[]>([]);
@@ -455,7 +460,8 @@ function InvestigationAgentPanel({
           <AlertTriangle size={12} className="shrink-0 mt-0.5" />
           <div className="flex-1">
             <span>{error}</span>
-            {(error.includes('API key') || error.includes('timed out') || error.includes('No API key')) && onOpenSettings && (
+            {(error.includes('API key') || error.includes('timed out') || error.includes(t('refusal.noApiKey', { provider: agentProvider }))
+              || Object.values(UNAVAILABLE_ROUTE_ERRORS).some(key => error.includes(tSettings(key)))) && onOpenSettings && (
               <button onClick={() => onOpenSettings('ai')} className="block text-accent-blue hover:underline mt-0.5">{t('panel.openAISettingsLink')}</button>
             )}
           </div>

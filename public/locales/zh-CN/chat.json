@@ -30,6 +30,7 @@
     "loopCount_one": "{{count}} 个循环",
     "loopCount_other": "{{count}} 个循环",
     "stopAllLoops": "停止所有循环",
+    "loopRetrying": "出错后重试中",
     "exportAsNote": "导出为笔记",
     "shareChat": "分享聊天",
     "emptyTitle": "开始对话",

@@ -11,7 +11,10 @@ import { sendDirectToLocal, sendViaServer, type LLMRouteCallbacks } from '../lib
 import { generateChatTitle, summarizeConversation } from '../lib/chat-utils';
 import { fetchViaExtensionBridge } from '../lib/llm-tools';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
+import type { ChatLoopInfo } from '../lib/chat-loop';
+import i18n from '../i18n';
 import enSettings from '../../public/locales/en/settings.json';
+import deChat from '../../public/locales/de/chat.json';
 
 const state = vi.hoisted(() => ({
   signedIn: false,
@@ -20,6 +23,7 @@ const state = vi.hoisted(() => ({
   startLoop: vi.fn<(opts: { transport: () => Promise<unknown> }) => { id: string; intervalMs: number; formattedInterval: string }>(
     () => ({ id: 'loop', intervalMs: 30_000, formattedInterval: '30s' })),
   stopAllForThread: vi.fn<(threadId: string) => number>(() => 1),
+  loops: [] as ChatLoopInfo[],
 }));
 const { answer } = vi.hoisted(() => ({
   answer: (_request: unknown, callbacks: LLMRouteCallbacks) => { callbacks.onChunk('Answer.'); callbacks.onDone('end_turn', [{ type: 'text', text: 'Answer.' }]); return 'request'; },
@@ -38,7 +42,7 @@ vi.mock('../contexts/AuthContext', () => ({ useAuth: () => (state.signedIn
 vi.mock('../contexts/NavigationContext', () => ({ useNavigation: () => ({ selectedChatThreadId: 'thread', setSelectedChatThreadId: vi.fn() }) }));
 vi.mock('../contexts/InvestigationContext', () => ({ useInvestigation: () => ({ selectedFolderId: state.folder.id, selectedFolder: state.folder }) }));
 vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: vi.fn() }) }));
-vi.mock('../hooks/useChatLoops', () => ({ useChatLoops: () => ({ loops: [], startLoop: state.startLoop, stopAllForThread: state.stopAllForThread }) }));
+vi.mock('../hooks/useChatLoops', () => ({ useChatLoops: () => ({ loops: state.loops, startLoop: state.startLoop, stopAllForThread: state.stopAllForThread }) }));
 vi.mock('../hooks/useCustomSlashCommands', () => ({ useCustomSlashCommands: () => ({ commands: [] }), interpolateTemplate: (template: string) => template }));
 vi.mock('../components/Chat/ChatInput', () => ({ ChatInput: (props: typeof state.input) => { state.input = props; return null; } }));
 vi.mock('../components/Chat/ChatMessage', () => ({ ChatMessageBubble: () => null }));
@@ -86,6 +90,7 @@ beforeEach(() => {
   localStorage.clear();
   localStorage.setItem('caddyai-onboarded', '1');
   state.signedIn = false;
+  state.loops = [];
   extensionRequests = [];
   Element.prototype.scrollIntoView = vi.fn();
   installExtensionDouble();
@@ -177,6 +182,26 @@ describe('chat routes where Settings says', () => {
     expect(extensionRequests).toEqual([]);
   });
 
+  it.each(helpers)('explicit Team Server routing: the chat %s posts no TC_LLM_REQUEST', async (_name, helper, earlier) => {
+    // The real helpers, so a call to one would reach the extension double.
+    const actual = await vi.importActual<typeof import('../lib/chat-utils')>('../lib/chat-utils');
+    vi.mocked(generateChatTitle).mockImplementation(actual.generateChatTitle);
+    vi.mocked(summarizeConversation).mockImplementation(actual.summarizeConversation);
+    try {
+      signIn();
+      renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'server', llmMaxContextMessages: 2 }, makeThread('anthropic', [...earlier]));
+      announceExtension();
+      await act(async () => { await state.input.onSend('What happened?'); });
+      await waitFor(() => expect(onAddMessage).toHaveBeenCalledWith('thread', expect.objectContaining({ role: 'assistant', content: 'Answer.' })));
+      expect(sendViaServer).toHaveBeenCalledOnce();
+      expect(helper).not.toHaveBeenCalled();
+      expect(extensionRequests).toEqual([]);
+    } finally {
+      vi.mocked(generateChatTitle).mockResolvedValue(null);
+      vi.mocked(summarizeConversation).mockResolvedValue(null);
+    }
+  });
+
   it.each(helpers)('through the extension, the chat %s still runs', async (_name, helper, earlier) => {
     renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'auto', serverUrl: 'https://team.example', llmMaxContextMessages: 2 },
       makeThread('anthropic', [...earlier]));
@@ -211,6 +236,29 @@ describe('chat routes where Settings says', () => {
     await act(async () => { await state.input.onSend('/stoploop'); });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(state.stopAllForThread).toHaveBeenCalledExactlyOnceWith('thread');
+  });
+
+  it('/fetch calls no model, so it saves the page in a thread over its token budget', async () => {
+    const spent: ChatMessage = { ...message('m1', 'assistant'), tokenCount: { input: 900, output: 200 } };
+    renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'auto', llmTokenBudget: 1000 }, makeThread('anthropic', [spent]));
+    announceExtension();
+    await act(async () => { await state.input.onSend('/fetch https://example.test/report'); });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(fetchViaExtensionBridge).toHaveBeenCalledExactlyOnceWith('https://example.test/report');
+    expect(extensionRequests).toEqual([]);
+  });
+
+  it('a loop retrying after an error says so in the analyst’s language, with the reason on hover', async () => {
+    state.loops = [{ id: 'loop', threadId: 'thread', prompt: 'Check the feed', intervalMs: 30_000, status: 'running', runCount: 0, error: 'Synthetic reason' }];
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'chat', deChat, true, true);
+    await i18n.changeLanguage('de');
+    try {
+      renderChat({ llmAnthropicApiKey: 'synthetic-key' });
+      const label = screen.getByText(deChat.view.loopRetrying);
+      expect(label).toHaveAttribute('role', 'status');
+      expect(label).toHaveAttribute('title', 'Synthetic reason');
+    } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
   });
 
   it('every /loop run goes where Settings → AI shows at that moment, not where the loop started', async () => {

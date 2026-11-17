@@ -229,6 +229,8 @@
   "meeting.meetingInProgress": "Нарада триває...",
   "meeting.couldNotRun": "Не вдалося провести нараду: {{error}}",
   "supervisor.couldNotRun": "Не вдалося запустити агента-супервізора: {{error}}",
+  "refusal.noApiKey": "Для {{provider}} не налаштовано API-ключ.",
+  "refusal.configuredProviders": "Налаштовані провайдери: {{providers}}. Укажіть модель агента в налаштуваннях AgentCaddy.",
   "meeting.deploy2Plus": "Розгорніть 2+ профілі агентів для початку наради.",
   "meeting.viewMinutes": "Переглянути протокол",
   "meeting.viewDiscussion": "Переглянути обговорення",

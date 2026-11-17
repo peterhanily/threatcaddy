@@ -229,6 +229,8 @@
   "meeting.meetingInProgress": "الاجتماع جارٍ...",
   "meeting.couldNotRun": "تعذّر عقد الاجتماع: {{error}}",
   "supervisor.couldNotRun": "تعذّر تشغيل وكيل المشرف: {{error}}",
+  "refusal.noApiKey": "لم يتم تهيئة مفتاح API لـ {{provider}}.",
+  "refusal.configuredProviders": "المزوّدون المهيّأون: {{providers}}. اضبط نموذج الوكيل في إعدادات AgentCaddy.",
   "meeting.deploy2Plus": "انشر ملفَّي تعريف وكيل أو أكثر لبدء اجتماع.",
   "meeting.viewMinutes": "عرض المحضر",
   "meeting.viewDiscussion": "عرض النقاش",

@@ -155,7 +155,7 @@ export function resolveRoute(settings: Settings, env: { extensionAvailable: bool
   return { route: 'unavailable', reason: 'none' };
 }
 
-const UNAVAILABLE_ROUTE_ERRORS = {
+export const UNAVAILABLE_ROUTE_ERRORS = {
   'no-extension': 'ai.dataFlow.errorNoExtension',
   'no-server': 'ai.dataFlow.errorNoServer',
   none: 'ai.dataFlow.errorNone',
@@ -165,6 +165,12 @@ const UNAVAILABLE_ROUTE_ERRORS = {
 export async function unavailableRouteError(reason: keyof typeof UNAVAILABLE_ROUTE_ERRORS): Promise<string> {
   await i18n.loadNamespaces('settings');
   return i18n.t(UNAVAILABLE_ROUTE_ERRORS[reason], { ns: 'settings' });
+}
+
+/** The fixed refusals of agents, meetings and the supervisor (no key, too few agents), translated the same way. */
+export async function agentRefusal(key: string, options?: Record<string, string>): Promise<string> {
+  await i18n.loadNamespaces('agent');
+  return i18n.t(key, { ns: 'agent', ...options });
 }
 
 export function sendViaExtension(request: LLMRouteRequest, callbacks: LLMRouteCallbacks, signal?: AbortSignal): string {

@@ -89,6 +89,7 @@
   "view.loopCount_one": "{{count}}개 루프",
   "view.loopCount_other": "{{count}}개 루프",
   "view.stopAllLoops": "모든 루프 중지",
+  "view.loopRetrying": "오류 후 다시 시도 중",
   "view.exportAsNote": "노트로 내보내기",
   "view.emptyTitle": "대화 시작",
   "view.emptySubtitle": "메시지는 로컬에 저장되며 저장 시 암호화됩니다",

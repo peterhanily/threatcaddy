@@ -68,6 +68,58 @@ describe('bounded serialized chat schedules', () => {
     expect(sendViaExtension).toHaveBeenCalledOnce();
   });
 
+  it('a run with no route does not back off: the next run is one interval later, so it resumes once a route returns', async () => {
+    const hourly = 3_600_000;
+    const transport = vi.fn<() => Promise<LoopTransport>>().mockResolvedValue({ error: 'No AI route is available.' });
+    startLoop({ ...opts, provider: 'anthropic', apiKey: 'synthetic-key', endpoint: undefined, intervalMs: hourly, transport });
+    await vi.advanceTimersByTimeAsync(4 * hourly);
+    expect(transport).toHaveBeenCalledTimes(5);
+    expect(getAllLoops()[0]).toMatchObject({ runCount: 0, error: 'No AI route is available.' });
+    transport.mockResolvedValue({ useServerProxy: false, apiKey: 'synthetic-key' });
+    await vi.advanceTimersByTimeAsync(hourly);
+    expect(sendViaExtension).toHaveBeenCalledOnce();
+  });
+
+  it('a run with no route clears the backoff of an earlier failed model request', async () => {
+    const transport = vi.fn<() => Promise<LoopTransport>>()
+      .mockResolvedValueOnce({ useServerProxy: false, apiKey: 'local', endpoint: opts.endpoint })
+      .mockResolvedValueOnce({ error: 'No AI route is available.' })
+      .mockResolvedValue({ useServerProxy: false, apiKey: 'local', endpoint: opts.endpoint });
+    startLoop({ ...opts, transport });
+    await vi.advanceTimersByTimeAsync(0);
+    localCall()[1].onError('Provider unavailable');
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(transport).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(transport).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(transport).toHaveBeenCalledTimes(3);
+    expect(sendDirectToLocal).toHaveBeenCalledTimes(2);
+  });
+
+  it('a run with a failed model request still backs off', async () => {
+    startLoop(opts);
+    localCall()[1].onError('Provider unavailable');
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(sendDirectToLocal).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(sendDirectToLocal).toHaveBeenCalledTimes(2);
+  });
+
+  it('each run uses the local endpoint resolved for it, not the one the loop started with', async () => {
+    const moved = 'http://localhost:11435/v1';
+    const transport = vi.fn<() => Promise<LoopTransport>>()
+      .mockResolvedValueOnce({ useServerProxy: false, apiKey: 'local', endpoint: opts.endpoint })
+      .mockResolvedValueOnce({ useServerProxy: false, apiKey: 'local', endpoint: moved });
+    startLoop({ ...opts, transport });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(localCall()[0]).toMatchObject({ endpoint: opts.endpoint });
+    localCall()[1].onDone('end_turn', [{ type: 'text', text: 'First' }]);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(sendDirectToLocal).toHaveBeenCalledTimes(2);
+    expect(localCall()[0]).toMatchObject({ endpoint: moved });
+  });
+
   it('a loop stopped while its route resolves sends nothing', async () => {
     let resolve!: (transport: LoopTransport) => void;
     const id = startLoop({ ...opts, transport: () => new Promise(done => { resolve = done; }) });
