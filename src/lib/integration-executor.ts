@@ -108,8 +108,8 @@ function enforceRequiredDomains(url: URL, requiredDomains: string[]): void {
  *
  * Limitation: this is a client-side check on the literal hostname string.
  * It cannot perform DNS resolution, so a public hostname that resolves to
- * a private IP (DNS rebinding) will bypass this filter. No server-side
- * proxy exists; the extension proxy applies the same literal-host policy.
+ * a private IP (DNS rebinding) will bypass this filter. There is no
+ * server-side proxy; the extension proxy applies its own literal-host check.
  */
 function validateHttpUrl(urlStr: string): URL {
   const url = new URL(urlStr);
