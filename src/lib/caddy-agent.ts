@@ -257,7 +257,7 @@ Score: ${soul.lifetimeMetrics.performanceScore}/100 across ${soul.lifetimeMetric
   if (localSkills.length > 0) skillParts.push(`Local Agent (${localSkills.map(s => s.name).join(', ')})`);
   for (const h of hosts) skillParts.push(`${h.displayName} (${h.skills.map(s => s.name).join(', ')})`);
   const hostBlock = skillParts.length > 0
-    ? `\nAGENT SKILLS: ${skillParts.join('; ')}. Use local:<skill> or host:<name>:<skill> tools for live system queries.`
+    ? `\nAGENT SKILLS: ${skillParts.join('; ')}. Use the tools whose description starts with [<name>] for live system queries.`
     : '';
 
   if (profile) {
