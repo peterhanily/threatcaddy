@@ -40,9 +40,12 @@ test('failed first installation says so plainly, remembers dismissal and keeps s
     await expect(notice.getByRole('status')).toHaveText(UNAVAILABLE_NOTICE);
     expect(await activeWorkerState(page)).toBeNull();
     await page.setViewportSize({ width: 390, height: 844 });
+    // The phone layout loads lazily; measure only once it has replaced the desktop one.
+    await expect(page.getByRole('button', { name: 'Switch to Analyst Mode', exact: true })).toBeVisible();
     await expect(notice.getByRole('status')).toBeVisible();
     expect(await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= innerWidth + 1)).toBe(true);
     const dismiss = notice.getByRole('button', { name: 'Dismiss', exact: true });
+    await expect(dismiss).toBeVisible();
     expect((await dismiss.boundingBox())?.height).toBeGreaterThanOrEqual(44);
     await page.screenshot({ path: testInfo.outputPath('offline-installation-unavailable-mobile.png'), animations: 'disabled' });
     await dismiss.click();
