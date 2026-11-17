@@ -164,6 +164,16 @@ describe('SettingsPanel', () => {
     expect(screen.getByText('Display Preferences')).toBeInTheDocument();
   });
 
+  it('shows an Offline use status row on the General tab only', () => {
+    render(<SettingsPanel {...defaultProps} />);
+    const general = screen.getByRole('tabpanel', { name: 'General' });
+    expect(within(general).getByRole('heading', { name: 'Offline use' })).toBeInTheDocument();
+    // jsdom has no service worker support, so the row reports that plainly.
+    expect(within(general).getByTestId('offline-status')).toHaveTextContent("This browser can't keep ThreatCaddy available offline, but it still works online.");
+    clickTab('Data');
+    expect(screen.queryByRole('heading', { name: 'Offline use' })).not.toBeInTheDocument();
+  });
+
   it('describes both samples above their buttons and shows no stale version number', () => {
     render(<SettingsPanel {...defaultProps} onLoadSample={vi.fn()} onLoadParody={vi.fn()} />);
     const description = screen.getByText(/fictional training investigation/);

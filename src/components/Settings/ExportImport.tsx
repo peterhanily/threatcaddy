@@ -3,6 +3,7 @@ import { Download, Upload, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { exportJSON, importJSON, exportNotesMarkdown, downloadFile } from '../../lib/export';
 import { BackupImportDialog } from '../Common/BackupImportDialog';
+import { OfflineBackupNote } from '../Common/OfflineStatusNotice';
 import { MarkdownImportModal } from './MarkdownImportModal';
 import { useLogActivity } from '../../hooks/ActivityLogContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -100,6 +101,7 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-gray-300">{t('data.exportImportTitle')}</h3>
+      <OfflineBackupNote />
 
       <div className="flex flex-wrap gap-3">
         <button onClick={handleExportJSON} className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200`}>

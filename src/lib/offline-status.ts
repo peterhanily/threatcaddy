@@ -1,4 +1,6 @@
-export type OfflineStatus = 'checking' | 'installed' | 'unavailable';
+/** 'checking' looks for a registration; 'installing' means an expected worker
+ * is downloading or activating, so closing the tab can interrupt it. */
+export type OfflineStatus = 'checking' | 'installing' | 'installed' | 'unavailable';
 
 export interface ObservedOfflineWorker extends EventTarget {
   readonly state: ServiceWorkerState;
@@ -78,7 +80,7 @@ export function observeOfflineStatus({
     } else if ([...workers].some(worker => ['installing', 'installed', 'activating'].includes(worker.state))) {
       // A legitimate large download can take minutes. Polling ends, but these
       // workers' events still report completion or redundancy without a reload.
-      emit('checking');
+      emit('installing');
     } else {
       emit(timedOut || [...workers].some(worker => worker.state === 'redundant') ? 'unavailable' : 'checking');
     }

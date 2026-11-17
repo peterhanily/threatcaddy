@@ -65,11 +65,24 @@ describe('passive offline installation observer', () => {
     const container = new Container(); const registration = new Registration(); const worker = new Worker();
     registration.installing = worker; container.getRegistration.mockResolvedValue(registration);
     const result = observe(container); await flush(); await vi.advanceTimersByTimeAsync(1000);
-    expect(result.states).toEqual(['checking']);
+    expect(result.states).toEqual(['checking', 'installing']);
     expect(container.getRegistration.mock.calls.length).toBeLessThanOrEqual(5);
     expect(vi.getTimerCount()).toBe(0);
     registration.installing = null; registration.active = worker; worker.change('activated');
     expect(result.states.at(-1)).toBe('installed');
+  });
+
+  it('reports a running first installation separately from looking for a registration', async () => {
+    const container = new Container(); const result = observe(container); await flush();
+    expect(result.states).toEqual(['checking']);
+    const registration = new Registration(); const worker = new Worker(); registration.installing = worker;
+    container.getRegistration.mockResolvedValue(registration); await vi.advanceTimersByTimeAsync(25);
+    expect(result.states).toEqual(['checking', 'installing']);
+    worker.change('installed'); registration.installing = null; registration.waiting = worker;
+    worker.change('activating'); registration.waiting = null; registration.active = worker;
+    expect(result.states).toEqual(['checking', 'installing']);
+    worker.change('activated');
+    expect(result.states).toEqual(['checking', 'installing', 'installed']);
   });
 
   it('marks absent registration as unconfirmed after timeout and recovers from late ready', async () => {
@@ -98,7 +111,7 @@ describe('passive offline installation observer', () => {
     const result = observe(container); await flush(); failed.change('redundant');
     expect(result.states.at(-1)).toBe('unavailable');
     const replacement = new Worker(); registration.installing = replacement; registration.dispatchEvent(new Event('updatefound'));
-    expect(result.states.at(-1)).toBe('checking');
+    expect(result.states.at(-1)).toBe('installing');
     registration.active = replacement; registration.installing = null; replacement.change('activated');
     expect(result.states.at(-1)).toBe('installed');
   });
