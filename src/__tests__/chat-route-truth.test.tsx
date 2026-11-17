@@ -204,6 +204,15 @@ describe('chat routes where Settings says', () => {
     expect(state.stopAllForThread).toHaveBeenCalledExactlyOnceWith('thread');
   });
 
+  it('/stoploop stops the schedules in a thread over its token budget', async () => {
+    const spent: ChatMessage = { ...message('m1', 'assistant'), tokenCount: { input: 900, output: 200 } };
+    renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'auto', llmTokenBudget: 1000 }, makeThread('anthropic', [spent]));
+    announceExtension();
+    await act(async () => { await state.input.onSend('/stoploop'); });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(state.stopAllForThread).toHaveBeenCalledExactlyOnceWith('thread');
+  });
+
   it('every /loop run goes where Settings → AI shows at that moment, not where the loop started', async () => {
     const view = renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'auto' });
     announceExtension();
