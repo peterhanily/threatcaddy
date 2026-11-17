@@ -28,9 +28,10 @@ Hardens CaddyAI chat, AgentCaddy agents, the supervisor and the agent bridge aga
 - "Approve all" runs only routine actions inside the investigation. Fetches, vendor lookups, skills, agent changes, other investigations, supervisor proposals and calls taken from reply text are left for individual review.
 - Pattern Hunter compares investigations only when deployed in a local-only investigation; in one that can sync, its card says the cross-investigation tools are off there. In a workspace never connected to a team server, investigation settings show a "Keep on this device" switch.
 - Tools can keep at most 8 active agents per investigation and cannot deploy a profile that is already active, also when approvals run at the same time. Dismissing an agent rejects its pending proposals.
-- Notes (including alert notes and note folders), tasks, IOCs and timeline events created by agents, the supervisor or the agent bridge record their creator on this device and carry an `ai-generated` tag that syncs. Entities created in chat stay attributed to the analyst, without the tag.
-- The supervisor keeps its findings in a local-only "CaddyAgent Supervisor" investigation and never adopts one of that name that can sync. It asks before writing into other investigations, cannot reach the network or change agents, runs no tool calls taken from reply text, and shows an error toast when it cannot run.
+- Notes (including alert notes and note folders), tasks, IOCs and timeline events created by agents, the supervisor or the agent bridge record their creator on this device and carry an `ai-generated` tag that syncs. Entities created in chat stay attributed to the analyst, without the tag. Exceptions, from chat and agents alike: reports from `generate_report` always carry the tag and record no creator; notes and IOCs that integrations create during `enrich_ioc` carry the `agent-enrichment` tag instead, and those notes are labelled `agent:enrichment`; and the local task `create_ticket` makes when no ticket system is set up is labelled `agent:ticket`, without the tag.
+- The supervisor keeps its findings in a local-only "CaddyAgent Supervisor" investigation and never adopts one of that name that can sync. It asks before writing into other investigations and before any write taken from reply text, cannot reach the network or change agents, and shows an error toast when it cannot run.
 - Approving a proposal that 2.0.3 no longer allows, for example one queued by 2.0.2, marks it failed with the reason and runs nothing. Approving an agent's question acknowledges it.
+- Agent actions read back from a team server are kept as history only and cannot be approved here; one still pending on the server is shown as rejected ("Server proposal not imported").
 - Meetings use the current built-in agent personas, not copies stored by an earlier version. A meeting that cannot run says why and keeps the agenda and the request; a refused shift handoff says why.
 - Agent prompts say that investigation text, tool results and web pages are data, not instructions. Built-in agents are told to research indicators with vendor lookups and reference sources, never the indicator's own host.
 - Forensicate Scanner runs a local check only and no longer contacts forensicate.ai.
@@ -56,8 +57,9 @@ Hardens CaddyAI chat, AgentCaddy agents, the supervisor and the agent bridge aga
 
 ### Agent bridge and agent hosts
 
-- The agent bridge (`window.threatcaddy`, used by browser automation such as the Claude Code skill over CDP) is off by default; turn it on in Settings → AI. It works only in the investigation selected in ThreatCaddy (`setFolderId` was removed), offers 33 tools, and cannot fetch web pages, run enrichment, reach other investigations or change agents.
+- The agent bridge (`window.threatcaddy`, used by browser automation such as the Claude Code skill over CDP) is off by default; turn it on in Settings → AI. It works only in the investigation selected in ThreatCaddy (`setFolderId` now throws), offers 33 tools, and cannot fetch web pages, run enrichment, reach other investigations or change agents.
 - Named agent hosts can no longer be added or edited; Settings → AI lists them with Remove. Hosts that use plain http on an address other than localhost are no longer offered or called. Every agent-host or local-skill call that CaddyAI or an agent makes asks first, whatever action class the host declares. Skill descriptions and parameter schemas are sanitised and capped.
+- CTI slash commands such as `/cti` and `/vt` need an agent host named `cti` kept from an earlier version; without one they say that no CTI sources are available.
 
 ### Offline use
 
