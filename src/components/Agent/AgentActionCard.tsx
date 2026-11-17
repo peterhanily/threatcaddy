@@ -124,7 +124,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
         <div className="mt-2 ps-6 space-y-2">
           <div>
             <span className="text-[10px] text-text-muted uppercase tracking-wide">{t('action.input')}</span>
-            <pre className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32">
+            <pre dir="ltr" className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32">
               {JSON.stringify(action.toolInput, null, 2).substring(0, 5000)}
             </pre>
           </div>
@@ -132,7 +132,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
           {action.resultSummary && (
             <div>
               <span className="text-[10px] text-text-muted uppercase tracking-wide">{t('action.result')}</span>
-              <pre className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32">
+              <pre dir="ltr" className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32">
                 {action.resultSummary}
               </pre>
             </div>

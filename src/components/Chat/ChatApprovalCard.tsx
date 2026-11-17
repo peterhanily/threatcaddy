@@ -111,7 +111,7 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
       </div>
       <div className="px-4 py-2.5 space-y-1.5">
         <div className="text-xs">
-          <span className="font-mono font-medium text-purple">{toolUse.name}</span>
+          <span dir="ltr" className="font-mono font-medium text-purple">{toolUse.name}</span>
         </div>
         {summary.length > 0 && (
           <ul className="space-y-0.5 text-xs text-text-primary">
@@ -125,7 +125,7 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
         )}
         <details className="text-[10px]">
           <summary className="cursor-pointer text-text-muted">{t('approval.details')}</summary>
-          <pre className="mt-1 font-mono text-text-secondary bg-bg-deep rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
+          <pre dir="ltr" className="mt-1 font-mono text-text-secondary bg-bg-deep rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
             {JSON.stringify(toolUse.input, null, 2)}
           </pre>
         </details>
