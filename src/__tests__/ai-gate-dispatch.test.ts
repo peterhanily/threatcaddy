@@ -5,11 +5,12 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
-import type { AgentSoul, ToolUseBlock } from '../types';
+import type { AgentProfile, AgentSoul, ToolUseBlock } from '../types';
 import type { InstalledIntegration, IntegrationTemplate } from '../types/integration-types';
 import { executeTool } from '../lib/llm-tools';
 import { FORENSICATE_AGENT_PROFILE } from '../lib/forensicate-tool';
 import { BUILTIN_INTEGRATIONS } from '../lib/builtin-integrations';
+import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import i18n from '../i18n';
 import { mintHumanApproval, type HumanApproval } from '../lib/human-approval';
 import * as toolReach from '../lib/tool-reach';
@@ -350,6 +351,16 @@ describe('A-GATE-6 review and escalation scope', () => {
     const again = call('review_completed_task', { taskId: ids('S').task, quality: 'needs-redo', feedback: 'Redo it', requestedDelta: 'List the registry run keys on each host.' });
     expect((await execTool(again, 'S', { surface: 'agent', agentContext: {} })).isError).toBe(false);
     expect((await db.chatThreads.get('p-thread'))?.contextSummary).toBeUndefined();
+  });
+
+  it('delegate_task finds a deployment by the code builtin\'s name, not a stored row\'s', async () => {
+    const builtin = BUILTIN_AGENT_PROFILES.find(profile => profile.id === 'ap-threat-hunter') as AgentProfile;
+    await db.agentProfiles.put(JSON.parse(JSON.stringify({ ...builtin, name: 'Stale Persona' })));
+    await db.agentDeployments.add({ id: 'th', investigationId: 'S', profileId: 'ap-threat-hunter', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 });
+    const delegate = async (assignToProfile: string) => JSON.parse((await execTool(call('delegate_task', { title: 'Hunt', description: 'Sweep hosts', assignToProfile }), 'S', { surface: 'agent', agentContext: {} })).result);
+    expect(await delegate('Stale Persona')).toMatchObject({ success: true, found: false });
+    expect(await delegate(builtin.name)).toMatchObject({ success: true, found: true });
+    expect((await db.tasks.filter(task => task.assignedDeploymentId === 'th').toArray()).map(task => task.title)).toEqual(['Hunt']);
   });
 });
 

@@ -10,7 +10,7 @@ import type { AgentDeployment, AgentMeeting, AgentProfile, ChatThread, ChatMessa
 import { TOOL_DEFINITIONS } from './llm-tool-defs';
 import { buildSystemPrompt } from './llm-tools';
 import { hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, unavailableRouteError } from './llm-router';
-import { BUILTIN_AGENT_PROFILES } from './builtin-agent-profiles';
+import { resolveAgentProfile } from './agent-profile-resolver';
 
 export interface AgentMeetingResult {
   meetingId: string;
@@ -84,12 +84,6 @@ function callLLM(opts: {
   });
 
   return Promise.race([llmPromise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
-}
-
-async function resolveProfile(profileId: string): Promise<AgentProfile | undefined> {
-  const userProfile = await db.agentProfiles.get(profileId);
-  if (userProfile) return userProfile;
-  return BUILTIN_AGENT_PROFILES.find(p => p.id === profileId);
 }
 
 // ── Meeting Orchestrator ────────────────────────────────────────────────
@@ -237,7 +231,7 @@ export async function runAgentMeeting(
   // Resolve profiles for each deployment
   const participants: { deployment: AgentDeployment; profile: AgentProfile }[] = [];
   for (const d of deployments) {
-    const profile = await resolveProfile(d.profileId);
+    const profile = await resolveAgentProfile(d.profileId);
     if (profile) participants.push({ deployment: d, profile });
   }
 

@@ -621,7 +621,7 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
     return JSON.stringify({ error: `Too many pending delegated tasks (${pendingDelegations}). Complete existing delegations before creating more.` });
   }
 
-  // Find the target deployment by profile name
+  // Find the target deployment by profile name; code wins for builtins.
   const deployments = await db.agentDeployments
     .where('investigationId')
     .equals(folderId)
@@ -629,23 +629,10 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
 
   let targetDeploymentId: string | undefined;
   for (const d of deployments) {
-    const profile = await db.agentProfiles.get(d.profileId);
-    // Also check builtin profiles
+    const profile = await resolveAgentProfile(d.profileId);
     if (profile?.name.toLowerCase() === assignToProfile.toLowerCase()) {
       targetDeploymentId = d.id;
       break;
-    }
-  }
-
-  // Check builtin profiles if not found in user profiles
-  if (!targetDeploymentId) {
-    const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
-    for (const d of deployments) {
-      const builtin = BUILTIN_AGENT_PROFILES.find(p => p.id === d.profileId);
-      if (builtin?.name.toLowerCase() === assignToProfile.toLowerCase()) {
-        targetDeploymentId = d.id;
-        break;
-      }
     }
   }
 
