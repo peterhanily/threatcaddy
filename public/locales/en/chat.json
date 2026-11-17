@@ -4,7 +4,7 @@
   "input.modelLabel": "AI model",
   "cti": {
     "invalidCommand": "That CTI command couldn't be run:",
-    "noSources": "No CTI Agent Host sources are configured. Add a CTI host under Settings → AI → Agent Hosts to use this command."
+    "noSourcesV2": "No CTI sources are available. Named agent hosts are no longer configurable in this version."
   },
   "view": {
     "newChat": "New Chat",

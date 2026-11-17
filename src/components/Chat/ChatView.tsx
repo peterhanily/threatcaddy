@@ -460,8 +460,8 @@ export function ChatView({
       await onAddMessage(activeThread.id, {
         id: nanoid(),
         role: 'assistant',
-        content: planned.length === 0 && skipped.length === 0
-          ? t('cti.noSources')
+        content: !availableToolNames.some(name => name.startsWith('host:cti:'))
+          ? t('cti.noSourcesV2')
           : renderCtiRunMarkdown(ctiCommand.target, results, skipped),
         createdAt: Date.now(),
       });

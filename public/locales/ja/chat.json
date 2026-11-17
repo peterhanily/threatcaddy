@@ -190,7 +190,7 @@
   },
   "cti": {
     "invalidCommand": "その CTI コマンドは実行できませんでした:",
-    "noSources": "CTI Agent Host のソースが設定されていません。このコマンドを使用するには、設定 → AI → Agent Hosts で CTI ホストを追加してください。"
+    "noSourcesV2": "利用できる CTI ソースがありません。このバージョンでは名前付きエージェントホストを設定できなくなりました。"
   },
   "input.serverStatus": "チームサーバー経由",
   "input.serverModelsHelp": "利用できるプロバイダーとモデルはチームサーバーの設定によって異なります。",

@@ -190,7 +190,7 @@
   },
   "cti": {
     "invalidCommand": "Perintah CTI itu tidak dapat dijalankan:",
-    "noSources": "Tidak ada sumber CTI Agent Host yang dikonfigurasi. Tambahkan host CTI di Pengaturan → AI → Agent Hosts untuk menggunakan perintah ini."
+    "noSourcesV2": "Tidak ada sumber CTI yang tersedia. Agent host bernama tidak dapat dikonfigurasi lagi di versi ini."
   },
   "input.serverStatus": "Jalur server tim",
   "input.serverModelsHelp": "Penyedia dan model yang tersedia bergantung pada konfigurasi server tim.",

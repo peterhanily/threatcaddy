@@ -193,7 +193,7 @@
   },
   "cti": {
     "invalidCommand": "לא ניתן היה להריץ את פקודת ה-CTI:",
-    "noSources": "לא הוגדרו מקורות CTI Agent Host. הוסף מארח CTI תחת Settings → AI → Agent Hosts כדי להשתמש בפקודה זו."
+    "noSourcesV2": "אין מקורות CTI זמינים. לא ניתן עוד להגדיר מארחי סוכנים בעלי שם בגרסה זו."
   },
   "input.serverStatus": "ניתוב דרך שרת הצוות",
   "input.serverModelsHelp": "הספקים והמודלים הזמינים תלויים בהגדרות שרת הצוות.",

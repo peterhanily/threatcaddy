@@ -193,7 +193,7 @@
   },
   "cti": {
     "invalidCommand": "Non è stato possibile eseguire quel comando CTI:",
-    "noSources": "Nessuna origine CTI Agent Host è configurata. Aggiungi un host CTI in Impostazioni → AI → Agent Hosts per usare questo comando."
+    "noSourcesV2": "Nessuna origine CTI disponibile. Gli Agent Host con nome non sono più configurabili in questa versione."
   },
   "input.serverStatus": "Instradamento tramite server del team",
   "input.serverModelsHelp": "I fornitori e i modelli disponibili dipendono dalla configurazione del server del team.",

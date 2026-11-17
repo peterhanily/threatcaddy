@@ -191,7 +191,7 @@
   },
   "cti": {
     "invalidCommand": "Bu CTI komutu çalıştırılamadı:",
-    "noSources": "Yapılandırılmış CTI Agent Host kaynağı yok. Bu komutu kullanmak için Ayarlar → AI → Agent Hosts altına bir CTI host'u ekleyin."
+    "noSourcesV2": "Kullanılabilir CTI kaynağı yok. Adlandırılmış ajan host'ları bu sürümde artık yapılandırılamaz."
   },
   "input.serverStatus": "Ekip sunucusu yolu",
   "input.serverModelsHelp": "Kullanılabilir sağlayıcılar ve modeller ekip sunucusunun yapılandırmasına bağlıdır.",

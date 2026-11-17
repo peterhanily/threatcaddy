@@ -190,7 +190,7 @@
   },
   "cti": {
     "invalidCommand": "Không thể chạy lệnh CTI đó:",
-    "noSources": "Chưa cấu hình nguồn CTI Agent Host nào. Hãy thêm một CTI host trong Cài đặt → AI → Agent Hosts để sử dụng lệnh này."
+    "noSourcesV2": "Không có nguồn CTI nào khả dụng. Không thể cấu hình agent host có tên trong phiên bản này nữa."
   },
   "input.serverStatus": "Kênh máy chủ nhóm",
   "input.serverModelsHelp": "Nhà cung cấp và mô hình khả dụng phụ thuộc vào cấu hình máy chủ nhóm.",

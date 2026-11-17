@@ -190,7 +190,7 @@
   },
   "cti": {
     "invalidCommand": "Die CTI-opdracht kon niet worden uitgevoerd:",
-    "noSources": "Er zijn geen CTI Agent Host-bronnen geconfigureerd. Voeg een CTI-host toe onder Instellingen → AI → Agent Hosts om deze opdracht te gebruiken."
+    "noSourcesV2": "Er zijn geen CTI-bronnen beschikbaar. Benoemde agent-hosts kunnen in deze versie niet meer worden geconfigureerd."
   },
   "input.serverStatus": "Route via teamserver",
   "input.serverModelsHelp": "Beschikbare aanbieders en modellen hangen af van de configuratie van je teamserver.",

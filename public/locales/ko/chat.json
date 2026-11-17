@@ -207,7 +207,7 @@
   "slash.stoploop": "백그라운드 루프 중지",
   "cti": {
     "invalidCommand": "해당 CTI 명령을 실행할 수 없습니다:",
-    "noSources": "구성된 CTI Agent Host 소스가 없습니다. 이 명령을 사용하려면 설정 → AI → Agent Hosts에서 CTI 호스트를 추가하세요."
+    "noSourcesV2": "사용 가능한 CTI 소스가 없습니다. 이 버전에서는 이름 지정 에이전트 호스트를 더 이상 구성할 수 없습니다."
   },
   "input.serverStatus": "팀 서버 경로",
   "input.serverModelsHelp": "사용 가능한 공급자와 모델은 팀 서버 설정에 따라 달라집니다.",

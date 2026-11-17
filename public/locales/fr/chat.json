@@ -193,7 +193,7 @@
   },
   "cti": {
     "invalidCommand": "Cette commande CTI n'a pas pu être exécutée :",
-    "noSources": "Aucune source CTI Agent Host n'est configurée. Ajoutez un hôte CTI sous Paramètres → AI → Agent Hosts pour utiliser cette commande."
+    "noSourcesV2": "Aucune source CTI n'est disponible. Les Agent Hosts nommés ne sont plus configurables dans cette version."
   },
   "input.serverStatus": "Routage par le serveur d’équipe",
   "input.serverModelsHelp": "Les fournisseurs et modèles disponibles dépendent de la configuration du serveur de votre équipe.",

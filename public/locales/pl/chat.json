@@ -196,7 +196,7 @@
   },
   "cti": {
     "invalidCommand": "Nie udało się wykonać tego polecenia CTI:",
-    "noSources": "Nie skonfigurowano żadnych źródeł CTI Agent Host. Dodaj host CTI w Ustawienia → AI → Agent Hosts, aby użyć tego polecenia."
+    "noSourcesV2": "Brak dostępnych źródeł CTI. Nazwanych hostów agentów nie można już konfigurować w tej wersji."
   },
   "input.serverStatus": "Trasa przez serwer zespołu",
   "input.serverModelsHelp": "Dostępni dostawcy i modele zależą od konfiguracji serwera zespołu.",
