@@ -253,7 +253,7 @@ async function runDaemon(targetId, wsUrl) {
           );
           break;
         case 'investigations':
-          result = await evalInPage(cdp, sessionId, 'window.threatcaddy.investigations()');
+          result = await evalInPage(cdp, sessionId, `window.threatcaddy.investigations(${JSON.stringify(tcNonce)})`);
           break;
         case 'folder_get':
           result = await evalInPage(cdp, sessionId, 'window.threatcaddy.folderId()');
