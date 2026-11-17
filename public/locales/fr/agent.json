@@ -231,6 +231,7 @@
   "supervisor.couldNotRun": "L'agent superviseur n'a pas pu s'exécuter : {{error}}",
   "refusal.noApiKey": "Aucune clé API n'est configurée pour {{provider}}.",
   "refusal.configuredProviders": "Fournisseurs configurés : {{providers}}. Définissez le modèle de l'agent dans les paramètres d'AgentCaddy.",
+  "refusal.noActiveDeployments": "Aucun agent déployé n'est actif dans cette enquête.",
   "meeting.deploy2Plus": "Déployez 2+ profils d'agents pour démarrer une réunion.",
   "meeting.viewMinutes": "Voir le procès-verbal",
   "meeting.viewDiscussion": "Voir la discussion",

@@ -7,6 +7,7 @@ import { useLLM } from '../hooks/useLLM';
 import { getAllLoops, startLoop, stopLoop } from '../lib/chat-loop';
 import { runAgentMeeting } from '../lib/caddy-agent-meeting';
 import { resolveAgentModel, runAgentCycle } from '../lib/caddy-agent';
+import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
 import { runSupervisorCycle } from '../lib/caddy-agent-supervisor';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
 import i18n from '../i18n';
@@ -236,6 +237,19 @@ describe('D-ROUTE-5 agent cycles and the supervisor go where Settings says', () 
         .toBe(`${noKey('openai')} ${deAgent['refusal.configuredProviders'].replace('{{providers}}', 'anthropic')}`);
       const alone = await runAgentMeeting(folder, deployments.slice(0, 1), { ...DEFAULT_SETTINGS, llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: 'extension' }, true, 'Review the case');
       expect(alone.error).toBe(deAgent['meeting.deploy2Plus']);
+      noModelCall();
+    } finally { await i18n.changeLanguage('en'); }
+  });
+
+  it('says in the analyst’s language that no deployed agent is active', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+    await i18n.changeLanguage('de');
+    try {
+      // Every deployed agent is paused or resting, and the analyst clicks Run.
+      await db.agentDeployments.bulkAdd([{ ...deployments[0], status: 'paused' }, { ...deployments[1], shift: 'resting' }]);
+      const result = await runMultiAgentCycle(folder, { ...base, llmRoutingMode: 'extension' }, true, undefined, undefined, { manual: true });
+      expect(result.errors).toEqual([deAgent['refusal.noActiveDeployments']]);
       noModelCall();
     } finally { await i18n.changeLanguage('en'); }
   });

@@ -231,6 +231,7 @@
   "supervisor.couldNotRun": "Não foi possível executar o agente supervisor: {{error}}",
   "refusal.noApiKey": "Nenhuma chave de API está configurada para {{provider}}.",
   "refusal.configuredProviders": "Provedores configurados: {{providers}}. Defina o modelo do agente nas configurações do AgentCaddy.",
+  "refusal.noActiveDeployments": "Nenhum agente implantado está ativo nesta investigação.",
   "meeting.deploy2Plus": "Implante 2+ perfis de agentes para iniciar uma reunião.",
   "meeting.viewMinutes": "Ver atas",
   "meeting.viewDiscussion": "Ver discussão",

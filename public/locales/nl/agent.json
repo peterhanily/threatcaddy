@@ -231,6 +231,7 @@
   "supervisor.couldNotRun": "De supervisor-agent kon niet worden uitgevoerd: {{error}}",
   "refusal.noApiKey": "Er is geen API-sleutel geconfigureerd voor {{provider}}.",
   "refusal.configuredProviders": "Geconfigureerde providers: {{providers}}. Stel het agentmodel in bij de AgentCaddy-instellingen.",
+  "refusal.noActiveDeployments": "Er is geen geïmplementeerde agent actief in dit onderzoek.",
   "meeting.deploy2Plus": "Implementeer 2+ agentprofielen om een vergadering te starten.",
   "meeting.viewMinutes": "Notulen bekijken",
   "meeting.viewDiscussion": "Discussie bekijken",

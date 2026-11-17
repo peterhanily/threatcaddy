@@ -231,6 +231,7 @@
   "supervisor.couldNotRun": "לא ניתן היה להפעיל את הסוכן המפקח: {{error}}",
   "refusal.noApiKey": "לא הוגדר מפתח API עבור {{provider}}.",
   "refusal.configuredProviders": "ספקים מוגדרים: {{providers}}. הגדר את מודל הסוכן בהגדרות AgentCaddy.",
+  "refusal.noActiveDeployments": "אין סוכן פרוס פעיל בחקירה זו.",
   "meeting.deploy2Plus": "פרוס 2+ פרופילי סוכן להתחלת פגישה.",
   "meeting.viewMinutes": "צפה בפרוטוקול",
   "meeting.viewDiscussion": "צפה בדיון",

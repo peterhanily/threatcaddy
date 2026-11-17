@@ -231,6 +231,7 @@
   "supervisor.couldNotRun": "تعذّر تشغيل وكيل المشرف: {{error}}",
   "refusal.noApiKey": "لم يتم تهيئة مفتاح API لـ {{provider}}.",
   "refusal.configuredProviders": "المزوّدون المهيّأون: {{providers}}. اضبط نموذج الوكيل في إعدادات AgentCaddy.",
+  "refusal.noActiveDeployments": "لا يوجد وكيل منشور نشط في هذا التحقيق.",
   "meeting.deploy2Plus": "انشر ملفَّي تعريف وكيل أو أكثر لبدء اجتماع.",
   "meeting.viewMinutes": "عرض المحضر",
   "meeting.viewDiscussion": "عرض النقاش",

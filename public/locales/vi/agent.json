@@ -231,6 +231,7 @@
   "supervisor.couldNotRun": "Không thể chạy tác nhân giám sát: {{error}}",
   "refusal.noApiKey": "Chưa cấu hình khóa API cho {{provider}}.",
   "refusal.configuredProviders": "Nhà cung cấp đã cấu hình: {{providers}}. Hãy đặt mô hình tác nhân trong cài đặt AgentCaddy.",
+  "refusal.noActiveDeployments": "Không có tác nhân đã triển khai nào đang hoạt động trong điều tra này.",
   "meeting.deploy2Plus": "Triển khai 2+ hồ sơ tác nhân để bắt đầu cuộc họp.",
   "meeting.viewMinutes": "Xem biên bản",
   "meeting.viewDiscussion": "Xem thảo luận",

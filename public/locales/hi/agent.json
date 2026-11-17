@@ -231,6 +231,7 @@
   "supervisor.couldNotRun": "सुपरवाइज़र एजेंट नहीं चल सका: {{error}}",
   "refusal.noApiKey": "{{provider}} के लिए कोई API कुंजी कॉन्फ़िगर नहीं है।",
   "refusal.configuredProviders": "कॉन्फ़िगर किए गए प्रदाता: {{providers}}। AgentCaddy सेटिंग में एजेंट मॉडल सेट करें।",
+  "refusal.noActiveDeployments": "इस जाँच में कोई भी तैनात एजेंट सक्रिय नहीं है।",
   "meeting.deploy2Plus": "मीटिंग शुरू करने के लिए 2+ एजेंट प्रोफ़ाइल तैनात करें।",
   "meeting.viewMinutes": "मिनट देखें",
   "meeting.viewDiscussion": "चर्चा देखें",

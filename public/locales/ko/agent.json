@@ -231,6 +231,7 @@
   "supervisor.couldNotRun": "슈퍼바이저 에이전트를 실행할 수 없습니다: {{error}}",
   "refusal.noApiKey": "{{provider}}에 대한 API 키가 구성되어 있지 않습니다.",
   "refusal.configuredProviders": "구성된 공급자: {{providers}}. AgentCaddy 설정에서 에이전트 모델을 설정하세요.",
+  "refusal.noActiveDeployments": "이 조사에서 활성 상태인 배포된 에이전트가 없습니다.",
   "meeting.deploy2Plus": "회의를 시작하려면 2개 이상의 에이전트 프로필을 배포하세요.",
   "meeting.viewMinutes": "회의록 보기",
   "meeting.viewDiscussion": "토론 보기",
