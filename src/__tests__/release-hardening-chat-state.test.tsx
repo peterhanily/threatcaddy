@@ -133,7 +133,8 @@ describe('release hardening: committed chat submission state', () => {
     state.prompt.mockImplementation((folder?: Folder) => folder?.id === 'a' ? oldPrompt : Promise.resolve('Context for b'));
     const view = render(<ChatView {...props} />);
     state.folder = { ...state.folder, id: 'b', name: 'Investigation B' };
-    view.rerender(<ChatView {...props} />);
+    // Chat works in the thread's investigation, so the thread moves with the selection.
+    view.rerender(<ChatView {...props} threads={[{ ...thread, folderId: 'b' }]} />);
     await act(async () => { releaseOld?.('Context for a'); });
     await act(async () => { await state.input.onSend('Current investigation question'); });
     expect(state.send).toHaveBeenCalledWith(expect.objectContaining({ systemPrompt: 'Context for b' }), expect.any(Function), expect.any(Function), expect.objectContaining({ threadId: thread.id, messageId: expect.any(String), model: thread.model, provider: thread.provider }));

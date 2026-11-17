@@ -54,7 +54,6 @@
     "restoreDialog": "チェックポイントを復元",
     "restoreMessage": "AIの変更を取り消します——作成されたエンティティは削除され、変更されたエンティティは以前の状態に戻されます。この操作は元に戻せません。",
     "restoreLabel": "復元",
-    "approvalTitle": "書き込みアクションを承認しますか？",
     "approve": "承認",
     "reject": "拒否",
     "switchedToPlan": "プランモードに切り替えました——AIは実行せずに提案します",
@@ -76,6 +75,35 @@
     "onboardingStep3Title": "3. 権限を有効化",
     "onboardingStep3Desc": "拡張機能のポップアップで、AIプロバイダーアクセスのための「CaddyAIを許可」と、/fetchツールのための「URLフェッチを許可」を有効にします。",
     "onboardingDismiss": "了解"
+  },
+  "approval": {
+    "position": "{{total}} 件中 {{index}} 件目",
+    "title": {
+      "write": "この調査への変更を承認しますか？",
+      "egress": "ThreatCaddy の外部にデータを送信しますか？",
+      "crossRead": "他の調査を読み取りますか？",
+      "crossWrite": "別の調査を変更しますか？",
+      "agentControl": "AI エージェントを変更しますか？",
+      "harvested": "応答テキスト内で見つかったツール呼び出しを実行しますか？"
+    },
+    "opensPage": "{{host}} のページを開きます。サイトには完全なアドレスが送信されます。",
+    "lookup": "{{value}} を次に送信します：{{vendors}}",
+    "lookupNone": "{{value}} に適用される有効な照会はありません。",
+    "sendsTo": "このリクエストを {{destination}} に送信します。",
+    "agentChange": "この調査で作業している AI エージェントを変更します。",
+    "readsOthers": "この調査だけでなく、他の調査も読み取ります。",
+    "targetSynced": "{{name}}：メンバーと同期されます",
+    "targetLocal": "{{name}}：このデバイスに留まります",
+    "unfiled": "どの調査にも属さない：このデバイスに留まります",
+    "conversationSyncs": "読み取った内容はこの会話の一部になり、「{{name}}」のメンバーと同期されます。",
+    "flag": {
+      "untrustedHost": "組み込みの参照サイトではありません。",
+      "urlCarriesData": "このアドレスは調査データを運べるほど長いです。",
+      "hostIsIoc": "このサイトはこの調査の IOC です。アクセスすると攻撃者に気付かれる可能性があります。",
+      "harvested": "この呼び出しはツール呼び出しとして送信されたものではなく、応答テキストから取り出されたものです。注入されたコンテンツによって生成された可能性があります。",
+      "readForeign": "この応答の前半で CaddyAI は別の調査を読み取りました。この操作にはそのデータが含まれる可能性があります。"
+    },
+    "details": "詳細"
   },
   "input": {
     "noApiKeys": "APIキーが設定されていません——設定 → AI/LLM で追加してください",

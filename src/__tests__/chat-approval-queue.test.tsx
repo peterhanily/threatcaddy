@@ -1,0 +1,196 @@
+/**
+ * C-CHAT-5/6 and the approval card: ChatView works in the conversation's own
+ * investigation, queues one card per call, and only its approve handler turns
+ * a card into an approval. Real tools, decision table and dispatcher.
+ */
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { db } from '../db';
+import type { ChatThread, Folder, Settings, ToolUseBlock } from '../types';
+import type { ToolExecutionResult } from '../lib/llm-tool-execution';
+import { ChatView } from '../components/Chat/ChatView';
+import { discardAllComposerDrafts } from '../lib/chat-composer-drafts';
+import { canary, ids, seedAIWorkspace } from './helpers/ai-workspace';
+import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
+
+type ToolHandler = (toolUse: ToolUseBlock, signal: AbortSignal) => Promise<ToolExecutionResult>;
+const state = vi.hoisted(() => ({
+  selectedThreadId: 'thread',
+  folder: undefined as Folder | undefined,
+  input: { onSend: async () => {} } as { onSend: (text: string) => Promise<void> },
+  send: vi.fn(),
+}));
+vi.mock('../hooks/useLLM', () => ({ useLLM: () => ({ extensionAvailable: true, streamingContent: '', isStreaming: false, error: null,
+  toolActivity: [], sendAgentRequest: state.send, abort: vi.fn() }) }));
+vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ serverUrl: '', user: null }) }));
+vi.mock('../contexts/NavigationContext', () => ({ useNavigation: () => ({ selectedChatThreadId: state.selectedThreadId, setSelectedChatThreadId: vi.fn() }) }));
+vi.mock('../contexts/InvestigationContext', () => ({ useInvestigation: () => ({ selectedFolderId: state.folder?.id, selectedFolder: state.folder }) }));
+vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: vi.fn() }) }));
+vi.mock('../hooks/useChatLoops', () => ({ useChatLoops: () => ({ loops: [], startLoop: vi.fn(), stopAllForThread: vi.fn() }) }));
+vi.mock('../hooks/useCustomSlashCommands', () => ({ useCustomSlashCommands: () => ({ commands: [] }),
+  interpolateTemplate: (template: string) => template }));
+vi.mock('../components/Chat/ChatInput', () => ({ ChatInput: (props: typeof state.input) => { state.input = props; return null; } }));
+vi.mock('../components/Chat/ChatMessage', () => ({ ChatMessageBubble: () => null }));
+vi.mock('../components/Agent/AgentCycleSummaryCard', () => ({ AgentCycleSummaryCard: () => null }));
+// The approval card lives in the list footer.
+vi.mock('react-virtuoso', () => ({ Virtuoso: ({ components }: { components?: { Footer?: () => ReactNode } }) => <>{components?.Footer?.()}</> }));
+
+const makeThread = (id: string, folderId?: string): ChatThread => ({ id, title: `Chat ${id}`, folderId, model: 'synthetic-model', provider: 'anthropic',
+  messages: [{ id: `${id}-m1`, role: 'user', content: 'Earlier question', createdAt: 1 }], tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+const settings = { llmAnthropicApiKey: 'synthetic-unit-test-only', llmRoutingMode: 'auto' } as Settings;
+const call = (name: string, input: Record<string, unknown>, id = `call-${name}`): ToolUseBlock => ({ type: 'tool_use', id, name, input });
+const errorOf = (result: ToolExecutionResult) => String(JSON.parse(result.result).error ?? '');
+
+function renderChat(threads: ChatThread[]) {
+  const props = { settings, onCreateThread: vi.fn(), onUpdateThread: vi.fn(), onAddMessage: vi.fn().mockResolvedValue(undefined), onTrashThread: vi.fn() };
+  const view = render(<ChatView threads={threads} {...props} />);
+  return { rerender: () => view.rerender(<ChatView threads={threads} {...props} />) };
+}
+async function sendAndGetHandler(): Promise<ToolHandler> {
+  await act(async () => { await state.input.onSend('Look into it'); });
+  return state.send.mock.calls[state.send.mock.calls.length - 1][1] as ToolHandler;
+}
+function start(handler: ToolHandler, toolUse: ToolUseBlock, signal = new AbortController().signal) {
+  let pending!: Promise<ToolExecutionResult>;
+  act(() => { pending = handler(toolUse, signal); });
+  return pending;
+}
+// The card is named by its title; the Details disclosure is an unnamed group.
+const card = () => screen.findByRole('group', { name: /\?$/ });
+const queryCard = () => screen.queryByRole('group', { name: /\?$/ });
+
+let egress: EgressSpy;
+beforeEach(async () => {
+  discardAllComposerDrafts();
+  vi.clearAllMocks();
+  await seedAIWorkspace();
+  localStorage.clear();
+  localStorage.setItem('caddyai-onboarded', '1');
+  egress = installEgressSpy();
+  state.selectedThreadId = 'thread';
+  state.folder = undefined;
+  Element.prototype.scrollIntoView = vi.fn();
+});
+afterEach(() => { cleanup(); egress.restore(); discardAllComposerDrafts(); });
+
+describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
+  it('a thread filed in S uses S in the global view: prompt, hidden local-only rows and cross-investigation cards', async () => {
+    renderChat([makeThread('thread', 'S')]);
+    const handler = await sendAndGetHandler();
+    expect(state.send.mock.calls[0][0].systemPrompt).toContain('Investigation: "Shared case"');
+
+    const hidden = await start(handler, call('read_note', { id: ids('L').note }));
+    expect(errorOf(hidden)).toMatch(/not found/i);
+    expect(queryCard()).toBeNull();
+
+    const search = start(handler, call('search_across_investigations', { query: 'CANARY' }));
+    expect(within(await card()).getByText('Read other investigations?')).toBeInTheDocument();
+    expect(within(await card()).getByText(/syncs to the members of "Shared case"/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /approve/i }));
+    const result = await search;
+    expect(result.isError).toBe(false);
+    expect(result.result).not.toContain(canary('L'));
+  });
+
+  it('an unfiled thread in the global view reads freely and names the investigation a change would reach', async () => {
+    renderChat([makeThread('thread')]);
+    const handler = await sendAndGetHandler();
+    expect((await start(handler, call('read_note', { id: ids('S').note }))).result).toContain(canary('S'));
+
+    const update = start(handler, call('update_note', { id: ids('S').note, content: 'Overwritten' }));
+    const shown = await card();
+    expect(within(shown).getByText('Change another investigation?')).toBeInTheDocument();
+    expect(await within(shown).findByText('Shared case: syncs to its members')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /reject/i }));
+    expect(errorOf(await update)).toMatch(/rejected/i);
+    expect((await db.notes.get(ids('S').note))?.content).toBe(`Evidence ${canary('S')}`);
+  });
+});
+
+describe('C-CHAT-6 the approval queue', () => {
+  const fetchA = call('fetch_url', { url: 'https://collector.example/a' }, 'call-a');
+  const fetchB = call('fetch_url', { url: 'https://collector.example/b' }, 'call-b');
+
+  it('shows one card at a time, oldest first, and runs each call once approved', async () => {
+    state.folder = { id: 'S', name: 'Shared case', order: 0, createdAt: 1 };
+    renderChat([makeThread('thread', 'S')]);
+    const handler = await sendAndGetHandler();
+    const first = start(handler, fetchA);
+    const second = start(handler, fetchB);
+    await waitFor(() => expect(screen.getByText('1 of 2')).toBeInTheDocument());
+    expect(screen.getAllByRole('group', { name: /\?$/ })).toHaveLength(1);
+    expect(screen.getByText(/collector\.example\/a/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /approve/i }));
+    expect((await first).isError).toBe(false);
+    await waitFor(() => expect(screen.getByText(/collector\.example\/b/)).toBeInTheDocument());
+    expect(screen.queryByText('1 of 2')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /approve/i }));
+    expect((await second).isError).toBe(false);
+    expect(egress.fetchUrlPosts()).toEqual(['https://collector.example/a', 'https://collector.example/b']);
+    expect(queryCard()).toBeNull();
+  });
+
+  it('a thread switch rejects every queued card and runs nothing', async () => {
+    const view = renderChat([makeThread('thread', 'S'), makeThread('other', 'S')]);
+    const handler = await sendAndGetHandler();
+    const first = start(handler, fetchA);
+    const second = start(handler, fetchB);
+    await waitFor(() => expect(screen.getByText('1 of 2')).toBeInTheDocument());
+
+    state.selectedThreadId = 'other';
+    view.rerender();
+    expect(errorOf(await first)).toMatch(/rejected/i);
+    expect(errorOf(await second)).toMatch(/rejected/i);
+    expect(queryCard()).toBeNull();
+    expect(egress.fetchUrlPosts()).toEqual([]);
+  });
+
+  it('stopping the reply cancels every queued card', async () => {
+    renderChat([makeThread('thread', 'S')]);
+    const handler = await sendAndGetHandler();
+    const controller = new AbortController();
+    const first = start(handler, fetchA, controller.signal);
+    const second = start(handler, fetchB, controller.signal);
+    await waitFor(() => expect(screen.getByText('1 of 2')).toBeInTheDocument());
+    act(() => controller.abort());
+    expect(errorOf(await first)).toMatch(/cancelled/i);
+    expect(errorOf(await second)).toMatch(/cancelled/i);
+    await waitFor(() => expect(queryCard()).toBeNull());
+    expect(egress.fetchUrlPosts()).toEqual([]);
+  });
+});
+
+describe('the approval card', () => {
+  it('Enter does not approve, and Escape rejects', async () => {
+    renderChat([makeThread('thread', 'S')]);
+    const handler = await sendAndGetHandler();
+    const pending = start(handler, call('fetch_url', { url: 'https://collector.example/c' }));
+    const shown = await card();
+    await waitFor(() => expect(document.activeElement).toBe(shown));
+    fireEvent.keyDown(shown, { key: 'Enter' });
+    fireEvent.keyPress(shown, { key: 'Enter' });
+    expect(await card()).toBe(shown);
+    fireEvent.keyDown(shown, { key: 'Escape' });
+    expect(errorOf(await pending)).toMatch(/rejected/i);
+    expect(egress.fetchUrlPosts()).toEqual([]);
+  });
+
+  it('leads with the destination and its warnings, with the raw input under Details', async () => {
+    await db.standaloneIOCs.add({ id: 'c2', folderId: 'S', type: 'domain', value: 'c2.example', confidence: 'high', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+    renderChat([makeThread('thread', 'S')]);
+    const handler = await sendAndGetHandler();
+    const url = `https://c2.example/beacon?d=${'A'.repeat(300)}`;
+    void start(handler, call('fetch_url', { url }));
+    const shown = await card();
+    expect(within(shown).getByText('Send data outside ThreatCaddy?')).toBeInTheDocument();
+    expect(within(shown).getByText('Opens a page on c2.example. The site receives the full address.')).toBeInTheDocument();
+    expect(within(shown).getByText('Not one of the built-in reference sites.')).toBeInTheDocument();
+    expect(within(shown).getByText('The address is long enough to carry investigation data.')).toBeInTheDocument();
+    expect(within(shown).getByText(/This site is an IOC in this investigation/)).toBeInTheDocument();
+    const details = within(shown).getByText('Details').closest('details');
+    expect(details).not.toHaveAttribute('open');
+    expect(details?.textContent).toContain(url);
+  });
+});

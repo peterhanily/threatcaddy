@@ -54,7 +54,6 @@
     "restoreDialog": "Khôi phục điểm kiểm tra",
     "restoreMessage": "Thao tác này sẽ hoàn tác các thay đổi AI — thực thể được tạo sẽ bị xóa và thực thể được sửa đổi sẽ được khôi phục về trạng thái trước đó. Không thể hoàn tác.",
     "restoreLabel": "Khôi phục",
-    "approvalTitle": "Phê duyệt hành động ghi?",
     "approve": "Phê duyệt",
     "reject": "Từ chối",
     "switchedToPlan": "Đã chuyển sang chế độ lên kế hoạch — AI sẽ đề xuất mà không thực thi",
@@ -76,6 +75,35 @@
     "onboardingStep3Title": "3. Kích hoạt quyền",
     "onboardingStep3Desc": "Trong popup tiện ích mở rộng, bật \"Cho phép CaddyAI\" để truy cập nhà cung cấp AI và \"Cho phép lấy URL\" cho công cụ /fetch.",
     "onboardingDismiss": "Đã hiểu"
+  },
+  "approval": {
+    "position": "{{index}} trên {{total}}",
+    "title": {
+      "write": "Phê duyệt thay đổi trong cuộc điều tra này?",
+      "egress": "Gửi dữ liệu ra ngoài ThreatCaddy?",
+      "crossRead": "Đọc các cuộc điều tra khác?",
+      "crossWrite": "Thay đổi một cuộc điều tra khác?",
+      "agentControl": "Thay đổi các tác tử AI?",
+      "harvested": "Chạy lệnh gọi công cụ được tìm thấy trong văn bản trả lời?"
+    },
+    "opensPage": "Mở một trang trên {{host}}. Trang web nhận được địa chỉ đầy đủ.",
+    "lookup": "Gửi {{value}} tới: {{vendors}}",
+    "lookupNone": "Không có tra cứu nào đang bật áp dụng cho {{value}}.",
+    "sendsTo": "Gửi yêu cầu này tới {{destination}}.",
+    "agentChange": "Thay đổi các tác tử AI đang làm việc trong cuộc điều tra này.",
+    "readsOthers": "Đọc các cuộc điều tra khác, không chỉ cuộc điều tra này.",
+    "targetSynced": "{{name}}: đồng bộ với các thành viên",
+    "targetLocal": "{{name}}: ở lại trên thiết bị này",
+    "unfiled": "Ngoài mọi cuộc điều tra: ở lại trên thiết bị này",
+    "conversationSyncs": "Những gì nó đọc sẽ trở thành một phần của cuộc trò chuyện này, vốn được đồng bộ với các thành viên của \"{{name}}\".",
+    "flag": {
+      "untrustedHost": "Không phải một trong các trang tham khảo tích hợp sẵn.",
+      "urlCarriesData": "Địa chỉ đủ dài để mang theo dữ liệu điều tra.",
+      "hostIsIoc": "Trang này là một IOC trong cuộc điều tra này. Truy cập nó có thể khiến kẻ tấn công cảnh giác.",
+      "harvested": "Lệnh gọi này được lấy từ văn bản trả lời thay vì được gửi dưới dạng lệnh gọi công cụ, nên có thể do nội dung bị chèn tạo ra.",
+      "readForeign": "Trước đó trong câu trả lời này, CaddyAI đã đọc một cuộc điều tra khác. Hành động này có thể mang theo dữ liệu đó."
+    },
+    "details": "Chi tiết"
   },
   "input": {
     "noApiKeys": "Chưa cấu hình khóa API — thêm vào Cài đặt → AI/LLM",

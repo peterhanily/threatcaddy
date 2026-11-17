@@ -54,7 +54,6 @@
     "restoreDialog": "Pulihkan Titik Periksa",
     "restoreMessage": "Ini akan membatalkan perubahan AI — entitas yang dibuat akan dihapus dan entitas yang diubah akan dikembalikan ke status sebelumnya. Tindakan ini tidak dapat dibatalkan.",
     "restoreLabel": "Pulihkan",
-    "approvalTitle": "Setujui tindakan tulis?",
     "approve": "Setujui",
     "reject": "Tolak",
     "switchedToPlan": "Beralih ke mode rencana — AI akan mengusulkan tanpa mengeksekusi",
@@ -76,6 +75,35 @@
     "onboardingStep3Title": "3. Aktifkan izin",
     "onboardingStep3Desc": "Di popup ekstensi, aktifkan \"Izinkan CaddyAI\" untuk akses penyedia AI dan \"Izinkan pengambilan URL\" untuk alat /fetch.",
     "onboardingDismiss": "Mengerti"
+  },
+  "approval": {
+    "position": "{{index}} dari {{total}}",
+    "title": {
+      "write": "Setujui perubahan pada investigasi ini?",
+      "egress": "Kirim data ke luar ThreatCaddy?",
+      "crossRead": "Baca investigasi lain?",
+      "crossWrite": "Ubah investigasi lain?",
+      "agentControl": "Ubah agen AI?",
+      "harvested": "Jalankan pemanggilan alat yang ditemukan di teks balasan?"
+    },
+    "opensPage": "Membuka halaman di {{host}}. Situs tersebut menerima alamat lengkapnya.",
+    "lookup": "Mengirim {{value}} ke: {{vendors}}",
+    "lookupNone": "Tidak ada pencarian aktif yang berlaku untuk {{value}}.",
+    "sendsTo": "Mengirim permintaan ini ke {{destination}}.",
+    "agentChange": "Mengubah agen AI yang bekerja di investigasi ini.",
+    "readsOthers": "Membaca investigasi lain, bukan hanya yang ini.",
+    "targetSynced": "{{name}}: disinkronkan ke anggotanya",
+    "targetLocal": "{{name}}: tetap di perangkat ini",
+    "unfiled": "Di luar investigasi mana pun: tetap di perangkat ini",
+    "conversationSyncs": "Apa yang dibacanya menjadi bagian dari percakapan ini, yang disinkronkan ke anggota \"{{name}}\".",
+    "flag": {
+      "untrustedHost": "Bukan salah satu situs referensi bawaan.",
+      "urlCarriesData": "Alamatnya cukup panjang untuk membawa data investigasi.",
+      "hostIsIoc": "Situs ini adalah IOC dalam investigasi ini. Mengunjunginya dapat memperingatkan penyerang.",
+      "harvested": "Pemanggilan ini diambil dari teks balasan, bukan dikirim sebagai pemanggilan alat, sehingga mungkin dihasilkan oleh konten yang disisipkan.",
+      "readForeign": "Sebelumnya dalam balasan ini CaddyAI membaca investigasi lain. Tindakan ini mungkin membawa data tersebut."
+    },
+    "details": "Detail"
   },
   "input": {
     "noApiKeys": "Tidak ada kunci API yang dikonfigurasi — tambahkan di Pengaturan → AI/LLM",

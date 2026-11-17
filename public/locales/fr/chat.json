@@ -54,7 +54,6 @@
     "restoreDialog": "Restaurer le point de contrôle",
     "restoreMessage": "Cela annulera les modifications de l'IA — les entités créées seront supprimées et les entités modifiées seront rétablies à leur état précédent. Cette action est irréversible.",
     "restoreLabel": "Restaurer",
-    "approvalTitle": "Approuver l'action d'écriture ?",
     "approve": "Approuver",
     "reject": "Rejeter",
     "switchedToPlan": "Basculé en mode Planification — l'IA propose sans exécuter",
@@ -77,6 +76,35 @@
     "onboardingStep3Desc": "Dans le popup de l'extension, activez « Autoriser CaddyAI » pour l'accès aux fournisseurs IA et « Autoriser la récupération d'URL » pour l'outil /fetch.",
     "onboardingDismiss": "Compris",
     "loopCount_many": "{{count}} boucles"
+  },
+  "approval": {
+    "position": "{{index}} sur {{total}}",
+    "title": {
+      "write": "Approuver une modification de cette enquête ?",
+      "egress": "Envoyer des données hors de ThreatCaddy ?",
+      "crossRead": "Lire d'autres enquêtes ?",
+      "crossWrite": "Modifier une autre enquête ?",
+      "agentControl": "Modifier les agents IA ?",
+      "harvested": "Exécuter un appel d'outil trouvé dans le texte de la réponse ?"
+    },
+    "opensPage": "Ouvre une page sur {{host}}. Le site reçoit l'adresse complète.",
+    "lookup": "Envoie {{value}} à : {{vendors}}",
+    "lookupNone": "Aucune recherche activée ne s'applique à {{value}}.",
+    "sendsTo": "Envoie cette requête à {{destination}}.",
+    "agentChange": "Modifie les agents IA qui travaillent dans cette enquête.",
+    "readsOthers": "Lit d'autres enquêtes, pas seulement celle-ci.",
+    "targetSynced": "{{name}} : synchronisée avec ses membres",
+    "targetLocal": "{{name}} : reste sur cet appareil",
+    "unfiled": "Hors de toute enquête : reste sur cet appareil",
+    "conversationSyncs": "Ce qu'il lit devient partie de cette conversation, synchronisée avec les membres de « {{name}} ».",
+    "flag": {
+      "untrustedHost": "Ne fait pas partie des sites de référence intégrés.",
+      "urlCarriesData": "L'adresse est assez longue pour transporter des données de l'enquête.",
+      "hostIsIoc": "Ce site est un IOC de cette enquête. Le visiter peut alerter l'attaquant.",
+      "harvested": "Cet appel a été extrait du texte de la réponse au lieu d'être envoyé comme appel d'outil ; un contenu injecté a pu le produire.",
+      "readForeign": "Plus tôt dans cette réponse, CaddyAI a lu une autre enquête. Cette action peut transporter ces données."
+    },
+    "details": "Détails"
   },
   "input": {
     "noApiKeys": "Aucune clé API configurée — ajoutez-en une dans Paramètres → IA/LLM",

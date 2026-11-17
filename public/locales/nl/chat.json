@@ -54,7 +54,6 @@
     "restoreDialog": "Controlepunt herstellen",
     "restoreMessage": "Hiermee worden de wijzigingen van de AI ongedaan gemaakt — aangemaakte objecten worden verwijderd en gewijzigde objecten worden teruggezet naar hun vorige staat. Dit kan niet ongedaan worden gemaakt.",
     "restoreLabel": "Herstellen",
-    "approvalTitle": "Schrijfactie goedkeuren?",
     "approve": "Goedkeuren",
     "reject": "Afwijzen",
     "switchedToPlan": "Overgeschakeld naar planmodus — AI stelt voor zonder uit te voeren",
@@ -76,6 +75,35 @@
     "onboardingStep3Title": "3. Rechten inschakelen",
     "onboardingStep3Desc": "Schakel in het extensiepopup «CaddyAI toestaan» in voor toegang tot AI-providers en «URL ophalen toestaan» voor het /fetch-gereedschap.",
     "onboardingDismiss": "Begrepen"
+  },
+  "approval": {
+    "position": "{{index}} van {{total}}",
+    "title": {
+      "write": "Wijziging in dit onderzoek goedkeuren?",
+      "egress": "Gegevens buiten ThreatCaddy versturen?",
+      "crossRead": "Andere onderzoeken lezen?",
+      "crossWrite": "Een ander onderzoek wijzigen?",
+      "agentControl": "AI-agents wijzigen?",
+      "harvested": "Een toolaanroep uit de antwoordtekst uitvoeren?"
+    },
+    "opensPage": "Opent een pagina op {{host}}. De site ontvangt het volledige adres.",
+    "lookup": "Stuurt {{value}} naar: {{vendors}}",
+    "lookupNone": "Geen ingeschakelde opzoeking is van toepassing op {{value}}.",
+    "sendsTo": "Stuurt dit verzoek naar {{destination}}.",
+    "agentChange": "Wijzigt de AI-agents die in dit onderzoek werken.",
+    "readsOthers": "Leest andere onderzoeken, niet alleen dit.",
+    "targetSynced": "{{name}}: wordt gesynchroniseerd met de leden",
+    "targetLocal": "{{name}}: blijft op dit apparaat",
+    "unfiled": "Buiten elk onderzoek: blijft op dit apparaat",
+    "conversationSyncs": "Wat het leest wordt deel van dit gesprek, dat wordt gesynchroniseerd met de leden van «{{name}}».",
+    "flag": {
+      "untrustedHost": "Geen van de ingebouwde referentiesites.",
+      "urlCarriesData": "Het adres is lang genoeg om onderzoeksgegevens mee te nemen.",
+      "hostIsIoc": "Deze site is een IOC in dit onderzoek. Een bezoek kan de aanvaller waarschuwen.",
+      "harvested": "Deze aanroep is uit de antwoordtekst gehaald in plaats van als toolaanroep verzonden, dus geïnjecteerde inhoud kan hem hebben gemaakt.",
+      "readForeign": "Eerder in dit antwoord heeft CaddyAI een ander onderzoek gelezen. Deze actie kan die gegevens bevatten."
+    },
+    "details": "Details"
   },
   "input": {
     "noApiKeys": "Geen API-sleutels geconfigureerd — voeg er een toe in Instellingen → AI/LLM",
