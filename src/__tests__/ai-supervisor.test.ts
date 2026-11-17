@@ -94,6 +94,15 @@ describe('B-SUP-3 the supervisor investigation is local-only', () => {
     expect((await supervisorFolders()).map(folder => folder.id)).toEqual(['SUP']);
   });
 
+  it('marks its findings as AI-made, for the operator', async () => {
+    await db.folders.add({ id: 'SUP', name: SUPERVISOR, order: 9, createdAt: 1, localOnly: true, agentPolicy: { ...DEFAULT_AGENT_POLICY, autoApproveCreate: true } });
+    scriptedLLM.script({ toolCalls: [{ name: 'create_note', input: { title: 'Cross-case pattern', content: 'Seen twice.' } }] }, { text: 'done' });
+    expect((await runSupervisorCycle(settings, true)).error).toBeUndefined();
+    expect(await db.notes.where('folderId').equals('SUP').toArray()).toEqual([
+      expect.objectContaining({ title: 'Cross-case pattern', createdBy: 'agent:🛰️ CaddyAgent Supervisor (Analyst)', tags: ['ai-generated'] }),
+    ]);
+  });
+
   it('from an old synced supervisor investigation, local-only cases are hidden and their policies ignored', async () => {
     await db.folders.add({ id: 'OLD', name: SUPERVISOR, order: 9, createdAt: 1, status: 'active' });
     await db.folders.update('L', { agentPolicy: { ...DEFAULT_AGENT_POLICY, autoApproveReads: false } });

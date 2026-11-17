@@ -80,4 +80,12 @@ describe('A-BRIDGE-1 with the bridge on and the shared investigation selected', 
     expect((await db.notes.get(result.id))?.folderId).toBe('S');
     expect(() => bridge().setFolderId(nonce, 'L')).toThrow('follows the investigation selected');
   });
+
+  it('marks what it creates as AI-made, for the operator', async () => {
+    const note = JSON.parse(await bridge().exec(nonce, 'create_note', { title: 'Bridge note' }));
+    const folder = JSON.parse(await bridge().exec(nonce, 'create_note_folder', { name: 'Bridge folder' }));
+    for (const id of [note.id, folder.folderId]) {
+      expect(await db.notes.get(id)).toMatchObject({ createdBy: 'agent:🔌 Agent bridge (Analyst)', tags: expect.arrayContaining(['ai-generated']) });
+    }
+  });
 });

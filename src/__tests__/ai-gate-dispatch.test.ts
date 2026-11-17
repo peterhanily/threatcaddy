@@ -4,18 +4,21 @@
  * site cannot hide a gap here.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import Dexie from 'dexie';
 import { db } from '../db';
-import type { AgentSoul, ToolUseBlock } from '../types';
+import type { AgentAction, AgentProfile, AgentSoul, ToolUseBlock } from '../types';
 import type { InstalledIntegration, IntegrationTemplate } from '../types/integration-types';
 import { executeTool } from '../lib/llm-tools';
 import { FORENSICATE_AGENT_PROFILE } from '../lib/forensicate-tool';
 import { BUILTIN_INTEGRATIONS } from '../lib/builtin-integrations';
+import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
+import { bulkApproveActions } from '../lib/agent-action-approval';
 import i18n from '../i18n';
 import { mintHumanApproval, type HumanApproval } from '../lib/human-approval';
 import * as toolReach from '../lib/tool-reach';
 import type { ToolSurface } from '../lib/tool-reach';
 import { canary, ids, rowsContain, seedAIWorkspace } from './helpers/ai-workspace';
-import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
+import { HEAD_BRIDGE_CAPS, installEgressSpy, type EgressSpy } from './helpers/egress-spy';
 import { ALL_STATIC_TOOLS, execTool } from './helpers/tool-exec';
 
 const integration = vi.hoisted(() => ({ run: vi.fn() }));
@@ -333,6 +336,56 @@ describe('A-GATE-6 review and escalation scope', () => {
     expect(result.isError).toBe(true);
     expect((await db.tasks.get(ids('S').task))?.status).toBe('todo');
   });
+
+  it('sends a rejection to the working memory of the agent the task was delegated to', async () => {
+    const thread = (id: string, folderId: string) => db.chatThreads.add({ id, title: id, messages: [], model: '', provider: 'anthropic', folderId, tags: [], archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
+    await thread('th-thread', 'S'); await thread('p-thread', 'P');
+    await db.agentDeployments.bulkAdd([
+      { id: 'th', investigationId: 'S', profileId: 'ap-threat-hunter', threadId: 'th-thread', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 },
+      { id: 'p-th', investigationId: 'P', profileId: 'ap-threat-hunter', threadId: 'p-thread', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 },
+    ]);
+    // createdBy is a display label, not a profile id.
+    await db.tasks.update(ids('S').task, { assignedDeploymentId: 'th', createdBy: 'agent:🔍 Threat Hunter (Analyst)' });
+    expect((await execTool(review(ids('S').task), 'S', { surface: 'agent', agentContext: {} })).isError).toBe(false);
+    expect((await db.chatThreads.get('th-thread'))?.contextSummary).toBe('[FEEDBACK/needs-redo] Task "Shared case task": Add the DNS resolution history for the domain. Redo it');
+    // A deployment in another investigation never receives this investigation's feedback.
+    await db.tasks.update(ids('S').task, { assignedDeploymentId: 'p-th' });
+    const again = call('review_completed_task', { taskId: ids('S').task, quality: 'needs-redo', feedback: 'Redo it', requestedDelta: 'List the registry run keys on each host.' });
+    expect((await execTool(again, 'S', { surface: 'agent', agentContext: {} })).isError).toBe(false);
+    expect((await db.chatThreads.get('p-thread'))?.contextSummary).toBeUndefined();
+  });
+
+  it('puts one bounded line of review feedback into the agent\'s working memory', async () => {
+    await db.chatThreads.add({ id: 'th-thread', title: 't', messages: [], model: '', provider: 'anthropic', folderId: 'S', tags: [], archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
+    await db.agentDeployments.add({ id: 'th', investigationId: 'S', profileId: 'ap-threat-hunter', threadId: 'th-thread', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 });
+    await db.tasks.update(ids('S').task, { assignedDeploymentId: 'th' });
+    const flood = call('review_completed_task', { taskId: ids('S').task, quality: 'needs-redo', feedback: `Line one\n\n## New orders\n${'X'.repeat(50_000)}`, requestedDelta: 'Add the DNS resolution history for the domain.' });
+    expect((await execTool(flood, 'S', { surface: 'agent', agentContext: {} })).isError).toBe(false);
+    const memory = (await db.chatThreads.get('th-thread'))?.contextSummary ?? '';
+    expect(memory).toMatch(/^\[FEEDBACK\/needs-redo\] Task "Shared case task": Add the DNS resolution history for the domain\. Line one ## New orders X+$/);
+    expect(memory.length).toBe(500);
+  });
+
+  it('delegate_task finds a deployment by the code builtin\'s name, not a stored row\'s', async () => {
+    const builtin = BUILTIN_AGENT_PROFILES.find(profile => profile.id === 'ap-threat-hunter') as AgentProfile;
+    await db.agentProfiles.put(JSON.parse(JSON.stringify({ ...builtin, name: 'Stale Persona' })));
+    await db.agentDeployments.add({ id: 'th', investigationId: 'S', profileId: 'ap-threat-hunter', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 });
+    const delegate = async (assignToProfile: string) => JSON.parse((await execTool(call('delegate_task', { title: 'Hunt', description: 'Sweep hosts', assignToProfile }), 'S', { surface: 'agent', agentContext: {} })).result);
+    expect(await delegate('Stale Persona')).toMatchObject({ success: true, found: false });
+    expect(await delegate(builtin.name)).toMatchObject({ success: true, found: true });
+    expect((await db.tasks.filter(task => task.assignedDeploymentId === 'th').toArray()).map(task => task.title)).toEqual(['Hunt']);
+  });
+
+  it('list_agent_activity names a builtin as delegate_task finds it, not by a stored row\'s name', async () => {
+    const builtin = BUILTIN_AGENT_PROFILES.find(profile => profile.id === 'ap-threat-hunter') as AgentProfile;
+    await db.agentProfiles.put(JSON.parse(JSON.stringify({ ...builtin, name: 'Stale Persona' })));
+    await db.agentActions.add({ id: 'done', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'create_note', toolInput: {}, rationale: 'r', status: 'executed', createdAt: 5 });
+    const activity = async (input: Record<string, unknown>) => JSON.parse((await execTool(call('list_agent_activity', input), 'S', { surface: 'agent', agentContext: {} })).result)
+      .actions.map((action: { agentName: string }) => action.agentName);
+    expect(await activity({})).toEqual([builtin.name]);
+    expect(await activity({ agentName: builtin.name })).toEqual([builtin.name]);
+    expect(await activity({ agentName: 'Stale Persona' })).toEqual([]);
+  });
 });
 
 describe('A-GATE-7 agent configuration tools', () => {
@@ -366,6 +419,66 @@ describe('A-GATE-7 agent configuration tools', () => {
     const result = await execTool(call('dismiss_agent', { agentName: 'Threat Hunter', reason: 'Repeatedly ignored the scope of the investigation.', evidence: 'Three off-scope notes.' }), 'S');
     expect(result.isError).toBe(false);
     expect(await db.agentActions.get('act')).toBeTruthy();
+  });
+
+  it('dismissing rejects the agent\'s pending proposals in this investigation, so Approve all cannot run them', async () => {
+    await db.agentDeployments.add({ id: 'dep', investigationId: 'S', profileId: 'ap-threat-hunter', threadId: 'thread', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 });
+    const row = (id: string, extra: Partial<AgentAction> = {}): AgentAction => ({ id, investigationId: 'S', threadId: 'thread', agentConfigId: 'ap-threat-hunter',
+      toolName: 'create_note', toolInput: { title: `note ${id}` }, rationale: 'r', status: 'pending', createdAt: 1, ...extra });
+    await db.agentActions.bulkAdd([row('mine'), row('question', { toolName: 'ask_human', toolInput: { question: 'Which host?' } }),
+      row('done', { status: 'executed' }), row('elsewhere', { investigationId: 'P' }), row('colleague', { agentConfigId: 'ap-malware-analyst' })]);
+    const dismiss = call('dismiss_agent', { agentName: 'Threat Hunter', reason: 'Repeatedly ignored the scope of the investigation.', evidence: 'Three off-scope notes.' });
+    expect((await execTool(dismiss, 'S')).isError).toBe(false);
+    for (const id of ['mine', 'question']) expect(await db.agentActions.get(id)).toMatchObject({ status: 'rejected', resultSummary: 'Agent dismissed' });
+    expect(await db.agentActions.get('done')).toEqual(row('done', { status: 'executed' }));
+    expect(await db.agentActions.get('elsewhere')).toEqual(row('elsewhere', { investigationId: 'P' }));
+    expect(await db.agentActions.get('colleague')).toEqual(row('colleague', { agentConfigId: 'ap-malware-analyst' }));
+    await bulkApproveActions('S');
+    expect(await db.notes.where('title').equals('note mine').count()).toBe(0);
+  });
+
+  describe('concurrent approved deployments', () => {
+    const activeIn = async (folderId: string) => (await db.agentDeployments.where('investigationId').equals(folderId).toArray()).filter(d => d.shift !== 'resting');
+    const lifecycle = {
+      spawn: (name: string) => call('spawn_agent', { profileName: name, reason: 'More hands' }),
+      deploy: (name: string) => call('deploy_agent', { profileName: name }),
+      define: (name: string) => call('define_specialist', { name, systemPrompt: 'Help.' }),
+    };
+    const run = (kind: keyof typeof lifecycle, name: string) => execTool(lifecycle[kind](name), 'S');
+
+    it.each([['spawn', 'spawn'], ['spawn', 'deploy'], ['deploy', 'define'], ['define', 'define']] as const)('%s and %s at once stop at 8 active', async (first, second) => {
+      for (let i = 0; i < 7; i++) await db.agentDeployments.add({ id: `dep-${i}`, investigationId: 'S', profileId: `p-${i}`, status: 'idle', shift: 'active', order: i, createdAt: 1, updatedAt: 1 });
+      const results = await Promise.all([run(first, 'Threat Hunter'), run(second, 'Malware Analyst')]);
+      expect(results.map(result => result.isError).sort()).toEqual([false, true]);
+      expect(await activeIn('S')).toHaveLength(8);
+    });
+
+    it.each([['spawn', 'spawn'], ['spawn', 'deploy'], ['deploy', 'deploy']] as const)('%s and %s of one profile at once deploy it once', async (first, second) => {
+      const results = await Promise.all([run(first, 'Threat Hunter'), run(second, 'Threat Hunter')]);
+      expect(results.map(result => result.isError).sort()).toEqual([false, true]);
+      expect((await activeIn('S')).map(d => d.profileId)).toEqual(['ap-threat-hunter']);
+      // deploy_agent's audit thread is written only for the deployment that was made.
+      expect(await db.chatThreads.count()).toBe(results.filter((result, i) => !result.isError && [first, second][i] === 'deploy').length);
+    });
+
+    it('two dismissals with the same replacement at once deploy it once', async () => {
+      await db.agentDeployments.bulkAdd(['ap-threat-hunter', 'ap-network-forensics'].map((profileId, order) =>
+        ({ id: `dep-${profileId}`, investigationId: 'S', profileId, status: 'idle' as const, shift: 'active' as const, order, createdAt: 1, updatedAt: 1 })));
+      const dismiss = (agentName: string) => execTool(call('dismiss_agent', { agentName, replacementProfile: 'Malware Analyst',
+        reason: 'Repeatedly ignored the scope of the investigation.', evidence: 'Three off-scope notes.' }), 'S');
+      // Two approval flows can interleave in a browser: hold a deployment add made
+      // outside a transaction until both dismissals reach theirs.
+      const waiting: Array<() => void> = [];
+      const add = db.agentDeployments.add.bind(db.agentDeployments);
+      vi.spyOn(db.agentDeployments, 'add').mockImplementation(((...args: Parameters<typeof add>) => Dexie.currentTransaction ? add(...args)
+        : new Promise(resolve => {
+          waiting.push(() => resolve(add(...args)));
+          if (waiting.length === 2) waiting.forEach(release => release());
+        })) as never);
+      const results = await Promise.all([dismiss('Threat Hunter'), dismiss('Network Forensics')]);
+      expect(results.map(result => result.isError)).toEqual([false, false]);
+      expect((await activeIn('S')).map(d => d.profileId)).toEqual(['ap-malware-analyst']);
+    });
   });
 
   it('reflection needs an agent profile', async () => {
@@ -499,6 +612,95 @@ describe('provenance of AI-created entities', () => {
     const chatTask = await db.tasks.get(JSON.parse((await chat).result).id);
     expect(agentTask).toMatchObject({ title: 'Agent task', createdBy: 'agent:🤖 CaddyAgent (Analyst)', tags: ['ai-generated'] });
     expect(chatTask).toMatchObject({ title: 'Chat task', createdBy: 'Analyst', tags: [] });
+  });
+
+  it('tags agent alert and note-folder notes, and attributes chat ones to the analyst without the tag', async () => {
+    const alert = call('ingest_alert', { source: 'edr', title: 'Critical: ransomware on DC01', severity: 'critical' });
+    const folder = call('create_note_folder', { name: 'Triage' });
+    const created = async (surface: ToolSurface) => {
+      const options = surface === 'agent' ? { surface, agentContext: {} } : { surface };
+      const alertNote = await db.notes.get(JSON.parse((await execTool(alert, 'S', options)).result).noteId);
+      const folderNote = await db.notes.get(JSON.parse((await execTool(folder, 'S', options)).result).folderId);
+      return [alertNote, folderNote].map(note => ({ createdBy: note?.createdBy, tags: note?.tags }));
+    };
+    expect(await created('agent')).toEqual([
+      { createdBy: 'agent:🤖 CaddyAgent (Analyst)', tags: ['alert', 'source:edr', 'severity:critical', 'ai-generated'] },
+      { createdBy: 'agent:🤖 CaddyAgent (Analyst)', tags: ['chat-folder', 'icon:📁', 'ai-generated'] },
+    ]);
+    expect(await created('chat-act')).toEqual([
+      { createdBy: 'Analyst', tags: ['alert', 'source:edr', 'severity:critical'] },
+      { createdBy: 'Analyst', tags: ['chat-folder', 'icon:📁'] },
+    ]);
+  });
+
+  it('labels supervisor and bridge creates as AI and tags them, with no agent context', async () => {
+    const supervisor = await execTool(call('create_task', { title: 'Supervisor task' }), 'L2', { surface: 'supervisor' });
+    const bridge = await execTool(call('create_ioc', { type: 'domain', value: 'bridge.example' }), 'S', { surface: 'bridge' });
+    expect(await db.tasks.get(JSON.parse(supervisor.result).id)).toMatchObject({ createdBy: 'agent:🛰️ CaddyAgent Supervisor (Analyst)', tags: ['ai-generated'] });
+    expect(await db.standaloneIOCs.get(JSON.parse(bridge.result).id)).toMatchObject({ createdBy: 'agent:🔌 Agent bridge (Analyst)', tags: ['ai-generated'] });
+  });
+
+  describe('every other note, task and IOC a tool makes', () => {
+    // Without the notification acknowledgement, desktop notices fall back at once.
+    beforeEach(() => { egress.restore(); egress = installEgressSpy(HEAD_BRIDGE_CAPS.filter(cap => cap !== 'notification_ack')); });
+    const setups: Record<string, () => Promise<unknown>> = {
+      dismiss: () => db.agentDeployments.add({ id: 'dep', investigationId: 'S', profileId: 'ap-threat-hunter', status: 'idle', shift: 'active', order: 0, createdAt: 1, updatedAt: 1 }),
+      // The run writes a note and an IOC through the enrichment callbacks.
+      enrich: async () => {
+        await db.installedIntegrations.add({ id: 'vt', templateId: 'vt-domain-lookup', name: 'vt', enabled: true, config: {}, scopeType: 'all', scopeFolderIds: [], runCount: 0, errorCount: 0, createdAt: 1, updatedAt: 1 });
+        const ran = integration.run.getMockImplementation();
+        integration.run.mockImplementation(async (...args: unknown[]) => {
+          const callbacks = args[3] as { onCreateEntity: (type: string, fields: Record<string, unknown>) => Promise<string> };
+          await callbacks.onCreateEntity('note', { title: 'Enrichment: example' });
+          await callbacks.onCreateEntity('ioc', { type: 'ipv4', value: '203.0.113.9' });
+          return ran?.(...args);
+        });
+      },
+    };
+    const reject = (quality: string) => call('review_completed_task', { taskId: ids('S').task, quality, feedback: 'Redo it', requestedDelta: 'Add the DNS resolution history for the domain.' });
+    const made = async (toolUse: ToolUseBlock, surface: ToolSurface, setup?: string) => {
+      await setups[setup ?? '']?.();
+      const rows = async () => [...await db.notes.toArray(), ...await db.tasks.toArray(), ...await db.standaloneIOCs.toArray()];
+      const before = new Set((await rows()).map(row => row.id));
+      const result = await execTool(toolUse, 'S', surface === 'agent' ? { surface, agentContext: {} } : { surface });
+      expect(result.isError, result.result).toBe(false);
+      return (await rows()).filter(row => !before.has(row.id)).map(row => ({ createdBy: row.createdBy, aiGenerated: row.tags.includes('ai-generated') }));
+    };
+    const agentMade = { createdBy: 'agent:🤖 CaddyAgent (Analyst)', aiGenerated: true };
+
+    it.each([
+      ['declare_war_bridge', call('declare_war_bridge', { situation: 'Ransomware on DC01 confirmed', immediateActions: 'Isolate DC01' })],
+      ['notify_human', call('notify_human', { message: 'Domain admin logon at 03:00', severity: 'critical' })],
+      ['call_meeting', call('call_meeting', { agenda: 'Containment of DC01' })],
+      ['ask_human', call('ask_human', { question: 'May we isolate DC01?' })],
+      ['update_knowledge', call('update_knowledge', { key: 'c2', value: 'evil.example' })],
+      ['delegate_task', call('delegate_task', { title: 'Hunt', description: 'Sweep hosts', assignToProfile: 'Threat Hunter' })],
+      ['a needs-redo review', reject('needs-redo')],
+      ['an escalating review', reject('serious-failure')],
+      ['create_ticket with no ticketing system', call('create_ticket', { title: 'Isolate DC01', description: 'Ransomware' })],
+      ['enrich_ioc', call('enrich_ioc', { iocId: ids('S').ioc }), 'enrich'],
+      ['dismiss_agent', call('dismiss_agent', { agentName: 'Threat Hunter', reason: 'Repeatedly ignored the scope of the investigation.', evidence: 'Three off-scope notes.' }), 'dismiss'],
+      ['generate_report', call('generate_report', { title: 'Interim report' })],
+    ] as const)('an agent\'s %s is attributed to it and tagged', async (_label, toolUse, setup?: string) => {
+      const rows = await made(toolUse, 'agent', setup);
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows).toEqual(rows.map(() => agentMade));
+    });
+
+    it.each([
+      ['update_knowledge', call('update_knowledge', { key: 'c2', value: 'evil.example' })],
+      ['create_ticket with no ticketing system', call('create_ticket', { title: 'Isolate DC01', description: 'Ransomware' })],
+      ['enrich_ioc', call('enrich_ioc', { iocId: ids('S').ioc }), 'enrich'],
+    ] as const)('a chat %s is attributed to the analyst without the tag', async (_label, toolUse, setup?: string) => {
+      expect(await made(toolUse, 'chat-act', setup)).toEqual(setup ? [{ createdBy: 'Analyst', aiGenerated: false }, { createdBy: 'Analyst', aiGenerated: false }] : [{ createdBy: 'Analyst', aiGenerated: false }]);
+    });
+  });
+});
+
+describe('enrich_ioc with no matching integration', () => {
+  it('points to Settings and away from the indicator\'s own host', async () => {
+    const result = await dispatch(call('enrich_ioc', { iocId: ids('S').ioc }), 'S', 'agent');
+    expect(JSON.parse(result.result).message).toBe('No enabled integrations match IOC type "domain". Configure integrations in Settings → Integrations; do not fetch the indicator\'s own host.');
   });
 });
 

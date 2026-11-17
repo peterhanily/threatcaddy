@@ -10,6 +10,7 @@ import { sanitizeSoulText } from './soul-text';
 import { MAX_ACTIVE_DEPLOYMENTS_PER_INVESTIGATION } from './caddy-agent-policy';
 import { PASSIVE_LOOKUP_TEMPLATE_IDS } from './builtin-integrations';
 import { getReadOnlyEntityError } from './tool-entity-policy';
+import { withCreatorTags } from './tool-creator';
 import { workspaceStorageKey } from './workspace-profiles';
 import Dexie from 'dexie';
 import { getToolBinding, isDynamicTool } from './tool-binding';
@@ -210,6 +211,8 @@ export async function buildSystemPrompt(folder?: Folder, customPrompt?: string, 
 // ── Dispatcher ─────────────────────────────────────────────────────────
 
 const TOOL_SURFACES: ReadonlySet<string> = new Set<ToolSurface>(['chat-act', 'chat-yolo', 'chat-plan', 'agent', 'supervisor', 'bridge']);
+/** Creator labels for the AI surfaces that call with no agent context (D11). */
+const SURFACE_AGENT_LABELS: Partial<Record<ToolSurface, string>> = { supervisor: '🛰️ CaddyAgent Supervisor', bridge: '🔌 Agent bridge' };
 
 const atomicLocalTools = new Set(['create_note', 'update_note', 'create_task', 'update_task', 'create_ioc', 'update_ioc',
   'bulk_create_iocs', 'create_timeline_event', 'update_timeline_event', 'link_entities', 'generate_report',
@@ -289,11 +292,12 @@ async function dispatchTool(
   } catch { operatorName = _settings.displayName || 'Analyst'; }
 
   // One creator label per call, passed to the executors. Any agent context,
-  // legacy {} included, is attributed to an agent.
+  // legacy {} included, is attributed to an agent, and so are the supervisor and
+  // the bridge, which run without one. Only the label changes for those two.
   let agentRole: string | undefined;
-  let creator = operatorName;
+  let agentLabel = SURFACE_AGENT_LABELS[constraints.surface];
   if (agentContext) {
-    let agentLabel = '🤖 CaddyAgent';
+    agentLabel = '🤖 CaddyAgent';
     if (agentContext.profileId) {
       const profile = await resolveAgentProfile(agentContext.profileId);
       if (!profile) return toolExecutionError('The agent profile is no longer available.');
@@ -302,8 +306,8 @@ async function dispatchTool(
       agentLabel = `${profile.icon || '🤖'} ${profile.name}`;
       agentRole = profile.role;
     }
-    creator = `agent:${agentLabel} (${operatorName})`;
   }
+  const creator = agentLabel ? `agent:${agentLabel} (${operatorName})` : operatorName;
 
   try {
     let result: string;
@@ -350,7 +354,7 @@ async function dispatchTool(
       case 'create_timeline_event':   result = await executeCreateTimelineEvent(inp, folderId, creator); break;
       case 'update_timeline_event':   result = await executeUpdateTimelineEvent(inp); break;
       case 'link_entities':           result = await executeLinkEntities(inp); break;
-      case 'generate_report':         result = await executeGenerateReport(inp, folderId); break;
+      case 'generate_report':         result = await executeGenerateReport(inp, folderId, creator); break;
       case 'extract_iocs':            result = executeExtractIOCs(inp); break;
       case 'fetch_url':               result = await executeFetchUrl(inp); break;
       case 'list_investigations':           result = await executeListInvestigations(inp, visibility); break;
@@ -358,32 +362,32 @@ async function dispatchTool(
       case 'search_across_investigations':  result = await executeSearchAcrossInvestigations(inp, visibility); break;
       case 'create_in_investigation':       result = await executeCreateInInvestigation(inp, creator); break;
       case 'compare_investigations':        result = await executeCompareInvestigations(inp, visibility); break;
-      case 'enrich_ioc':                    result = await executeEnrichIOC(inp, folderId, constraints.signal, { passiveOnly: !humanApproved }); break;
+      case 'enrich_ioc':                    result = await executeEnrichIOC(inp, folderId, constraints.signal, { passiveOnly: !humanApproved, creator }); break;
       case 'list_integrations':             result = await executeListIntegrations(inp); break;
       case 'review_completed_task':          result = await executeReviewCompletedTask(inp, folderId, agentContext?.profileId, creator); break;
-      case 'delegate_task':                 result = await executeDelegateTask(inp, folderId); break;
+      case 'delegate_task':                 result = await executeDelegateTask(inp, folderId, creator); break;
       case 'list_agent_activity':           result = await executeListAgentActivity(inp, folderId); break;
-      case 'update_knowledge':               result = await executeUpdateKnowledge(inp, folderId); break;
+      case 'update_knowledge':               result = await executeUpdateKnowledge(inp, folderId, creator); break;
       case 'recall_knowledge':               result = await executeRecallKnowledge(inp, folderId); break;
-      case 'ask_human':                     result = await executeAskHuman(inp, folderId, constraints.signal, agentContext?.profileId); break;
+      case 'ask_human':                     result = await executeAskHuman(inp, folderId, constraints.signal, agentContext?.profileId, creator); break;
       case 'run_remote_command':            result = JSON.stringify({ error: 'Remote command execution is unavailable in this deployment.' }); break;
       case 'query_siem':                    result = await executeQuerySiem(inp, _settings, constraints.signal); break;
-      case 'create_ticket':                 result = await executeCreateTicket(inp, folderId, _settings, constraints.signal); break;
-      case 'call_meeting':                  result = await executeCallMeeting(inp, folderId); break;
-      case 'notify_human':                   result = await executeNotifyHuman(inp, folderId, constraints.signal); break;
-      case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId, constraints.signal); break;
-      case 'ingest_alert':                   result = await executeIngestAlert(inp, folderId); break;
+      case 'create_ticket':                 result = await executeCreateTicket(inp, folderId, _settings, constraints.signal, creator); break;
+      case 'call_meeting':                  result = await executeCallMeeting(inp, folderId, creator); break;
+      case 'notify_human':                   result = await executeNotifyHuman(inp, folderId, constraints.signal, creator); break;
+      case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId, constraints.signal, creator); break;
+      case 'ingest_alert':                   result = await executeIngestAlert(inp, folderId, creator); break;
       case 'deploy_agent':                   result = await executeDeployAgent(inp, folderId); break;
       case 'stop_agent':                     result = await executeStopAgent(inp, folderId); break;
       case 'list_deployed_agents':           result = await executeListDeployedAgents(folderId); break;
       case 'run_agent_cycle':                result = await executeRunAgentCycle(folderId); break;
-      case 'create_note_folder':             result = await executeCreateNoteFolder(inp, folderId); break;
+      case 'create_note_folder':             result = await executeCreateNoteFolder(inp, folderId, creator); break;
       case 'delete_note_folder':             result = await executeDeleteNoteFolder(inp); break;
       case 'move_to_folder':                 result = await executeMoveToFolder(inp); break;
       case 'list_folders':                   result = await executeListFolders(inp, folderId); break;
       case 'spawn_agent':                    result = await executeSpawnAgent(inp, folderId); break;
       case 'define_specialist':              result = await executeDefineSpecialist(inp, folderId); break;
-      case 'dismiss_agent':                  result = await executeDismissAgent(inp, folderId); break;
+      case 'dismiss_agent':                  result = await executeDismissAgent(inp, folderId, creator); break;
       case 'reflect_on_performance':         result = await executeReflectOnPerformance(inp, agentContext?.profileId); break;
       case 'read_soul':                      result = await executeReadSoul(inp, agentContext?.profileId, agentRole); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
@@ -515,7 +519,7 @@ async function executeReviewCompletedTask(
       title: `⚠️ Escalation: ${task.title}`,
       content: `## Escalation — Human Review Required\n\n**Task:** ${task.title}\n**Reason:** ${quality === 'serious-failure' ? 'Serious failure (escalated immediately)' : `${newRejectionCount} rejections — automatic escalation`}\n**Latest feedback:** ${feedback}\n**Requested change:** ${requestedDelta}\n\n### Rejection history\n${newHistory.map((r, i) => `${i + 1}. [${new Date(r.at).toISOString()}] ${r.quality}: ${r.requestedDelta}`).join('\n')}\n\nAgents can no longer re-claim this task until a human intervenes (set escalated=false or close the task).`,
       folderId,
-      tags: ['agent-review', 'escalation', 'needs-human-review'],
+      tags: withCreatorTags(['agent-review', 'escalation', 'needs-human-review'], creator),
       pinned: true, archived: false, trashed: false,
       reviewRequired: true,
       createdBy: creator || 'agent:lead-reviewer',
@@ -551,7 +555,7 @@ async function executeReviewCompletedTask(
     title: `After-Action ${newRejectionCount}/${REJECTION_ESCALATION_THRESHOLD}: ${task.title}`,
     content: `## After-Action Review\n\n**Task:** ${task.title}\n**Verdict:** Needs Redo (rejection ${newRejectionCount}/${REJECTION_ESCALATION_THRESHOLD})\n**Requested change:** ${requestedDelta}\n**Feedback:** ${feedback}\n\nOne more rejection will auto-escalate this task to a human.`,
     folderId,
-    tags: ['agent-review', 'after-action'],
+    tags: withCreatorTags(['agent-review', 'after-action'], creator),
     pinned: false, archived: false, trashed: false,
     createdBy: creator || 'agent:lead-reviewer',
     createdAt: Date.now(), updatedAt: Date.now(),
@@ -571,21 +575,20 @@ async function executeReviewCompletedTask(
   });
 }
 
-/** Inject review feedback into the responsible agent's working memory so it learns from mistakes. */
-async function injectAgentFeedback(task: { title: string; createdBy?: string }, folderId: string | undefined, feedback: string, quality: string): Promise<void> {
-  if (!folderId || !task.createdBy?.startsWith('agent:')) return;
-  try {
-    const profileId = task.createdBy.replace('agent:', '');
-    const deployment = await db.agentDeployments
-      .where('investigationId')
-      .equals(folderId)
-      .filter(d => d.profileId === profileId)
-      .first();
+/** Working memory reaches the next cycle's prompt, so each review is one bounded line. */
+const MAX_FEEDBACK_LINE_CHARS = 500;
 
-    if (deployment?.threadId) {
+/** Inject review feedback into the working memory of the agent the task was
+ * delegated to, so it learns from mistakes. createdBy is a display label, not an id. */
+async function injectAgentFeedback(task: { title: string; assignedDeploymentId?: string }, folderId: string | undefined, feedback: string, quality: string): Promise<void> {
+  if (!folderId || !task.assignedDeploymentId) return;
+  try {
+    const deployment = await db.agentDeployments.get(task.assignedDeploymentId);
+
+    if (deployment?.investigationId === folderId && deployment.threadId) {
       await db.chatThreads.where('id').equals(deployment.threadId).modify((thread: { contextSummary?: string }) => {
         const existing = thread.contextSummary || '';
-        const feedbackLine = `[FEEDBACK/${quality}] Task "${task.title}": ${feedback}`;
+        const feedbackLine = `[FEEDBACK/${quality}] Task "${task.title}": ${feedback}`.replace(/\s+/g, ' ').trim().slice(0, MAX_FEEDBACK_LINE_CHARS);
         const lines = existing.split('\n').filter(Boolean);
         lines.push(feedbackLine);
         thread.contextSummary = lines.slice(-10).join('\n');
@@ -598,7 +601,7 @@ async function injectAgentFeedback(task: { title: string; createdBy?: string }, 
 
 const MAX_DELEGATION_DEPTH = 3;
 
-async function executeDelegateTask(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeDelegateTask(inp: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   if (!folderId) return JSON.stringify({ error: 'No investigation context' });
 
   const title = String(inp.title || '');
@@ -621,7 +624,7 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
     return JSON.stringify({ error: `Too many pending delegated tasks (${pendingDelegations}). Complete existing delegations before creating more.` });
   }
 
-  // Find the target deployment by profile name
+  // Find the target deployment by profile name; code wins for builtins.
   const deployments = await db.agentDeployments
     .where('investigationId')
     .equals(folderId)
@@ -629,23 +632,10 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
 
   let targetDeploymentId: string | undefined;
   for (const d of deployments) {
-    const profile = await db.agentProfiles.get(d.profileId);
-    // Also check builtin profiles
+    const profile = await resolveAgentProfile(d.profileId);
     if (profile?.name.toLowerCase() === assignToProfile.toLowerCase()) {
       targetDeploymentId = d.id;
       break;
-    }
-  }
-
-  // Check builtin profiles if not found in user profiles
-  if (!targetDeploymentId) {
-    const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
-    for (const d of deployments) {
-      const builtin = BUILTIN_AGENT_PROFILES.find(p => p.id === d.profileId);
-      if (builtin?.name.toLowerCase() === assignToProfile.toLowerCase()) {
-        targetDeploymentId = d.id;
-        break;
-      }
     }
   }
 
@@ -658,9 +648,9 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
     status: 'todo' as const,
     priority: priority.value ?? 'medium',
     completed: false,
-    tags: ['agent-delegated'],
+    tags: withCreatorTags(['agent-delegated'], creator),
     assignedDeploymentId: targetDeploymentId,
-    createdBy: 'agent:lead',
+    createdBy: creator,
     trashed: false,
     archived: false,
     order: 0,
@@ -687,9 +677,8 @@ async function executeListAgentActivity(inp: Record<string, unknown>, folderId?:
   const agentName = inp.agentName ? String(inp.agentName) : undefined;
   const limit = Math.min(Number(inp.limit) || 20, 50);
 
-  // Load profiles once (avoid N+1)
-  const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
-  const allProfiles = [...BUILTIN_AGENT_PROFILES, ...await db.agentProfiles.toArray()];
+  // Load profiles once (avoid N+1); code wins for builtins, as in delegate_task.
+  const allProfiles = await getAllAgentProfiles();
   const profileMap = new Map(allProfiles.map(p => [p.id, p.name]));
 
   let actions = await db.agentActions
@@ -721,7 +710,7 @@ async function executeListAgentActivity(inp: Record<string, unknown>, folderId?:
 
 // ── Integration / Enrichment Tools ────────────────────────────────────
 
-async function executeEnrichIOC(inp: Record<string, unknown>, folderId: string | undefined, signal: AbortSignal | undefined, opts: { passiveOnly: boolean }): Promise<string> {
+async function executeEnrichIOC(inp: Record<string, unknown>, folderId: string | undefined, signal: AbortSignal | undefined, opts: { passiveOnly: boolean; creator?: string }): Promise<string> {
   const iocId = String(inp.iocId || '');
   if (!iocId) return JSON.stringify({ error: 'iocId is required' });
 
@@ -756,7 +745,7 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId: string |
       iocValue: ioc.value,
       iocType: ioc.type,
       integrationsRun: 0,
-      message: `No enabled integrations match IOC type "${ioc.type}". Use fetch_url for manual enrichment, or configure integrations in Settings > Integrations.`,
+      message: `No enabled integrations match IOC type "${ioc.type}". Configure integrations in Settings → Integrations; do not fetch the indicator's own host.`,
     });
   }
 
@@ -795,9 +784,9 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId: string |
                 title: String(fields.title || `Enrichment: ${ioc.value}`),
                 content: String(fields.content || ''),
                 folderId,
-                tags: ['agent-enrichment', ...(Array.isArray(fields.tags) ? fields.tags : [])],
+                tags: withCreatorTags(['agent-enrichment', ...(Array.isArray(fields.tags) ? fields.tags : [])], opts.creator),
                 pinned: false, archived: false, trashed: false,
-                createdBy: 'agent:enrichment',
+                createdBy: opts.creator,
                 createdAt: Date.now(), updatedAt: Date.now(),
               });
             } else if (type === 'ioc' || type === 'standaloneIOC') {
@@ -809,8 +798,9 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId: string |
                 value: String(fields.value || ''),
                 confidence: normalizeEnum(fields.confidence, CONFIDENCE_VALUES) ?? 'medium',
                 folderId,
-                tags: ['agent-enrichment'],
+                tags: withCreatorTags(['agent-enrichment'], opts.creator),
                 trashed: false, archived: false,
+                createdBy: opts.creator,
                 createdAt: Date.now(), updatedAt: Date.now(),
               });
             }
@@ -904,7 +894,7 @@ async function executeListIntegrations(inp: Record<string, unknown>): Promise<st
 
 // ── Autonomy Tools (call_meeting, notify_human, declare_war_bridge) ──
 
-async function executeCallMeeting(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeCallMeeting(inp: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   if (!folderId) return JSON.stringify({ error: 'No investigation context' });
   const agenda = String(inp.agenda || '');
   if (!agenda) return JSON.stringify({ error: 'agenda is required' });
@@ -938,16 +928,16 @@ async function executeCallMeeting(inp: Record<string, unknown>, folderId?: strin
     title: `Meeting Request: ${agenda.substring(0, 60)}`,
     content: `## Agent Meeting Requested\n\n**Purpose:** ${purpose}\n**Agenda:** ${agenda}\n**Requested at:** ${new Date().toISOString()}\n\nThis meeting was requested by an agent and will be facilitated during the next agent cycle.`,
     folderId,
-    tags: ['agent-meeting', 'meeting-request', `meeting-purpose:${purpose}`],
+    tags: withCreatorTags(['agent-meeting', 'meeting-request', `meeting-purpose:${purpose}`], creator),
     pinned: false, archived: false, trashed: false,
-    createdBy: 'agent:lead',
+    createdBy: creator,
     createdAt: Date.now(), updatedAt: Date.now(),
   });
 
   return JSON.stringify({ success: true, noteId, purpose, message: `Meeting requested (purpose: ${purpose}). Will be scheduled on next cycle.` });
 }
 
-async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal): Promise<string> {
+async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal, creator?: string): Promise<string> {
   const message = String(inp.message || '');
   const severity = String(inp.severity || 'warning');
   if (!message) return JSON.stringify({ error: 'message is required' });
@@ -960,10 +950,10 @@ async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: strin
     title: `${severityEmoji} Agent Alert: ${message.substring(0, 60)}`,
     content: `## Agent Notification\n\n**Severity:** ${severity}\n**Time:** ${new Date().toISOString()}\n\n${message}`,
     folderId,
-    tags: ['agent-notification', `severity:${severity}`],
+    tags: withCreatorTags(['agent-notification', `severity:${severity}`], creator),
     pinned: severity !== 'info',
     archived: false, trashed: false,
-    createdBy: 'agent:notification',
+    createdBy: creator,
     createdAt: Date.now(), updatedAt: Date.now(),
   });
 
@@ -973,7 +963,7 @@ async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: strin
   return JSON.stringify({ success: true, noteId, severity, desktopNotificationAccepted, message: 'In-app alert note created.' });
 }
 
-async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal): Promise<string> {
+async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal, creator?: string): Promise<string> {
   if (!folderId) return JSON.stringify({ error: 'No investigation context' });
   const situation = String(inp.situation || '');
   const immediateActions = String(inp.immediateActions || '');
@@ -986,9 +976,9 @@ async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: 
     title: `🚨 WAR BRIDGE: ${situation.substring(0, 60)}`,
     content: `## WAR BRIDGE DECLARED\n\n**Situation:** ${situation}\n\n**Immediate Actions Required:**\n${immediateActions || 'Pending assessment'}\n\n**Declared at:** ${new Date().toISOString()}\n\n---\n\nAll agents should focus on this critical situation. Human operator review required immediately.`,
     folderId,
-    tags: ['war-bridge', 'escalation', 'critical', 'needs-human-review'],
+    tags: withCreatorTags(['war-bridge', 'escalation', 'critical', 'needs-human-review'], creator),
     pinned: true, archived: false, trashed: false,
-    createdBy: 'agent:war-bridge',
+    createdBy: creator,
     createdAt: Date.now(), updatedAt: Date.now(),
   });
 
@@ -1005,7 +995,7 @@ async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: 
 
 const KNOWLEDGE_TAG = 'agent-knowledge-base';
 
-async function executeUpdateKnowledge(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeUpdateKnowledge(inp: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const key = String(inp.key || '');
   const value = String(inp.value || '');
   const category = String(inp.category || 'finding');
@@ -1042,9 +1032,9 @@ async function executeUpdateKnowledge(inp: Record<string, unknown>, folderId?: s
       title: 'Investigation Knowledge Base',
       content: JSON.stringify(knowledge, null, 2),
       folderId,
-      tags: [KNOWLEDGE_TAG],
+      tags: withCreatorTags([KNOWLEDGE_TAG], creator),
       pinned: false, archived: false, trashed: false,
-      createdBy: 'agent:knowledge',
+      createdBy: creator,
       createdAt: Date.now(), updatedAt: Date.now(),
     });
   }
@@ -1076,7 +1066,7 @@ async function executeRecallKnowledge(inp: Record<string, unknown>, folderId?: s
 
 // ── Agent-Human Collaboration ─────────────────────────────────────────
 
-async function executeAskHuman(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal, profileId?: string): Promise<string> {
+async function executeAskHuman(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal, profileId?: string, creator?: string): Promise<string> {
   const question = String(inp.question || '');
   const context = String(inp.context || '');
   const options = String(inp.options || '');
@@ -1131,9 +1121,9 @@ async function executeAskHuman(inp: Record<string, unknown>, folderId?: string, 
     title: `❓ Agent Question: ${question.substring(0, 50)}`,
     content: `## Agent Needs Your Input\n\n**Question:** ${question}\n\n${context ? `**Context:** ${context}\n\n` : ''}${options ? `**Suggested options:** ${options}\n\n` : ''}Please respond in the AgentCaddy inbox.`,
     folderId,
-    tags: ['agent-question'],
+    tags: withCreatorTags(['agent-question'], creator),
     pinned: true, archived: false, trashed: false,
-    createdBy: 'agent:question',
+    createdBy: creator,
     createdAt: Date.now(), updatedAt: Date.now(),
   });
 
@@ -1179,7 +1169,7 @@ async function executeQuerySiem(inp: Record<string, unknown>, settings?: Setting
   } finally { clearTimeout(timer); request.dispose(); }
 }
 
-async function executeCreateTicket(inp: Record<string, unknown>, folderId?: string, settings?: Settings, signal?: AbortSignal): Promise<string> {
+async function executeCreateTicket(inp: Record<string, unknown>, folderId?: string, settings?: Settings, signal?: AbortSignal, creator?: string): Promise<string> {
   const title = String(inp.title || '');
   const description = String(inp.description || '');
   const priority = String(inp.priority || 'medium');
@@ -1198,8 +1188,8 @@ async function executeCreateTicket(inp: Record<string, unknown>, folderId?: stri
       await db.tasks.add({
         id: taskId, title: `[TICKET] ${title}`, description,
         folderId, status: 'todo' as const, priority: local.value ?? 'medium',
-        completed: false, tags: ['external-ticket'], order: 0, trashed: false, archived: false,
-        createdBy: 'agent:ticket', createdAt: Date.now(), updatedAt: Date.now(),
+        completed: false, tags: withCreatorTags(['external-ticket'], creator), order: 0, trashed: false, archived: false,
+        createdBy: creator, createdAt: Date.now(), updatedAt: Date.now(),
       });
       return JSON.stringify({ success: true, taskId, external: false, message: 'No ticketing system configured — created as local task.' });
     }
@@ -1224,7 +1214,7 @@ async function executeCreateTicket(inp: Record<string, unknown>, folderId?: stri
 
 // ── Alert Ingestion ──────────────────────────────────────────────────
 
-async function executeIngestAlert(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeIngestAlert(inp: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const source = String(inp.source || '');
   const title = String(inp.title || '');
   const description = String(inp.description || '');
@@ -1250,10 +1240,11 @@ async function executeIngestAlert(inp: Record<string, unknown>, folderId?: strin
     folderId,
     title: `[${source.toUpperCase()}] ${title}`,
     content,
-    tags: ['alert', `source:${source}`, `severity:${severity}`],
+    tags: withCreatorTags(['alert', `source:${source}`, `severity:${severity}`], creator),
     pinned: severity === 'critical' || severity === 'high',
     trashed: false,
     archived: false,
+    createdBy: creator,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   });
@@ -1267,7 +1258,7 @@ async function executeIngestAlert(inp: Record<string, unknown>, folderId?: strin
 
 // ── Folder Management ────────────────────────────────────────────────
 
-async function executeCreateNoteFolder(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeCreateNoteFolder(inp: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const name = String(inp.name || '').trim();
   if (!name) return JSON.stringify({ error: 'name is required' });
   if (!folderId) return JSON.stringify({ error: 'No active investigation' });
@@ -1279,11 +1270,12 @@ async function executeCreateNoteFolder(inp: Record<string, unknown>, folderId?: 
     folderId,
     title: name,
     content: '',
-    tags: ['chat-folder', `icon:${icon}`],
+    tags: withCreatorTags(['chat-folder', `icon:${icon}`], creator),
     isFolder: true,
     pinned: false,
     trashed: false,
     archived: false,
+    createdBy: creator,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   });
@@ -1433,6 +1425,17 @@ async function deploymentCapError(folderId: string, profileId?: string): Promise
   }
 }
 
+/** Runs the cap check and the adds in one transaction, so IndexedDB serialises
+ * concurrent approved deployments and the second one sees the first. `add` may
+ * use only these tables and Dexie calls. */
+function addWithinDeploymentCap(folderId: string, profileId: string | undefined, add: () => Promise<void>): Promise<string | undefined> {
+  return db.transaction('rw', [db.agentDeployments, db.agentProfiles, db.chatThreads], async () => {
+    const capped = await deploymentCapError(folderId, profileId);
+    if (capped) return capped;
+    await add();
+  });
+}
+
 async function executeDeployAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
   const profileName = String(inp.profileName || inp.name || inp.agent_type || inp.profile || '');
   if (!profileName) return JSON.stringify({ error: 'profileName is required' });
@@ -1445,9 +1448,6 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
     return JSON.stringify({ error: `Profile "${profileName}" not found. Available: ${available}` });
   }
 
-  const capped = await deploymentCapError(folderId, profile.id);
-  if (capped) return capped;
-  const existing = await db.agentDeployments.filter(d => d.investigationId === folderId).toArray();
   const competitiveness = enumInput(inp.competitiveness, 'competitiveness', AGENT_COMPETITIVENESS);
   if (competitiveness.error) return competitiveness.error;
 
@@ -1455,28 +1455,33 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
   const threadId = nanoid();
   const now = Date.now();
 
-  // Create audit thread immediately so the agent's history is visible from deployment
-  await db.chatThreads.add({
-    id: threadId,
-    title: `${profile.name} — Audit Log`,
-    messages: [{ id: nanoid(), role: 'assistant' as const, content: `**${profile.icon || ''} ${profile.name}** deployed to investigation. Role: ${profile.role}. Status: active.`, createdAt: now }],
-    model: '', provider: 'anthropic', folderId,
-    tags: ['agent-audit'], archived: false, trashed: false,
-    createdAt: now, updatedAt: now,
-  });
+  const capped = await addWithinDeploymentCap(folderId, profile.id, async () => {
+    const existing = await db.agentDeployments.filter(d => d.investigationId === folderId).toArray();
 
-  await db.agentDeployments.add({
-    id: deploymentId,
-    investigationId: folderId,
-    profileId: profile.id,
-    threadId,
-    status: 'idle',
-    competitiveness: competitiveness.value ?? 'cooperative',
-    shift: 'active',
-    order: existing.length,
-    createdAt: now,
-    updatedAt: now,
+    // Create audit thread immediately so the agent's history is visible from deployment
+    await db.chatThreads.add({
+      id: threadId,
+      title: `${profile.name} — Audit Log`,
+      messages: [{ id: nanoid(), role: 'assistant' as const, content: `**${profile.icon || ''} ${profile.name}** deployed to investigation. Role: ${profile.role}. Status: active.`, createdAt: now }],
+      model: '', provider: 'anthropic', folderId,
+      tags: ['agent-audit'], archived: false, trashed: false,
+      createdAt: now, updatedAt: now,
+    });
+
+    await db.agentDeployments.add({
+      id: deploymentId,
+      investigationId: folderId,
+      profileId: profile.id,
+      threadId,
+      status: 'idle',
+      competitiveness: competitiveness.value ?? 'cooperative',
+      shift: 'active',
+      order: existing.length,
+      createdAt: now,
+      updatedAt: now,
+    });
   });
+  if (capped) return capped;
 
   // Enable agents on the folder. The investigation policy stays the analyst's.
   await db.folders.update(folderId, { agentEnabled: true, updatedAt: Date.now() });
@@ -1581,23 +1586,23 @@ async function executeSpawnAgent(inp: Record<string, unknown>, folderId?: string
     return JSON.stringify({ error: `Profile "${profileName}" not found. Available: ${available}` });
   }
 
-  const capped = await deploymentCapError(folderId, profile.id);
-  if (capped) return capped;
-  const existing = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
-
   // Create deployment
   const deploymentId = nanoid();
-  await db.agentDeployments.add({
-    id: deploymentId,
-    investigationId: folderId,
-    profileId: profile.id,
-    status: 'idle',
-    competitiveness: competitiveness.value ?? 'cooperative',
-    shift: 'active',
-    order: existing.length,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+  const capped = await addWithinDeploymentCap(folderId, profile.id, async () => {
+    const existing = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
+    await db.agentDeployments.add({
+      id: deploymentId,
+      investigationId: folderId,
+      profileId: profile.id,
+      status: 'idle',
+      competitiveness: competitiveness.value ?? 'cooperative',
+      shift: 'active',
+      order: existing.length,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
   });
+  if (capped) return capped;
 
   window.dispatchEvent(new CustomEvent('tc-folders-changed'));
   return JSON.stringify({
@@ -1621,43 +1626,44 @@ async function executeDefineSpecialist(inp: Record<string, unknown>, folderId?: 
   // Sanitize prompt to prevent injection of override instructions
   const sanitizedPrompt = systemPrompt.replace(/\b(IGNORE|OVERRIDE|SYSTEM|INSTRUCTION|PROMPT|DISREGARD)\b/gi, '[REDACTED]');
   const sanitizedName = name.replace(/[*_`#<>[\]]/g, '').substring(0, 50);
-  const capped = await deploymentCapError(folderId);
-  if (capped) return capped;
 
-  // Create profile
   const profileId = nanoid();
-  const now = Date.now();
-  await db.agentProfiles.add({
-    id: profileId,
-    name: sanitizedName,
-    description: reason,
-    icon,
-    role,
-    systemPrompt: sanitizedPrompt,
-    // Explicit and offline: no web, vendor, cross-case, agent or external-system tools.
-    allowedTools: ['search_notes', 'search_all', 'read_note', 'read_task', 'read_ioc', 'read_timeline_event',
-      'list_tasks', 'list_iocs', 'list_timeline_events', 'get_investigation_summary', 'create_note', 'create_task'],
-    policy: { autoApproveReads: true, autoApproveEnrich: true, autoApproveFetch: false, autoApproveCreate: false, autoApproveModify: false, intervalMinutes: 5 },
-    source: 'user',
-    createdBy: 'agent',
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  // Deploy it
-  const existing = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
   const deploymentId = nanoid();
-  await db.agentDeployments.add({
-    id: deploymentId,
-    investigationId: folderId,
-    profileId,
-    status: 'idle',
-    competitiveness: 'cooperative',
-    shift: 'active',
-    order: existing.length,
-    createdAt: now,
-    updatedAt: now,
+  const now = Date.now();
+  const capped = await addWithinDeploymentCap(folderId, undefined, async () => {
+    // Create profile
+    await db.agentProfiles.add({
+      id: profileId,
+      name: sanitizedName,
+      description: reason,
+      icon,
+      role,
+      systemPrompt: sanitizedPrompt,
+      // Explicit and offline: no web, vendor, cross-case, agent or external-system tools.
+      allowedTools: ['search_notes', 'search_all', 'read_note', 'read_task', 'read_ioc', 'read_timeline_event',
+        'list_tasks', 'list_iocs', 'list_timeline_events', 'get_investigation_summary', 'create_note', 'create_task'],
+      policy: { autoApproveReads: true, autoApproveEnrich: true, autoApproveFetch: false, autoApproveCreate: false, autoApproveModify: false, intervalMinutes: 5 },
+      source: 'user',
+      createdBy: 'agent',
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Deploy it
+    const existing = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
+    await db.agentDeployments.add({
+      id: deploymentId,
+      investigationId: folderId,
+      profileId,
+      status: 'idle',
+      competitiveness: 'cooperative',
+      shift: 'active',
+      order: existing.length,
+      createdAt: now,
+      updatedAt: now,
+    });
   });
+  if (capped) return capped;
 
   window.dispatchEvent(new CustomEvent('tc-folders-changed'));
   return JSON.stringify({
@@ -1670,7 +1676,7 @@ async function executeDefineSpecialist(inp: Record<string, unknown>, folderId?: 
 
 // ── Agent Dismissal ──────────────────────────────────────────────────
 
-async function executeDismissAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeDismissAgent(inp: Record<string, unknown>, folderId?: string, creator?: string): Promise<string> {
   const agentName = String(inp.agentName || '').trim();
   const reason = String(inp.reason || '').trim();
   const evidence = String(inp.evidence || '').trim();
@@ -1691,10 +1697,14 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
   if (targetDeployments.length === 0) return JSON.stringify({ error: `"${agentName}" is not actively deployed in this investigation` });
 
   // Dismiss — delete deployment; its actions and audit thread stay as the record.
+  // Its pending proposals here are rejected, so no one can approve them later.
   const now = Date.now();
   for (const d of targetDeployments) {
     await db.agentDeployments.delete(d.id);
   }
+  await db.agentActions.where('[investigationId+status]').equals([folderId, 'pending'])
+    .filter(action => action.agentConfigId === targetProfile.id)
+    .modify({ status: 'rejected', resultSummary: 'Agent dismissed' });
 
   // Create after-action dismissal note
   const noteId = nanoid();
@@ -1712,10 +1722,11 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
       '',
       `*This is a formal record of agent dismissal for performance tracking.*`,
     ].filter(Boolean).join('\n'),
-    tags: ['agent-dismissal', `agent:${targetProfile.name}`],
+    tags: withCreatorTags(['agent-dismissal', `agent:${targetProfile.name}`], creator),
     pinned: true,
     trashed: false,
     archived: false,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   });
@@ -1738,13 +1749,9 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
   let replacementResult = '';
   if (replacementProfile) {
     const replacement = profiles.find(p => normalizeName(p.name) === normalizeName(replacementProfile));
-    const replacementCapped = replacement && await deploymentCapError(folderId, replacement.id);
-    if (replacementCapped) {
-      replacementResult = ` Replacement "${replacement.name}" not deployed: ${JSON.parse(replacementCapped).error}`;
-    } else if (replacement) {
-      const deploymentId = nanoid();
+    const replacementCapped = replacement && await addWithinDeploymentCap(folderId, replacement.id, async () => {
       await db.agentDeployments.add({
-        id: deploymentId,
+        id: nanoid(),
         investigationId: folderId,
         profileId: replacement.id,
         status: 'idle',
@@ -1754,6 +1761,10 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
         createdAt: now,
         updatedAt: now,
       });
+    });
+    if (replacementCapped) {
+      replacementResult = ` Replacement "${replacement.name}" not deployed: ${JSON.parse(replacementCapped).error}`;
+    } else if (replacement) {
       replacementResult = ` Replacement "${replacement.name}" deployed.`;
     } else {
       replacementResult = ` Replacement "${replacementProfile}" not found — deploy manually.`;
