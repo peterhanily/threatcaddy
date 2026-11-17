@@ -113,6 +113,14 @@ describe('C-CHAT-5 chat works in the conversation\'s investigation', () => {
     expect(result.result).not.toContain(canary('L'));
   });
 
+  it('/fetch files its note in the thread\'s investigation from the global view', async () => {
+    renderChat([makeThread('thread', 'S')]);
+    await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/advisory'); });
+    expect(egress.fetchUrlPosts()).toEqual(['https://www.cisa.gov/advisory']);
+    expect(await db.notes.where('title').equals('Fixture page').toArray()).toEqual([expect.objectContaining({ folderId: 'S' })]);
+    expect(state.send).not.toHaveBeenCalled();
+  });
+
   it('an unfiled thread in the global view reads freely and names the investigation a change would reach', async () => {
     renderChat([makeThread('thread')]);
     const handler = await sendAndGetHandler();

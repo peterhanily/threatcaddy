@@ -339,6 +339,9 @@ export function ChatView({
       }
     }
 
+    // The conversation's investigation: its tools, prompt and /fetch notes work where its messages sync.
+    const homeFolderId = activeThread.folderId ?? selectedFolderId ?? undefined;
+
     // Intercept /fetch <url> — fetch directly without LLM
     const fetchMatch = text.match(/^\/fetch\s+(https?:\/\/\S+)$/i);
     if (fetchMatch) {
@@ -352,7 +355,7 @@ export function ChatView({
             id: nanoid(),
             title,
             content: result.content || '',
-            folderId: selectedFolderId || undefined,
+            folderId: homeFolderId,
             tags: [],
             pinned: false,
             archived: false,
@@ -389,8 +392,6 @@ export function ChatView({
       return;
     }
 
-    // The conversation's investigation: its tools and prompt work where its messages sync.
-    const homeFolderId = activeThread.folderId ?? selectedFolderId ?? undefined;
     const homeFolder = homeFolderId === selectedFolderId ? selectedFolder : homeFolderId ? await db.folders.get(homeFolderId) : undefined;
 
     // Intercept /loop <interval> <prompt> — start a background scheduling loop
