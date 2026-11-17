@@ -172,6 +172,7 @@ describe('local model text tool calls', () => {
     ['a json fence', 'Use this:\n```json\n' + call + '\n```'],
     ['a plain fence', '```\n' + call + '\n```'],
     ['a function_call wrapper', '<function_call>' + call + '</function_call>'],
+    ['an upper-case tool_call wrapper', '<TOOL_CALL>' + call + '</TOOL_CALL>'],
   ])('ignores a tool name quoted in %s', async (_label, text) => {
     const done = await localTurn(text);
     expect(done).toMatchObject({ stopReason: 'end_turn', contentBlocks: [] });
