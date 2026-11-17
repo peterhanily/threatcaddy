@@ -6,7 +6,6 @@ import { getToolExecutionError, normalizeToolResult, toolExecutionError, type To
 import { classifyToolCall, decideToolCall, type ToolReach, type ToolSurface } from './tool-reach';
 import { consumeHumanApproval } from './human-approval';
 import { listAgentProfiles, loadAgentPolicy, resolveAgentProfile } from './agent-profile-resolver';
-import { currentCreator, popCreator, pushCreator } from './tool-creator';
 import { sanitizeSoulText } from './soul-text';
 import { MAX_ACTIVE_DEPLOYMENTS_PER_INVESTIGATION } from './caddy-agent-policy';
 import { PASSIVE_LOOKUP_TEMPLATE_IDS } from './builtin-integrations';
@@ -289,9 +288,10 @@ async function dispatchTool(
     operatorName = stored?.user?.displayName || _settings.displayName || 'Analyst';
   } catch { operatorName = _settings.displayName || 'Analyst'; }
 
-  // Push creator context (stack-based for concurrent agent safety). Any agent
-  // context, legacy {} included, is attributed to an agent.
+  // One creator label per call, passed to the executors. Any agent context,
+  // legacy {} included, is attributed to an agent.
   let agentRole: string | undefined;
+  let creator = operatorName;
   if (agentContext) {
     let agentLabel = '🤖 CaddyAgent';
     if (agentContext.profileId) {
@@ -302,9 +302,7 @@ async function dispatchTool(
       agentLabel = `${profile.icon || '🤖'} ${profile.name}`;
       agentRole = profile.role;
     }
-    pushCreator(`agent:${agentLabel} (${operatorName})`);
-  } else {
-    pushCreator(operatorName);
+    creator = `agent:${agentLabel} (${operatorName})`;
   }
 
   try {
@@ -342,14 +340,14 @@ async function dispatchTool(
       case 'list_timeline_events':    result = await executeListTimelineEvents(inp, folderId); break;
       case 'get_investigation_summary': result = await executeGetInvestigationSummary(inp, folderId); break;
       case 'analyze_graph':           result = await executeAnalyzeGraph(inp, folderId); break;
-      case 'create_note':             result = await executeCreateNote(inp, folderId); break;
+      case 'create_note':             result = await executeCreateNote(inp, folderId, creator); break;
       case 'update_note':             result = await executeUpdateNote(inp); break;
-      case 'create_task':             result = await executeCreateTask(inp, folderId); break;
+      case 'create_task':             result = await executeCreateTask(inp, folderId, creator); break;
       case 'update_task':             result = await executeUpdateTask(inp); break;
-      case 'create_ioc':              result = await executeCreateIOC(inp, folderId); break;
+      case 'create_ioc':              result = await executeCreateIOC(inp, folderId, creator); break;
       case 'update_ioc':              result = await executeUpdateIOC(inp); break;
-      case 'bulk_create_iocs':        result = await executeBulkCreateIOCs(inp, folderId); break;
-      case 'create_timeline_event':   result = await executeCreateTimelineEvent(inp, folderId); break;
+      case 'bulk_create_iocs':        result = await executeBulkCreateIOCs(inp, folderId, creator); break;
+      case 'create_timeline_event':   result = await executeCreateTimelineEvent(inp, folderId, creator); break;
       case 'update_timeline_event':   result = await executeUpdateTimelineEvent(inp); break;
       case 'link_entities':           result = await executeLinkEntities(inp); break;
       case 'generate_report':         result = await executeGenerateReport(inp, folderId); break;
@@ -358,11 +356,11 @@ async function dispatchTool(
       case 'list_investigations':           result = await executeListInvestigations(inp, visibility); break;
       case 'get_investigation_details':     result = await executeGetInvestigationDetails(inp, visibility); break;
       case 'search_across_investigations':  result = await executeSearchAcrossInvestigations(inp, visibility); break;
-      case 'create_in_investigation':       result = await executeCreateInInvestigation(inp); break;
+      case 'create_in_investigation':       result = await executeCreateInInvestigation(inp, creator); break;
       case 'compare_investigations':        result = await executeCompareInvestigations(inp, visibility); break;
       case 'enrich_ioc':                    result = await executeEnrichIOC(inp, folderId, constraints.signal, { passiveOnly: !humanApproved }); break;
       case 'list_integrations':             result = await executeListIntegrations(inp); break;
-      case 'review_completed_task':          result = await executeReviewCompletedTask(inp, folderId, agentContext?.profileId); break;
+      case 'review_completed_task':          result = await executeReviewCompletedTask(inp, folderId, agentContext?.profileId, creator); break;
       case 'delegate_task':                 result = await executeDelegateTask(inp, folderId); break;
       case 'list_agent_activity':           result = await executeListAgentActivity(inp, folderId); break;
       case 'update_knowledge':               result = await executeUpdateKnowledge(inp, folderId); break;
@@ -424,8 +422,6 @@ async function dispatchTool(
     return normalizeToolResult(result);
   } catch (err) {
     return { result: JSON.stringify({ error: String((err as Error).message || err) }), isError: true };
-  } finally {
-    popCreator();
   }
 }
 
@@ -444,6 +440,7 @@ async function executeReviewCompletedTask(
   inp: Record<string, unknown>,
   folderId?: string,
   reviewerProfileId?: string,
+  creator?: string,
 ): Promise<string> {
   const taskId = String(inp.taskId || '');
   const quality = String(inp.quality || '');
@@ -521,7 +518,7 @@ async function executeReviewCompletedTask(
       tags: ['agent-review', 'escalation', 'needs-human-review'],
       pinned: true, archived: false, trashed: false,
       reviewRequired: true,
-      createdBy: currentCreator() || 'agent:lead-reviewer',
+      createdBy: creator || 'agent:lead-reviewer',
       createdAt: Date.now(), updatedAt: Date.now(),
     });
 
@@ -556,7 +553,7 @@ async function executeReviewCompletedTask(
     folderId,
     tags: ['agent-review', 'after-action'],
     pinned: false, archived: false, trashed: false,
-    createdBy: currentCreator() || 'agent:lead-reviewer',
+    createdBy: creator || 'agent:lead-reviewer',
     createdAt: Date.now(), updatedAt: Date.now(),
   });
 

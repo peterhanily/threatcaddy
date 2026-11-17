@@ -428,6 +428,25 @@ describe('provenance of AI-created entities', () => {
     const chat = await execTool(call('create_ioc', { type: 'domain', value: 'chat.example' }), 'S');
     expect(await db.standaloneIOCs.get(JSON.parse(chat.result).id)).toMatchObject({ createdBy: 'Analyst', tags: [] });
   });
+
+  it('keeps each call\'s creator when an agent write and a chat write interleave', async () => {
+    // Both calls pause inside executeCreateTask (the assignee lookup) before they read their creator.
+    const paused: Array<() => void> = [];
+    const get = db.agentDeployments.get.bind(db.agentDeployments);
+    vi.spyOn(db.agentDeployments, 'get').mockImplementation(((key: string) => key === 'analyst-1'
+      ? new Promise(resolve => paused.push(() => resolve(undefined))) : get(key)) as never);
+    const task = (title: string) => call('create_task', { title, assigneeId: 'analyst-1' });
+    const agent = execTool(task('Agent task'), 'S', { surface: 'agent', agentContext: {} });
+    await vi.waitFor(() => expect(paused).toHaveLength(1));
+    const chat = execTool(task('Chat task'), 'S');
+    await vi.waitFor(() => expect(paused).toHaveLength(2));
+    paused[0]();
+    const agentTask = await db.tasks.get(JSON.parse((await agent).result).id);
+    paused[1]();
+    const chatTask = await db.tasks.get(JSON.parse((await chat).result).id);
+    expect(agentTask).toMatchObject({ title: 'Agent task', createdBy: 'agent:🤖 CaddyAgent (Analyst)', tags: ['ai-generated'] });
+    expect(chatTask).toMatchObject({ title: 'Chat task', createdBy: 'Analyst', tags: [] });
+  });
 });
 
 describe('A-GATE-9 Forensicate scan is local', () => {
