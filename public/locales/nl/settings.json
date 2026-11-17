@@ -112,6 +112,8 @@
   "ai.dataFlow.fetchSupported": "Webophaling: beschikbaar. De extensie opent alleen openbare webadressen.",
   "ai.dataFlow.fetchUpdate": "Werk de extensie bij om webophaling te gebruiken.",
   "ai.dataFlow.fetchNoExtension": "Webophaling vereist de ThreatCaddy-browserextensie.",
+  "ai.dataFlow.bridgeLabel": "Agentbrug",
+  "ai.dataFlow.bridgeHelp": "Als deze aan staat, kunnen scripts op deze pagina, inclusief browserautomatisering zoals Claude Code via CDP, via window.threatcaddy de namen van uw onderzoeken zien en het geselecteerde onderzoek lezen en bewerken; webophaling, de inhoud van andere onderzoeken en wijzigingen aan agents zijn er nooit via beschikbaar.",
   "ai.dataFlow.hostsTitle": "Geconfigureerde agentshosts",
   "ai.dataFlow.hostsHelp": "Toegevoegd in een eerdere versie. Benoemde agentshosts kunnen hier niet meer worden geconfigureerd; verwijder de hosts die u niet meer gebruikt.",
   "ai.dataFlow.removeHost": "Verwijderen",

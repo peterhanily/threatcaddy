@@ -112,6 +112,8 @@
   "ai.dataFlow.fetchSupported": "Web 取得: 利用可能。拡張機能は公開 Web アドレスのみを開きます。",
   "ai.dataFlow.fetchUpdate": "Web 取得を使うには拡張機能を更新してください。",
   "ai.dataFlow.fetchNoExtension": "Web 取得には ThreatCaddy ブラウザ拡張機能が必要です。",
+  "ai.dataFlow.bridgeLabel": "エージェントブリッジ",
+  "ai.dataFlow.bridgeHelp": "オンにすると、このページ上のスクリプト (CDP 経由の Claude Code などのブラウザ自動化を含む) が window.threatcaddy を通じて調査の名前を確認し、選択中の調査を読み取り・編集できますが、Web 取得、ほかの調査の内容、エージェントの変更はこの経路では一切利用できません。",
   "ai.dataFlow.hostsTitle": "設定済みのエージェントホスト",
   "ai.dataFlow.hostsHelp": "以前のバージョンで追加されたものです。名前付きエージェントホストはここで設定できなくなりました。使わなくなったものは削除してください。",
   "ai.dataFlow.removeHost": "削除",

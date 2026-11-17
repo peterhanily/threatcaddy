@@ -112,6 +112,8 @@
   "ai.dataFlow.fetchSupported": "网页获取：可用。扩展只会打开公开的网址。",
   "ai.dataFlow.fetchUpdate": "请更新扩展以使用网页获取。",
   "ai.dataFlow.fetchNoExtension": "网页获取需要 ThreatCaddy 浏览器扩展。",
+  "ai.dataFlow.bridgeLabel": "代理桥接",
+  "ai.dataFlow.bridgeHelp": "开启后，此页面上的脚本（包括通过 CDP 运行的 Claude Code 等浏览器自动化）可以通过 window.threatcaddy 查看你的调查名称，并读取和编辑所选调查；网页获取、其他调查的内容以及对代理的更改始终无法通过它使用。",
   "ai.dataFlow.hostsTitle": "已配置的代理主机",
   "ai.dataFlow.hostsHelp": "在早期版本中添加。具名代理主机已无法在此配置；请移除不再使用的主机。",
   "ai.dataFlow.removeHost": "移除",

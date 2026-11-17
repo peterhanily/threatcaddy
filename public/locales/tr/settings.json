@@ -112,6 +112,8 @@
   "ai.dataFlow.fetchSupported": "Web getirme: kullanılabilir. Uzantı yalnızca herkese açık web adreslerini açar.",
   "ai.dataFlow.fetchUpdate": "Web getirmeyi kullanmak için uzantıyı güncelleyin.",
   "ai.dataFlow.fetchNoExtension": "Web getirme için ThreatCaddy tarayıcı uzantısı gerekir.",
+  "ai.dataFlow.bridgeLabel": "Ajan köprüsü",
+  "ai.dataFlow.bridgeHelp": "Açıkken bu sayfadaki betikler, CDP üzerinden Claude Code gibi tarayıcı otomasyonu dahil, window.threatcaddy aracılığıyla soruşturmalarınızın adlarını görebilir ve seçili soruşturmayı okuyup düzenleyebilir; web getirme, diğer soruşturmaların içeriği ve ajan değişiklikleri bu yolla hiçbir zaman kullanılamaz.",
   "ai.dataFlow.hostsTitle": "Yapılandırılmış ajan sunucuları",
   "ai.dataFlow.hostsHelp": "Önceki bir sürümde eklendi. Adlandırılmış ajan sunucuları artık burada yapılandırılamaz; artık kullanmadıklarınızı kaldırın.",
   "ai.dataFlow.removeHost": "Kaldır",

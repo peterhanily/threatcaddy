@@ -366,4 +366,23 @@ describe('SettingsPanel: where AI data goes', () => {
     renderAI();
     expect(screen.queryByText('Configured agent hosts')).not.toBeInTheDocument();
   });
+
+  it('offers the agent bridge as a switch that is off by default and saves each change', async () => {
+    const user = userEvent.setup();
+    const onUpdateSettings = vi.fn();
+    const view = renderAI({}, onUpdateSettings);
+    const section = screen.getByRole('region', { name: 'Where AI data goes' });
+    const off = within(section).getByRole('switch', { name: 'Agent bridge' });
+    expect(off).toHaveAttribute('aria-checked', 'false');
+    expect(off).toHaveAccessibleDescription(/scripts on this page, including browser automation such as Claude Code over CDP, .*window\.threatcaddy; web fetch, the contents of other investigations and agent changes are never available through it\./);
+    await user.click(off);
+    expect(onUpdateSettings).toHaveBeenCalledExactlyOnceWith({ agentBridgeEnabled: true });
+    view.unmount();
+    onUpdateSettings.mockClear();
+    renderAI({ agentBridgeEnabled: true }, onUpdateSettings);
+    const on = screen.getByRole('switch', { name: 'Agent bridge' });
+    expect(on).toHaveAttribute('aria-checked', 'true');
+    await user.click(on);
+    expect(onUpdateSettings).toHaveBeenCalledExactlyOnceWith({ agentBridgeEnabled: false });
+  });
 });

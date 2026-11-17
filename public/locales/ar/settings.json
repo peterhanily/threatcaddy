@@ -112,6 +112,8 @@
   "ai.dataFlow.fetchSupported": "جلب الويب: متاح. لا تفتح الإضافة إلا عناوين الويب العامة.",
   "ai.dataFlow.fetchUpdate": "حدّث الإضافة لاستخدام جلب الويب.",
   "ai.dataFlow.fetchNoExtension": "يتطلب جلب الويب إضافة المتصفح ThreatCaddy.",
+  "ai.dataFlow.bridgeLabel": "جسر الوكلاء",
+  "ai.dataFlow.bridgeHelp": "عند تشغيله، يمكن للبرامج النصية في هذه الصفحة، بما فيها أتمتة المتصفح مثل Claude Code عبر CDP، رؤية أسماء تحقيقاتك وقراءة التحقيق المحدد وتعديله من خلال window.threatcaddy؛ ولا يتاح من خلاله أبدًا جلب الويب ولا محتوى التحقيقات الأخرى ولا تغييرات الوكلاء.",
   "ai.dataFlow.hostsTitle": "مضيفات الوكلاء المهيأة",
   "ai.dataFlow.hostsHelp": "أُضيفت في إصدار سابق. لم يعد بالإمكان تهيئة مضيفات الوكلاء المسماة هنا؛ أزل ما لم تعد تستخدمه.",
   "ai.dataFlow.removeHost": "إزالة",

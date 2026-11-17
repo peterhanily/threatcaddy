@@ -112,6 +112,8 @@
   "ai.dataFlow.fetchSupported": "Récupération web : disponible. L'extension n'ouvre que des adresses web publiques.",
   "ai.dataFlow.fetchUpdate": "Mettez à jour l'extension pour utiliser la récupération web.",
   "ai.dataFlow.fetchNoExtension": "La récupération web nécessite l'extension de navigateur ThreatCaddy.",
+  "ai.dataFlow.bridgeLabel": "Pont d'agents",
+  "ai.dataFlow.bridgeHelp": "Lorsqu'il est activé, les scripts de cette page, y compris l'automatisation du navigateur comme Claude Code via CDP, peuvent voir les noms de vos enquêtes et lire et modifier l'enquête sélectionnée via window.threatcaddy ; la récupération web, le contenu des autres enquêtes et les modifications des agents ne sont jamais disponibles par ce biais.",
   "ai.dataFlow.hostsTitle": "Hôtes d'agents configurés",
   "ai.dataFlow.hostsHelp": "Ajoutés dans une version antérieure. Les hôtes d'agents nommés ne peuvent plus être configurés ici ; supprimez ceux que vous n'utilisez plus.",
   "ai.dataFlow.removeHost": "Supprimer",

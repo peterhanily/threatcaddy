@@ -112,6 +112,8 @@
   "ai.dataFlow.fetchSupported": "Tải trang web: khả dụng. Tiện ích chỉ mở các địa chỉ web công khai.",
   "ai.dataFlow.fetchUpdate": "Hãy cập nhật tiện ích mở rộng để dùng tính năng tải trang web.",
   "ai.dataFlow.fetchNoExtension": "Tải trang web cần tiện ích mở rộng trình duyệt ThreatCaddy.",
+  "ai.dataFlow.bridgeLabel": "Cầu nối tác nhân",
+  "ai.dataFlow.bridgeHelp": "Khi bật, các tập lệnh trên trang này, kể cả tự động hóa trình duyệt như Claude Code qua CDP, có thể xem tên các cuộc điều tra của bạn và đọc, chỉnh sửa cuộc điều tra đang chọn thông qua window.threatcaddy; tải trang web, nội dung của các cuộc điều tra khác và thay đổi đối với tác nhân không bao giờ khả dụng qua đó.",
   "ai.dataFlow.hostsTitle": "Máy chủ tác nhân đã cấu hình",
   "ai.dataFlow.hostsHelp": "Được thêm trong phiên bản trước. Không thể cấu hình máy chủ tác nhân có tên tại đây nữa; hãy xóa những máy chủ bạn không còn dùng.",
   "ai.dataFlow.removeHost": "Xóa",

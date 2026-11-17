@@ -112,6 +112,8 @@
   "ai.dataFlow.fetchSupported": "אחזור אינטרנט: זמין. ההרחבה פותחת רק כתובות אינטרנט ציבוריות.",
   "ai.dataFlow.fetchUpdate": "עדכן את ההרחבה כדי להשתמש באחזור אינטרנט.",
   "ai.dataFlow.fetchNoExtension": "אחזור אינטרנט דורש את הרחבת הדפדפן של ThreatCaddy.",
+  "ai.dataFlow.bridgeLabel": "גשר סוכנים",
+  "ai.dataFlow.bridgeHelp": "כשהוא מופעל, סקריפטים בדף זה, כולל אוטומציה של הדפדפן כמו Claude Code דרך CDP, יכולים לראות את שמות החקירות שלך ולקרוא ולערוך את החקירה שנבחרה דרך window.threatcaddy; אחזור אינטרנט, תוכן של חקירות אחרות ושינויים בסוכנים לעולם אינם זמינים דרכו.",
   "ai.dataFlow.hostsTitle": "מארחי סוכנים מוגדרים",
   "ai.dataFlow.hostsHelp": "נוספו בגרסה קודמת. לא ניתן עוד להגדיר כאן מארחי סוכנים בעלי שם; הסר את אלה שאינך משתמש בהם עוד.",
   "ai.dataFlow.removeHost": "הסר",

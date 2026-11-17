@@ -112,6 +112,8 @@
   "ai.dataFlow.fetchSupported": "Pengambilan web: tersedia. Ekstensi hanya membuka alamat web publik.",
   "ai.dataFlow.fetchUpdate": "Perbarui ekstensi untuk menggunakan pengambilan web.",
   "ai.dataFlow.fetchNoExtension": "Pengambilan web memerlukan ekstensi browser ThreatCaddy.",
+  "ai.dataFlow.bridgeLabel": "Jembatan agen",
+  "ai.dataFlow.bridgeHelp": "Saat aktif, skrip di halaman ini, termasuk otomatisasi browser seperti Claude Code melalui CDP, dapat melihat nama investigasi Anda serta membaca dan mengedit investigasi yang dipilih melalui window.threatcaddy; pengambilan web, isi investigasi lain, dan perubahan pada agen tidak pernah tersedia melaluinya.",
   "ai.dataFlow.hostsTitle": "Host agen yang dikonfigurasi",
   "ai.dataFlow.hostsHelp": "Ditambahkan di versi sebelumnya. Host agen bernama tidak dapat lagi dikonfigurasi di sini; hapus yang tidak lagi Anda gunakan.",
   "ai.dataFlow.removeHost": "Hapus",

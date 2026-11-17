@@ -112,6 +112,8 @@
   "ai.dataFlow.fetchSupported": "Webabruf: verfügbar. Die Erweiterung öffnet nur öffentliche Webadressen.",
   "ai.dataFlow.fetchUpdate": "Aktualisieren Sie die Erweiterung, um den Webabruf zu nutzen.",
   "ai.dataFlow.fetchNoExtension": "Der Webabruf benötigt die ThreatCaddy-Browser-Erweiterung.",
+  "ai.dataFlow.bridgeLabel": "Agenten-Brücke",
+  "ai.dataFlow.bridgeHelp": "Wenn aktiviert, können Skripte auf dieser Seite, einschließlich Browser-Automatisierung wie Claude Code über CDP, über window.threatcaddy die Namen Ihrer Untersuchungen sehen und die ausgewählte Untersuchung lesen und bearbeiten; Webabruf, die Inhalte anderer Untersuchungen und Änderungen an Agenten sind darüber nie verfügbar.",
   "ai.dataFlow.hostsTitle": "Konfigurierte Agenten-Hosts",
   "ai.dataFlow.hostsHelp": "In einer früheren Version hinzugefügt. Benannte Agenten-Hosts können hier nicht mehr konfiguriert werden; entfernen Sie die, die Sie nicht mehr verwenden.",
   "ai.dataFlow.removeHost": "Entfernen",

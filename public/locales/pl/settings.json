@@ -112,6 +112,8 @@
   "ai.dataFlow.fetchSupported": "Pobieranie stron: dostępne. Rozszerzenie otwiera tylko publiczne adresy internetowe.",
   "ai.dataFlow.fetchUpdate": "Zaktualizuj rozszerzenie, aby korzystać z pobierania stron.",
   "ai.dataFlow.fetchNoExtension": "Pobieranie stron wymaga rozszerzenia przeglądarki ThreatCaddy.",
+  "ai.dataFlow.bridgeLabel": "Most agentów",
+  "ai.dataFlow.bridgeHelp": "Gdy jest włączony, skrypty na tej stronie, w tym automatyzacja przeglądarki, taka jak Claude Code przez CDP, mogą przez window.threatcaddy widzieć nazwy Twoich dochodzeń oraz odczytywać i edytować wybrane dochodzenie; pobieranie stron, zawartość innych dochodzeń i zmiany agentów nigdy nie są przez niego dostępne.",
   "ai.dataFlow.hostsTitle": "Skonfigurowane hosty agentów",
   "ai.dataFlow.hostsHelp": "Dodane we wcześniejszej wersji. Nazwanych hostów agentów nie można już tutaj konfigurować; usuń te, których już nie używasz.",
   "ai.dataFlow.removeHost": "Usuń",

@@ -113,6 +113,8 @@
   "ai.dataFlow.fetchSupported": "Web fetch: available. The extension opens only public web addresses.",
   "ai.dataFlow.fetchUpdate": "Update the extension to use web fetch.",
   "ai.dataFlow.fetchNoExtension": "Web fetch needs the ThreatCaddy browser extension.",
+  "ai.dataFlow.bridgeLabel": "Agent bridge",
+  "ai.dataFlow.bridgeHelp": "When on, scripts on this page, including browser automation such as Claude Code over CDP, can see the names of your investigations and read and edit the selected one through window.threatcaddy; web fetch, the contents of other investigations and agent changes are never available through it.",
   "ai.dataFlow.hostsTitle": "Configured agent hosts",
   "ai.dataFlow.hostsHelp": "Added in an earlier version. Named agent hosts can no longer be configured here; remove the ones you no longer use.",
   "ai.dataFlow.removeHost": "Remove",
