@@ -33,7 +33,11 @@ vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: vi.fn(
 vi.mock('../hooks/useChatLoops', () => ({ useChatLoops: () => ({ loops: [], startLoop: vi.fn(), stopAllForThread: vi.fn() }) }));
 vi.mock('../hooks/useCustomSlashCommands', () => ({ useCustomSlashCommands: () => ({ commands: [] }),
   interpolateTemplate: (template: string) => template }));
-vi.mock('../components/Chat/ChatInput', () => ({ ChatInput: (props: typeof state.input) => { state.input = props; return null; } }));
+// The composer: a slash or mention menu that is open uses Escape to close itself.
+vi.mock('../components/Chat/ChatInput', () => ({ ChatInput: (props: typeof state.input) => {
+  state.input = props;
+  return <textarea aria-label="Message" onKeyDown={event => { if (event.key === 'Escape' && event.currentTarget.dataset.menuOpen) event.preventDefault(); }} />;
+} }));
 vi.mock('../components/Chat/ChatMessage', () => ({ ChatMessageBubble: () => null }));
 vi.mock('../components/Agent/AgentCycleSummaryCard', () => ({ AgentCycleSummaryCard: () => null }));
 // Virtuoso renders the Footer as a component, so a new Footer function on each ChatView render
@@ -66,6 +70,7 @@ function start(handler: ToolHandler, toolUse: ToolUseBlock, signal = new AbortCo
 // The card is named by its title; the Details disclosure is an unnamed group.
 const card = () => screen.findByRole('group', { name: /\?$/ });
 const queryCard = () => screen.queryByRole('group', { name: /\?$/ });
+const bothQueued = () => waitFor(() => expect(within(screen.getByRole('group', { name: /\?$/ })).getByText('1 of 2')).toBeInTheDocument());
 // A card that just appeared ignores Approve for a moment; wait it out, as a reading analyst does.
 async function approve() {
   const button = screen.getByRole('button', { name: /approve/i });
@@ -133,14 +138,14 @@ describe('C-CHAT-6 the approval queue', () => {
     const handler = await sendAndGetHandler();
     const first = start(handler, fetchA);
     const second = start(handler, fetchB);
-    await waitFor(() => expect(screen.getByText('1 of 2')).toBeInTheDocument());
+    await bothQueued();
     expect(screen.getAllByRole('group', { name: /\?$/ })).toHaveLength(1);
     expect(screen.getByText(/collector\.example\/a/)).toBeInTheDocument();
 
     await approve();
     expect((await first).isError).toBe(false);
     await waitFor(() => expect(screen.getByText(/collector\.example\/b/)).toBeInTheDocument());
-    expect(screen.queryByText('1 of 2')).toBeNull();
+    expect(within(await card()).queryByText('1 of 2')).toBeNull();
     await approve();
     expect((await second).isError).toBe(false);
     expect(egress.fetchUrlPosts()).toEqual(['https://collector.example/a', 'https://collector.example/b']);
@@ -153,7 +158,7 @@ describe('C-CHAT-6 the approval queue', () => {
     const first = start(handler, fetchA);
     let secondSettled = false;
     const second = start(handler, fetchB).finally(() => { secondSettled = true; });
-    await waitFor(() => expect(screen.getByText('1 of 2')).toBeInTheDocument());
+    await bothQueued();
 
     await approve();
     // The second click lands where the next card's Approve button has just appeared.
@@ -173,7 +178,7 @@ describe('C-CHAT-6 the approval queue', () => {
     const handler = await sendAndGetHandler();
     const first = start(handler, fetchA);
     const second = start(handler, fetchB);
-    await waitFor(() => expect(screen.getByText('1 of 2')).toBeInTheDocument());
+    await bothQueued();
 
     state.selectedThreadId = 'other';
     view.rerender();
@@ -189,7 +194,7 @@ describe('C-CHAT-6 the approval queue', () => {
     const controller = new AbortController();
     const first = start(handler, fetchA, controller.signal);
     const second = start(handler, fetchB, controller.signal);
-    await waitFor(() => expect(screen.getByText('1 of 2')).toBeInTheDocument());
+    await bothQueued();
     act(() => controller.abort());
     expect(errorOf(await first)).toMatch(/cancelled/i);
     expect(errorOf(await second)).toMatch(/cancelled/i);
@@ -213,20 +218,41 @@ describe('the approval card', () => {
     expect(egress.fetchUrlPosts()).toEqual([]);
   });
 
-  it('does not take focus from the composer while the analyst types', async () => {
+  it('does not take focus from the composer while the analyst types; Escape in the empty composer rejects', async () => {
     renderChat([makeThread('thread', 'S')]);
     const handler = await sendAndGetHandler();
-    const composer = document.body.appendChild(document.createElement('textarea'));
-    try {
-      composer.focus();
-      const pending = start(handler, call('fetch_url', { url: 'https://collector.example/d' }));
-      const shown = await card();
-      expect(document.activeElement).toBe(composer);
-      fireEvent.keyDown(composer, { key: 'Escape' });
-      expect(await card()).toBe(shown);
-      fireEvent.click(within(shown).getByRole('button', { name: /reject/i }));
-      expect(errorOf(await pending)).toMatch(/rejected/i);
-    } finally { composer.remove(); }
+    const composer = screen.getByRole('textbox', { name: 'Message' }) as HTMLTextAreaElement;
+    act(() => composer.focus());
+    fireEvent.change(composer, { target: { value: 'Draft reply' } });
+    const pending = start(handler, call('fetch_url', { url: 'https://collector.example/d' }));
+    const shown = await card();
+    expect(document.activeElement).toBe(composer);
+    fireEvent.keyDown(composer, { key: 'Escape' });
+    expect(await card()).toBe(shown);
+
+    fireEvent.change(composer, { target: { value: '' } });
+    composer.dataset.menuOpen = '1';
+    fireEvent.keyDown(composer, { key: 'Escape' });
+    expect(await card()).toBe(shown);
+    delete composer.dataset.menuOpen;
+    fireEvent.keyDown(composer, { key: 'Escape' });
+    expect(errorOf(await pending)).toMatch(/rejected/i);
+    expect(egress.fetchUrlPosts()).toEqual([]);
+  });
+
+  it('announces the card that needs a decision', async () => {
+    renderChat([makeThread('thread', 'S')]);
+    const handler = await sendAndGetHandler();
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent(/^$/);
+    void start(handler, call('fetch_url', { url: 'https://collector.example/a' }, 'call-a'));
+    void start(handler, call('update_note', { id: ids('P').note, content: 'Overwritten' }, 'call-b'));
+    await waitFor(() => expect(status).toHaveTextContent('Send data outside ThreatCaddy? fetch_url 1 of 2'));
+    expect(within(status).queryByRole('button')).toBeNull();
+
+    fireEvent.click(within(await card()).getByRole('button', { name: /reject/i }));
+    await waitFor(() => expect(status).toHaveTextContent('Change another investigation? update_note'));
+    expect(status).not.toHaveTextContent('of');
   });
 
   it('keeps Details open and the investigation lines when the list re-renders', async () => {

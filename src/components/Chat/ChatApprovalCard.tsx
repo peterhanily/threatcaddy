@@ -19,6 +19,12 @@ const TITLE_KEYS: Record<AskReason, string> = {
 /** Tools that change agents; the other never-for-agents tools are described by what they write. */
 const AGENT_TOOLS: ReadonlySet<string> = new Set(['deploy_agent', 'stop_agent', 'run_agent_cycle', ...AGENT_CONTROL_TOOLS]);
 
+const changesAgentsOf = ({ toolUse, reach }: ApprovalItem) => !!reach.agentControl && AGENT_TOOLS.has(toolUse.name);
+function titleKeyOf(item: ApprovalItem): string {
+  const { reason, reach } = item;
+  return TITLE_KEYS[reason === 'agent-control' && !changesAgentsOf(item) ? (reach.crossWrite ? 'cross-write' : 'write') : reason];
+}
+
 interface Resolved { homeName?: string; targets: Array<{ name: string; shareable: boolean }>; iocValue?: string }
 /** How long a card that has just appeared keeps Approve disabled. The second click of a double
  * click on the previous card lands on this one's Approve before the analyst has read it. */
@@ -38,7 +44,7 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
   const cardRef = useRef<HTMLDivElement>(null);
   const [resolved, setResolved] = useState<Resolved>({ targets: [] });
   const [approvable, setApprovable] = useState<ApprovalItem | null>(null);
-  const { toolUse, reach, reason, readForeignThisRequest } = item;
+  const { toolUse, reach, readForeignThisRequest } = item;
 
   useEffect(() => {
     const timer = setTimeout(() => setApprovable(item), APPROVE_DELAY_MS);
@@ -63,8 +69,7 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
     return () => { current = false; };
   }, [reach, toolUse]);
 
-  const changesAgents = !!reach.agentControl && AGENT_TOOLS.has(toolUse.name);
-  const titleReason: AskReason = reason === 'agent-control' && !changesAgents ? (reach.crossWrite ? 'cross-write' : 'write') : reason;
+  const changesAgents = changesAgentsOf(item);
   const summary: string[] = [];
   if (reach.egress === 'open-fetch' || reach.egress === 'trusted-fetch') summary.push(t('approval.opensPage', { host: reach.destinations[0] }));
   else if (reach.egress === 'vendor') {
@@ -95,7 +100,7 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
     >
       <div className="px-4 py-2.5 border-b border-amber-500/20 flex items-center gap-2">
         <Shield size={14} className="text-amber-400 shrink-0" />
-        <span id={titleId} className="text-xs font-medium text-amber-400">{t(TITLE_KEYS[titleReason])}</span>
+        <span id={titleId} className="text-xs font-medium text-amber-400">{t(titleKeyOf(item))}</span>
         {total > 1 && <span className="ms-auto shrink-0 text-[10px] text-text-muted">{t('approval.position', { index, total })}</span>}
       </div>
       <div className="px-4 py-2.5 space-y-1.5">
@@ -136,6 +141,20 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Announces the card that needs a decision. Keep it mounted while there is none: a live
+ * region is announced when its text changes, not when it appears with text. */
+export function ChatApprovalStatus({ item, total }: { item?: ApprovalItem; total: number }) {
+  const { t } = useTranslation('chat');
+  return (
+    <div role="status" className="sr-only">
+      {item && <>
+        <span>{t(titleKeyOf(item))}</span> <span>{item.toolUse.name}</span>
+        {total > 1 && <> <span>{t('approval.position', { index: 1, total })}</span></>}
+      </>}
     </div>
   );
 }

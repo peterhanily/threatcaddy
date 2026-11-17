@@ -1,5 +1,5 @@
 import { persistChatCompletion } from '../../lib/locked-chat-recovery';
-import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore, type KeyboardEvent } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +8,7 @@ import { ClsSelect } from '../Common/ClsSelect';
 import { ClsBadge } from '../Common/ClsBadge';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { ChatMessageBubble } from './ChatMessage';
-import { ChatApprovalCard } from './ChatApprovalCard';
+import { ChatApprovalCard, ChatApprovalStatus } from './ChatApprovalCard';
 import { AgentCycleSummaryCard } from '../Agent/AgentCycleSummaryCard';
 import { ChatInput } from './ChatInput';
 import { useLLM } from '../../hooks/useLLM';
@@ -677,6 +677,15 @@ export function ChatView({
     if (headApproval) settleApproval(headApproval.id, null);
   }, [headApproval, settleApproval]);
 
+  // Focus stays in the composer after sending, so Escape there rejects the card too, when
+  // nothing is typed and no composer menu used the key.
+  const handleComposerKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Escape' || event.defaultPrevented || event.nativeEvent.isComposing || !headApproval) return;
+    if (!(event.target instanceof HTMLTextAreaElement) || event.target.value !== '') return;
+    event.preventDefault();
+    settleApproval(headApproval.id, null);
+  }, [headApproval, settleApproval]);
+
   // Reject every queued card when the thread changes (prevents ghosts from trashed threads)
   useEffect(() => {
     const queue = approvalQueueRef.current;
@@ -1261,6 +1270,7 @@ export function ChatView({
                 />
               </div>
             )}
+            <ChatApprovalStatus item={headApproval?.item} total={visibleApprovals.length} />
 
             {/* Input */}
             {localError && (
@@ -1275,26 +1285,28 @@ export function ChatView({
                 ) : localError}
               </div>
             )}
-            <ChatInput
-              draftScope={selectedThreadId}
-              onSend={handleSend}
-              onStop={abort}
-              isStreaming={isStreaming}
-              extensionAvailable={extensionAvailable}
-              serverRoute={effectiveRoute === 'server' && serverConnected}
-              provider={activeThread.provider}
-              model={activeThread.model}
-              onModelChange={handleModelChange}
-              localModelName={settings.llmLocalModelName}
-              configuredProviders={configuredProviders}
-              onOpenSettings={onOpenSettings ? () => onOpenSettings('ai') : undefined}
-              folderId={selectedFolderId}
-              customCommands={customCommands.map(c => ({ command: `/${c.name}`, description: c.description }))}
-              onImageAttach={handleImageAttach}
-              readingImages={readingImages}
-              attachedImages={pendingImages.map(a => ({ name: a.name || 'Image' }))}
-              onClearImages={clearImages}
-            />
+            <div onKeyDown={handleComposerKeyDown}>
+              <ChatInput
+                draftScope={selectedThreadId}
+                onSend={handleSend}
+                onStop={abort}
+                isStreaming={isStreaming}
+                extensionAvailable={extensionAvailable}
+                serverRoute={effectiveRoute === 'server' && serverConnected}
+                provider={activeThread.provider}
+                model={activeThread.model}
+                onModelChange={handleModelChange}
+                localModelName={settings.llmLocalModelName}
+                configuredProviders={configuredProviders}
+                onOpenSettings={onOpenSettings ? () => onOpenSettings('ai') : undefined}
+                folderId={selectedFolderId}
+                customCommands={customCommands.map(c => ({ command: `/${c.name}`, description: c.description }))}
+                onImageAttach={handleImageAttach}
+                readingImages={readingImages}
+                attachedImages={pendingImages.map(a => ({ name: a.name || 'Image' }))}
+                onClearImages={clearImages}
+              />
+            </div>
           </>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-text-muted">
