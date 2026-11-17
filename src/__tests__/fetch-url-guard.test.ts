@@ -14,6 +14,13 @@ function bridgeFetches(post: ReturnType<typeof vi.spyOn>) {
   return post.mock.calls.filter(([message]: unknown[]) => (message as { type?: string })?.type === 'TC_FETCH_URL');
 }
 
+async function inGerman(run: (de: Record<string, string>) => Promise<void>) {
+  for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+  i18n.addResourceBundle('de', 'integrations', deIntegrations, true, true);
+  await i18n.changeLanguage('de');
+  try { await run(deIntegrations as Record<string, string>); } finally { await i18n.changeLanguage('en'); }
+}
+
 let post: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   post = vi.spyOn(window, 'postMessage').mockImplementation((message: unknown) => {
@@ -82,22 +89,43 @@ describe('SPA web fetch guard', () => {
     expect(bridgeFetches(post)).toHaveLength(1);
   });
 
-  it('shows both refusals in the analyst’s language', async () => {
-    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
-    i18n.addResourceBundle('de', 'integrations', deIntegrations, true, true);
-    await i18n.changeLanguage('de');
-    try {
-      const de = deIntegrations as Record<string, string>;
-      document.documentElement.dataset.tcBridgeCaps = HEAD_CAPS;
-      expect(await fetchViaExtensionBridge('http://127.0.0.1/')).toEqual({ success: false, error: de['fetch.privateTarget'] });
-      document.documentElement.dataset.tcBridgeCaps = STORE_1_1_1_CAPS;
-      const url = 'https://nvd.nist.gov/vuln/detail/CVE-2024-3094';
-      expect(await fetchViaExtensionBridge(url)).toEqual({ success: false, error: de['fetch.updateExtension'] });
-      expect(JSON.parse(await executeFetchUrl({ url })).error).toBe(de['fetch.updateExtension']);
-      expect(de['fetch.updateExtension']).toContain('1.1.3');
-      expect(bridgeFetches(post)).toHaveLength(0);
-    } finally { await i18n.changeLanguage('en'); }
+  it('names the length bound, not the destination, when a public URL is too long', async () => {
+    document.documentElement.dataset.tcBridgeCaps = HEAD_CAPS;
+    const base = 'https://nvd.nist.gov/vuln/search?query=';
+    const longest = base + 'a'.repeat(2048 - base.length);
+    const tooLong = { success: false, error: enIntegrations['fetch.tooLong'] };
+    expect(await fetchViaExtensionBridge(`${longest}a`)).toEqual(tooLong);
+    expect(JSON.parse(await executeFetchUrl({ url: `${longest}a` })).error).toBe(tooLong.error);
+    expect(await fetchViaExtensionBridge(`http://127.0.0.1/${'a'.repeat(2048)}`))
+      .toEqual({ success: false, error: enIntegrations['fetch.privateTarget'] });
+    expect(bridgeFetches(post)).toHaveLength(0);
+    expect((await fetchViaExtensionBridge(longest)).success).toBe(true);
+    expect(bridgeFetches(post)).toHaveLength(1);
   });
+
+  it('shows every refusal in the analyst’s language', () => inGerman(async de => {
+    document.documentElement.dataset.tcBridgeCaps = HEAD_CAPS;
+    expect(await fetchViaExtensionBridge('http://127.0.0.1/')).toEqual({ success: false, error: de['fetch.privateTarget'] });
+    expect(await fetchViaExtensionBridge(`https://x.example/${'a'.repeat(2048)}`)).toEqual({ success: false, error: de['fetch.tooLong'] });
+    document.documentElement.dataset.tcBridgeCaps = STORE_1_1_1_CAPS;
+    const url = 'https://nvd.nist.gov/vuln/detail/CVE-2024-3094';
+    expect(await fetchViaExtensionBridge(url)).toEqual({ success: false, error: de['fetch.updateExtension'] });
+    expect(JSON.parse(await executeFetchUrl({ url })).error).toBe(de['fetch.updateExtension']);
+    expect(de['fetch.updateExtension']).toContain('1.1.3');
+    expect(bridgeFetches(post)).toHaveLength(0);
+  }));
+
+  it('reports a bridge that never answers in the analyst’s language', () => inGerman(async de => {
+    post.mockImplementation(() => {});
+    document.documentElement.dataset.tcBridgeCaps = HEAD_CAPS;
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const pending = fetchViaExtensionBridge('https://nvd.nist.gov/vuln/detail/CVE-2024-3094');
+      await vi.advanceTimersByTimeAsync(20000);
+      expect(await pending).toEqual({ success: false, error: de['fetch.bridgeTimeout'] });
+      expect(bridgeFetches(post)).toHaveLength(1);
+    } finally { vi.useRealTimers(); }
+  }));
 
   it('loads the integrations namespace before refusing, as hosted builds do not bundle it', async () => {
     const reads: string[] = [];
