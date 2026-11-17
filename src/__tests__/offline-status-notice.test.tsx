@@ -23,8 +23,11 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe('offline notice in the app shell', () => {
-  it('shows nothing while checking or once offline use is installed', () => {
+  it('shows nothing while checking, while offline use is not confirmed yet, or once it is installed', () => {
     const view = render(<OfflineStatusNotice />);
+    expect(view.container).toBeEmptyDOMElement();
+    // A late or interrupted download is not a reason to tell the user this browser can't work offline.
+    report('unconfirmed');
     expect(view.container).toBeEmptyDOMElement();
     report('installed');
     expect(view.container).toBeEmptyDOMElement();
@@ -115,6 +118,9 @@ describe('offline use in Settings', () => {
     report('installed');
     expect(row).toHaveAttribute('data-status', 'installed');
     expect(row).toHaveTextContent('ThreatCaddy opens in this browser without an internet connection; team sync, AI and other online services still need one.');
+    report('unconfirmed');
+    expect(row).toHaveAttribute('data-status', 'unconfirmed');
+    expect(row).toHaveTextContent("Offline use isn't confirmed in this browser yet. ThreatCaddy still works online and tries again next time you open it.");
     report('unavailable');
     expect(row).toHaveTextContent("This browser can't keep ThreatCaddy available offline, but it still works online.");
   });
@@ -129,7 +135,8 @@ describe('offline use in Settings', () => {
     expect(offline.map(([key]) => key).sort()).toEqual([
       'offlineStatus.backupNote', 'offlineStatus.dismissNotice', 'offlineStatus.installingNotice',
       'offlineStatus.settingChecking', 'offlineStatus.settingInstalled', 'offlineStatus.settingInstalling',
-      'offlineStatus.settingTitle', 'offlineStatus.settingUnavailable', 'offlineStatus.unavailableNotice',
+      'offlineStatus.settingTitle', 'offlineStatus.settingUnavailable', 'offlineStatus.settingUnconfirmed',
+      'offlineStatus.unavailableNotice',
     ]);
     for (const [, text] of offline) expect(text).not.toMatch(/worker|evict|cache|PWA/i);
   });

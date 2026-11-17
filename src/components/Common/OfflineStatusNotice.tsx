@@ -9,6 +9,7 @@ const SETTING_TEXT = {
   checking: 'offlineStatus.settingChecking',
   installing: 'offlineStatus.settingInstalling',
   installed: 'offlineStatus.settingInstalled',
+  unconfirmed: 'offlineStatus.settingUnconfirmed',
   unavailable: 'offlineStatus.settingUnavailable',
 } as const satisfies Record<OfflineStatus, string>;
 

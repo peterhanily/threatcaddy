@@ -256,6 +256,7 @@
   "offlineStatus.settingChecking": "Sprawdzanie, czy ta przeglądarka może utrzymać dostępność ThreatCaddy offline.",
   "offlineStatus.settingInstalling": "ThreatCaddy zapisuje się do użytku offline; pozostaw tę kartę otwartą do zakończenia.",
   "offlineStatus.settingInstalled": "ThreatCaddy otwiera się w tej przeglądarce bez połączenia z internetem; synchronizacja zespołu, AI i inne usługi online nadal go wymagają.",
+  "offlineStatus.settingUnconfirmed": "Korzystanie offline nie zostało jeszcze potwierdzone w tej przeglądarce. ThreatCaddy nadal działa online i spróbuje ponownie przy następnym otwarciu.",
   "offlineStatus.settingUnavailable": "Ta przeglądarka nie może utrzymać dostępności ThreatCaddy offline, ale nadal działa online.",
   "offlineStatus.backupNote": "Korzystanie offline nie jest kopią zapasową. Wyczyszczenie danych tej przeglądarki usuwa wszystko, co jest tu zapisane, a przeglądarki mogą też same usuwać zapisane dane witryn, na przykład gdy brakuje miejsca. Regularnie eksportuj kopię zapasową JSON i przechowuj plik w bezpiecznym miejscu.",
   "sync.backupWarning": "Przed usunięciem danych lokalnych zapisz i sprawdź pełną kopię zapasową. Synchronizacja zespołowa nie odtworzy szczegółów zapisanych tylko na urządzeniu, takich jak foldery notatek, listy kontrolne, postęp procedur oraz wyniki narzędzi lub obrazy z czatu. Zapis kopii zapasowej pobiera niezaszyfrowany plik JSON.",

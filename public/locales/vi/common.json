@@ -256,6 +256,7 @@
   "offlineStatus.settingChecking": "Đang kiểm tra xem trình duyệt này có thể giữ ThreatCaddy sẵn sàng ngoại tuyến hay không.",
   "offlineStatus.settingInstalling": "ThreatCaddy đang tự lưu để dùng ngoại tuyến; hãy giữ thẻ này mở cho đến khi hoàn tất.",
   "offlineStatus.settingInstalled": "ThreatCaddy mở được trong trình duyệt này mà không cần kết nối internet; đồng bộ nhóm, AI và các dịch vụ trực tuyến khác vẫn cần kết nối.",
+  "offlineStatus.settingUnconfirmed": "Việc dùng ngoại tuyến chưa được xác nhận trong trình duyệt này. ThreatCaddy vẫn hoạt động trực tuyến và sẽ thử lại vào lần tới bạn mở ứng dụng.",
   "offlineStatus.settingUnavailable": "Trình duyệt này không thể giữ ThreatCaddy sẵn sàng ngoại tuyến, nhưng ứng dụng vẫn hoạt động trực tuyến.",
   "offlineStatus.backupNote": "Dùng ngoại tuyến không phải là bản sao lưu. Xóa dữ liệu của trình duyệt này sẽ xóa mọi thứ được lưu ở đây, và trình duyệt cũng có thể tự xóa dữ liệu trang web đã lưu, chẳng hạn khi sắp hết dung lượng. Hãy xuất bản sao lưu JSON thường xuyên và cất tệp ở nơi an toàn.",
   "sync.backupWarning": "Trước khi xóa dữ liệu cục bộ, hãy lưu và kiểm tra bản sao lưu đầy đủ. Đồng bộ nhóm không thể khôi phục chi tiết chỉ có trên thiết bị, như thư mục ghi chú, danh sách kiểm tra, tiến độ quy trình và kết quả công cụ hoặc hình ảnh trong trò chuyện. Lưu bản sao lưu tải xuống JSON không mã hóa.",

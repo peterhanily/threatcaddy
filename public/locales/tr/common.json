@@ -256,6 +256,7 @@
   "offlineStatus.settingChecking": "Bu tarayıcının ThreatCaddy'yi çevrimdışı kullanılabilir tutup tutamayacağı denetleniyor.",
   "offlineStatus.settingInstalling": "ThreatCaddy çevrimdışı kullanım için kendini kaydediyor; işlem bitene kadar bu sekmeyi açık tutun.",
   "offlineStatus.settingInstalled": "ThreatCaddy bu tarayıcıda internet bağlantısı olmadan açılır; ekip eşitlemesi, yapay zekâ ve diğer çevrimiçi hizmetler yine de bağlantı gerektirir.",
+  "offlineStatus.settingUnconfirmed": "Çevrimdışı kullanım bu tarayıcıda henüz doğrulanmadı. ThreatCaddy çevrimiçi çalışmaya devam ediyor ve bir dahaki sefere açtığınızda yeniden deneyecek.",
   "offlineStatus.settingUnavailable": "Bu tarayıcı ThreatCaddy'yi çevrimdışı kullanılabilir tutamıyor, ancak çevrimiçi çalışmaya devam ediyor.",
   "offlineStatus.backupNote": "Çevrimdışı kullanım bir yedek değildir. Bu tarayıcının verilerini temizlemek burada kayıtlı her şeyi siler; tarayıcılar da kayıtlı site verilerini kendiliğinden kaldırabilir, örneğin yer azaldığında. Düzenli olarak bir JSON yedeği dışa aktarın ve dosyayı güvenli bir yerde saklayın.",
   "sync.backupWarning": "Yerel verileri kaldırmadan önce tam bir yedek kaydedip doğrulayın. Ekip eşitlemesi; not klasörleri, kontrol listeleri, çalışma planı ilerlemesi ve sohbet aracı sonuçları veya görselleri gibi yalnızca bu cihazda bulunan ayrıntıları geri getiremez. Yedeği Kaydet, şifrelenmemiş JSON indirir.",

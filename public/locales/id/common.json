@@ -256,6 +256,7 @@
   "offlineStatus.settingChecking": "Memeriksa apakah browser ini dapat membuat ThreatCaddy tetap tersedia secara offline.",
   "offlineStatus.settingInstalling": "ThreatCaddy sedang menyimpan dirinya untuk penggunaan offline; biarkan tab ini terbuka sampai selesai.",
   "offlineStatus.settingInstalled": "ThreatCaddy terbuka di browser ini tanpa koneksi internet; sinkronisasi tim, AI, dan layanan online lainnya tetap memerlukan koneksi.",
+  "offlineStatus.settingUnconfirmed": "Penggunaan offline belum dikonfirmasi di browser ini. ThreatCaddy tetap berfungsi secara online dan akan mencoba lagi saat Anda membukanya lain kali.",
   "offlineStatus.settingUnavailable": "Browser ini tidak dapat membuat ThreatCaddy tetap tersedia secara offline, tetapi ThreatCaddy tetap berfungsi secara online.",
   "offlineStatus.backupNote": "Penggunaan offline bukan cadangan. Menghapus data browser ini akan menghapus semua yang tersimpan di sini, dan browser juga dapat menghapus data situs yang tersimpan dengan sendirinya, misalnya saat ruang penyimpanan hampir habis. Ekspor cadangan JSON secara rutin dan simpan berkasnya di tempat yang aman.",
   "sync.backupWarning": "Sebelum menghapus data lokal, simpan dan verifikasi cadangan lengkap. Sinkronisasi tim tidak dapat memulihkan detail khusus perangkat seperti folder catatan, daftar periksa, progres playbook, serta hasil alat atau gambar obrolan. Simpan Cadangan mengunduh JSON tanpa enkripsi.",

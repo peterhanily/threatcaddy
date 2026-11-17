@@ -256,6 +256,7 @@
   "offlineStatus.settingChecking": "Controleren of deze browser ThreatCaddy offline beschikbaar kan houden.",
   "offlineStatus.settingInstalling": "ThreatCaddy wordt opgeslagen voor offline gebruik; laat dit tabblad open totdat het klaar is.",
   "offlineStatus.settingInstalled": "ThreatCaddy opent in deze browser zonder internetverbinding; teamsynchronisatie, AI en andere onlinediensten hebben er nog steeds een nodig.",
+  "offlineStatus.settingUnconfirmed": "Offline gebruik is in deze browser nog niet bevestigd. ThreatCaddy werkt nog steeds online en probeert het opnieuw wanneer u het de volgende keer opent.",
   "offlineStatus.settingUnavailable": "Deze browser kan ThreatCaddy niet offline beschikbaar houden, maar online werkt het nog steeds.",
   "offlineStatus.backupNote": "Offline gebruik is geen back-up. Als u de gegevens van deze browser wist, wordt alles verwijderd wat hier is opgeslagen, en browsers kunnen opgeslagen sitegegevens ook zelf verwijderen, bijvoorbeeld als de ruimte opraakt. Exporteer regelmatig een JSON-back-up en bewaar het bestand op een veilige plek.",
   "sync.backupWarning": "Sla een volledige back-up op en controleer deze voordat u lokale gegevens verwijdert. Teamsynchronisatie kan apparaatspecifieke details zoals notitiemappen, checklists, playbookvoortgang en toolresultaten of afbeeldingen in chats niet herstellen. Back-up opslaan downloadt onversleutelde JSON.",
