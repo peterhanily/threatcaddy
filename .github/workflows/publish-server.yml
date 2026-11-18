@@ -60,12 +60,35 @@ jobs:
           image_id=$(cat server-image.id)
           test "$(docker image inspect threatcaddy-server:verify --format '{{.Id}}')" = "$image_id"
           test "$(docker image inspect "$image_id" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$GITHUB_SHA"
+          # The release version is server/package.json as packaged in the verified
+          # image, copied out of a created container that never starts.
+          container=$(docker create "$image_id")
+          docker cp "$container:/app/package.json" - | tar -xOf - package.json > image-package.json
+          docker rm "$container" > /dev/null
+          version=$(jq -er '.version' image-package.json)
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Refusing to publish an image without a stable release version'; exit 1; }
           main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
           test "$main_sha" = "$GITHUB_SHA" || { echo 'Refusing to publish a superseded main commit'; exit 1; }
-          image="ghcr.io/${GITHUB_REPOSITORY,,}/server"
+          image="ghcr.io/$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')/server"
           printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
           trap 'docker logout ghcr.io' EXIT
+          # A version tag names the first verified build of that version, the
+          # release commit; later builds of the same version never move it.
+          if docker manifest inspect "$image:$version" > /dev/null 2> version-tag.log; then
+            push_version=false
+            echo "::notice::$image:$version already exists and stays on its first build"
+          elif grep -q 'no such manifest' version-tag.log; then
+            push_version=true
+          else
+            cat version-tag.log >&2
+            echo "Could not check whether $image:$version exists; nothing was pushed"
+            exit 1
+          fi
           docker tag "$image_id" "$image:sha-$GITHUB_SHA"
           docker tag "$image_id" "$image:latest"
           docker push "$image:sha-$GITHUB_SHA"
           docker push "$image:latest"
+          if [ "$push_version" = true ]; then
+            docker tag "$image_id" "$image:$version"
+            docker push "$image:$version"
+          fi

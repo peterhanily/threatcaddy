@@ -544,6 +544,89 @@ test('privileged jobs preserve source, checksum, latest-main and platform gates 
   assert.match(serverRun, /trap 'docker logout ghcr\.io' EXIT/);
   assert.match(serverRun, /docker push "\$image:sha-\$GITHUB_SHA"/);
   assert.match(serverRun, /docker push "\$image:latest"/);
+  assert.match(serverRun, /docker push "\$image:\$version"/);
+  // The version is read from the verified image's files; nothing in the image runs.
+  assert.doesNotMatch(serverRun, /docker (?:run|start|exec)\b/);
+});
+
+// Runs the real publish step with stand-in docker and gh commands, against a
+// registry where the version tag is absent, already present or unreadable.
+function runServerPublish(t, { version = '2.0.4', registry = 'absent' } = {}) {
+  const folder = temporaryDirectory(t);
+  const sha = 'c'.repeat(40);
+  const imageId = `sha256:${'d'.repeat(64)}`;
+  const verified = join(folder, 'verified-server');
+  const packaged = join(folder, 'image-files');
+  mkdirSync(verified);
+  mkdirSync(packaged);
+  writeFileSync(join(verified, 'source-sha.txt'), `${sha}\n`);
+  writeFileSync(join(verified, 'server-image.id'), imageId);
+  writeFileSync(join(verified, 'server-image.tar'), '');
+  writeFileSync(join(verified, 'server-image.tar.sha256'), '');
+  writeFileSync(join(packaged, 'package.json'), JSON.stringify(version === null ? { name: 'threatcaddy-server' } : { name: 'threatcaddy-server', version }));
+  const tools = join(folder, 'bin');
+  mkdirSync(tools);
+  writeFileSync(join(tools, 'sha256sum'), '#!/bin/sh\nexit 0\n', { mode: 0o700 });
+  writeFileSync(join(tools, 'gh'), `#!/bin/sh\nprintf '%s\\n' '${sha}'\n`, { mode: 0o700 });
+  writeFileSync(join(tools, 'docker'), `#!/bin/sh
+printf '%s\\n' "$*" >> "${join(folder, 'docker-calls.txt')}"
+case "$1 $2" in
+  'image inspect') case "$*" in *'.Id'*) printf '%s\\n' '${imageId}' ;; *revision*) printf '%s\\n' '${sha}' ;; esac ;;
+  'create ${imageId}') printf '%s\\n' fixture-container ;;
+  'cp fixture-container:/app/package.json') tar -cf - -C '${packaged}' package.json ;;
+  'manifest inspect')
+    case "$3" in
+      *:sha-*|*:latest) printf '{"fixture":"pushed"}\\n' ;;
+      *) case '${registry}' in
+           present) printf '{"fixture":"first build"}\\n' ;;
+           absent) printf 'no such manifest: %s\\n' "$3" >&2; exit 1 ;;
+           *) printf 'unauthorized: synthetic registry failure\\n' >&2; exit 1 ;;
+         esac ;;
+    esac ;;
+  'login '*) cat > /dev/null ;;
+esac
+exit 0
+`, { mode: 0o700 });
+  const step = server.jobs.publish.steps.find(candidate => candidate.name === 'Verify and push the already tested image');
+  let status = 0;
+  let output = '';
+  try {
+    output = execFileSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', step.run], {
+      cwd: folder, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+      env: { PATH: `${tools}:${process.env.PATH}`, GITHUB_SHA: sha, VERIFIED_SHA: sha, GITHUB_REPOSITORY: 'Owner/ThreatCaddy', GITHUB_ACTOR: 'fixture-actor', GH_TOKEN: 'fixture-token' },
+    });
+  } catch (error) { status = error.status; output = `${error.stdout}${error.stderr}`; }
+  const calls = readFileSync(join(folder, 'docker-calls.txt'), 'utf8').trim().split('\n');
+  return { status, output, calls, sha, image: 'ghcr.io/owner/threatcaddy/server' };
+}
+
+test('server publication adds a version tag for the first verified build of each release version', t => {
+  const { status, calls, sha, image } = runServerPublish(t);
+  assert.equal(status, 0);
+  const pushes = calls.filter(call => call.startsWith('push '));
+  assert.deepEqual(pushes, [`push ${image}:sha-${sha}`, `push ${image}:latest`, `push ${image}:2.0.4`]);
+  // The same verified image ID receives every tag, after the version tag was checked.
+  assert.deepEqual(calls.filter(call => call.startsWith('tag ')).map(call => call.split(' ')[1]), Array(3).fill(`sha256:${'d'.repeat(64)}`));
+  assert.ok(calls.indexOf(`manifest inspect ${image}:2.0.4`) < calls.indexOf(pushes[0]));
+  assert.ok(calls.includes('rm fixture-container'));
+});
+
+test('server publication never moves an existing version tag to a later build', t => {
+  const { status, output, calls, sha, image } = runServerPublish(t, { registry: 'present' });
+  assert.equal(status, 0);
+  assert.deepEqual(calls.filter(call => call.startsWith('push ')), [`push ${image}:sha-${sha}`, `push ${image}:latest`]);
+  assert.match(output, /::notice::.*2\.0\.4 already exists/);
+});
+
+test('server publication pushes nothing when the version tag cannot be checked or the version is not a release', t => {
+  for (const [options, before] of [[{ registry: 'error' }, 'logout ghcr.io'], [{ version: '2.0.4-rc.1' }, 'rm fixture-container'], [{ version: null }, 'rm fixture-container']]) {
+    const { status, calls } = runServerPublish(t, options);
+    assert.notEqual(status, 0, JSON.stringify(options));
+    assert.deepEqual(calls.filter(call => /^(?:tag|push) /.test(call)), [], JSON.stringify(options));
+    assert.ok(calls.includes(before), JSON.stringify(options));
+    // An unusable version stops before signing in to the registry.
+    if ('version' in options) assert.ok(!calls.some(call => call.startsWith('login ')), JSON.stringify(options));
+  }
 });
 
 test('Pages smoke preserves exact source, same artifact, production URL and synthetic evidence', () => {

@@ -741,6 +741,9 @@ For ELK/Loki integration, the JSON log format is already structured and ready fo
 The [server publication workflow](../.github/workflows/deploy-server.yml) runs the
 required verification for the selected `main` commit, then promotes the already
 tested image to GHCR as `ghcr.io/<owner>/<repo>/server:sha-<commit>` and `:latest`.
+The first verified build of each server version, normally the release commit,
+is also tagged with that version (for example `:2.0.4`, from the image's
+`package.json`); later builds of the same version never move that tag.
 It checks source identity and artifact integrity; it does not SSH into a host,
 restart a live container, migrate a deployed database, or change deployment
 secrets. Operators must select and roll out the image themselves, preferably by
