@@ -121,6 +121,16 @@ describe('the paused notice', () => {
     expect(await screen.findByText(notice(2))).toBeInTheDocument();
   });
 
+  it('a copy deployed before the pause does not count as deployed again', async () => {
+    // An older version could deploy one profile twice: one copy ran in this browser, the other was set to run on the server.
+    const show = await showNotice(['dep-hunter'], [deployment({ id: 'dep-hunter-0', createdAt: 1, updatedAt: 1 }),
+      deployment({ status: 'paused', order: 1, createdAt: 2, updatedAt: 999 })]);
+    expect(await screen.findByText(notice(1))).toBeInTheDocument();
+    show(['dep-hunter'], [deployment({ id: 'dep-hunter-0', createdAt: 1, updatedAt: 1 }),
+      deployment({ status: 'paused', order: 1, createdAt: 2, updatedAt: 999 }), deployment({ id: 'dep-hunter-2', order: 2, createdAt: 1000, updatedAt: 1000 })]);
+    await waitFor(() => expect(document.body.textContent).not.toContain('set to run there'));
+  });
+
   it('a dismissed notice comes back when another agent is paused', async () => {
     const show = await showNotice(['dep-hunter', 'dep-malware'], paused);
     fireEvent.click(await screen.findByRole('button', { name: en['panel.dismissNotice'] }));

@@ -172,9 +172,11 @@ function InvestigationAgentPanel({
     try { localStorage.setItem(ceilingNoticeKey, '1'); } catch { /* The notice shows again next time. */ }
   };
   // This investigation's agents that the team server's unavailable answer paused, leaving out
-  // each one the analyst has deployed again here, as the notice asks: a copy of its profile that is not paused.
+  // each one the analyst has deployed again here, as the notice asks: a copy of its profile that is not paused
+  // and was deployed after the pause, which stamps the paused row's updatedAt (an older version could deploy a profile twice).
   const serverPaused = deployments.filter(d => serverPausedDeploymentIds?.includes(d.id) && !deployments.some(again =>
-    again.profileId === d.profileId && again.status !== 'paused' && !serverPausedDeploymentIds.includes(again.id))).map(d => d.id);
+    again.profileId === d.profileId && again.status !== 'paused' && !serverPausedDeploymentIds.includes(again.id)
+    && again.createdAt >= d.updatedAt)).map(d => d.id);
   const [dismissedServerPaused, setDismissedServerPaused] = useState<string[]>([]);
   const profileFor = (id: string) => profiles.find(pr => pr.id === id) || BUILTIN_AGENT_PROFILES.find(pr => pr.id === id);
 
