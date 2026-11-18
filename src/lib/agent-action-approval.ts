@@ -66,6 +66,27 @@ async function approvalConstraints(action: AgentAction, toolUse: ToolUseBlock): 
   return { surface: 'agent', allowedTools: effectiveAllowedTools, toolBinding: action.toolBinding, approval };
 }
 
+/** The dispatcher's refusals stay English for the model (tool-reach.ts,
+ * llm-tools.ts). A failed row is the analyst's to read, so the ones an
+ * approval can meet are stored in the analyst's language. */
+const DISPATCH_REFUSALS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/^Agents cannot change another investigation\.$/, 'refusal.otherInvestigationChange'],
+  [/^Agents cannot read other investigations from this investigation\.$/, 'refusal.otherInvestigationRead'],
+  [/^Not found in this investigation\.$/, 'refusal.notInInvestigation'],
+  [/^Tool configuration, arguments, mode or scope changed\./, 'refusal.toolChanged'],
+  [/^Cannot modify ".*" entities — read-only restriction\.$|^Tool ".*" cannot guarantee this agent's read-only entity restrictions\.$/, 'refusal.readOnlyEntity'],
+];
+
+async function inAnalystLanguage(result: ToolExecutionResult, tool: string): Promise<ToolExecutionResult> {
+  if (!result.isError) return result;
+  let refusal: { error?: unknown; escalated?: unknown } | null;
+  try { refusal = JSON.parse(result.result); } catch { return result; }
+  if (refusal?.escalated === true) return toolExecutionError(await agentRefusal('refusal.taskEscalated'));
+  const error = typeof refusal?.error === 'string' ? refusal.error : '';
+  const key = DISPATCH_REFUSALS.find(([pattern]) => pattern.test(error))?.[1];
+  return key ? toolExecutionError(await agentRefusal(key, { tool })) : result;
+}
+
 /**
  * Execute an approved agent action that was previously proposed.
  */
@@ -101,8 +122,8 @@ export async function executeApprovedAction(action: AgentAction): Promise<ToolEx
     ? { result: await agentRefusal('action.questionAcknowledged'), isError: false }
     : typeof constraints === 'string'
       ? toolExecutionError(constraints)
-      : await executeTool(toolUse, action.investigationId,
-        constraints.surface === 'agent' ? { profileId: action.agentConfigId } : undefined, constraints);
+      : await inAnalystLanguage(await executeTool(toolUse, action.investigationId,
+        constraints.surface === 'agent' ? { profileId: action.agentConfigId } : undefined, constraints), action.toolName);
 
   await db.agentActions.update(action.id, {
     status: result.isError ? 'failed' : 'executed',

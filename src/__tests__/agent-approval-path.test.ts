@@ -4,11 +4,13 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db';
-import { DEFAULT_AGENT_POLICY, type AgentAction } from '../types';
+import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentAction } from '../types';
 import { executeApprovedAction } from '../lib/agent-action-approval';
 import { queueAgentAction } from '../lib/agent-action-queue';
 import { executeTool } from '../lib/llm-tools';
 import { SUPERVISOR_ACTION_PROFILE, SUPERVISOR_TOOLS, validateSupervisorDispatch } from '../lib/supervisor-tool-policy';
+import { getToolBinding } from '../lib/tool-binding';
+import { workspaceStorageKey } from '../lib/workspace-profiles';
 import { ids, seedAIWorkspace } from './helpers/ai-workspace';
 import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
 import i18n from '../i18n';
@@ -115,6 +117,58 @@ describe('A-APPR re-derivation on approval', () => {
       await executeApprovedAction(question);
       expect(await db.agentActions.get(question.id)).toMatchObject({ status: 'executed', resultSummary: deAgent['action.questionAcknowledged'] });
     } finally { await i18n.changeLanguage('en'); }
+  });
+
+  it('says in the analyst’s language why the dispatcher refused an approved proposal', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+    await i18n.changeLanguage('de');
+    const tool = 'host:reports:summary';
+    const host = { id: 'reports-id', name: 'reports', displayName: 'Reports', url: 'https://reports.example', enabled: true,
+      skills: [{ name: 'summary', description: 'Read a prepared report', parameters: { type: 'object', properties: { document: { type: 'string' } } }, actionClass: 'read' as const }] };
+    const saveSettings = (url: string) => localStorage.setItem(workspaceStorageKey('threatcaddy-settings'), JSON.stringify({ ...DEFAULT_SETTINGS, agentHosts: [{ ...host, url }] }));
+    try {
+      // The decision table: an Enricher update of an IOC filed in P, and legacy reads of a note in P and in the local-only L.
+      await deploy('ap-ioc-enricher');
+      const crossWrite = await queue({ agentConfigId: 'ap-ioc-enricher', toolName: 'update_ioc', toolInput: { id: ids('P').ioc, confidence: 'high' } });
+      expect(errorOf(await executeApprovedAction(crossWrite))).toBe(deAgent['refusal.otherInvestigationChange']);
+      const crossRead = await queue({ toolName: 'read_note', toolInput: { id: ids('P').note } });
+      expect(errorOf(await executeApprovedAction(crossRead))).toBe(deAgent['refusal.otherInvestigationRead']);
+      const hidden = await queue({ toolName: 'read_note', toolInput: { id: ids('L').note } });
+      expect(errorOf(await executeApprovedAction(hidden))).toBe(deAgent['refusal.notInInvestigation']);
+
+      // The dispatcher: a host skill whose endpoint changed, a profile made read-only for tasks and a task escalated after the proposal.
+      saveSettings('https://reports.example');
+      const input = { document: 'fixture' };
+      const changed = await queue({ toolName: tool, toolInput: input, toolBinding: await getToolBinding({ type: 'tool_use', id: 'c', name: tool, input }, 'S') });
+      saveSettings('https://moved-reports.example');
+      expect(errorOf(await executeApprovedAction(changed))).toBe(deAgent['refusal.toolChanged'].replace('{{tool}}', tool));
+      await db.agentProfiles.add({ id: 'up-scribe', name: 'Scribe', role: 'specialist', systemPrompt: 'Takes notes.', allowedTools: ['create_task'],
+        readOnlyEntityTypes: ['task'], policy: DEFAULT_AGENT_POLICY, source: 'user', createdAt: 1, updatedAt: 1 });
+      await deploy('up-scribe');
+      const readOnly = await queue({ agentConfigId: 'up-scribe', toolName: 'create_task', toolInput: { title: 'From a read-only agent' } });
+      expect(errorOf(await executeApprovedAction(readOnly))).toBe(deAgent['refusal.readOnlyEntity']);
+      await db.tasks.update(ids('S').task, { escalated: true, rejectionCount: 3 });
+      const escalated = await queue({ toolName: 'update_task', toolInput: { id: ids('S').task, status: 'done' } });
+      expect(errorOf(await executeApprovedAction(escalated))).toBe(deAgent['refusal.taskEscalated']);
+
+      for (const row of [crossWrite, crossRead, hidden, changed, readOnly, escalated]) expect(await db.agentActions.get(row.id)).toMatchObject({ status: 'failed' });
+      expect((await db.standaloneIOCs.get(ids('P').ioc))?.confidence).toBe('medium');
+      expect((await db.tasks.get(ids('S').task))?.status).toBe('todo');
+      expect(await db.tasks.where('title').equals('From a read-only agent').count()).toBe(0);
+      expect(egress.fetches).toEqual([]);
+    } finally {
+      localStorage.removeItem(workspaceStorageKey('threatcaddy-settings'));
+      await i18n.changeLanguage('en');
+    }
+  });
+
+  it('keeps a refusal it cannot name, and an executor’s own error, as the dispatcher wrote them', async () => {
+    const untranslated = await queue({ toolName: 'read_note', toolInput: [] as unknown as Record<string, unknown> });
+    expect(errorOf(await executeApprovedAction(untranslated))).toBe('Tool input must be an object.');
+    const missing = await queue({ toolName: 'update_note', toolInput: { id: 'no-such-note', title: 'x' } });
+    expect((await executeApprovedAction(missing)).isError).toBe(true);
+    expect((await db.agentActions.get(missing.id))?.resultSummary).not.toMatch(/nothing ran/);
   });
 
   it('says in the analyst’s language that a dismissed agent’s proposal cannot run', async () => {

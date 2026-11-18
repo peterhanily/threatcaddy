@@ -363,6 +363,8 @@ describe('A4 catalogs', () => {
   const ADDED = [
     'action.lookupDestinations', 'action.lookupNone', 'action.lookupChecking', 'action.severityWarning', 'action.severityCritical', 'action.questionAcknowledged',
     'refusal.serverProposal', 'refusal.investigationUnavailable', 'refusal.profileGone', 'refusal.toolNotAllowed', 'refusal.targetMoved',
+    'refusal.otherInvestigationChange', 'refusal.otherInvestigationRead', 'refusal.notInInvestigation', 'refusal.toolChanged',
+    'refusal.readOnlyEntity', 'refusal.taskEscalated',
     'panel.roleExecutive', 'panel.roleLead', 'panel.roleSpecialist', 'panel.roleObserver',
     'panel.cycles_one', 'panel.cycles_other', 'panel.exec_one', 'panel.exec_other', 'panel.proposed_one', 'panel.proposed_other',
     'panel.tokens_one', 'panel.tokens_other', 'panel.mostUsedTool', 'panel.escalated_one', 'panel.escalated_other', 'panel.escalatedTitle',
