@@ -89,3 +89,20 @@ it.each(['file:///fictional-reference.txt', 'mailto:analyst@example.test', 'not 
   await user.click(launch);
   expect(open).not.toHaveBeenCalled();
 });
+
+it('lists MacCrab and CaddyLabs among the default quick links, after Forensicate and OpenSlaw', async () => {
+  const { DEFAULT_QUICK_LINKS } = await import('../types');
+  const titles = DEFAULT_QUICK_LINKS.map(item => item.title);
+  expect(titles.slice(-4)).toEqual(['Forensicate.ai', 'OpenSlaw.ai', 'MacCrab.com', 'CaddyLabs.io']);
+  expect(DEFAULT_QUICK_LINKS.find(item => item.title === 'MacCrab.com')?.url).toBe('https://maccrab.com');
+  expect(DEFAULT_QUICK_LINKS.find(item => item.title === 'CaddyLabs.io')?.url).toBe('https://caddylabs.io');
+  expect(new Set(DEFAULT_QUICK_LINKS.map(item => item.id)).size).toBe(DEFAULT_QUICK_LINKS.length);
+
+  render(<DashboardView links={DEFAULT_QUICK_LINKS} onUpdateLinks={vi.fn()} folders={[]} allNotes={[]} allTasks={[]}
+    allEvents={[]} allWhiteboards={[]} allIOCs={[]} showFirstRunGuide={false} />);
+  const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+  fireEvent.click(screen.getByRole('button', { name: 'MacCrab.com' }));
+  fireEvent.click(screen.getByRole('button', { name: 'CaddyLabs.io' }));
+  expect(open).toHaveBeenNthCalledWith(1, 'https://maccrab.com', '_blank', 'noopener,noreferrer');
+  expect(open).toHaveBeenNthCalledWith(2, 'https://caddylabs.io', '_blank', 'noopener,noreferrer');
+});
