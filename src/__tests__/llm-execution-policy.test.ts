@@ -15,6 +15,8 @@ import { getSupervisorToolPermission, SUPERVISOR_ACTION_PROFILE, SUPERVISOR_TOOL
 
 const call = (name: string, input: Record<string, unknown> = {}): ToolUseBlock => ({ type: 'tool_use', id: 'test-call', name, input });
 const folder = (id: string, policy?: Folder['agentPolicy']): Folder => ({ id, name: id, order: 0, createdAt: 1, status: 'active', agentPolicy: policy });
+/** The supervisor's own investigation is local-only, as 2.0.3 creates it. */
+const localOnly = (id: string, policy?: Folder['agentPolicy']): Folder => ({ ...folder(id, policy), localOnly: true });
 
 beforeEach(async () => {
   localStorage.removeItem('threatcaddy-settings');
@@ -193,12 +195,12 @@ describe('supervisor write scopes and investigation policies', () => {
   });
 
   it('requires approval for a note under the default investigation policy', async () => {
-    await db.folders.add(folder('supervisor'));
+    await db.folders.add(localOnly('supervisor'));
     expect(await getSupervisorToolPermission(call('create_note', { title: 'Summary' }), 'supervisor')).toEqual({ kind: 'approval-required', investigationId: 'supervisor' });
   });
 
   it('executes a supervisor note when its investigation approves creation', async () => {
-    await db.folders.add(folder('supervisor', { ...DEFAULT_AGENT_POLICY, autoApproveCreate: true }));
+    await db.folders.add(localOnly('supervisor', { ...DEFAULT_AGENT_POLICY, autoApproveCreate: true }));
     const result = await execTool(call('create_note', { title: 'Summary' }), 'supervisor', { surface: 'supervisor', approve: false, allowedTools: SUPERVISOR_TOOLS,
       validateScope: tool => validateSupervisorDispatch(tool, 'supervisor') });
     expect(result.isError).toBe(false);
@@ -206,14 +208,26 @@ describe('supervisor write scopes and investigation policies', () => {
   });
 
   it('accepts an analyst-approved supervisor note under the default policy', async () => {
-    await db.folders.add(folder('supervisor'));
+    await db.folders.add(localOnly('supervisor'));
     const { action } = await queueAgentAction({ investigationId: 'supervisor', threadId: 'thread', agentConfigId: SUPERVISOR_ACTION_PROFILE, toolName: 'create_note', toolInput: { title: 'Reviewed summary' }, rationale: 'Analyst review' });
     expect((await executeApprovedAction(action)).isError).toBe(false);
     expect((await db.notes.toArray())[0].folderId).toBe('supervisor');
   });
 
+  it('refuses a note or task in a supervisor investigation that can sync, even when it allows creation or the analyst approves', async () => {
+    await db.folders.add(folder('supervisor', { ...DEFAULT_AGENT_POLICY, autoApproveCreate: true }));
+    for (const name of ['create_note', 'create_task']) {
+      expect(await getSupervisorToolPermission(call(name, { title: 'Summary' }), 'supervisor'), name).toMatchObject({ kind: 'denied' });
+      const { action } = await queueAgentAction({ investigationId: 'supervisor', threadId: 'thread', agentConfigId: SUPERVISOR_ACTION_PROFILE, toolName: name, toolInput: { title: 'Reviewed summary' }, rationale: 'Analyst review' });
+      expect((await executeApprovedAction(action)).isError, name).toBe(true);
+      expect((await db.agentActions.get(action.id))?.status, name).toBe('failed');
+    }
+    expect(await db.notes.count()).toBe(0);
+    expect(await db.tasks.count()).toBe(0);
+  });
+
   it('rechecks archived investigation status before applying a reviewed supervisor action', async () => {
-    await db.folders.add(folder('supervisor'));
+    await db.folders.add(localOnly('supervisor'));
     const { action } = await queueAgentAction({ investigationId: 'supervisor', threadId: 'thread', agentConfigId: SUPERVISOR_ACTION_PROFILE, toolName: 'create_note', toolInput: { title: 'Reviewed summary' }, rationale: 'Analyst review' });
     await db.folders.update('supervisor', { status: 'archived' });
     expect((await executeApprovedAction(action)).isError).toBe(true);

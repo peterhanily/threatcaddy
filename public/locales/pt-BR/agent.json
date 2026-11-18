@@ -295,6 +295,7 @@
   "refusal.targetInvestigationUnavailable": "O que esta proposta altera está em uma investigação que foi excluída ou arquivada, então nada foi executado.",
   "refusal.supervisorIocGone": "O IOC que esta proposta atualiza foi excluído, está na lixeira ou não pertence a nenhuma investigação, então nada foi executado.",
   "refusal.supervisorLinkGone": "Algo que esta proposta vincula foi excluído, está na lixeira ou não é uma nota, tarefa ou evento de linha do tempo de uma investigação, então nada foi executado.",
+  "refusal.supervisorHomeSyncable": "Uma versão anterior propôs isto em uma investigação que pode sincronizar. Agora o supervisor grava notas e tarefas apenas na própria investigação somente local, então nada foi executado.",
   "refusal.otherInvestigationChange": "Esta proposta altera outra investigação, o que os agentes não podem fazer, então nada foi executado.",
   "refusal.otherInvestigationRead": "Esta proposta lê outra investigação, o que os agentes não podem fazer daqui, então nada foi executado.",
   "refusal.notInInvestigation": "O que esta proposta indica não está disponível nesta investigação, então nada foi executado.",

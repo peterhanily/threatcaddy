@@ -82,6 +82,11 @@ export async function getSupervisorToolPermission(
   for (const id of targetFolders) {
     const folder = await db.folders.get(id);
     if (!folder || folder.status === 'archived') return { kind: 'denied', error: 'Supervisor writes require an existing, non-archived investigation.' };
+    // A note or task can quote any investigation, local-only ones included, so
+    // it is written only in a local-only home: never in 2.0.2's, which can sync.
+    if ((toolUse.name === 'create_note' || toolUse.name === 'create_task') && !await isFolderLocalOnly(folder)) {
+      return { kind: 'denied', error: 'Supervisor notes and tasks are written only in its own local-only investigation.' };
+    }
     if (id !== supervisorFolderId || !shouldAutoApprove(toolUse.name, folder.agentPolicy ?? DEFAULT_AGENT_POLICY)) autoApprove = false;
   }
   return {

@@ -295,6 +295,7 @@
   "refusal.targetInvestigationUnavailable": "Ce que cette proposition modifie se trouve dans une enquête supprimée ou archivée : rien n'a été exécuté.",
   "refusal.supervisorIocGone": "L'IOC que cette proposition met à jour a été supprimé, se trouve dans la corbeille ou n'appartient à aucune enquête : rien n'a été exécuté.",
   "refusal.supervisorLinkGone": "Un élément que cette proposition relie a été supprimé, se trouve dans la corbeille ou n'est pas une note, une tâche ou un événement de chronologie d'une enquête : rien n'a été exécuté.",
+  "refusal.supervisorHomeSyncable": "Une version antérieure a proposé ceci dans une enquête qui peut se synchroniser. Le superviseur n'écrit désormais les notes et les tâches que dans sa propre enquête locale uniquement : rien n'a été exécuté.",
   "refusal.otherInvestigationChange": "Cette proposition modifie une autre enquête, ce que les agents ne peuvent pas faire : rien n'a été exécuté.",
   "refusal.otherInvestigationRead": "Cette proposition lit une autre enquête, ce que les agents ne peuvent pas faire d'ici : rien n'a été exécuté.",
   "refusal.notInInvestigation": "Ce que cette proposition désigne n'est pas disponible dans cette enquête : rien n'a été exécuté.",

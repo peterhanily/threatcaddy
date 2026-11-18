@@ -283,6 +283,7 @@
   "refusal.targetInvestigationUnavailable": "Yang diubah oleh usulan ini berada di investigasi yang telah dihapus atau diarsipkan, jadi tidak ada yang dijalankan.",
   "refusal.supervisorIocGone": "IOC yang diperbarui oleh usulan ini telah dihapus, ada di sampah, atau tidak berada di investigasi mana pun, jadi tidak ada yang dijalankan.",
   "refusal.supervisorLinkGone": "Sesuatu yang ditautkan oleh usulan ini telah dihapus, ada di sampah, atau bukan catatan, tugas, atau kejadian timeline di sebuah investigasi, jadi tidak ada yang dijalankan.",
+  "refusal.supervisorHomeSyncable": "Versi lama mengusulkan ini di investigasi yang dapat disinkronkan. Supervisor kini menulis catatan dan tugas hanya di investigasi lokal saja miliknya sendiri, jadi tidak ada yang dijalankan.",
   "refusal.otherInvestigationChange": "Usulan ini mengubah investigasi lain, yang tidak dapat dilakukan agen, jadi tidak ada yang dijalankan.",
   "refusal.otherInvestigationRead": "Usulan ini membaca investigasi lain, yang tidak dapat dilakukan agen dari sini, jadi tidak ada yang dijalankan.",
   "refusal.notInInvestigation": "Yang disebut oleh usulan ini tidak tersedia di investigasi ini, jadi tidak ada yang dijalankan.",

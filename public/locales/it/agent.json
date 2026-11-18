@@ -295,6 +295,7 @@
   "refusal.targetInvestigationUnavailable": "Ciò che questa proposta modifica si trova in un'indagine eliminata o archiviata, quindi non è stato eseguito nulla.",
   "refusal.supervisorIocGone": "L'IOC che questa proposta aggiorna è stato eliminato, è nel cestino o non appartiene ad alcuna indagine, quindi non è stato eseguito nulla.",
   "refusal.supervisorLinkGone": "Un elemento che questa proposta collega è stato eliminato, è nel cestino o non è una nota, un'attività o un evento timeline di un'indagine, quindi non è stato eseguito nulla.",
+  "refusal.supervisorHomeSyncable": "Una versione precedente ha proposto questo in un'indagine che può sincronizzarsi. Ora il supervisore scrive note e attività solo nella propria indagine solo locale, quindi non è stato eseguito nulla.",
   "refusal.otherInvestigationChange": "Questa proposta modifica un'altra indagine, cosa che gli agenti non possono fare, quindi non è stato eseguito nulla.",
   "refusal.otherInvestigationRead": "Questa proposta legge un'altra indagine, cosa che gli agenti non possono fare da qui, quindi non è stato eseguito nulla.",
   "refusal.notInInvestigation": "Ciò che questa proposta indica non è disponibile in questa indagine, quindi non è stato eseguito nulla.",

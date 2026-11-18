@@ -283,6 +283,7 @@
   "refusal.targetInvestigationUnavailable": "Đối tượng mà đề xuất này thay đổi nằm trong một điều tra đã bị xóa hoặc lưu trữ, nên không có gì được chạy.",
   "refusal.supervisorIocGone": "IOC mà đề xuất này cập nhật đã bị xóa, đang ở thùng rác hoặc không thuộc điều tra nào, nên không có gì được chạy.",
   "refusal.supervisorLinkGone": "Một mục mà đề xuất này liên kết đã bị xóa, đang ở thùng rác hoặc không phải là ghi chú, nhiệm vụ hay sự kiện timeline trong một điều tra, nên không có gì được chạy.",
+  "refusal.supervisorHomeSyncable": "Một phiên bản cũ hơn đã đề xuất điều này trong một điều tra có thể đồng bộ. Giờ đây tác nhân giám sát chỉ ghi ghi chú và nhiệm vụ vào điều tra chỉ cục bộ của chính nó, nên không có gì được chạy.",
   "refusal.otherInvestigationChange": "Đề xuất này thay đổi một điều tra khác, điều mà tác nhân không được làm, nên không có gì được chạy.",
   "refusal.otherInvestigationRead": "Đề xuất này đọc một điều tra khác, điều mà tác nhân không được làm từ đây, nên không có gì được chạy.",
   "refusal.notInInvestigation": "Đối tượng mà đề xuất này nêu không có trong điều tra này, nên không có gì được chạy.",
