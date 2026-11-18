@@ -208,3 +208,52 @@ test('whiteboard raster bytes, CJK fonts and locale selection work without sibli
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
   expect(failures).toEqual([]);
 });
+
+// ARTIFACTS-1: Excalidraw frames allowlisted embed links (YouTube, X, Reddit and
+// others) with no click, and the X and Reddit widgets run with this file's origin.
+test('a whiteboard holding web embeds makes no third-party request and keeps their links', async ({ page }) => {
+  const element = { angle: 0, strokeColor: '#1e1e1e', backgroundColor: 'transparent', fillStyle: 'solid', strokeWidth: 2, strokeStyle: 'solid',
+    roughness: 1, opacity: 100, groupIds: [], frameId: null, roundness: null, seed: 1, version: 1, versionNonce: 1, isDeleted: false,
+    boundElements: null, updated: 1, locked: false, y: 0, width: 400, height: 300 };
+  const embeds = [
+    { id: 'fictional-video', link: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+    { id: 'fictional-post', link: 'https://x.com/fictional/status/1' },
+    { id: 'fictional-thread', link: 'https://www.reddit.com/r/fictional/comments/abc123/fictional_thread/' },
+  ].map((embed, index) => ({ ...element, ...embed, type: 'embeddable', x: index * 420 }));
+  await page.evaluate(elements => new Promise<void>((resolve, reject) => {
+    void indexedDB.databases().then(databases => {
+      const name = databases.find(entry => entry.name?.startsWith('ThreatCaddy'))?.name;
+      if (!name) return reject(new Error('No ThreatCaddy database'));
+      const request = indexedDB.open(name);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction('whiteboards', 'readwrite');
+        transaction.objectStore('whiteboards').put({ id: 'fictional-embed-board', name: 'Embedded links board', elements: JSON.stringify(elements),
+          tags: [], order: 0, trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+        transaction.oncomplete = () => { db.close(); resolve(); };
+        transaction.onabort = () => { db.close(); reject(transaction.error); };
+      };
+    }, reject);
+  }), embeds);
+  await page.reload();
+  await navigateToView(page, 'Whiteboards');
+  await page.getByText('Embedded links board', { exact: true }).click();
+  await expect(page.getByPlaceholder('Whiteboard name')).toHaveValue('Embedded links board');
+  await expect(page.locator('.excalidraw canvas').first()).toBeVisible();
+  // The editor saves each embed as an ordinary shape that keeps its link.
+  await expect.poll(() => page.evaluate(() => new Promise<unknown>((resolve, reject) => {
+    void indexedDB.databases().then(databases => {
+      const request = indexedDB.open(databases.find(entry => entry.name?.startsWith('ThreatCaddy'))?.name ?? 'ThreatCaddyDB');
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        const read = db.transaction('whiteboards').objectStore('whiteboards').get('fictional-embed-board');
+        read.onsuccess = () => { db.close(); resolve((JSON.parse(read.result.elements) as Array<{ id: string; type: string; link: string }>).map(({ id, type, link }) => ({ id, type, link }))); };
+        read.onerror = () => { db.close(); reject(read.error); };
+      };
+    }, reject);
+  }))).toEqual(embeds.map(({ id, link }) => ({ id, type: 'rectangle', link })));
+  await expect(page.locator('.excalidraw iframe')).toHaveCount(0);
+  expect(failures).toEqual([]);
+});

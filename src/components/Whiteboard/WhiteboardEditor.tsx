@@ -15,7 +15,7 @@ import { TagInput } from '../Common/TagInput';
 import { ClsSelect } from '../Common/ClsSelect';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { cn } from '../../lib/utils';
-import { isScriptableEmbed, withoutScriptableEmbeds } from '../../lib/whiteboard-embeds';
+import { hasEmbeds, isScriptableEmbed, withoutEmbeds } from '../../lib/whiteboard-embeds';
 
 interface WhiteboardEditorProps {
   whiteboard: Whiteboard;
@@ -65,9 +65,9 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
   };
 
   const handleExcalidrawChange = useCallback((elements: readonly unknown[], appState: Record<string, unknown>, files: Record<string, unknown> = {}) => {
-    // A dropped file or library item can still add one: remove it at once.
-    if (elements.some(isScriptableEmbed)) {
-      elements = withoutScriptableEmbeds(elements);
+    // A paste, dropped file or library item can still add one: replace it at once.
+    if (hasEmbeds(elements)) {
+      elements = withoutEmbeds(elements);
       excalidrawApiRef.current?.updateScene({ elements: elements as never });
     }
     const next = {
@@ -124,7 +124,7 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
     let elements: unknown[] = [];
     let appState: Record<string, unknown> = {};
     let files: Record<string, unknown> = {};
-    try { elements = withoutScriptableEmbeds(JSON.parse(retainedElements)); } catch (e) { console.warn('Failed to parse whiteboard elements:', e); }
+    try { elements = withoutEmbeds(JSON.parse(retainedElements)); } catch (e) { console.warn('Failed to parse whiteboard elements:', e); }
     if (retainedFiles) {
       try { files = JSON.parse(retainedFiles); } catch (e) { console.warn('Failed to parse whiteboard files:', e); }
     }
@@ -247,6 +247,7 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
             initialData={initialData}
             onChange={handleExcalidrawChange as never}
             onPaste={allowPaste}
+            validateEmbeddable={false}
             UIOptions={CANVAS_UI_OPTIONS}
           >
             {/* Custom menu without social links (GitHub, X, Discord) */}

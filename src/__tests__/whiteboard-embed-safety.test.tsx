@@ -13,6 +13,7 @@ const scene = vi.hoisted(() => ({
   initialData: {} as Record<string, unknown>,
   change: undefined as Change | undefined,
   paste: undefined as Paste | undefined,
+  validateEmbeddable: undefined as unknown,
   updateScene: vi.fn(),
 }));
 vi.mock('@excalidraw/excalidraw', () => {
@@ -20,11 +21,12 @@ vi.mock('@excalidraw/excalidraw', () => {
     DefaultItems: { ClearCanvas: () => null, ChangeCanvasBackground: () => null, ToggleTheme: () => null, Help: () => null },
     Separator: () => null,
   });
-  return { MainMenu: Menu, exportToBlob: vi.fn(), Excalidraw: ({ children, onChange, onPaste, initialData, excalidrawAPI }: {
-    children?: ReactNode; onChange: Change; onPaste?: Paste; initialData: Record<string, unknown>; excalidrawAPI: (api: unknown) => void;
+  return { MainMenu: Menu, exportToBlob: vi.fn(), Excalidraw: ({ children, onChange, onPaste, initialData, excalidrawAPI, validateEmbeddable }: {
+    children?: ReactNode; onChange: Change; onPaste?: Paste; initialData: Record<string, unknown>; excalidrawAPI: (api: unknown) => void; validateEmbeddable?: unknown;
   }) => {
     scene.change = onChange;
     scene.paste = onPaste;
+    scene.validateEmbeddable = validateEmbeddable;
     scene.initialData = initialData;
     excalidrawAPI({ updateScene: scene.updateScene });
     return <div>{children}</div>;
@@ -35,8 +37,11 @@ vi.mock('@excalidraw/excalidraw', () => {
 const hostileFrame = { id: 'hostile', type: 'iframe', x: 0, y: 0, width: 400, height: 300, isDeleted: false,
   customData: { generationData: { status: 'done', html: '<script>parent.postMessage("pwned", "*")</script><form>Re-enter your API key</form>' } } };
 const rectangle = { id: 'shape', type: 'rectangle', x: 0, y: 0, width: 10, height: 10, isDeleted: false };
-const videoEmbed = { id: 'video', type: 'embeddable', x: 0, y: 0, width: 560, height: 315, isDeleted: false, link: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' };
+// Excalidraw frames allowlisted embeddable links (YouTube, X, Reddit and others) without a click.
+const videoEmbed = { id: 'video', type: 'embeddable', x: 0, y: 0, width: 560, height: 315, isDeleted: false, link: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' };
+const postEmbed = { id: 'post', type: 'embeddable', x: 600, y: 0, width: 400, height: 300, isDeleted: false, link: 'https://x.com/fictional/status/1' };
 const ids = (elements: unknown) => (elements as Array<{ id: string }>).map(element => element.id);
+const shapes = (elements: unknown) => (elements as Array<{ id: string; type: string; link?: string | null }>).map(({ id, type, link }) => ({ id, type, link }));
 
 function whiteboard(elements: unknown[]): Whiteboard {
   return { id: `embed-board-${crypto.randomUUID()}`, name: 'Shared board', elements: JSON.stringify(elements), tags: [],
@@ -50,12 +55,44 @@ async function persist(id: string, patch: Partial<Whiteboard>) {
 beforeEach(async () => { scene.updateScene.mockClear(); await db.whiteboards.clear(); });
 afterEach(async () => { cleanup(); await flushEntityDrafts(); });
 
-describe('WhiteboardEditor scriptable embeds', () => {
+describe('WhiteboardEditor embeds', () => {
   it('never hands a stored iframe element to the canvas, whatever delivered it', async () => {
-    const board = whiteboard([rectangle, hostileFrame, videoEmbed]);
+    const board = whiteboard([rectangle, hostileFrame]);
     await db.whiteboards.add(board);
     render(<WhiteboardEditor {...props} whiteboard={board} onUpdate={persist} />, { wrapper: ToastProvider });
-    expect(ids(scene.initialData.elements)).toEqual(['shape', 'video']);
+    expect(ids(scene.initialData.elements)).toEqual(['shape']);
+  });
+
+  it('frames no web embed, and turns a stored one into a shape that keeps its link', async () => {
+    const board = whiteboard([rectangle, videoEmbed, postEmbed]);
+    await db.whiteboards.add(board);
+    render(<WhiteboardEditor {...props} whiteboard={board} onUpdate={persist} />, { wrapper: ToastProvider });
+    expect(scene.validateEmbeddable).toBe(false);
+    expect(shapes(scene.initialData.elements)).toEqual([
+      { id: 'shape', type: 'rectangle', link: undefined },
+      { id: 'video', type: 'rectangle', link: videoEmbed.link },
+      { id: 'post', type: 'rectangle', link: postEmbed.link },
+    ]);
+  });
+
+  it('turns a pasted, dropped or synced web embed into a linked shape and never saves the embed', async () => {
+    const board = whiteboard([rectangle]);
+    await db.whiteboards.add(board);
+    const update = vi.fn(persist);
+    render(<WhiteboardEditor {...props} whiteboard={board} onUpdate={update} />, { wrapper: ToastProvider });
+    expect(await scene.paste?.({ elements: [rectangle, videoEmbed] }, null)).toBe(true);
+    act(() => { scene.change?.([rectangle, videoEmbed], { zoom: { value: 1 }, scrollX: 0, scrollY: 0, theme: 'dark' }, {}); });
+    expect(scene.updateScene).toHaveBeenCalledTimes(1);
+    expect(shapes(scene.updateScene.mock.calls[0][0].elements)).toEqual([
+      { id: 'shape', type: 'rectangle', link: undefined },
+      { id: 'video', type: 'rectangle', link: videoEmbed.link },
+    ]);
+    await act(async () => { await flushEntityDrafts(); });
+    const saved = await db.whiteboards.get(board.id);
+    expect(shapes(JSON.parse(saved?.elements ?? 'null'))).toEqual([
+      { id: 'shape', type: 'rectangle', link: undefined },
+      { id: 'video', type: 'rectangle', link: videoEmbed.link },
+    ]);
   });
 
   it('rejects a pasted scene that carries an iframe element', async () => {
