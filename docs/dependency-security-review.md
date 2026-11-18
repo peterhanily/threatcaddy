@@ -39,17 +39,27 @@ the first path it finds, development paths first, and marks no path as
 development; only the Excalidraw path above is accepted. pnpm's own
 `auditConfig.ignoreGhsas` would hide the advisory before any of this is
 checked, and a pnpmfile's `updateConfig` hook can set it. The CI contract test
-therefore forbids pnpm audit settings, pnpmfiles, and npm or pnpm settings in
-the workflow or audit job environment. An ignored advisory still counts in the
+therefore forbids pnpm audit settings and pnpmfiles. It also forbids npm or pnpm
+settings and `NODE_ENV` in the workflow, audit job and audit step environment,
+and an `.npmrc` written by the step. An ignored advisory still counts in the
 registry's summary, which counts each finding path, so the root high and
-critical counts must equal the listed findings. `pnpm audit --ignore` does not
-audit at all: it writes the id into `auditConfig.ignoreCves`, which matches CVE
-ids only. npm 11 has no per-advisory ignore.
+critical counts must equal the listed findings. The registry also counts each
+audited package version once, so the root report must cover every package that
+`pnpm-lock.yaml` locks. A production-only root audit covers 278 of 878 and
+fails, although it still lists the Excalidraw path. npm's summary does not show
+omitted dependency types, so for the server and extension only the contract
+test prevents a narrowed audit. `pnpm audit --ignore` does not audit at all: it
+writes the id into `auditConfig.ignoreCves`, which matches CVE ids only. npm 11
+has no per-advisory ignore.
 
 The scheduled CI run audits all three lockfiles again every Monday. Maintainers
 also recheck the advisory and picomatch releases weekly and update the review
-date. Once a fixed picomatch has passed the seven-day release window, update
-both lockfiles and delete the exception.
+date. CI fails as soon as a fixed picomatch is published or the advisory
+records a patched version, and every pull request and main push is blocked
+until both lockfiles are updated and the exception is deleted. Either update at
+once, recording a dated exception to the seven-day release window as for Hono
+4.13.18 below, or leave publication blocked until the release has passed that
+window.
 
 ## 15 November 2026 Hono update
 
