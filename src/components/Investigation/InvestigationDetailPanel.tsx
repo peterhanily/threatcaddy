@@ -115,7 +115,7 @@ export function InvestigationDetailPanel({
   }, [handleKeyDown]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Investigation details">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label={t('detail.title')}>
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto mx-4">
         {/* Header */}
@@ -125,7 +125,7 @@ export function InvestigationDetailPanel({
           <button
             onClick={onClose}
             className="p-1.5 rounded hover:bg-gray-800 text-gray-400 hover:text-gray-200"
-            aria-label="Close"
+            aria-label={t('close', { ns: 'common' })}
           >
             <X size={18} />
           </button>

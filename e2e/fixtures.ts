@@ -1,4 +1,12 @@
 import { type Page, expect } from '@playwright/test';
+import { readdirSync, readFileSync } from 'node:fs';
+
+// The main view's Suspense fallback in every language the app ships.
+const localeRoot = new URL('../public/locales/', import.meta.url);
+const loadingTexts = readdirSync(localeRoot).map(language =>
+  (JSON.parse(readFileSync(new URL(`${language}/common.json`, localeRoot), 'utf8')) as Record<string, string>).loadingView);
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const LOADING_VIEW = new RegExp(`^(?:${loadingTexts.map(escapeRegExp).join('|')})$`);
 
 /**
  * Dismiss any first-time modals/overlays that may appear on fresh load.
@@ -17,7 +25,7 @@ export async function dismissInitialOverlays(page: Page) {
 
 /**
  * Wait until the analyst shell has finished loading its main view. The header
- * can render while the main view's Suspense fallback ("Loading…") still waits
+ * can render while the main view's Suspense fallback ("Loading…", translated) still waits
  * for lazy views, including the always-mounted CaddyAI chat view and its
  * separately fetched chat locale. WebKit reports an intercepted request that a
  * reload or navigation cancels as a page error, so settle startup before either.
@@ -25,7 +33,7 @@ export async function dismissInitialOverlays(page: Page) {
  */
 export async function waitForAppReady(page: Page) {
   await expect(page.locator('[data-tour="header"]')).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText('Loading…', { exact: true })).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.getByText(LOADING_VIEW)).toHaveCount(0, { timeout: 15_000 });
 }
 
 /**

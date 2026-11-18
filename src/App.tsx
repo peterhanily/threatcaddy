@@ -1554,7 +1554,7 @@ const AppInner = memo(function AppInner({
       <InvestigationVisibilityScope folders={folders} tags={tags}>
       <ActivityLogContext.Provider value={activityLog.log}>
         <ErrorBoundary region="exec-dashboard">
-        <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500">Loading…</div>}>
+        <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500">{tCommon('loadingView')}</div>}>
         <ExecDashboard
           notice={<><OfflineStatusNotice />{syncError && <SyncErrorBanner error={syncError} />}</>}
           folders={folders}
@@ -1605,26 +1605,35 @@ const AppInner = memo(function AppInner({
       {showFileEncryptionWarning && !fileEncryptionDismissed && (
         <div className="bg-yellow-900/30 border-b border-yellow-700/40 px-3 py-2 flex items-center justify-between text-xs shrink-0 gap-3">
           <span className="text-yellow-300">
-            Running standalone on file:// without encryption. Other local HTML files can access your data.
-            Content Security Policy is not enforced in standalone mode.{' '}
+            {tCommon('standaloneWarning.message')}{' '}
             <button
               onClick={() => { openSettings(); }}
               className="underline text-yellow-200 font-medium"
             >
-              Enable encryption
-            </button>{' '}
-            in Settings to protect it.
+              {tCommon('standaloneWarning.enableEncryption')}
+            </button>
           </span>
           <button
             onClick={dismissFileEncryptionWarning}
             className="text-yellow-400 hover:text-yellow-200 font-medium whitespace-nowrap"
           >
-            Dismiss
+            {tCommon('dismiss')}
           </button>
         </div>
       )}
       <AppLayout
-        notice={<><OfflineStatusNotice />{syncError && <SyncErrorBanner error={syncError} />}</>}
+        notice={<><OfflineStatusNotice />{syncError && <SyncErrorBanner error={syncError} />}
+          {/* Above the workspace: <main> lays its children out in a row. */}
+          {productDraftFolderId && !productComposerActive && !screenshareMaxLevel && (
+            <div role="status" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border-subtle bg-bg-surface px-4 py-2 text-sm text-text-secondary">
+              <span>{tCommon('productDraft.retained')}</span>
+              <button className="min-h-11 rounded border border-border-medium px-3 py-2 hover:bg-bg-hover" onClick={() => {
+                ctxHandleOpenInvestigation(productDraftFolderId, 'local');
+                setShowTrash(false); setShowArchive(false);
+                navigateTo('products', { selectedFolderId: productDraftFolderId });
+              }}>{tCommon('productDraft.resume')}</button>
+            </div>
+          )}</>}
         bgImageEnabled={settings.bgImageEnabled}
         bgImageOpacity={settings.bgImageOpacity}
         bgImagePosX={settings.bgImagePosX}
@@ -1670,17 +1679,7 @@ const AppInner = memo(function AppInner({
         }
       >
         <ErrorBoundary region="main-content">
-        <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500">Loading…</div>}>
-        {productDraftFolderId && !productComposerActive && !screenshareMaxLevel && (
-          <div role="status" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border-subtle bg-bg-surface px-4 py-2 text-sm text-text-secondary">
-            <span>Unsaved product draft retained in this tab.</span>
-            <button className="min-h-11 rounded border border-border-medium px-3 py-2 hover:bg-bg-hover" onClick={() => {
-              ctxHandleOpenInvestigation(productDraftFolderId, 'local');
-              setShowTrash(false); setShowArchive(false);
-              navigateTo('products', { selectedFolderId: productDraftFolderId });
-            }}>Resume draft</button>
-          </div>
-        )}
+        <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500">{tCommon('loadingView')}</div>}>
         {screenshareViewHidden && (
           <div role="status" className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-text-secondary">
             <p>{tCommon('screenshare.viewHidden')}</p>
@@ -1691,13 +1690,13 @@ const AppInner = memo(function AppInner({
         <div className={(activeView === 'graph' || activeView === 'chat' || activeView === 'products') && !showSettings && !showTrash && !showArchive ? 'hidden' : 'flex flex-col flex-1 overflow-hidden'}>
         {filterBar}
         {investigationMode === 'remote' && selectedFolderId && (
-          <div className="mx-4 mt-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm flex items-center justify-between">
-            <span>Viewing remote investigation — data is not stored locally</span>
+          <div className="mx-4 mt-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm flex items-center justify-between gap-3">
+            <span>{tInvestigations('remote.viewingBanner')}</span>
             <button
               onClick={() => handleSyncLocally(selectedFolderId)}
-              className="text-xs px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 transition-colors"
+              className="shrink-0 text-xs px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 transition-colors"
             >
-              Sync locally
+              {tInvestigations('card.syncLocally')}
             </button>
           </div>
         )}

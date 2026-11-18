@@ -18,6 +18,7 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
   const inputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
   const { t: tt } = useTranslation('toast');
+  const { t: tCommon } = useTranslation('common');
 
   const filteredTags = allTags.filter(
     (t) =>
@@ -95,7 +96,7 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
               style={{ backgroundColor: (tagObj?.color || '#6366f1') + '20' }}
             >
               {tag}
-              <button onClick={() => removeTag(tag)} className="hover:opacity-70" aria-label={`Remove tag ${tag}`}>
+              <button onClick={() => removeTag(tag)} className="hover:opacity-70" aria-label={tCommon('tagInput.removeLabel', { name: tag })}>
                 <X size={12} />
               </button>
             </span>
@@ -112,9 +113,9 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
               onFocus={() => setShowDropdown(true)}
               onBlur={() => setTimeout(() => { setShowDropdown(false); setHighlightIdx(-1); }, 200)}
               onKeyDown={handleKeyDown}
-              placeholder="Add tag..."
-              className="w-20 bg-transparent border-none text-xs text-gray-300 placeholder-gray-500 focus:outline-none"
-              aria-label="Add tag"
+              placeholder={tCommon('tagInput.addPlaceholder')}
+              className="w-36 bg-transparent border-none text-xs text-gray-300 placeholder-gray-500 focus:outline-none"
+              aria-label={tCommon('tagInput.addLabel')}
               role="combobox"
               aria-expanded={showDropdown && filteredTags.length > 0}
               aria-autocomplete="list"

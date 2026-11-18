@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { goToApp } from './fixtures';
 
 test.use({ serviceWorkers: 'block' });
@@ -37,4 +38,32 @@ test('goToApp returns only after the lazy chat locale request has finished', asy
   await ready;
   expect(finished).toHaveLength(1);
   await expect(page.getByText('Loading…', { exact: true })).toHaveCount(0);
+});
+
+// The fallback is translated, so a check for the English text alone returns early in other languages.
+test('goToApp also waits for the main view in the analyst\'s language', async ({ page }) => {
+  const loading = (JSON.parse(readFileSync(new URL('../public/locales/de/common.json', import.meta.url), 'utf8')) as Record<string, string>).loadingView;
+  await page.addInitScript(() => {
+    localStorage.setItem('threatcaddy-settings', JSON.stringify({ language: 'de', tiAutoExtractEnabled: false }));
+  });
+  let requested!: () => void;
+  const chatRequested = new Promise<void>(resolve => { requested = resolve; });
+  let release!: () => void;
+  const held = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/locales/de/chat.json', async route => {
+    requested();
+    await held;
+    await route.continue();
+  });
+
+  const ready = goToApp(page);
+  await chatRequested;
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+  await expect(page.getByText(loading, { exact: true })).toBeVisible();
+  const outcome = await Promise.race([ready.then(() => 'returned'), page.waitForTimeout(1_000).then(() => 'pending')]);
+  expect(outcome).toBe('pending');
+
+  release();
+  await ready;
+  await expect(page.getByText(loading, { exact: true })).toHaveCount(0);
 });
