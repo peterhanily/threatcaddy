@@ -1324,8 +1324,9 @@ export async function importJSON(json: string, password?: string): Promise<JSONI
 }
 
 export async function exportInvestigationJSON(folderId: string): Promise<string> {
-  // Supervisor rows written before 2.0.3 can hold its cross-investigation reasoning;
-  // only the supervisor's own investigation keeps it.
+  // Supervisor rows written before 2.0.3 can hold its cross-investigation reasoning,
+  // and a proposal's input can quote any investigation; only the supervisor's own
+  // investigation keeps them. Elsewhere a proposal that never ran keeps no input.
   const supervisorRationale = (await findSupervisorFolder())?.id === folderId ? undefined : await supervisorProposalRationale();
   return db.transaction('r', [...Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), db.tags], async () => {
   const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards, allIOCs, allEvidenceItems, allChats, allAgentActions, allAgentDeployments, allAgentMeetings, allAgentProfiles] = await Promise.all([
@@ -1383,7 +1384,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     evidenceItems: evidenceItems.length > 0 ? evidenceItems : undefined,
     chatThreads: allChats,
     agentActions: allAgentActions.length > 0 ? allAgentActions.map(action => supervisorRationale && action.agentConfigId === SUPERVISOR_ACTION_PROFILE
-      ? { ...action, rationale: supervisorRationale } : action) : undefined,
+      ? { ...action, rationale: supervisorRationale, ...(action.status === 'executed' ? {} : { toolInput: {} }) } : action) : undefined,
     agentDeployments: allAgentDeployments.length > 0 ? allAgentDeployments : undefined,
     agentMeetings: allAgentMeetings.length > 0 ? allAgentMeetings : undefined,
     agentProfiles: allAgentProfiles.filter(profile => allAgentDeployments.some(deployment => deployment.profileId === profile.id)),

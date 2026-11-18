@@ -105,6 +105,31 @@ describe('a supervisor proposal in another investigation', () => {
     for (const needle of [LOCAL, PRIVATE, FIXED]) expect(JSON.stringify(sThreads)).not.toContain(needle);
     expect(await syncQueueContains(LOCAL)).toBe(false);
   });
+
+  it('leaves that investigation\'s export when its input quotes what the supervisor read', async () => {
+    scriptedLLM.script(
+      { toolCalls: [{ name: 'search_across_investigations', input: { query: 'Evidence' } }] },
+      {
+        text: 'Overlap found.',
+        get toolCalls() {
+          const seen = (toolResultsSeen().match(/Evidence CANARY-[A-Z0-9]+/g) ?? []).join('; ');
+          return [{ name: 'update_ioc', input: { id: ids('S').ioc, analystNotes: `Also seen: ${seen}` } }];
+        },
+      },
+    );
+    expect((await runSupervisorCycle(settings, true)).error).toBeUndefined();
+    const [row] = await db.agentActions.where('investigationId').equals('S').toArray();
+    expect(JSON.stringify(row.toolInput)).toContain(LOCAL);
+
+    for (const step of ['pending', 'rejected']) {
+      if (step === 'rejected') await rejectAction(row.id);
+      const exported = await exportInvestigationJSON('S');
+      expect(exported, step).not.toContain(LOCAL);
+      expect(exported, step).not.toContain(PRIVATE);
+    }
+    // The analyst still sees the whole proposal.
+    expect(JSON.stringify((await db.agentActions.get(row.id))?.toolInput)).toContain(LOCAL);
+  });
 });
 
 describe('list_agent_activity', () => {
@@ -140,9 +165,31 @@ describe('the investigation export', () => {
     expect((await db.agentActions.get('old-in-s'))?.rationale).toContain(LOCAL);
   });
 
+  it('drops the input of a supervisor proposal that never ran there, and keeps what ran', async () => {
+    const quoting = { id: ids('S').ioc, analystNotes: `Seen in ${LOCAL}` };
+    await db.agentActions.bulkAdd([
+      supervisorRow('sup-pending', 'S', { status: 'pending', toolInput: quoting }),
+      supervisorRow('sup-approved', 'S', { status: 'approved', toolInput: quoting }),
+      supervisorRow('sup-rejected', 'S', { status: 'rejected', toolInput: quoting }),
+      supervisorRow('sup-failed', 'S', { status: 'failed', toolInput: quoting }),
+      supervisorRow('sup-executed', 'S', { status: 'executed', toolInput: { id: ids('S').ioc, analystNotes: 'Applied by the analyst' } }),
+      { id: 'agent-pending', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'create_note', toolInput: { title: 'Agent input stays' }, rationale: 'r', status: 'pending', createdAt: 1 },
+    ]);
+    const exported = JSON.parse(await exportInvestigationJSON('S')) as { agentActions: AgentAction[] };
+    expect(JSON.stringify(exported)).not.toContain(LOCAL);
+    const input = (id: string) => exported.agentActions.find(action => action.id === id)?.toolInput;
+    for (const id of ['sup-pending', 'sup-approved', 'sup-rejected', 'sup-failed']) expect(input(id), id).toEqual({});
+    expect(input('sup-executed')).toEqual({ id: ids('S').ioc, analystNotes: 'Applied by the analyst' });
+    expect(input('agent-pending')).toEqual({ title: 'Agent input stays' });
+    // The stored row is not changed.
+    expect((await db.agentActions.get('sup-pending'))?.toolInput).toEqual(quoting);
+  });
+
   it('keeps it in the supervisor investigation\'s own file', async () => {
+    await db.agentActions.add(supervisorRow('own-pending', 'SUP', { status: 'pending', toolName: 'create_note', toolInput: { title: `Findings ${LOCAL}` } }));
     const exported = JSON.parse(await exportInvestigationJSON('SUP')) as { agentActions: AgentAction[] };
     expect(exported.agentActions.find(action => action.id === 'old-own')?.rationale).toContain(LOCAL);
+    expect(exported.agentActions.find(action => action.id === 'own-pending')?.toolInput).toEqual({ title: `Findings ${LOCAL}` });
   });
 
   it('drops it from an older synced supervisor investigation, which is an ordinary one now', async () => {
