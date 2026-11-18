@@ -3,6 +3,64 @@
 Keep the complete audit and publication gates enabled. Settings, repository
 changes, published artifacts and running server deployments are separate states.
 
+## 18 November 2026 picomatch audit exception
+
+GitHub reviewed [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
+on 17 November: picomatch backtracks exponentially on single-branch repeated
+extglobs such as `+(*)` (ReDoS, CWE-1333, CVSS 7.5, high). Every release up to
+4.0.7, the latest, is affected, and no patched version exists. npm's only
+suggested fix downgrades Vitest to 3.1.4, against the exact 5.0.5 alignment
+below. Since then the root and server audits report it and exit 1; the
+extension audit is clean.
+
+This advisory is the only exception. `scripts/dependency-audit-exceptions.json`
+lists it for the root and server audits with its reason, review date and end
+condition. picomatch matches glob patterns that this repository controls, in
+lint, build and test tooling: TypeScript ESLint, tinyglobby, fdir, Rollup plugin
+utilities, Vite and Vitest. In the server it is a development dependency only.
+The runtime image installs production dependencies, removes npm and is scanned
+separately by Trivy. The root lockfile also classifies one path as production:
+Excalidraw declares Sass as a dependency, and Sass's optional `@parcel/watcher` uses
+picomatch only for Sass's `--watch` command. ThreatCaddy has no Sass sources,
+and the client bundle contains none of these three packages.
+
+The audit commands are unchanged: complete graphs, `--audit-level=high`, no
+omitted dependency types and no tolerance for registry errors.
+`scripts/ci-dependency-audit.mjs` reads their JSON output. It accepts a failing
+audit only when every high or critical advisory is listed for that project and
+still matches its review. The job fails on any other high or critical advisory,
+on an audit or registry error, when the advisory's range or severity changes,
+and once it is no longer reported. It fails once a fix exists: pnpm reports a
+patched version, or npm finds a published picomatch outside the range. It also
+fails when the advisory reaches production by another path. For the server,
+every reported location must be `dev: true` in `server/package-lock.json`. For
+the root, the check walks `pnpm-lock.yaml`, because pnpm's report lists only
+the first path it finds, development paths first, and marks no path as
+development; only the Excalidraw path above is accepted. pnpm's own
+`auditConfig.ignoreGhsas` would hide the advisory before any of this is
+checked, and a pnpmfile's `updateConfig` hook can set it. The CI contract test
+therefore forbids pnpm audit settings and pnpmfiles. It also forbids npm or pnpm
+settings and `NODE_ENV` in the workflow, audit job and audit step environment,
+and an `.npmrc` written by the step. An ignored advisory still counts in the
+registry's summary, which counts each finding path, so the root high and
+critical counts must equal the listed findings. The registry also counts each
+audited package version once, so the root report must cover every package that
+`pnpm-lock.yaml` locks. A production-only root audit covers 278 of 878 and
+fails, although it still lists the Excalidraw path. npm's summary does not show
+omitted dependency types, so for the server and extension only the contract
+test prevents a narrowed audit. `pnpm audit --ignore` does not audit at all: it
+writes the id into `auditConfig.ignoreCves`, which matches CVE ids only. npm 11
+has no per-advisory ignore.
+
+The scheduled CI run audits all three lockfiles again every Monday. Maintainers
+also recheck the advisory and picomatch releases weekly and update the review
+date. CI fails as soon as a fixed picomatch is published or the advisory
+records a patched version, and every pull request and main push is blocked
+until both lockfiles are updated and the exception is deleted. Either update at
+once, recording a dated exception to the seven-day release window as for Hono
+4.13.18 below, or leave publication blocked until the release has passed that
+window.
+
 ## 15 November 2026 Hono update
 
 The server's Hono dependency is pinned to exactly 4.13.18, the maintainer's
@@ -55,20 +113,22 @@ claim that future advisories cannot affect the lockfiles.
 
 ## Remaining dependency advisories
 
-Server and extension audits are clean. The root full audit still reports four
-moderate occurrences and one low occurrence across these build-time packages:
+On 18 November 2026 the extension audit is clean, and the server audit reports
+only the excepted picomatch advisory. The root full audit reports that advisory
+and two moderate advisories, minimatch and glob below; deepmerge is no longer
+reported. These build-time packages remain under review:
 
 | Package/advisory | Reachability and remaining action |
 | --- | --- |
 | [minimatch / GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) | ESLint, TypeScript ESLint and Workbox consume repository-controlled patterns. The advisory concerns amplification with optimization level 2. Fixed 11.x is incompatible with several 3.x/5.x callers. Await compatible parent updates/backports; do not globally force 11.x. |
 | [glob / GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4) | Workbox enumerates local build files with glob 11.x. Cancellation may fail to stop traversal; fixed in 14.0.2. Latest Workbox 7.4.1 still requires 11.x. Await a supported parent update. |
-| [deepmerge / GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4) | Workbox's Rollup node-resolve plugin merges build configuration. Latest deepmerge 4.3.1 has no published patch. Await an upstream fix or reviewed parent replacement. |
 
 These packages are not imported by application/server request handlers. Build
 inputs/configuration must remain trusted; CI jobs retain their time limits.
 This is a scoped exposure assessment, not a claim the dependencies are patched.
-Leave alerts open and recheck weekly. No severity threshold, development-package
-coverage or audit failure handling is relaxed, and no advisory is ignored.
+Leave alerts open and recheck weekly. No severity threshold or development-package
+coverage is relaxed, and audit and registry errors still fail. No advisory is
+ignored except the reviewed picomatch exception above, which CI rechecks on every run.
 
 ## CodeQL triage
 

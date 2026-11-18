@@ -3,7 +3,7 @@ import test from 'node:test';
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { load } from 'js-yaml';
 
 const root = new URL('../', import.meta.url);
@@ -223,6 +223,64 @@ test('npm audit and install jobs select the manifest-pinned npm first', () => {
     assert.ok(selection >= 0 && usage > selection, `${name} must select npm before using a project lockfile`);
     assert.equal(steps[selection]['continue-on-error'], undefined);
     assert.equal(steps[selection].if, name === 'audit' ? "matrix.project != 'root'" : undefined);
+  }
+});
+
+test('dependency audits keep full high-severity coverage; only the reviewed-exception check can pass a failing audit', t => {
+  const steps = stepsOf(verify.jobs.audit);
+  const step = steps.find(candidate => candidate.name === 'Audit the complete lockfile (high and critical block publication)');
+  assert.ok(step);
+  assert.equal(step.shell, 'bash');
+  assert.deepEqual(step.env, { PROJECT: expression('matrix.project') });
+  assert.equal(step.if, undefined);
+  assert.match(step.run, /^set -euo pipefail$/m);
+  assert.match(step.run, /^ *pnpm audit --audit-level=high --json > dependency-audit\.json \|\| status=\$\?$/m);
+  assert.match(step.run, /^ *npm --prefix "\$PROJECT" audit --audit-level=high --json > dependency-audit\.json \|\| status=\$\?$/m);
+  assert.match(step.run, /^node scripts\/ci-dependency-audit\.mjs "\$PROJECT" dependency-audit\.json "\$status"$/m);
+  assert.doesNotMatch(step.run, /--omit|--prod\b|\s-P\b|--ignore|--only|--audit-level=(?!high\b)|\|\| true|continue-on-error|npmrc/);
+  const evidence = steps.find(candidate => candidate.uses?.startsWith('actions/upload-artifact@'));
+  assert.equal(evidence.if, 'always()');
+  assert.equal(evidence.with.path, 'dependency-audit.json');
+  // pnpm's own ignore settings drop an advisory before the check can test its conditions;
+  // a pnpmfile's updateConfig hook can set them, and environment settings (npm or pnpm
+  // settings, or NODE_ENV=production for npm) can narrow the audit.
+  const workspace = load(read('pnpm-workspace.yaml'));
+  for (const key of ['auditConfig', 'pnpmfile', 'globalPnpmfile', 'configDependencies']) assert.equal(workspace[key], undefined, key);
+  assert.equal(existsSync(new URL('.pnpmfile.cjs', root)), false);
+  assert.equal(JSON.parse(read('package.json')).pnpm, undefined);
+  for (const env of [verify.env, verify.jobs.audit.env]) {
+    assert.deepEqual(Object.keys(env ?? {}).filter(name => /^(?:p?npm_config_|NODE_ENV$)/i.test(name)), []);
+  }
+  for (const path of ['.npmrc', 'server/.npmrc', 'extension/.npmrc']) {
+    if (existsSync(new URL(path, root))) assert.doesNotMatch(read(path), /audit|omit|production|only|pnpmfile/i);
+  }
+
+  // Run the actual step: one package-manager call, without npm or pnpm settings or NODE_ENV in its
+  // environment; the unfiltered output and exit status reach the check, whose result is the step's.
+  for (const project of verify.jobs.audit.strategy.matrix.project) {
+    for (const [auditStatus, checkStatus] of [[1, 0], [0, 0], [1, 1], [0, 1], [7, 1]]) {
+      const folder = temporaryDirectory(t);
+      for (const tool of ['pnpm', 'npm']) {
+        writeFileSync(join(folder, tool), `#!/bin/sh\nprintf '%s\\n' "${tool} $*" >> audit-command.txt\nenv >> audit-environment.txt\nprintf '{"fixture":"audit"}\\n'\nexit ${auditStatus}\n`, { mode: 0o700 });
+      }
+      mkdirSync(join(folder, 'scripts'));
+      writeFileSync(join(folder, 'scripts/ci-dependency-audit.mjs'), `import { readFileSync, writeFileSync } from 'node:fs';
+writeFileSync('check.json', JSON.stringify({ args: process.argv.slice(2), report: readFileSync(process.argv[3], 'utf8') }));
+process.exit(${checkStatus});
+`);
+      let status = 0;
+      try {
+        execFileSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', step.run], {
+          cwd: folder, env: { PATH: `${folder}:${dirname(process.execPath)}:${process.env.PATH}`, PROJECT: project }, stdio: ['ignore', 'pipe', 'pipe'],
+        });
+      } catch (error) { status = error.status; }
+      assert.equal(status, checkStatus, `${project}: audit ${auditStatus}, check ${checkStatus}`);
+      assert.equal(readFileSync(join(folder, 'audit-command.txt'), 'utf8').trim(),
+        project === 'root' ? 'pnpm audit --audit-level=high --json' : `npm --prefix ${project} audit --audit-level=high --json`);
+      assert.doesNotMatch(readFileSync(join(folder, 'audit-environment.txt'), 'utf8'), /^(?:p?npm_config_|NODE_ENV=)/im, project);
+      assert.deepEqual(JSON.parse(readFileSync(join(folder, 'check.json'), 'utf8')),
+        { args: [project, 'dependency-audit.json', String(auditStatus)], report: '{"fixture":"audit"}\n' });
+    }
   }
 });
 

@@ -15,7 +15,7 @@ At minimum, run the relevant unit tests, `pnpm lint`, `pnpm locales:check`, `pnp
 - Use existing components, TypeScript types and localization patterns. Add keys and matching parameters to every supported app or extension locale. Structural locale checks do not replace fluent-language review.
 - Keep migrations append-only. Use disposable synthetic databases and exercise upgrades, restart and recovery. Never run the integration harness against retained or production data.
 - Keep network, native-permission and deployment effects explicit. Tests should use synthetic local fixtures and inert providers; never use a normal browser profile or live credentials.
-- For dependencies, inspect the complete audit report and release compatibility. Do not suppress an advisory or force a major transitive upgrade just to obtain a green audit.
+- For dependencies, inspect the complete audit report and release compatibility. Do not suppress an advisory or force a major transitive upgrade just to obtain a green audit. An advisory with no fixed release is excepted only through `scripts/dependency-audit-exceptions.json`, with a dated review in the [dependency review](docs/dependency-security-review.md).
 
 ## Before opening a pull request
 
