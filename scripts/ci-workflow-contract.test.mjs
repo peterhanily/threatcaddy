@@ -241,11 +241,17 @@ test('dependency audits keep full high-severity coverage; only the reviewed-exce
   const evidence = steps.find(candidate => candidate.uses?.startsWith('actions/upload-artifact@'));
   assert.equal(evidence.if, 'always()');
   assert.equal(evidence.with.path, 'dependency-audit.json');
-  // pnpm's own ignore settings drop an advisory before the check can test its conditions.
-  assert.equal(load(read('pnpm-workspace.yaml')).auditConfig, undefined);
+  // pnpm's own ignore settings drop an advisory before the check can test its conditions;
+  // a pnpmfile's updateConfig hook can set them, and environment settings can narrow the audit.
+  const workspace = load(read('pnpm-workspace.yaml'));
+  for (const key of ['auditConfig', 'pnpmfile', 'globalPnpmfile', 'configDependencies']) assert.equal(workspace[key], undefined, key);
+  assert.equal(existsSync(new URL('.pnpmfile.cjs', root)), false);
   assert.equal(JSON.parse(read('package.json')).pnpm, undefined);
+  for (const env of [verify.env, verify.jobs.audit.env]) {
+    assert.deepEqual(Object.keys(env ?? {}).filter(name => /^p?npm_config_/i.test(name)), []);
+  }
   for (const path of ['.npmrc', 'server/.npmrc', 'extension/.npmrc']) {
-    if (existsSync(new URL(path, root))) assert.doesNotMatch(read(path), /audit|omit|production|only/i);
+    if (existsSync(new URL(path, root))) assert.doesNotMatch(read(path), /audit|omit|production|only|pnpmfile/i);
   }
 
   // Run the actual step: the unfiltered audit output and its exit status reach the check,
