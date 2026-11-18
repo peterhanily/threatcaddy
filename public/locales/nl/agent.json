@@ -168,7 +168,7 @@
   "dashboard.pendingCount": "{{count}} in behandeling",
   "dashboard.getStarted": "Aan de slag met AgentCaddy",
   "dashboard.step1": "Open een onderzoek en ga naar het tabblad <strong>AgentCaddy</strong>",
-  "dashboard.step2": "<strong>Implementeer agenten</strong> — kies uit 17 gespecialiseerde profielen (CISO, IOC Enricher, juridisch adviseur, enz.)",
+  "dashboard.step2": "<strong>Implementeer agenten</strong> — kies uit 18 gespecialiseerde profielen (CISO, IOC Enricher, juridisch adviseur, enz.)",
   "dashboard.step3": "Klik op <strong>Agent uitvoeren</strong> of schakel automodus in — agenten onderzoeken, maken notities, verrijken IOC's en bouwen tijdlijnen",
   "dashboard.step4": "Start <strong>vergaderingen</strong> voor agenten om bevindingen te bespreken, of gebruik <strong>dienst¬overdrachten</strong> voor continuïteit",
   "dashboard.configureAISettings": "AI-instellingen configureren",

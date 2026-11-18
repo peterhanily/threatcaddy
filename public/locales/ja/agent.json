@@ -168,7 +168,7 @@
   "dashboard.pendingCount": "{{count}} 件保留中",
   "dashboard.getStarted": "AgentCaddy を始める",
   "dashboard.step1": "調査を開き <strong>AgentCaddy</strong> タブに移動",
-  "dashboard.step2": "<strong>エージェントをデプロイ</strong>——17 の専門プロファイルから選択（CISO、IOC Enricher、法務顧問など）",
+  "dashboard.step2": "<strong>エージェントをデプロイ</strong>——18 の専門プロファイルから選択（CISO、IOC Enricher、法務顧問など）",
   "dashboard.step3": "<strong>エージェントを実行</strong> をクリックするか自動モードを有効化——エージェントが調査、ノート作成、IOCエンリッチ、タイムライン構築を実行",
   "dashboard.step4": "エージェントに調査結果を議論させる<strong>ミーティング</strong>を開始するか、継続性のために<strong>シフト引き継ぎ</strong>を使用",
   "dashboard.configureAISettings": "AI設定を構成",

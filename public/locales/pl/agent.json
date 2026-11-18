@@ -192,7 +192,7 @@
   "dashboard.pendingCount": "{{count}} oczekuje",
   "dashboard.getStarted": "Rozpocznij pracę z AgentCaddy",
   "dashboard.step1": "Otwórz dochodzenie i przejdź do zakładki <strong>AgentCaddy</strong>",
-  "dashboard.step2": "<strong>Wdróż agentów</strong> — wybierz spośród 17 wyspecjalizowanych profili (CISO, IOC Enricher, radca prawny itp.)",
+  "dashboard.step2": "<strong>Wdróż agentów</strong> — wybierz spośród 18 wyspecjalizowanych profili (CISO, IOC Enricher, radca prawny itp.)",
   "dashboard.step3": "Kliknij <strong>Uruchom agenta</strong> lub włącz tryb automatyczny — agenci badają, tworzą notatki, wzbogacają IOC i budują osie czasu",
   "dashboard.step4": "Rozpocznij <strong>spotkania</strong>, aby agenci omawiali wyniki, lub użyj <strong>przekazania zmian</strong> dla zapewnienia ciągłości",
   "dashboard.configureAISettings": "Skonfiguruj ustawienia AI",

@@ -180,7 +180,7 @@
   "dashboard.pendingCount": "{{count}} ממתינים",
   "dashboard.getStarted": "התחל עם AgentCaddy",
   "dashboard.step1": "פתח חקירה ועבור ללשונית <strong>AgentCaddy</strong>",
-  "dashboard.step2": "<strong>פרוס סוכנים</strong> — בחר מ-17 פרופילים מתמחים (CISO, IOC Enricher, יועץ משפטי, וכו')",
+  "dashboard.step2": "<strong>פרוס סוכנים</strong> — בחר מ-18 פרופילים מתמחים (CISO, IOC Enricher, יועץ משפטי, וכו')",
   "dashboard.step3": "לחץ <strong>הרץ סוכן</strong> או הפעל מצב אוטומטי — הסוכנים חוקרים, יוצרים הערות, מעשירים IOCs ובונים ציר זמן",
   "dashboard.step4": "התחל <strong>פגישות</strong> לדיון בממצאים, או השתמש <strong>במסירת משמרות</strong> להמשכיות",
   "dashboard.configureAISettings": "הגדר הגדרות AI",

@@ -192,7 +192,7 @@
   "dashboard.pendingCount": "{{count}} ожидает",
   "dashboard.getStarted": "Начало работы с AgentCaddy",
   "dashboard.step1": "Откройте расследование и перейдите на вкладку <strong>AgentCaddy</strong>",
-  "dashboard.step2": "<strong>Разверните агентов</strong> — выберите из 17 специализированных профилей (CISO, IOC Enricher, юрисконсульт и др.)",
+  "dashboard.step2": "<strong>Разверните агентов</strong> — выберите из 18 специализированных профилей (CISO, IOC Enricher, юрисконсульт и др.)",
   "dashboard.step3": "Нажмите <strong>Запустить агента</strong> или включите автоматический режим — агенты исследуют, создают заметки, обогащают IOC и строят хронологии",
   "dashboard.step4": "Начните <strong>совещания</strong>, чтобы агенты обсуждали результаты, или используйте <strong>передачу смен</strong> для обеспечения преемственности",
   "dashboard.configureAISettings": "Настроить параметры ИИ",

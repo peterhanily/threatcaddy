@@ -168,7 +168,7 @@
   "dashboard.pendingCount": "{{count}} 个待处理",
   "dashboard.getStarted": "开始使用 AgentCaddy",
   "dashboard.step1": "打开调查并转到 <strong>AgentCaddy</strong> 标签",
-  "dashboard.step2": "<strong>部署代理</strong>——从 17 个专业配置文件中选择（CISO、IOC Enricher、法律顾问等）",
+  "dashboard.step2": "<strong>部署代理</strong>——从 18 个专业配置文件中选择（CISO、IOC Enricher、法律顾问等）",
   "dashboard.step3": "点击 <strong>运行代理</strong> 或启用自动模式——代理研究、创建笔记、丰富 IOC 并构建时间线",
   "dashboard.step4": "启动<strong>会议</strong>让代理讨论发现，或使用<strong>班次交接</strong>保持连续性",
   "dashboard.configureAISettings": "配置 AI 设置",

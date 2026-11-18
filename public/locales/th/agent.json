@@ -168,7 +168,7 @@
   "dashboard.pendingCount": "{{count}} รอดำเนินการ",
   "dashboard.getStarted": "เริ่มต้นใช้งาน AgentCaddy",
   "dashboard.step1": "เปิดการสืบสวนและไปที่แท็บ <strong>AgentCaddy</strong>",
-  "dashboard.step2": "<strong>ติดตั้งเอเจนต์</strong>——เลือกจาก 17 โปรไฟล์เฉพาะทาง (CISO, IOC Enricher, ที่ปรึกษากฎหมาย ฯลฯ)",
+  "dashboard.step2": "<strong>ติดตั้งเอเจนต์</strong>——เลือกจาก 18 โปรไฟล์เฉพาะทาง (CISO, IOC Enricher, ที่ปรึกษากฎหมาย ฯลฯ)",
   "dashboard.step3": "คลิก <strong>รันเอเจนต์</strong> หรือเปิดใช้งานโหมดอัตโนมัติ——เอเจนต์จะวิจัย สร้างโน้ต เสริม IOC และสร้างไทม์ไลน์",
   "dashboard.step4": "เริ่ม<strong>การประชุม</strong>เพื่อให้เอเจนต์อภิปรายผลการค้นพบ หรือใช้<strong>การส่งต่อกะ</strong>เพื่อความต่อเนื่อง",
   "dashboard.configureAISettings": "กำหนดค่าการตั้งค่า AI",

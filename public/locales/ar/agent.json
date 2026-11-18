@@ -216,7 +216,7 @@
   "dashboard.pendingCount": "{{count}} معلق",
   "dashboard.getStarted": "ابدأ مع AgentCaddy",
   "dashboard.step1": "افتح تحقيقًا وانتقل إلى تبويب <strong>AgentCaddy</strong>",
-  "dashboard.step2": "<strong>انشر الوكلاء</strong> — اختر من 17 ملف تعريف متخصص (CISO، IOC Enricher، المستشار القانوني، إلخ)",
+  "dashboard.step2": "<strong>انشر الوكلاء</strong> — اختر من 18 ملف تعريف متخصص (CISO، IOC Enricher، المستشار القانوني، إلخ)",
   "dashboard.step3": "انقر على <strong>تشغيل الوكيل</strong> أو فعّل الوضع التلقائي — يبحث الوكلاء وينشئون ملاحظات ويثرون IOCs ويبنون الجداول الزمنية",
   "dashboard.step4": "ابدأ <strong>الاجتماعات</strong> لمناقشة النتائج، أو استخدم <strong>تسليم الوردية</strong> للاستمرارية",
   "dashboard.configureAISettings": "تهيئة إعدادات الذكاء الاصطناعي",

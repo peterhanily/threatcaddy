@@ -168,7 +168,7 @@
   "dashboard.pendingCount": "{{count}}개 대기 중",
   "dashboard.getStarted": "AgentCaddy 시작하기",
   "dashboard.step1": "조사를 열고 <strong>AgentCaddy</strong> 탭으로 이동",
-  "dashboard.step2": "<strong>에이전트 배포</strong>——17개 전문 프로필 중 선택(CISO, IOC Enricher, 법무 고문 등)",
+  "dashboard.step2": "<strong>에이전트 배포</strong>——18개 전문 프로필 중 선택(CISO, IOC Enricher, 법무 고문 등)",
   "dashboard.step3": "<strong>에이전트 실행</strong>을 클릭하거나 자동 모드 활성화——에이전트가 조사, 노트 생성, IOC 보강, 타임라인 구축 수행",
   "dashboard.step4": "에이전트가 발견을 논의하는 <strong>회의</strong>를 시작하거나 연속성을 위해 <strong>교대 인계</strong> 사용",
   "dashboard.configureAISettings": "AI 설정 구성",

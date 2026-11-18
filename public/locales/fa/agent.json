@@ -168,7 +168,7 @@
   "dashboard.pendingCount": "{{count}} در انتظار",
   "dashboard.getStarted": "شروع با AgentCaddy",
   "dashboard.step1": "یک تحقیق باز کنید و به تب <strong>AgentCaddy</strong> بروید",
-  "dashboard.step2": "<strong>عاملان را مستقر کنید</strong> — از ۱۷ پروفایل متخصص انتخاب کنید (CISO، غنی‌ساز IOC، مشاور حقوقی و غیره)",
+  "dashboard.step2": "<strong>عاملان را مستقر کنید</strong> — از ۱۸ پروفایل متخصص انتخاب کنید (CISO، غنی‌ساز IOC، مشاور حقوقی و غیره)",
   "dashboard.step3": "روی <strong>اجرای عامل</strong> کلیک کنید یا حالت خودکار را فعال کنید — عاملان تحقیق می‌کنند، یادداشت ایجاد می‌کنند، IOCها را غنی می‌سازند و جداول زمانی می‌سازند",
   "dashboard.step4": "<strong>جلسات</strong> را برای بحث عاملان در مورد یافته‌ها شروع کنید، یا از <strong>تحویل شیفت</strong> برای تداوم استفاده کنید",
   "dashboard.configureAISettings": "پیکربندی تنظیمات AI",

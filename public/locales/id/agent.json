@@ -168,7 +168,7 @@
   "dashboard.pendingCount": "{{count}} tertunda",
   "dashboard.getStarted": "Mulai dengan AgentCaddy",
   "dashboard.step1": "Buka investigasi dan pergi ke tab <strong>AgentCaddy</strong>",
-  "dashboard.step2": "<strong>Deploy agen</strong> — pilih dari 17 profil spesialis (CISO, Pengaya IOC, Penasihat Hukum, dll.)",
+  "dashboard.step2": "<strong>Deploy agen</strong> — pilih dari 18 profil spesialis (CISO, Pengaya IOC, Penasihat Hukum, dll.)",
   "dashboard.step3": "Klik <strong>Jalankan Agen</strong> atau aktifkan mode otomatis — agen meneliti, membuat catatan, memperkaya IOC, dan membangun timeline",
   "dashboard.step4": "Mulai <strong>rapat</strong> agar agen mendiskusikan temuan, atau gunakan <strong>pergantian shift</strong> untuk kontinuitas",
   "dashboard.configureAISettings": "Konfigurasikan Pengaturan AI",

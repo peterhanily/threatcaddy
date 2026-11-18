@@ -168,7 +168,7 @@
   "dashboard.pendingCount": "{{count}} ausstehend",
   "dashboard.getStarted": "Erste Schritte mit AgentCaddy",
   "dashboard.step1": "Eine Untersuchung öffnen und zum Tab <strong>AgentCaddy</strong> wechseln",
-  "dashboard.step2": "<strong>Agenten einsetzen</strong> — aus 17 Spezialistenprofilen wählen (CISO, IOC-Anreicherung, Rechtsberater usw.)",
+  "dashboard.step2": "<strong>Agenten einsetzen</strong> — aus 18 Spezialistenprofilen wählen (CISO, IOC-Anreicherung, Rechtsberater usw.)",
   "dashboard.step3": "Auf <strong>Agent ausführen</strong> klicken oder Auto-Modus aktivieren — Agenten recherchieren, erstellen Notizen, reichern IOCs an und bauen Zeitleisten",
   "dashboard.step4": "<strong>Besprechungen</strong> starten, damit Agenten Erkenntnisse diskutieren, oder <strong>Schichtwechsel</strong> für Kontinuität nutzen",
   "dashboard.configureAISettings": "KI-Einstellungen konfigurieren",

@@ -180,7 +180,7 @@
   "dashboard.pendingCount": "{{count}} in attesa",
   "dashboard.getStarted": "Inizia con AgentCaddy",
   "dashboard.step1": "Apri un'indagine e vai alla scheda <strong>AgentCaddy</strong>",
-  "dashboard.step2": "<strong>Distribuisci agenti</strong> — scegli tra 17 profili specialisti (CISO, Arricchitore IOC, Consulente legale, ecc.)",
+  "dashboard.step2": "<strong>Distribuisci agenti</strong> — scegli tra 18 profili specialisti (CISO, Arricchitore IOC, Consulente legale, ecc.)",
   "dashboard.step3": "Fai clic su <strong>Esegui agente</strong> o abilita la modalità automatica — gli agenti ricercano, creano note, arricchiscono IOC e costruiscono timeline",
   "dashboard.step4": "Avvia una <strong>riunione</strong> per far discutere i risultati agli agenti, o usa il <strong>cambio turno</strong> per la continuità",
   "dashboard.configureAISettings": "Configura impostazioni AI",

@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db';
 import type { Folder } from '../types';
 import { AgentDashboard } from '../components/Agent/AgentDashboard';
+import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import i18n from '../i18n';
 
 const agentCatalogs = import.meta.glob<{ default: Record<string, string> }>('../../public/locales/*/agent.json', { eager: true });
@@ -65,5 +66,15 @@ describe('the agent catalogs', () => {
 
   it('German translates both forms', () => {
     for (const form of ['one', 'other']) expect(catalog('de')[`${STEM}_${form}`]).not.toBe(catalog('en')[`${STEM}_${form}`]);
+  });
+
+  it('every language\'s getting-started step names as many profiles as are built in', () => {
+    // Persian writes the number in its own digits.
+    const persian = (n: number) => String(n).replace(/\d/g, digit => '۰۱۲۳۴۵۶۷۸۹'[Number(digit)]);
+    for (const [path, { default: values }] of Object.entries(agentCatalogs)) {
+      const lng = path.split('/').at(-2) as string;
+      const count = BUILTIN_AGENT_PROFILES.length;
+      expect(values['dashboard.step2'], lng).toContain(lng === 'fa' ? persian(count) : String(count));
+    }
   });
 });

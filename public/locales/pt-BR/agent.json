@@ -180,7 +180,7 @@
   "dashboard.pendingCount": "{{count}} pendente(s)",
   "dashboard.getStarted": "Começar com AgentCaddy",
   "dashboard.step1": "Abra uma investigação e vá para a aba <strong>AgentCaddy</strong>",
-  "dashboard.step2": "<strong>Implante agentes</strong> — escolha entre 17 perfis especializados (CISO, Enriquecedor IOC, Assessor jurídico, etc.)",
+  "dashboard.step2": "<strong>Implante agentes</strong> — escolha entre 18 perfis especializados (CISO, Enriquecedor IOC, Assessor jurídico, etc.)",
   "dashboard.step3": "Clique em <strong>Executar agente</strong> ou habilite o modo automático — os agentes pesquisam, criam notas, enriquecem IOCs e constroem cronologias",
   "dashboard.step4": "Inicie <strong>reuniões</strong> para que os agentes discutam descobertas, ou use <strong>trocas de turno</strong> para continuidade",
   "dashboard.configureAISettings": "Configurar ajustes de IA",

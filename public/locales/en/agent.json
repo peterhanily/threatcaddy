@@ -186,7 +186,7 @@
   "dashboard.pendingCount": "{{count}} pending",
   "dashboard.getStarted": "Get started with AgentCaddy",
   "dashboard.step1": "Open an investigation and go to the <strong>AgentCaddy</strong> tab",
-  "dashboard.step2": "<strong>Deploy agents</strong> — choose from 17 specialist profiles (CISO, IOC Enricher, Legal Counsel, etc.)",
+  "dashboard.step2": "<strong>Deploy agents</strong> — choose from 18 specialist profiles (CISO, IOC Enricher, Legal Counsel, etc.)",
   "dashboard.step3": "Click <strong>Run Agent</strong> or enable auto-mode — agents research, create notes, enrich IOCs, and build timelines",
   "dashboard.step4": "Start <strong>meetings</strong> for agents to discuss findings, or use <strong>shift handoffs</strong> for continuity",
   "dashboard.configureAISettings": "Configure AI Settings",

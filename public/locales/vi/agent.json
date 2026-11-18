@@ -168,7 +168,7 @@
   "dashboard.pendingCount": "{{count}} đang chờ",
   "dashboard.getStarted": "Bắt đầu với AgentCaddy",
   "dashboard.step1": "Mở điều tra và chuyển đến tab <strong>AgentCaddy</strong>",
-  "dashboard.step2": "<strong>Triển khai tác nhân</strong> — chọn từ 17 hồ sơ chuyên gia (CISO, Làm phong phú IOC, Tư vấn pháp lý, v.v.)",
+  "dashboard.step2": "<strong>Triển khai tác nhân</strong> — chọn từ 18 hồ sơ chuyên gia (CISO, Làm phong phú IOC, Tư vấn pháp lý, v.v.)",
   "dashboard.step3": "Nhấp <strong>Chạy tác nhân</strong> hoặc bật chế độ tự động — tác nhân nghiên cứu, tạo ghi chú, làm phong phú IOC và xây dựng timeline",
   "dashboard.step4": "Bắt đầu <strong>cuộc họp</strong> để tác nhân thảo luận các phát hiện, hoặc dùng <strong>bàn giao ca</strong> để duy trì liên tục",
   "dashboard.configureAISettings": "Cấu hình cài đặt AI",

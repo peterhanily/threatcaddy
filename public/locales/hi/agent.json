@@ -168,7 +168,7 @@
   "dashboard.pendingCount": "{{count}} लंबित",
   "dashboard.getStarted": "AgentCaddy के साथ शुरुआत करें",
   "dashboard.step1": "एक जाँच खोलें और <strong>AgentCaddy</strong> टैब पर जाएं",
-  "dashboard.step2": "<strong>एजेंट तैनात करें</strong> — 17 विशेषज्ञ प्रोफ़ाइल में से चुनें (CISO, IOC संवर्धक, कानूनी सलाहकार, आदि)",
+  "dashboard.step2": "<strong>एजेंट तैनात करें</strong> — 18 विशेषज्ञ प्रोफ़ाइल में से चुनें (CISO, IOC संवर्धक, कानूनी सलाहकार, आदि)",
   "dashboard.step3": "<strong>एजेंट चलाएं</strong> पर क्लिक करें या स्वचालित मोड सक्षम करें — एजेंट जाँच करते हैं, नोट्स बनाते हैं, IOCs संवर्धित करते हैं और टाइमलाइन बनाते हैं",
   "dashboard.step4": "निष्कर्षों पर चर्चा के लिए <strong>मीटिंग</strong> शुरू करें, या निरंतरता के लिए <strong>शिफ्ट हैंडऑफ</strong> उपयोग करें",
   "dashboard.configureAISettings": "AI सेटिंग कॉन्फ़िगर करें",

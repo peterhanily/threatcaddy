@@ -168,7 +168,7 @@
   "dashboard.pendingCount": "{{count}} bekleyen",
   "dashboard.getStarted": "AgentCaddy'ye Başlayın",
   "dashboard.step1": "Bir soruşturma açın ve <strong>AgentCaddy</strong> sekmesine gidin",
-  "dashboard.step2": "<strong>Ajanları dağıtın</strong> — 17 uzman profilden seçin (CISO, IOC Zenginleştirici, Hukuk Danışmanı, vb.)",
+  "dashboard.step2": "<strong>Ajanları dağıtın</strong> — 18 uzman profilden seçin (CISO, IOC Zenginleştirici, Hukuk Danışmanı, vb.)",
   "dashboard.step3": "<strong>Ajanı Çalıştır</strong>'a tıklayın veya otomatik modu etkinleştirin — ajanlar araştırır, notlar oluşturur, IOC'leri zenginleştirir ve zaman çizelgeleri oluşturur",
   "dashboard.step4": "Ajanların bulgularını tartışması için <strong>toplantılar</strong> başlatın veya süreklilik için <strong>vardiya devirleri</strong> kullanın",
   "dashboard.configureAISettings": "AI Ayarlarını Yapılandır",
