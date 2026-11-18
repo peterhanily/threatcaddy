@@ -1,3 +1,17 @@
 {
-  "exceptions": []
+  "exceptions": [
+    {
+      "id": "GHSA-fc5q-39xc-vjpf",
+      "package": "picomatch",
+      "severity": "high",
+      "vulnerableVersions": "<=4.0.7",
+      "projects": ["root", "server"],
+      "reviewed": "2026-11-18",
+      "reason": "ReDoS through single-branch repeated extglobs (CWE-1333, CVSS 7.5). Every picomatch release is affected (latest 4.0.7) and no patched version exists. Lint, build and test tooling (typescript-eslint, tinyglobby, fdir, Rollup plugin utilities, Vite, Vitest) reach it with glob patterns from this repository. In root, Excalidraw also declares Sass as a dependency; Sass's optional @parcel/watcher uses picomatch only for Sass's --watch command, and the client neither runs Sass nor bundles these packages. The server's picomatch is development-only and absent from the runtime image. See docs/dependency-security-review.md.",
+      "endsWhen": "A picomatch release outside the advisory's range is published, or the advisory records a patched version: update pnpm-lock.yaml and server/package-lock.json and delete this entry. CI also fails when the advisory's range or severity changes, when it reaches production by any other path, and once it is no longer reported.",
+      "reviewedProductionPaths": {
+        "root": [".>@excalidraw/excalidraw>sass>@parcel/watcher>picomatch"]
+      }
+    }
+  ]
 }
