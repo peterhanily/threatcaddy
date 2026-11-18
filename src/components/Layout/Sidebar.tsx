@@ -262,7 +262,8 @@ export function Sidebar({
               {!selectedFolder.color && (
                 <div className={cn('w-2 h-2 rounded-full shrink-0', statusColor)} />
               )}
-              <span className="text-sm font-medium text-text-primary truncate flex-1">{selectedFolder.name}</span>
+              {/* Its own direction, so a long Latin name is cut at its end in RTL; aligned by the page's direction. */}
+              <span dir="auto" className="text-sm font-medium text-text-primary truncate flex-1 text-left [[dir=rtl]_&]:text-right">{selectedFolder.name}</span>
               <SettingsIcon size={12} className="text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0" />
             </div>
             {investigationScopedCounts && (

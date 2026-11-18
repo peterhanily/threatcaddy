@@ -551,7 +551,9 @@ describe('SettingsPanel: where AI data goes', () => {
     renderAI({ agentHosts: [{ id: 'soc', name: 'soc', displayName: name, url: 'https://soc.example', enabled: true, skills: [] }] });
     const nameLine = screen.getByText(name);
     expect(nameLine).toHaveAttribute('dir', 'auto');
-    expect(nameLine).toHaveClass('block', 'truncate', 'text-left', 'rtl:text-right');
+    // Aligned by the page's direction only (e2e/name-direction.spec.ts checks the layout in a browser).
+    expect(nameLine).toHaveClass('block', 'truncate', 'text-left', '[[dir=rtl]_&]:text-right');
+    expect(nameLine).not.toHaveClass('rtl:text-right');
   });
 
   it('hides the agent host list when none are configured', () => {
