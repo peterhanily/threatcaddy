@@ -40,6 +40,15 @@ async function proposerRemoved(action: AgentAction): Promise<boolean> {
  * below although the request was sent: their result is never reworded. */
 const passesRemoteAnswer = (tool: string) => isDynamicTool(tool) || tool === 'query_siem';
 
+/** The supervisor's refusals (supervisor-tool-policy.ts) that an approval meets
+ * when its target changed after the proposal. approvalConstraints refuses a
+ * missing or archived home first, and every supervisor write tool has a scope. */
+const SUPERVISOR_REFUSALS: ReadonlyMap<string, string> = new Map([
+  ['Supervisor IOC updates require an existing IOC in an investigation.', 'refusal.supervisorIocGone'],
+  ['Supervisor links require existing note, task or timeline entities in investigations.', 'refusal.supervisorLinkGone'],
+  ['Supervisor writes require an existing, non-archived investigation.', 'refusal.targetInvestigationUnavailable'],
+]);
+
 /** Re-derive what the proposing agent may do today; the stored row is not trusted.
  * A refusal is the failed row's reason in the inbox, so it is in the analyst's language. */
 async function approvalConstraints(action: AgentAction, toolUse: ToolUseBlock): Promise<ToolExecutionConstraints | string> {
@@ -54,7 +63,10 @@ async function approvalConstraints(action: AgentAction, toolUse: ToolUseBlock): 
       surface: 'supervisor', allowedTools: SUPERVISOR_TOOLS, approval,
       validateScope: async call => {
         const permission = await getSupervisorToolPermission(call, action.investigationId);
-        if (permission.kind === 'denied') return permission.error;
+        if (permission.kind === 'denied') {
+          const key = SUPERVISOR_REFUSALS.get(permission.error);
+          return key ? await agentRefusal(key) : permission.error;
+        }
         if (permission.investigationId !== action.investigationId) return await agentRefusal('refusal.targetMoved');
         // The analyst's explicit approval satisfies the remaining policy gate.
       },

@@ -220,6 +220,30 @@ describe('A-APPR re-derivation on approval', () => {
     }
   });
 
+  it('says in German why a supervisor proposal can no longer run', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+    await i18n.changeLanguage('de');
+    try {
+      const supervisor = (toolName: string, toolInput: Record<string, unknown>) => queue({ agentConfigId: SUPERVISOR_ACTION_PROFILE, toolName, toolInput });
+      const link = (sourceType: string, sourceId: string, targetType: string, targetId: string) => ({ links: [{ sourceType, sourceId, targetType, targetId }] });
+      const update = await supervisor('update_ioc', { id: ids('S').ioc, confidence: 'high' });
+      const linked = await supervisor('link_entities', link('note', ids('S').note, 'task', ids('S').task));
+      const across = await supervisor('link_entities', link('task', ids('S').task, 'task', ids('P').task));
+      // After the proposals: the IOC and the note go to the trash, and the other investigation is archived.
+      await db.standaloneIOCs.update(ids('S').ioc, { trashed: true });
+      await db.notes.update(ids('S').note, { trashed: true });
+      await db.folders.update('P', { status: 'archived' });
+      expect(errorOf(await executeApprovedAction(update))).toBe(deAgent['refusal.supervisorIocGone']);
+      expect(errorOf(await executeApprovedAction(linked))).toBe(deAgent['refusal.supervisorLinkGone']);
+      expect(errorOf(await executeApprovedAction(across))).toBe(deAgent['refusal.targetInvestigationUnavailable']);
+      for (const row of [update, linked, across]) expect(await db.agentActions.get(row.id)).toMatchObject({ status: 'failed' });
+      expect((await db.standaloneIOCs.get(ids('S').ioc))?.confidence).toBe('medium');
+      expect((await db.notes.get(ids('S').note))?.linkedTaskIds ?? []).toEqual([]);
+      expect((await db.tasks.get(ids('S').task))?.linkedTaskIds ?? []).toEqual([]);
+    } finally { await i18n.changeLanguage('en'); }
+  });
+
   it('keeps a refusal it cannot name, and an executor’s own error, as the dispatcher wrote them', async () => {
     const untranslated = await queue({ toolName: 'read_note', toolInput: [] as unknown as Record<string, unknown> });
     expect(errorOf(await executeApprovedAction(untranslated))).toBe('Tool input must be an object.');
