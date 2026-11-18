@@ -1,5 +1,7 @@
 /** The investigation details dialog: counts and dates fill their placeholders, and its switches mirror in RTL. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { act, render, screen } from '@testing-library/react';
 import i18n from '../i18n';
 import { InvestigationDetailPanel } from '../components/Investigation/InvestigationDetailPanel';
@@ -8,6 +10,11 @@ import { ToastProvider } from '../contexts/ToastContext';
 import type { Folder } from '../types';
 import enInvestigations from '../../public/locales/en/investigations.json';
 import deInvestigations from '../../public/locales/de/investigations.json';
+
+const localeRoot = resolve(__dirname, '../../public/locales');
+// These languages write the same words as English: French "note(s)", Italian plural "note", Dutch "whiteboard(s)".
+const SAME_AS_ENGLISH = new Set(['fr detail.notesCount_one', 'fr detail.notesCount_many', 'fr detail.notesCount_other',
+  'it detail.notesCount_many', 'it detail.notesCount_other', 'nl detail.whiteboardsCount_one', 'nl detail.whiteboardsCount_other']);
 
 const CREATED = Date.UTC(2026, 10, 3, 9, 30);
 const UPDATED = Date.UTC(2026, 10, 17, 14, 5);
@@ -55,14 +62,24 @@ describe('investigation details text', () => {
     expect(screen.queryByRole('option', { name: 'None' })).toBeNull();
   });
 
-  it('translates every count key it adds', () => {
+  it('translates every count form each language uses', () => {
     const en = enInvestigations as Record<string, string>;
-    const de = deInvestigations as Record<string, string>;
-    const keys = Object.keys(en).filter(key => /^detail\.(contentsLabel|notesCount|tasksCount|eventsCount|whiteboardsCount)_/.test(key));
-    expect(keys).toHaveLength(10);
-    for (const key of keys) {
-      expect(de[key], key).toBeTruthy();
-      expect(de[key], key).not.toBe(en[key]);
+    const stems = ['contentsLabel', 'notesCount', 'tasksCount', 'eventsCount', 'whiteboardsCount'];
+    expect(Object.keys(en).filter(key => new RegExp(`^detail\\.(${stems.join('|')})_`).test(key))).toHaveLength(10);
+    const locales = readdirSync(localeRoot).filter(name => name !== 'en');
+    expect(locales).toHaveLength(20);
+    for (const locale of locales) {
+      const values = JSON.parse(readFileSync(resolve(localeRoot, locale, 'investigations.json'), 'utf8')) as Record<string, string>;
+      for (const category of new Intl.PluralRules(locale).resolvedOptions().pluralCategories) {
+        for (const stem of stems) {
+          const key = `detail.${stem}_${category}`;
+          const id = `${locale} ${key}`;
+          const english = [en[`detail.${stem}_one`], en[`detail.${stem}_other`]];
+          expect(values[key], id).toContain('{{count}}');
+          if (SAME_AS_ENGLISH.has(id)) expect(english, id).toContain(values[key]);
+          else expect(english, id).not.toContain(values[key]);
+        }
+      }
     }
   });
 });
