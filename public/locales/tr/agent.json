@@ -286,7 +286,7 @@
   "refusal.targetInvestigationUnavailable": "Bu önerinin değiştirdiği öğe, silinmiş veya arşivlenmiş bir soruşturmada; bu nedenle hiçbir şey çalıştırılmadı.",
   "refusal.supervisorIocGone": "Bu önerinin güncellediği IOC silindi, çöp kutusunda veya hiçbir soruşturmaya ait değil; bu nedenle hiçbir şey çalıştırılmadı.",
   "refusal.supervisorLinkGone": "Bu önerinin bağladığı bir öğe silindi, çöp kutusunda veya bir soruşturmadaki not, görev ya da zaman çizelgesi olayı değil; bu nedenle hiçbir şey çalıştırılmadı.",
-  "refusal.supervisorHomeSyncable": "Daha eski bir sürüm bunu eşitlenebilen bir soruşturmada önerdi. Süpervizör artık notları ve görevleri yalnızca kendi yalnızca yerel soruşturmasına yazıyor; bu nedenle hiçbir şey çalıştırılmadı.",
+  "refusal.supervisorHomeSyncable": "Bu öneri eşitlenebilen bir soruşturmada. Süpervizör notları ve görevleri yalnızca kendi yalnızca yerel soruşturmasına yazar; bu nedenle hiçbir şey çalıştırılmadı.",
   "refusal.otherInvestigationChange": "Bu öneri başka bir soruşturmayı değiştiriyor ve ajanlar bunu yapamaz; bu nedenle hiçbir şey çalıştırılmadı.",
   "refusal.otherInvestigationRead": "Bu öneri başka bir soruşturmayı okuyor ve ajanlar bunu buradan yapamaz; bu nedenle hiçbir şey çalıştırılmadı.",
   "refusal.notInInvestigation": "Bu önerinin belirttiği öğe bu soruşturmada kullanılamıyor; bu nedenle hiçbir şey çalıştırılmadı.",

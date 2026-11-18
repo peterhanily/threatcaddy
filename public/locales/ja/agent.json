@@ -286,7 +286,7 @@
   "refusal.targetInvestigationUnavailable": "この提案が変更する対象は削除またはアーカイブされた調査にあるため、何も実行されませんでした。",
   "refusal.supervisorIocGone": "この提案が更新する IOC は削除されたか、ゴミ箱にあるか、どの調査にも属していないため、何も実行されませんでした。",
   "refusal.supervisorLinkGone": "この提案がリンクする項目が削除されたか、ゴミ箱にあるか、調査内のノート、タスク、タイムラインイベントのいずれでもないため、何も実行されませんでした。",
-  "refusal.supervisorHomeSyncable": "以前のバージョンが、同期可能な調査でこれを提案しました。現在、スーパーバイザーはノートとタスクを自身のローカルのみの調査にだけ書き込むため、何も実行されませんでした。",
+  "refusal.supervisorHomeSyncable": "この提案は同期可能な調査にあります。スーパーバイザーはノートとタスクを自身のローカルのみの調査にだけ書き込むため、何も実行されませんでした。",
   "refusal.otherInvestigationChange": "この提案は別の調査を変更しますが、エージェントにはそれができないため、何も実行されませんでした。",
   "refusal.otherInvestigationRead": "この提案は別の調査を読み取りますが、エージェントはここからそれを行えないため、何も実行されませんでした。",
   "refusal.notInInvestigation": "この提案が指す対象はこの調査で利用できないため、何も実行されませんでした。",

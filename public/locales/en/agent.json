@@ -307,7 +307,7 @@
   "refusal.targetInvestigationUnavailable": "What this proposal changes is in an investigation that was deleted or archived, so nothing ran.",
   "refusal.supervisorIocGone": "The IOC this proposal updates was deleted, is in the trash or is not in an investigation, so nothing ran.",
   "refusal.supervisorLinkGone": "Something this proposal links was deleted, is in the trash or is not a note, task or timeline event in an investigation, so nothing ran.",
-  "refusal.supervisorHomeSyncable": "An older version proposed this in an investigation that can sync. The supervisor now writes notes and tasks only in its own local-only investigation, so nothing ran.",
+  "refusal.supervisorHomeSyncable": "This proposal is in an investigation that can sync. The supervisor writes notes and tasks only in its own local-only investigation, so nothing ran.",
   "refusal.otherInvestigationChange": "This proposal changes another investigation, which agents cannot do, so nothing ran.",
   "refusal.otherInvestigationRead": "This proposal reads another investigation, which agents cannot do from here, so nothing ran.",
   "refusal.notInInvestigation": "What this proposal names is not available in this investigation, so nothing ran.",

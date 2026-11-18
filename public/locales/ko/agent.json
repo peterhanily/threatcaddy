@@ -286,7 +286,7 @@
   "refusal.targetInvestigationUnavailable": "이 제안이 변경하는 대상이 삭제되었거나 보관된 조사에 있으므로 아무것도 실행되지 않았습니다.",
   "refusal.supervisorIocGone": "이 제안이 업데이트하는 IOC가 삭제되었거나 휴지통에 있거나 어떤 조사에도 속하지 않으므로 아무것도 실행되지 않았습니다.",
   "refusal.supervisorLinkGone": "이 제안이 연결하는 항목이 삭제되었거나 휴지통에 있거나 조사 안의 노트, 태스크 또는 타임라인 이벤트가 아니므로 아무것도 실행되지 않았습니다.",
-  "refusal.supervisorHomeSyncable": "이전 버전이 동기화될 수 있는 조사에서 이것을 제안했습니다. 이제 수퍼바이저는 노트와 태스크를 자체 로컬 전용 조사에만 작성하므로 아무것도 실행되지 않았습니다.",
+  "refusal.supervisorHomeSyncable": "이 제안은 동기화될 수 있는 조사에 있습니다. 수퍼바이저는 노트와 태스크를 자체 로컬 전용 조사에만 작성하므로 아무것도 실행되지 않았습니다.",
   "refusal.otherInvestigationChange": "이 제안은 다른 조사를 변경하는데, 에이전트는 이를 할 수 없으므로 아무것도 실행되지 않았습니다.",
   "refusal.otherInvestigationRead": "이 제안은 다른 조사를 읽는데, 에이전트는 여기서 이를 할 수 없으므로 아무것도 실행되지 않았습니다.",
   "refusal.notInInvestigation": "이 제안이 가리키는 대상을 이 조사에서 사용할 수 없으므로 아무것도 실행되지 않았습니다.",

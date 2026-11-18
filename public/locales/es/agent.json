@@ -299,7 +299,7 @@
   "refusal.targetInvestigationUnavailable": "Lo que cambia esta propuesta está en una investigación que se eliminó o archivó, así que no se ejecutó nada.",
   "refusal.supervisorIocGone": "El IOC que actualiza esta propuesta se eliminó, está en la papelera o no pertenece a ninguna investigación, así que no se ejecutó nada.",
   "refusal.supervisorLinkGone": "Algo que vincula esta propuesta se eliminó, está en la papelera o no es una nota, tarea ni evento de cronología de una investigación, así que no se ejecutó nada.",
-  "refusal.supervisorHomeSyncable": "Una versión anterior propuso esto en una investigación que puede sincronizarse. Ahora el supervisor escribe notas y tareas solo en su propia investigación solo local, así que no se ejecutó nada.",
+  "refusal.supervisorHomeSyncable": "Esta propuesta está en una investigación que puede sincronizarse. El supervisor escribe notas y tareas solo en su propia investigación solo local, así que no se ejecutó nada.",
   "refusal.otherInvestigationChange": "Esta propuesta cambia otra investigación, algo que los agentes no pueden hacer, así que no se ejecutó nada.",
   "refusal.otherInvestigationRead": "Esta propuesta lee otra investigación, algo que los agentes no pueden hacer desde aquí, así que no se ejecutó nada.",
   "refusal.notInInvestigation": "Lo que nombra esta propuesta no está disponible en esta investigación, así que no se ejecutó nada.",

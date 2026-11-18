@@ -286,7 +286,7 @@
   "refusal.targetInvestigationUnavailable": "Wat dit voorstel wijzigt, staat in een onderzoek dat is verwijderd of gearchiveerd, dus er is niets uitgevoerd.",
   "refusal.supervisorIocGone": "De IOC die dit voorstel bijwerkt, is verwijderd, staat in de prullenbak of hoort bij geen enkel onderzoek, dus er is niets uitgevoerd.",
   "refusal.supervisorLinkGone": "Iets wat dit voorstel koppelt, is verwijderd, staat in de prullenbak of is geen notitie, taak of tijdlijngebeurtenis in een onderzoek, dus er is niets uitgevoerd.",
-  "refusal.supervisorHomeSyncable": "Een oudere versie heeft dit voorgesteld in een onderzoek dat kan synchroniseren. De supervisor schrijft notities en taken nu alleen in zijn eigen alleen-lokale onderzoek, dus er is niets uitgevoerd.",
+  "refusal.supervisorHomeSyncable": "Dit voorstel staat in een onderzoek dat kan synchroniseren. De supervisor schrijft notities en taken alleen in zijn eigen alleen-lokale onderzoek, dus er is niets uitgevoerd.",
   "refusal.otherInvestigationChange": "Dit voorstel wijzigt een ander onderzoek, wat agents niet mogen, dus er is niets uitgevoerd.",
   "refusal.otherInvestigationRead": "Dit voorstel leest een ander onderzoek, wat agents vanaf hier niet mogen, dus er is niets uitgevoerd.",
   "refusal.notInInvestigation": "Wat dit voorstel noemt, is niet beschikbaar in dit onderzoek, dus er is niets uitgevoerd.",

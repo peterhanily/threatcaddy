@@ -286,7 +286,7 @@
   "refusal.targetInvestigationUnavailable": "此提案更改的对象位于已被删除或归档的调查中，因此未执行任何操作。",
   "refusal.supervisorIocGone": "此提案更新的 IOC 已被删除、位于回收站中或不属于任何调查，因此未执行任何操作。",
   "refusal.supervisorLinkGone": "此提案链接的某个项目已被删除、位于回收站中，或不是某个调查中的笔记、任务或时间线事件，因此未执行任何操作。",
-  "refusal.supervisorHomeSyncable": "旧版本在可同步的调查中提出了此提案。监督代理现在只会在自己的仅本地调查中写入笔记和任务，因此未执行任何操作。",
+  "refusal.supervisorHomeSyncable": "此提案位于可同步的调查中。监督代理只会在自己的仅本地调查中写入笔记和任务，因此未执行任何操作。",
   "refusal.otherInvestigationChange": "此提案会更改另一个调查，而代理无法这样做，因此未执行任何操作。",
   "refusal.otherInvestigationRead": "此提案会读取另一个调查，而代理无法从这里这样做，因此未执行任何操作。",
   "refusal.notInInvestigation": "此提案指向的对象在此调查中不可用，因此未执行任何操作。",

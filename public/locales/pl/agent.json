@@ -312,7 +312,7 @@
   "refusal.targetInvestigationUnavailable": "To, co zmienia ta propozycja, znajduje się w dochodzeniu, które zostało usunięte lub zarchiwizowane, więc nic nie zostało wykonane.",
   "refusal.supervisorIocGone": "IOC, który aktualizuje ta propozycja, został usunięty, jest w koszu lub nie należy do żadnego dochodzenia, więc nic nie zostało wykonane.",
   "refusal.supervisorLinkGone": "Coś, co łączy ta propozycja, zostało usunięte, jest w koszu lub nie jest notatką, zadaniem ani zdarzeniem osi czasu w dochodzeniu, więc nic nie zostało wykonane.",
-  "refusal.supervisorHomeSyncable": "Starsza wersja zaproponowała to w dochodzeniu, które może się synchronizować. Supervisor zapisuje teraz notatki i zadania tylko we własnym dochodzeniu tylko lokalnym, więc nic nie zostało wykonane.",
+  "refusal.supervisorHomeSyncable": "Ta propozycja znajduje się w dochodzeniu, które może się synchronizować. Supervisor zapisuje notatki i zadania tylko we własnym dochodzeniu tylko lokalnym, więc nic nie zostało wykonane.",
   "refusal.otherInvestigationChange": "Ta propozycja zmienia inne dochodzenie, czego agenci nie mogą robić, więc nic nie zostało wykonane.",
   "refusal.otherInvestigationRead": "Ta propozycja odczytuje inne dochodzenie, czego agenci nie mogą robić z tego miejsca, więc nic nie zostało wykonane.",
   "refusal.notInInvestigation": "To, co wskazuje ta propozycja, nie jest dostępne w tym dochodzeniu, więc nic nie zostało wykonane.",

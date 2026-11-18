@@ -286,7 +286,7 @@
   "refusal.targetInvestigationUnavailable": "Was dieser Vorschlag ändert, liegt in einer Untersuchung, die gelöscht oder archiviert wurde, daher wurde nichts ausgeführt.",
   "refusal.supervisorIocGone": "Der IOC, den dieser Vorschlag aktualisiert, wurde gelöscht, liegt im Papierkorb oder gehört zu keiner Untersuchung, daher wurde nichts ausgeführt.",
   "refusal.supervisorLinkGone": "Etwas, das dieser Vorschlag verknüpft, wurde gelöscht, liegt im Papierkorb oder ist keine Notiz, keine Aufgabe und kein Zeitleistenereignis in einer Untersuchung, daher wurde nichts ausgeführt.",
-  "refusal.supervisorHomeSyncable": "Eine ältere Version hat dies in einer synchronisierbaren Untersuchung vorgeschlagen. Der Supervisor schreibt Notizen und Aufgaben jetzt nur noch in seine eigene, nur lokale Untersuchung, daher wurde nichts ausgeführt.",
+  "refusal.supervisorHomeSyncable": "Dieser Vorschlag liegt in einer synchronisierbaren Untersuchung. Der Supervisor schreibt Notizen und Aufgaben nur in seine eigene, nur lokale Untersuchung, daher wurde nichts ausgeführt.",
   "refusal.otherInvestigationChange": "Dieser Vorschlag ändert eine andere Untersuchung, was Agenten nicht dürfen, daher wurde nichts ausgeführt.",
   "refusal.otherInvestigationRead": "Dieser Vorschlag liest eine andere Untersuchung, was Agenten von hier aus nicht dürfen, daher wurde nichts ausgeführt.",
   "refusal.notInInvestigation": "Was dieser Vorschlag nennt, ist in dieser Untersuchung nicht verfügbar, daher wurde nichts ausgeführt.",

@@ -2,8 +2,9 @@
  * R6U-1: what the supervisor writes can quote any investigation, local-only ones
  * included, so its notes and tasks run only in a local-only home. 2.0.2 queued
  * them in its own investigation, which could sync; approving one of those now
- * fails with a reason and runs nothing. Its writes into other investigations
- * still ask, and run when approved.
+ * fails with a reason and runs nothing, as does one whose local-only home the
+ * analyst later set to sync. Its writes into other investigations still ask,
+ * and run when approved.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db';
@@ -75,6 +76,24 @@ describe('a 2.0.2 supervisor note or task in its older investigation, which can 
       expect(await getSupervisorToolPermission(call, 'OLD-SUP'), name).toMatchObject({ kind: 'denied' });
       expect(await validateSupervisorDispatch(call, 'OLD-SUP'), name).toBeTruthy();
     }
+  });
+});
+
+describe('a 2.0.3 supervisor note or task whose investigation the analyst later set to sync', () => {
+  it('fails with the same reason, which names no older version, and writes nothing', async () => {
+    await seedOlder([]);
+    await db.folders.add(CURRENT);
+    const rows = [noteIn('NEW-SUP'), taskIn('NEW-SUP')];
+    await db.agentActions.bulkAdd(rows);
+    // App.tsx onToggleSync
+    await db.folders.update('NEW-SUP', { localOnly: false });
+    for (const row of rows) {
+      const result = await executeApprovedAction(row);
+      expect(result.isError, row.toolName).toBe(true);
+      expect(JSON.parse(result.result).error, row.toolName).toBe(REASON);
+    }
+    expect(await written('NEW-SUP')).toEqual([]);
+    expect(REASON).not.toMatch(/\b(older|now)\b|2\.0\.2/i);
   });
 });
 
