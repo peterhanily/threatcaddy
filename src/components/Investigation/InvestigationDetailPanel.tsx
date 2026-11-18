@@ -67,6 +67,7 @@ export function InvestigationDetailPanel({
   const [description, setDescription] = useState(folder.description || '');
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [showConfirmShare, setShowConfirmShare] = useState(false);
+  const [checkingShare, setCheckingShare] = useState(false);
   const keepLocalId = useId();
   // Offline, only a workspace never bound to a team server may change privacy: a bound
   // one must replay rows skipped while local-only (syncFolder), which needs the connection.
@@ -100,11 +101,18 @@ export function InvestigationDetailPanel({
   // From a local-only investigation, AI may read other investigations, local-only ones
   // included. What it wrote here syncs once this stops being local-only, so ask first.
   const toggleSync = async () => {
-    if (!onToggleSync) return;
-    if (folder.localOnly && await hasAiWrittenContent(folder.id).catch((error: unknown) => {
-      console.warn('[investigations] The AI-content check failed, so sharing asks first', error);
-      return true;
-    })) setShowConfirmShare(true);
+    // The check can take a moment in a large workspace: the control ignores clicks until it ends.
+    if (!onToggleSync || checkingShare) return;
+    let ask = false;
+    if (folder.localOnly) {
+      setCheckingShare(true);
+      ask = await hasAiWrittenContent(folder.id).catch((error: unknown) => {
+        console.warn('[investigations] The AI-content check failed, so sharing asks first', error);
+        return true;
+      });
+      setCheckingShare(false);
+    }
+    if (ask) setShowConfirmShare(true);
     else onToggleSync(folder.id, !!folder.localOnly);
   };
   // The question closes with its control, so a share never starts after the connection it needs is gone.
@@ -383,8 +391,9 @@ export function InvestigationDetailPanel({
               <label className="block text-xs font-medium text-gray-400 mb-2">{t('detail.cloudSyncLabel')}</label>
               <button
                 onClick={() => void toggleSync()}
+                aria-disabled={checkingShare || undefined}
                 className={cn(
-                  'flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border transition-colors text-start',
+                  'flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border transition-colors text-start aria-disabled:opacity-50',
                   folder.localOnly
                     ? 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
                     : 'bg-purple/5 border-purple/30 hover:border-purple/50'
@@ -426,7 +435,8 @@ export function InvestigationDetailPanel({
               aria-labelledby={`${keepLocalId}-label`}
               aria-describedby={`${keepLocalId}-desc`}
               onClick={() => void toggleSync()}
-              className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-colors text-start"
+              aria-disabled={checkingShare || undefined}
+              className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-colors text-start aria-disabled:opacity-50"
             >
               <CloudOff size={16} className="shrink-0 text-gray-500" />
               <div className="flex-1 min-w-0">

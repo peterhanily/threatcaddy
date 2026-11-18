@@ -25,10 +25,14 @@ import enInvestigations from '../../public/locales/en/investigations.json';
 import deInvestigations from '../../public/locales/de/investigations.json';
 import enCommon from '../../public/locales/en/common.json';
 
-// A pass-through spy: the real classifier runs.
+// Pass-through spies: the real classifier and check run unless a test says otherwise.
 vi.mock('../lib/tool-reach', async importOriginal => {
   const actual = await importOriginal<typeof import('../lib/tool-reach')>();
   return { ...actual, classifyToolCall: vi.fn(actual.classifyToolCall) };
+});
+vi.mock('../lib/ai-content', async importOriginal => {
+  const actual = await importOriginal<typeof import('../lib/ai-content')>();
+  return { ...actual, hasAiWrittenContent: vi.fn(actual.hasAiWrittenContent) };
 });
 
 /** WebKit keeps a transaction active only while it dispatches an IndexedDB event, so a cursor
@@ -305,6 +309,24 @@ describe('sharing a local-only investigation from its details', () => {
       fireEvent.click(await find());
       await waitFor(() => expect(onToggleSync).toHaveBeenCalledExactlyOnceWith('case', true));
       expect(shareDialog()).toBeNull();
+    });
+
+    it('waits for the content check before it takes another click', async () => {
+      let finish: (aiWrote: boolean) => void = () => {};
+      vi.mocked(hasAiWrittenContent).mockClear().mockImplementationOnce(() => new Promise(resolveCheck => { finish = resolveCheck; }));
+      const onToggleSync = vi.fn();
+      render(panel({ serverConnected, onToggleSync }));
+      const control = await find();
+      control.focus();
+      fireEvent.click(control);
+      // aria-disabled, not disabled: a keyboard user keeps focus on the control.
+      expect(control).toHaveAttribute('aria-disabled', 'true');
+      expect(control).toHaveFocus();
+      fireEvent.click(control);
+      await act(async () => { finish(false); });
+      await waitFor(() => expect(control).not.toHaveAttribute('aria-disabled'));
+      expect(onToggleSync).toHaveBeenCalledExactlyOnceWith('case', true);
+      expect(hasAiWrittenContent).toHaveBeenCalledTimes(1);
     });
 
     it('asks when the content check fails, rather than sharing unchecked', async () => {
