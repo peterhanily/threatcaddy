@@ -243,6 +243,9 @@ test('a production path ends the exception', () => {
     error => /reaches production through \.>react>picomatch/.test(error.message)
       && /reaches production through \.>@excalidraw\/excalidraw>react>picomatch/.test(error.message)
       && !error.message.includes(`through ${REVIEWED_PATH}`));
+  const optional = pnpmLock.replace('        version: 8.72.1(typescript@6.0.3)\n\npackages:',
+    '        version: 8.72.1(typescript@6.0.3)\n    optionalDependencies:\n      picomatch:\n        specifier: ^4.0.7\n        version: 4.0.7\n\npackages:');
+  assert.throws(() => audit('root', fixture('root'), { lockfile: optional }), /GHSA-fc5q-39xc-vjpf reaches production through \.>picomatch$/m);
   for (const flags of [{}, { dev: false }, { devOptional: true }, { optional: true }]) {
     const lock = serverLock();
     lock.packages['node_modules/picomatch'] = { version: '4.0.7', ...flags };
