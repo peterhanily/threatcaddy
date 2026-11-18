@@ -116,8 +116,10 @@ describe('app shell text', () => {
     stubWidth(false);
     render(<App />);
     fireEvent.click((await screen.findAllByRole('button', { name: new RegExp(`^${de.common['sidebar.products']}`) }))[0]);
-    expect(await screen.findByText(de.common['productDraft.retained'])).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: de.common['productDraft.resume'] })).toBeInTheDocument();
+    const banner = (await screen.findByText(de.common['productDraft.retained'])).closest('[role="status"]') as HTMLElement;
+    expect(banner).toContainElement(screen.getByRole('button', { name: de.common['productDraft.resume'] }));
+    // A full-width bar above the workspace: beside the view, a longer translation pushed Resume off a phone screen.
+    expect(screen.getByRole('main')).not.toContainElement(banner);
     expect(screen.queryByText('Unsaved product draft retained in this tab.')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Resume draft' })).toBeNull();
   }, 30_000);

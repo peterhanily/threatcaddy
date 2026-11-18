@@ -1622,7 +1622,18 @@ const AppInner = memo(function AppInner({
         </div>
       )}
       <AppLayout
-        notice={<><OfflineStatusNotice />{syncError && <SyncErrorBanner error={syncError} />}</>}
+        notice={<><OfflineStatusNotice />{syncError && <SyncErrorBanner error={syncError} />}
+          {/* Above the workspace: <main> lays its children out in a row. */}
+          {productDraftFolderId && !productComposerActive && !screenshareMaxLevel && (
+            <div role="status" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border-subtle bg-bg-surface px-4 py-2 text-sm text-text-secondary">
+              <span>{tCommon('productDraft.retained')}</span>
+              <button className="min-h-11 rounded border border-border-medium px-3 py-2 hover:bg-bg-hover" onClick={() => {
+                ctxHandleOpenInvestigation(productDraftFolderId, 'local');
+                setShowTrash(false); setShowArchive(false);
+                navigateTo('products', { selectedFolderId: productDraftFolderId });
+              }}>{tCommon('productDraft.resume')}</button>
+            </div>
+          )}</>}
         bgImageEnabled={settings.bgImageEnabled}
         bgImageOpacity={settings.bgImageOpacity}
         bgImagePosX={settings.bgImagePosX}
@@ -1669,16 +1680,6 @@ const AppInner = memo(function AppInner({
       >
         <ErrorBoundary region="main-content">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500">{tCommon('loadingView')}</div>}>
-        {productDraftFolderId && !productComposerActive && !screenshareMaxLevel && (
-          <div role="status" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border-subtle bg-bg-surface px-4 py-2 text-sm text-text-secondary">
-            <span>{tCommon('productDraft.retained')}</span>
-            <button className="min-h-11 rounded border border-border-medium px-3 py-2 hover:bg-bg-hover" onClick={() => {
-              ctxHandleOpenInvestigation(productDraftFolderId, 'local');
-              setShowTrash(false); setShowArchive(false);
-              navigateTo('products', { selectedFolderId: productDraftFolderId });
-            }}>{tCommon('productDraft.resume')}</button>
-          </div>
-        )}
         {screenshareViewHidden && (
           <div role="status" className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-text-secondary">
             <p>{tCommon('screenshare.viewHidden')}</p>
