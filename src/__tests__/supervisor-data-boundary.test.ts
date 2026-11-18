@@ -10,7 +10,7 @@ import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentAction, type Folder, 
 import { findSupervisorFolder, runSupervisorCycle } from '../lib/caddy-agent-supervisor';
 import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
 import { rejectAction } from '../lib/agent-action-approval';
-import { exportInvestigationJSON } from '../lib/export';
+import { exportInvestigationJSON, importJSON } from '../lib/export';
 import i18n from '../i18n';
 import enAgent from '../../public/locales/en/agent.json';
 import deAgent from '../../public/locales/de/agent.json';
@@ -183,6 +183,41 @@ describe('the investigation export', () => {
     expect(input('agent-pending')).toEqual({ title: 'Agent input stays' });
     // The stored row is not changed.
     expect((await db.agentActions.get('sup-pending'))?.toolInput).toEqual(quoting);
+  });
+
+  it('drops the result of a supervisor proposal that did not run there, which can quote its input, and keeps what ran', async () => {
+    // A failed update_ioc quotes up to 40 characters of the value it refused.
+    const quoted = JSON.stringify({ error: `Unsupported confidence "Evidence ${LOCAL}"` });
+    await db.agentActions.bulkAdd([
+      supervisorRow('sup-failed', 'S', { status: 'failed', resultSummary: quoted }),
+      supervisorRow('sup-rejected', 'S', { status: 'rejected', resultSummary: `Rejected: Evidence ${LOCAL}` }),
+      supervisorRow('sup-executed', 'S', { status: 'executed', resultSummary: '{"updated":true}' }),
+      { id: 'agent-failed', investigationId: 'S', threadId: 't', agentConfigId: 'ap-threat-hunter', toolName: 'update_ioc', toolInput: {}, rationale: 'r',
+        status: 'failed', resultSummary: 'Agent result stays', createdAt: 1 },
+    ]);
+    const exported = JSON.parse(await exportInvestigationJSON('S')) as { agentActions: AgentAction[] };
+    expect(JSON.stringify(exported)).not.toContain(LOCAL);
+    const row = (id: string) => exported.agentActions.find(action => action.id === id);
+    expect(row('sup-failed')).toMatchObject({ status: 'failed', toolInput: {} });
+    expect(row('sup-failed')).not.toHaveProperty('resultSummary');
+    expect(row('sup-rejected')).not.toHaveProperty('resultSummary');
+    expect(row('sup-executed')?.resultSummary).toBe('{"updated":true}');
+    expect(row('agent-failed')?.resultSummary).toBe('Agent result stays');
+    // The stored row is not changed, and the supervisor investigation's own file keeps its result.
+    expect((await db.agentActions.get('sup-failed'))?.resultSummary).toBe(quoted);
+    await db.agentActions.add(supervisorRow('own-failed', 'SUP', { status: 'failed', resultSummary: quoted }));
+    const own = JSON.parse(await exportInvestigationJSON('SUP')) as { agentActions: AgentAction[] };
+    expect(own.agentActions.find(action => action.id === 'own-failed')?.resultSummary).toBe(quoted);
+  });
+
+  it('a file whose supervisor rows lost their result imports back', async () => {
+    await db.agentActions.add(supervisorRow('sup-failed', 'S', { status: 'failed', resultSummary: `Unsupported confidence "Evidence ${LOCAL}"` }));
+    const exported = await exportInvestigationJSON('S');
+    await db.agentActions.clear();
+    await importJSON(exported);
+    const imported = await db.agentActions.toArray();
+    expect(imported.find(action => action.rationale === FIXED && action.status === 'failed')).toBeDefined();
+    expect(JSON.stringify(imported)).not.toContain(LOCAL);
   });
 
   it('keeps it in the supervisor investigation\'s own file', async () => {
