@@ -199,6 +199,10 @@ test('malformed or partly hidden reports fail instead of passing', () => {
     second.metadata.vulnerabilities[severity] += 1;
     assert.throws(() => audit('root', second), /summary and its list of high or critical advisories disagree/);
   }
+  // npm's summary is checked too: a high count with no listed advisory fails.
+  const npmHidden = fixture('extension');
+  npmHidden.metadata.vulnerabilities.high = 1;
+  assert.throws(() => audit('extension', npmHidden, { status: 0 }), /summary and its list of high or critical advisories disagree/);
 });
 
 test('a root audit narrowed to fewer packages than pnpm-lock.yaml fails, though the reviewed path keeps the exception in use', () => {
