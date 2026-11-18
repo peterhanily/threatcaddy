@@ -39,7 +39,10 @@ beforeEach(async () => {
     for (const table of db.tables) await table.clear();
   });
 });
-afterEach(async () => { await act(async () => { await i18n.changeLanguage('en'); }); });
+afterEach(async () => {
+  vi.restoreAllMocks();
+  await act(async () => { await i18n.changeLanguage('en'); });
+});
 
 describe('hasAiWrittenContent', () => {
   it('is false for an investigation with only analyst content', async () => {
@@ -118,6 +121,16 @@ describe('sharing a local-only investigation from its details', () => {
       fireEvent.click(await find());
       await waitFor(() => expect(onToggleSync).toHaveBeenCalledExactlyOnceWith('case', true));
       expect(shareDialog()).toBeNull();
+    });
+
+    it('asks when the content check fails, rather than sharing unchecked', async () => {
+      await db.notes.add(note('human', 'case'));
+      vi.spyOn(db.chatThreads, 'where').mockImplementation(() => { throw new Error('Synthetic read failure'); });
+      const onToggleSync = vi.fn();
+      render(panel({ serverConnected, onToggleSync }));
+      fireEvent.click(await find());
+      expect(await screen.findByRole('dialog', { name: en['detail.shareAiTitle'] })).toHaveTextContent(message);
+      expect(onToggleSync).not.toHaveBeenCalled();
     });
 
     it('never asks when turning local-only on', async () => {
