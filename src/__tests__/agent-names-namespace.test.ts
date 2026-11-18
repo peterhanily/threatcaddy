@@ -6,7 +6,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
-import { DEFAULT_SETTINGS, type Folder, type Settings, type ToolUseBlock } from '../types';
+import { DEFAULT_SETTINGS, type AgentProfile, type Folder, type Settings, type ToolUseBlock } from '../types';
 import i18n from '../i18n';
 import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
 import { runAgentCycle } from '../lib/caddy-agent';
@@ -21,7 +21,7 @@ vi.mock('../lib/llm-router', async orig => (await import('./helpers/scripted-llm
 
 const settings: Settings = { ...DEFAULT_SETTINGS, llmAnthropicApiKey: 'test-key', llmRoutingMode: 'extension' };
 const TITLE = 'Lead Analyst — Audit Log';
-const lead = BUILTIN_AGENT_PROFILES.find(profile => profile.id === 'ap-lead-analyst')!;
+const lead = BUILTIN_AGENT_PROFILES.find(profile => profile.id === 'ap-lead-analyst') as AgentProfile;
 
 let load: ReturnType<typeof vi.spyOn>;
 let restore = () => {};

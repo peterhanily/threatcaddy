@@ -79,7 +79,7 @@ describe('a pause written while a cycle runs', () => {
     expect((await db.agentDeployments.get('dep-hunter'))?.status).toBe('running');
 
     await openPanelAndPause(folder);
-    await act(async () => { gate.pending.shift()!(); await first; });
+    await act(async () => { gate.pending.shift()?.(); await first; });
     const after = await db.agentDeployments.get('dep-hunter');
     expect(after).toMatchObject({ status: 'paused', serverSideEnabled: false, handoffState: 'client' });
     expect(after?.metrics?.cyclesRun).toBe(1);
@@ -120,10 +120,10 @@ describe('a pause written while a cycle runs', () => {
     await openPanelAndPause(folder);
     let settled = false;
     void cycle.then(() => { settled = true; });
-    await act(async () => { gate.pending.shift()!(); });
+    await act(async () => { gate.pending.shift()?.(); });
     // Either the cycle ends, or it starts the paused agent; then let that run end too.
     await waitFor(() => expect(settled || gate.sends > 1).toBe(true));
-    while (gate.pending.length) await act(async () => { gate.pending.shift()!(); });
+    while (gate.pending.length) await act(async () => { gate.pending.shift()?.(); });
     const result = await act(async () => await cycle);
     expect(gate.sends).toBe(1);
     expect([...result.deploymentResults.keys()]).toEqual(['dep-first']);
