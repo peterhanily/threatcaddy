@@ -99,6 +99,10 @@ Hardens CaddyAI chat, AgentCaddy agents, the supervisor and the agent bridge aga
 - The remote-investigation banner no longer says that data is not stored locally: it says that the investigation's contents come from the team server and are not saved on this device, and that items added while viewing it are saved on this device and queued to sync to that investigation on the team server. The standalone file's warning no longer says that the content security policy is not enforced: it says that the policy does not restrict scripts or network connections.
 - On phones, an agent proposal's header wraps instead of covering its status, the Approve all confirmation has its own row with larger buttons, and Settings → AI shows each configured agent host's URL on its own line. In right-to-left languages, a long Latin host name there, and a long Latin investigation name on the sidebar's investigation card, is cut at its own end, so its start stays visible.
 
+### CI and release
+
+- The root and server dependency audits accept one reviewed exception, picomatch GHSA-fc5q-39xc-vjpf (ReDoS, no patched release). Build, lint and test tooling reach it, and so does the file watcher of Sass, which Excalidraw lists as a dependency; ThreatCaddy never runs Sass, and picomatch is in neither the client bundle nor the server image. The audits still cover the full dependency graphs at `--audit-level=high`, and CI fails on any other high or critical advisory, once a fix ships, when the advisory's range or severity changes, or when a new production path appears.
+
 ## v2.0.2 — 2026-11-16
 
 First release since 2.0.0. Version 2.0.1 was deployed to threatcaddy.com and published as the GHCR `latest` server image on 15 November 2026, but its downloads were never released; an independent review then found regressions in it, which this release fixes. 2.0.2 includes every 2.0.1 change. See the [upgrade and channel notes](docs/releases/v2.0.2.md). The extension remains independently versioned at 1.1.3.
