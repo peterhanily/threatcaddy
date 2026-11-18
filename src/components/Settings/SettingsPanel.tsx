@@ -947,7 +947,7 @@ function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpda
             {hosts.map(host => (
               <li key={host.id} className="flex min-w-0 items-center justify-between gap-2 text-xs">
                 <span className="min-w-0">
-                  <span className="block truncate text-gray-300">{host.displayName || host.name}</span>
+                  <span dir="auto" className="block truncate text-left text-gray-300 rtl:text-right">{host.displayName || host.name}</span>
                   <span dir="ltr" className="block truncate text-gray-500 rtl:text-right">{host.url}</span>
                   {!isHttpsOrLoopback(host.url) && <span className="block text-[10px] text-amber-400">{t('ai.dataFlow.hostNeedsHttps')}</span>}
                 </span>

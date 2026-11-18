@@ -545,6 +545,15 @@ describe('SettingsPanel: where AI data goes', () => {
     expect(within(urlLine.closest('li') as HTMLElement).getByText('Not used: needs https')).toBeInTheDocument();
   });
 
+  // In Arabic a long Latin name used to be cut at its start, the part that identifies the host.
+  it('lets each agent host name take its own direction, at the start of the row in either page direction', () => {
+    const name = 'Fictional analysis host with an unusually long display name';
+    renderAI({ agentHosts: [{ id: 'soc', name: 'soc', displayName: name, url: 'https://soc.example', enabled: true, skills: [] }] });
+    const nameLine = screen.getByText(name);
+    expect(nameLine).toHaveAttribute('dir', 'auto');
+    expect(nameLine).toHaveClass('block', 'truncate', 'text-left', 'rtl:text-right');
+  });
+
   it('hides the agent host list when none are configured', () => {
     renderAI();
     expect(screen.queryByText('Configured agent hosts')).not.toBeInTheDocument();
