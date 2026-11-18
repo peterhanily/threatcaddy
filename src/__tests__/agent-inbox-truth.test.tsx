@@ -267,7 +267,7 @@ describe('A4-5 the agent panel and cards speak the analyst’s language', () => 
   it('an agent row names its role, its metrics and its escalations', async () => {
     const hunter = deployment('ap-threat-hunter', { metrics: {
       cyclesRun: 3, toolCallsExecuted: 2, toolCallsProposed: 1, tasksCompleted: 0, tasksRejected: 0, tokensUsed: { input: 9000, output: 3345 },
-      lastCycleAt: 1, toolCallHistogram: { search_notes: 4 }, tasksEscalated: 1 } });
+      lastCycleAt: 1, costUSD: 0.42, toolCallHistogram: { search_notes: 4 }, tasksEscalated: 1 } });
     render(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={[hunter]} />);
     await act(async () => {});
     fireEvent.click(screen.getByRole('button', { name: `${de['panel.agents']}(1)` }));
@@ -279,19 +279,22 @@ describe('A4-5 the agent panel and cards speak the analyst’s language', () => 
     expect(screen.queryByText(/ tok$|escalated to human| cycles$/)).not.toBeInTheDocument();
     expect(screen.getByTitle(de['panel.mostUsedTool'])).toHaveTextContent('search_notes ×4');
     expect(screen.getByTitle(de['panel.escalatedTitle'])).toBeInTheDocument();
+    expect(screen.getByTitle(deText('cycleSummary.tokensInOut', { in: (9000).toLocaleString(), out: (3345).toLocaleString() }))).toBeInTheDocument();
   });
 
   it('the tasks tab names each task’s status, priority and source', async () => {
     await db.tasks.add({ id: 'agent-task', folderId: 'S', title: 'Delegated follow-up', completed: false, priority: 'high', status: 'in-progress', order: 1,
       tags: ['agent-delegated'], createdBy: 'agent:ap-lead-analyst', trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+    await db.tasks.add({ id: 'agent-task-2', folderId: 'S', title: 'Unranked follow-up', completed: false, priority: 'none', status: 'todo', order: 2,
+      tags: [], createdBy: 'agent:ap-lead-analyst', trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
     render(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={[]} />);
     await act(async () => {});
-    fireEvent.click(screen.getByRole('button', { name: `${de['panel.tasks']}(1)` }));
+    fireEvent.click(screen.getByRole('button', { name: `${de['panel.tasks']}(2)` }));
     expect(await screen.findByText(deTasks['status.inProgress'])).toBeInTheDocument();
     expect(screen.getByText(deTasks['priority.high'])).toBeInTheDocument();
-    expect(screen.getByText(de['panel.taskSourceAgent'])).toBeInTheDocument();
+    expect(screen.getAllByText(de['panel.taskSourceAgent'])).toHaveLength(2);
     expect(screen.getByText(de['panel.taskSourceDelegated'])).toBeInTheDocument();
-    expect(screen.queryByText(/^(in-progress|high|agent|delegated)$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^(in-progress|high|none|agent|delegated)$/)).not.toBeInTheDocument();
   });
 
   it('the logs tab counts and names each status', async () => {
@@ -331,11 +334,11 @@ describe('A4-5 the agent panel and cards speak the analyst’s language', () => 
     } finally { failing.mockRestore(); }
   });
 
-  it('a card names its severity', () => {
-    render(<AgentActionCard action={action({ toolName: 'ask_human', status: 'executed', severity: 'warning' })} />);
+  it.each([['warning', 'action.severityWarning'], ['critical', 'action.severityCritical']] as const)('a card names its %s severity', (severity, key) => {
+    render(<AgentActionCard action={action({ toolName: 'ask_human', status: 'executed', severity })} />);
     fireEvent.click(screen.getByRole('button', { expanded: false }));
-    expect(screen.getByText(de['action.severityWarning'])).toBeInTheDocument();
-    expect(screen.queryByText('warning')).not.toBeInTheDocument();
+    expect(screen.getByText(de[key])).toBeInTheDocument();
+    expect(screen.queryByText(severity)).not.toBeInTheDocument();
   });
 });
 
