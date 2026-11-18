@@ -11,6 +11,7 @@ vi.mock('../lib/agent-handoff', () => ({
   markReclaimPending: mocks.reclaim, reconcileAfterHandoff: mocks.reconcile,
 }));
 import { useServerAgents } from '../hooks/useServerAgents';
+import { useAgentDeployments } from '../hooks/useAgentDeployments';
 
 const deployment = (id: string, values: Partial<AgentDeployment> = {}): AgentDeployment => ({
   id, investigationId: 'case-one', profileId: 'profile-one', status: 'running',
@@ -101,6 +102,20 @@ describe('unavailable server agent execution', () => {
     await waitFor(async () => expect((await db.agentDeployments.get('server-owned'))?.status).toBe('paused'));
     await waitFor(() => expect(result.current.pausedDeploymentIds).toEqual(['server-owned']));
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('the agents list shows a paused deployment as paused with the notice, not at its next poll', { timeout: 10_000 }, async () => {
+    await db.agentDeployments.add(deployment('server-owned'));
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(unavailable));
+    // Wired as App wires them: the panel's badge and notice read this list, which polls only every 10 s.
+    const { result } = renderHook(() => {
+      const list = useAgentDeployments('case-one');
+      const server = useServerAgents({ investigationId: 'case-one', deployments: list.deployments, profiles: [], enabled: list.deployments.some(d => d.serverSideEnabled) });
+      return { list, server };
+    });
+    await waitFor(() => expect(result.current.server.pausedDeploymentIds).toEqual(['server-owned']));
+    await waitFor(() => expect(result.current.list.deployments).toMatchObject([{ id: 'server-owned', status: 'paused', serverSideEnabled: false }]),
+      { timeout: 3_000 });
   });
 
   it('the routine status check of a 2.0.x server pauses nothing and reports no error', async () => {

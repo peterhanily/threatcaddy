@@ -127,6 +127,8 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
     // Every 2.0.x server answers unavailable, so the answer itself is no error;
     // only a pause is news, and the panel says it in the analyst's language.
     if (paused.length && mountedRef.current) setPausedDeploymentIds(ids => [...new Set([...ids, ...paused])]);
+    // The deployments list reloads now, so the paused agent's badge agrees with that notice.
+    if (paused.length) window.dispatchEvent(new CustomEvent('tc-folders-changed'));
     return true;
   }, []);
 
