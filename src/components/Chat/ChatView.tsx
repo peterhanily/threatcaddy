@@ -1156,8 +1156,9 @@ export function ChatView({
                   <Shield size={10} />
                   {yoloMode ? t('view.yoloLabel') : t('mode.askLabel')}
                 </button>
-                {/* The title reaches only mouse users; assistive technology reads the same text as the switch's description. */}
-                <span id={yoloDescriptionId} className="sr-only">{yoloTitle}</span>
+                {/* The title reaches only mouse users; assistive technology reads the same text as the switch's description.
+                    Hidden, so it is read only through aria-describedby and not again as text after the switch. */}
+                <span id={yoloDescriptionId} hidden>{yoloTitle}</span>
                 {threadTokenTotal > 0 && (
                   <span className={cn(
                     'text-[10px] font-mono px-1.5 py-0.5 rounded border me-1',

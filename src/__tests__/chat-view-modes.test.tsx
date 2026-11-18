@@ -2,7 +2,7 @@
  * C-CHAT-2 and the mode copy: Plan offers only reads of this investigation, and
  * the Plan, Ask and YOLO labels say what each mode does.
  */
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, isInaccessible, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatMessage, ChatThread, Folder, Settings } from '../types';
 import { ChatView } from '../components/Chat/ChatView';
@@ -196,6 +196,16 @@ describe('the Ask/YOLO switch for assistive technology', () => {
   it('in Plan mode, the description says the switch applies only in Act mode', () => {
     renderChat('plan');
     expect(screen.getByRole('button', { name: 'Ask' })).toHaveAccessibleDescription(IN_PLAN + ASK_TITLE);
+  });
+
+  // A screen reader would otherwise read the description twice: with the switch and again as text after it.
+  it('keeps the description out of the reading order', () => {
+    renderChat('act');
+    const toggle = screen.getByRole('button', { name: 'Ask' });
+    const description = document.getElementById(toggle.getAttribute('aria-describedby') ?? '');
+    expect(description).toHaveTextContent(ASK_TITLE);
+    expect(isInaccessible(description as HTMLElement)).toBe(true);
+    expect(toggle).toHaveAccessibleDescription(ASK_TITLE);
   });
 });
 
