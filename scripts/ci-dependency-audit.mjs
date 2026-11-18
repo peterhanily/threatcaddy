@@ -171,6 +171,16 @@ export function evaluateAudit({ project, report, status, exceptions, lockfile })
     : (high + critical > 0) === (advisories.length > 0)),
     'the audit summary and its list of high or critical advisories disagree');
   check((String(status) === '1') === (advisories.length > 0), `the audit exited ${status} but lists ${advisories.length} high or critical advisories`);
+  // The registry counts each audited name@version once, plus the importer (observed 18 November
+  // 2026), so a production-only, development-only or no-optional root audit covers fewer packages
+  // than the lockfile locks. npm's summary counts the whole tree even when it omits a type.
+  const lock = project === 'root' ? parsePnpmLock(lockfile) : undefined;
+  if (lock) {
+    const covered = report.metadata.totalDependencies;
+    const locked = new Set(Object.keys(lock.snapshots).map(key => key.replace(/\(.*$/, ''))).size;
+    check(Number.isInteger(covered) && covered >= locked,
+      `the root audit covered ${covered} packages, but pnpm-lock.yaml locks ${locked}; audit the complete graph`);
+  }
 
   const problems = [];
   const used = new Set();
@@ -187,7 +197,7 @@ export function evaluateAudit({ project, report, status, exceptions, lockfile })
     if (advisory.fixed) problems.push(`${entry.id}: a fixed ${entry.package} exists or cannot be ruled out; update instead`);
     if (project === 'root') {
       const reviewed = entry.reviewedProductionPaths?.root ?? [];
-      const paths = productionPaths(parsePnpmLock(lockfile), entry.package);
+      const paths = productionPaths(lock, entry.package);
       for (const path of paths.filter(path => !reviewed.includes(path))) problems.push(`${entry.id} reaches production through ${path}`);
       for (const path of reviewed.filter(path => !paths.includes(path))) problems.push(`${entry.id}: the reviewed production path ${path} no longer exists; remove it`);
     } else {

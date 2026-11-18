@@ -201,6 +201,21 @@ test('malformed or partly hidden reports fail instead of passing', () => {
   }
 });
 
+test('a root audit narrowed to fewer packages than pnpm-lock.yaml fails, though the reviewed path keeps the exception in use', () => {
+  // `npm_config_production=true pnpm audit --audit-level=high --json` on 18 November 2026:
+  // it lists picomatch only through the reviewed Excalidraw path and hides every development advisory.
+  assert.throws(() => audit('root', fixture('root-production'), { lockfile: read('../pnpm-lock.yaml') }),
+    /the root audit covered 278 packages, but pnpm-lock\.yaml locks \d+; audit the complete graph/);
+  // The registry counts each locked name@version once, plus the importer: the fixture lockfile locks 12.
+  const narrowed = fixture('root');
+  narrowed.metadata.totalDependencies = 11;
+  assert.throws(() => audit('root', narrowed), /covered 11 packages, but pnpm-lock\.yaml locks 12/);
+  narrowed.metadata.totalDependencies = 12;
+  assert.deepEqual(audit('root', narrowed).map(advisory => advisory.id), [GHSA]);
+  delete narrowed.metadata.totalDependencies;
+  assert.throws(() => audit('root', narrowed), /covered undefined packages/);
+});
+
 test('the root summary counts each finding path, as the registry does', () => {
   // Observed 18 November 2026: two vulnerable picomatch versions are two findings and count 2.
   const twoVersions = fixture('root');
