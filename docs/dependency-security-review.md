@@ -3,6 +3,49 @@
 Keep the complete audit and publication gates enabled. Settings, repository
 changes, published artifacts and running server deployments are separate states.
 
+## 18 November 2026 picomatch audit exception
+
+GitHub reviewed [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
+on 17 November: picomatch backtracks exponentially on single-branch repeated
+extglobs such as `+(*)` (ReDoS, CWE-1333, CVSS 7.5, high). Every release up to
+4.0.7, the latest, is affected, and no patched version exists. npm's only
+suggested fix downgrades Vitest to 3.1.4, against the exact 5.0.5 alignment
+below. Since then the root and server audits report it and exit 1; the
+extension audit is clean.
+
+This advisory is the only exception. `scripts/dependency-audit-exceptions.json`
+lists it for the root and server audits with its reason, review date and end
+condition. picomatch matches glob patterns that this repository controls, in
+lint, build and test tooling: TypeScript ESLint, tinyglobby, fdir, Rollup plugin
+utilities, Vite and Vitest. In the server it is a development dependency only.
+The runtime image installs production dependencies, removes npm and is scanned
+separately by Trivy. The root lockfile also classifies one path as production:
+Excalidraw declares Sass as a dependency, and Sass's optional `@parcel/watcher` uses
+picomatch only for Sass's `--watch` command. ThreatCaddy has no Sass sources,
+and the client bundle contains none of these three packages.
+
+The audit commands are unchanged: complete graphs, `--audit-level=high`, no
+omitted dependency types and no tolerance for registry errors.
+`scripts/ci-dependency-audit.mjs` reads their JSON output. It accepts a failing
+audit only when every high or critical advisory is listed for that project and
+still matches its review. The job fails on any other high or critical advisory,
+on an audit or registry error, when the advisory's range or severity changes,
+and once it is no longer reported. It fails once a fix exists: pnpm reports a
+patched version, or npm finds a published picomatch outside the range. It also
+fails when the advisory reaches production by another path. For the server,
+every reported location must be `dev: true` in `server/package-lock.json`. For
+the root, the check walks `pnpm-lock.yaml`, because pnpm's report lists only
+the first path it finds, development paths first, and marks no path as
+development; only the Excalidraw path above is accepted. pnpm's own `auditConfig.ignoreGhsas` would hide the advisory
+before any of this is checked. `pnpm audit --ignore` does not audit at all: it
+writes the id into `auditConfig.ignoreCves`, which matches CVE ids only. npm 11
+has no per-advisory ignore.
+
+The scheduled CI run audits all three lockfiles again every Monday. Maintainers
+also recheck the advisory and picomatch releases weekly and update the review
+date. Once a fixed picomatch has passed the seven-day release window, update
+both lockfiles and delete the exception.
+
 ## 15 November 2026 Hono update
 
 The server's Hono dependency is pinned to exactly 4.13.18, the maintainer's
@@ -55,8 +98,10 @@ claim that future advisories cannot affect the lockfiles.
 
 ## Remaining dependency advisories
 
-Server and extension audits are clean. The root full audit still reports four
-moderate occurrences and one low occurrence across these build-time packages:
+On 18 November 2026 the extension audit is clean, and the server audit reports
+only the excepted picomatch advisory. The root full audit reports that advisory
+and two moderate advisories, minimatch and glob below; deepmerge is no longer
+reported. These build-time packages remain under review:
 
 | Package/advisory | Reachability and remaining action |
 | --- | --- |
@@ -67,8 +112,9 @@ moderate occurrences and one low occurrence across these build-time packages:
 These packages are not imported by application/server request handlers. Build
 inputs/configuration must remain trusted; CI jobs retain their time limits.
 This is a scoped exposure assessment, not a claim the dependencies are patched.
-Leave alerts open and recheck weekly. No severity threshold, development-package
-coverage or audit failure handling is relaxed, and no advisory is ignored.
+Leave alerts open and recheck weekly. No severity threshold or development-package
+coverage is relaxed, and audit and registry errors still fail. No advisory is
+ignored except the reviewed picomatch exception above, which CI rechecks on every run.
 
 ## CodeQL triage
 
