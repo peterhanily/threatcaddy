@@ -22,6 +22,7 @@ const KEYS: Record<string, string[]> = {
 
 // French writes "Version" and "Notifications" too.
 const SAME_AS_ENGLISH = new Set(['fr settings:general.version', 'fr common:toasts.label']);
+const placeholders = (text: string) => [...text.matchAll(/\{\{(\w+)\}\}/g)].map(match => match[1]).sort();
 
 describe('shell and settings text in every language', () => {
   it('has a value in each language (German included) that is not the English source for each key', () => {
@@ -34,6 +35,7 @@ describe('shell and settings text in every language', () => {
           const id = `${locale} ${namespace}:${key}`;
           expect(en[key], `en ${namespace}:${key}`).toBeTruthy();
           expect(values[key], id).toBeTruthy();
+          expect(placeholders(values[key]), id).toEqual(placeholders(en[key]));
           // Languages that use the loanword "Tags" elsewhere in the app (German, Dutch, Portuguese) match it here.
           if (key === 'sidebar.tags') expect(values[key], id).toBe(read(locale, 'investigations')['detail.tagsLabel']);
           else if (!SAME_AS_ENGLISH.has(`${locale} ${namespace}:${key}`)) expect(values[key], id).not.toBe(en[key]);
