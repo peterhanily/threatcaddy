@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { DBCore, DBCoreCursor, Middleware } from 'dexie';
 import i18n from '../i18n';
 import { db } from '../db';
 import { hasAiWrittenContent } from '../lib/ai-content';
@@ -21,6 +22,42 @@ import type { AgentAction, ChatThread, Folder } from '../types';
 import enInvestigations from '../../public/locales/en/investigations.json';
 import deInvestigations from '../../public/locales/de/investigations.json';
 import enCommon from '../../public/locales/en/common.json';
+
+/** WebKit keeps a transaction active only while it dispatches an IndexedDB event, so a cursor
+ * that awaits Web Crypto between rows (the encryption middleware's) cannot continue there.
+ * fake-indexeddb never ends a transaction; this layer under the encryption middleware refuses the same calls. */
+const webkitCursors: Middleware<DBCore> = {
+  stack: 'dbcore', name: 'webkit-cursors', level: 1,
+  create: down => ({ ...down, table: name => {
+    const table = down.table(name);
+    return { ...table, async openCursor(req) {
+      const cursor = await table.openCursor(req);
+      if (!cursor) return cursor;
+      let dispatching = false;
+      const active = () => {
+        if (!dispatching) throw new DOMException('The transaction is inactive or finished.', 'TransactionInactiveError');
+      };
+      const strict: DBCoreCursor = {
+        get trans() { return cursor.trans; },
+        get key() { return cursor.key; },
+        get primaryKey() { return cursor.primaryKey; },
+        get value() { return cursor.value; },
+        get done() { return cursor.done; },
+        continue: key => { active(); cursor.continue(key); },
+        continuePrimaryKey: (key, primaryKey) => { active(); cursor.continuePrimaryKey(key, primaryKey); },
+        advance: count => { active(); cursor.advance(count); },
+        stop: value => cursor.stop(value),
+        fail: error => cursor.fail(error),
+        start: onNext => cursor.start(() => { dispatching = true; try { onNext(); } finally { dispatching = false; } }),
+        next() {
+          let first = true;
+          return strict.start(() => { if (first) { first = false; strict.continue(); } else strict.stop(); }).then(() => strict);
+        },
+      };
+      return strict;
+    } };
+  } }),
+};
 
 const en = enInvestigations as Record<string, string>;
 const de = deInvestigations as Record<string, string>;
@@ -105,19 +142,42 @@ describe('hasAiWrittenContent', () => {
       expect(await hasAiWrittenContent('case')).toBe(true);
     });
 
-    it('is false when AI elsewhere only read here, wrote in its own investigation, or never changed anything here', async () => {
+    it('is false when AI elsewhere only read here, wrote in its own or a third investigation, or never changed anything here', async () => {
+      await db.folders.add({ id: 'third', name: 'Third case', order: 2, status: 'active', createdAt: now, localOnly: true });
       await chatIn('other', [call('read_note', { id: 'human' }), call('create_note', { title: 'Fictional' }),
-        call('create_in_investigation', { investigationId: 'other', entityType: 'note', data: { title: 'Fictional' } })]);
+        call('create_in_investigation', { investigationId: 'other', entityType: 'note', data: { title: 'Fictional' } }),
+        call('create_in_investigation', { investigationId: 'third', entityType: 'note', data: { title: 'Fictional' } })]);
       await db.agentActions.bulkAdd([action('pending'), action('rejected'), action('failed')]);
       expect(await hasAiWrittenContent('case')).toBe(false);
       expect(await hasAiWrittenContent('other')).toBe(true);
+      expect(await hasAiWrittenContent('third')).toBe(true);
     });
 
-    it('sees the write in an encrypted workspace', async () => {
-      setEncryptionMeta({ version: 1, salt: 'fixture-salt', wrappedKey: 'fixture-wrapped', recoverySalt: 'fixture-recovery-salt',
-        recoveryWrappedKey: 'fixture-recovery-key', enabledAt: 1 });
-      setSessionKey(await generateMasterKey());
-      try {
+    describe('in an encrypted workspace, where WebKit cannot continue a decrypting cursor', () => {
+      beforeEach(async () => {
+        db.close();
+        db.use(webkitCursors);
+        await db.open();
+        setEncryptionMeta({ version: 1, salt: 'fixture-salt', wrappedKey: 'fixture-wrapped', recoverySalt: 'fixture-recovery-salt',
+          recoveryWrappedKey: 'fixture-recovery-key', enabledAt: 1 });
+        setSessionKey(await generateMasterKey());
+        await db.notes.bulkAdd(Array.from({ length: 5 }, (_, index) => note(`analyst-${index}`, 'case', { createdBy: 'Fictional Analyst' })));
+        await db.chatThreads.add(thread('plain-elsewhere', 'other'));
+      });
+      afterEach(async () => {
+        clearEncryptionMeta();
+        setSessionKey(null);
+        db.close();
+        db.unuse({ stack: 'dbcore', name: 'webkit-cursors' });
+        await db.open();
+      });
+
+      it('shares without asking when AI wrote nothing here', async () => {
+        await chatIn('other', [call('read_note', { id: 'analyst-0' }), call('create_note', { title: 'Fictional' })]);
+        expect(await hasAiWrittenContent('case')).toBe(false);
+      });
+
+      it('sees a conversation elsewhere that wrote here', async () => {
         await chatIn('other', [call('update_note', { id: 'human', content: 'Synthetic text' })]);
         const stored = await new Promise<Record<string, unknown>>((resolveRow, reject) => {
           const request = db.backendDB().transaction('chatThreads').objectStore('chatThreads').get('elsewhere');
@@ -126,10 +186,30 @@ describe('hasAiWrittenContent', () => {
         });
         expect(Array.isArray(stored.messages)).toBe(false);
         expect(await hasAiWrittenContent('case')).toBe(true);
-      } finally {
-        clearEncryptionMeta();
-        setSessionKey(null);
-      }
+      });
+
+      // Classifying an enrichment also looks up the integrations it would call, which a cursor cannot read here.
+      it('places an enrichment from elsewhere with an integration installed', async () => {
+        const ioc = (id: string, folderId: string) => ({ id, folderId, type: 'domain' as const, value: 'fictional.example', confidence: 'medium' as const,
+          tags: [], trashed: false, archived: false, createdAt: now, updatedAt: now });
+        await db.standaloneIOCs.bulkAdd([ioc('ioc-other', 'other'), ioc('ioc-case', 'case')]);
+        await db.installedIntegrations.add({ id: 'fictional-integration', templateId: 'fictional-template', name: 'Fictional integration', enabled: true,
+          config: {}, scopeType: 'all', scopeFolderIds: [], runCount: 0, errorCount: 0, createdAt: now, updatedAt: now });
+        await chatIn('other', [call('enrich_ioc', { iocId: 'ioc-other' })]);
+        expect(await hasAiWrittenContent('case')).toBe(false);
+        await db.chatThreads.clear();
+        await chatIn('other', [call('enrich_ioc', { iocId: 'ioc-case' })]);
+        expect(await hasAiWrittenContent('case')).toBe(true);
+      });
+
+      it.each([
+        ['a conversation here', () => db.chatThreads.add(thread('chat', 'case'))],
+        ['a note an agent created', () => db.notes.add(note('agent-note', 'case', { tags: ['ai-generated'] }))],
+        ['a change an agent or the supervisor made here', () => db.agentActions.add(action('executed'))],
+      ])('sees %s', async (_label, seed) => {
+        await seed();
+        expect(await hasAiWrittenContent('case')).toBe(true);
+      });
     });
   });
 });
@@ -185,12 +265,16 @@ describe('sharing a local-only investigation from its details', () => {
 
     it('asks when the content check fails, rather than sharing unchecked', async () => {
       await db.notes.add(note('human', 'case'));
-      vi.spyOn(db.chatThreads, 'where').mockImplementation(() => { throw new Error('Synthetic read failure'); });
+      const failure = new Error('Synthetic read failure');
+      vi.spyOn(db.chatThreads, 'where').mockImplementation(() => { throw failure; });
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const onToggleSync = vi.fn();
       render(panel({ serverConnected, onToggleSync }));
       fireEvent.click(await find());
       expect(await screen.findByRole('dialog', { name: en['detail.shareAiTitle'] })).toHaveTextContent(message);
       expect(onToggleSync).not.toHaveBeenCalled();
+      // A failed check is visible in the console, not only as a question.
+      expect(warn).toHaveBeenCalledWith(expect.any(String), failure);
     });
 
     it('never asks when turning local-only on', async () => {

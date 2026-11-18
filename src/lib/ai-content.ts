@@ -11,22 +11,30 @@ const agentMade = (row: { tags?: unknown; createdBy?: unknown }) =>
   (Array.isArray(row.tags) && row.tags.includes('ai-generated'))
   || (typeof row.createdBy === 'string' && row.createdBy.startsWith('agent:'));
 
+// Rows are read whole (toArray, count), never through a cursor: in an encrypted workspace a
+// cursor awaits Web Crypto between rows, and WebKit ends the transaction before it can continue.
+
 /** A conversation filed elsewhere that wrote here: from a local-only home, other local-only
  * investigations are in reach (tool-reach.ts). Agent audit messages record no tool calls. */
 async function chatWroteHere(folderId: string): Promise<boolean> {
   const calls: { home?: string; call: ToolCallRecord }[] = [];
-  await db.chatThreads.each(thread => {
-    if (thread.folderId === folderId || !Array.isArray(thread.messages)) return;
+  for (const thread of await db.chatThreads.toArray()) {
+    if (thread.folderId === folderId || !Array.isArray(thread.messages)) continue;
     for (const message of thread.messages) {
       for (const call of Array.isArray(message?.toolCalls) ? message.toolCalls : []) {
         if (typeof call?.name === 'string' && isWriteTool(call.name)) calls.push({ home: thread.folderId, call });
       }
     }
-  });
+  }
   // One read-only transaction, as in the dispatcher: Dexie reads only.
   return db.transaction('r', db.tables, async () => {
     for (const { home, call } of calls) {
-      const reach = await classifyToolCall({ type: 'tool_use', id: call.id, name: call.name, input: call.input },
+      // An enrichment writes onto its IOC, which update_ioc resolves the same way, without
+      // enrich_ioc's integrations lookup (a cursor read).
+      const placed = call.name === 'enrich_ioc'
+        ? { name: 'update_ioc', input: { id: call.input?.iocId } }
+        : { name: call.name, input: call.input };
+      const reach = await classifyToolCall({ type: 'tool_use', id: call.id, ...placed },
         { homeFolderId: home, settings: {} as Settings });
       if (reach.targetFolderIds.includes(folderId)) return true;
     }
@@ -42,13 +50,14 @@ async function chatWroteHere(folderId: string): Promise<boolean> {
  * Trashed rows count: restoring one later syncs it.
  */
 export async function hasAiWrittenContent(folderId: string): Promise<boolean> {
-  const threads = await db.chatThreads.where('folderId').equals(folderId)
-    .filter(thread => (Array.isArray(thread.messages) && thread.messages.length > 0) || agentMade(thread)).count();
-  if (threads) return true;
+  const threads = await db.chatThreads.where('folderId').equals(folderId).toArray();
+  if (threads.some(thread => (Array.isArray(thread.messages) && thread.messages.length > 0) || agentMade(thread))) return true;
   for (const table of ITEM_TABLES) {
-    if (await db.table(table).where('folderId').equals(folderId).filter(agentMade).count()) return true;
+    if ((await db.table(table).where('folderId').equals(folderId).toArray()).some(agentMade)) return true;
   }
   // 'approved' without a result: the write may have run before the outcome was recorded.
-  if (await db.agentActions.where('[investigationId+status]').anyOf([[folderId, 'executed'], [folderId, 'approved']]).count()) return true;
+  for (const status of ['executed', 'approved']) {
+    if (await db.agentActions.where('[investigationId+status]').equals([folderId, status]).count()) return true;
+  }
   return chatWroteHere(folderId);
 }

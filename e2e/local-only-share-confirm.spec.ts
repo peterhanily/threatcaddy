@@ -1,7 +1,7 @@
 import { test, expect, type Locator } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { goToApp, waitForAppReady } from './fixtures';
-import { readRows, seedRows } from './client-lifecycle-fixtures';
+import { enableEncryption, readRows, seedRows } from './client-lifecycle-fixtures';
 
 const locale = (language: string, namespace: string): Record<string, string> =>
   JSON.parse(readFileSync(new URL(`../public/locales/${language}/${namespace}.json`, import.meta.url), 'utf8'));
@@ -126,4 +126,64 @@ test('asks when a conversation in another local-only investigation wrote here', 
   await expect(keepLocal).toHaveAttribute('aria-checked', 'true');
   expect((await readRows(page, ['folders'])).folders.find(row => row.id === 'fictional-hunt')?.localOnly).toBe(true);
   expect(errors).toEqual([]);
+});
+
+// WebKit ends a transaction between IndexedDB events, so the check cannot read encrypted rows through a decrypting cursor:
+// it failed there and asked, saying AI wrote text that does not exist.
+test('in an encrypted workspace, shares without asking when AI wrote nothing here, and still asks for a write from elsewhere', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('caddyai-onboarded', '1'));
+  await goToApp(page);
+  const now = Date.now();
+  const folder = (id: string, name: string, order: number) => ({ id, name, order, status: 'active', localOnly: true, createdAt: now, updatedAt: now });
+  const call = (id: string, name: string, input: Record<string, unknown>) => ({ id, name, input, result: '{"success":true}', isError: false });
+  await seedRows(page, {
+    folders: [folder('fictional-hunt', 'Fictional hunting case', 0), folder('fictional-written', 'Fictional written case', 1),
+      folder('fictional-source', 'Fictional source case', 2)],
+    notes: Array.from({ length: 5 }, (_, index) => ({ id: `fictional-analyst-note-${index}`, folderId: 'fictional-hunt', title: `Fictional note ${index}`,
+      content: 'Synthetic text', tags: [], pinned: false, archived: false, trashed: false, createdBy: 'Fictional Analyst', createdAt: now, updatedAt: now })),
+    chatThreads: [{ id: 'fictional-source-chat', title: 'Fictional chat', folderId: 'fictional-source', model: 'synthetic-model', provider: 'anthropic',
+      tags: [], trashed: false, archived: false, createdAt: now, updatedAt: now,
+      messages: [{ id: 'fictional-reply', role: 'assistant', content: 'Fictional reply', createdAt: now, toolCalls: [
+        call('fictional-read', 'read_note', { id: 'fictional-analyst-note-0' }),
+        call('fictional-own', 'create_note', { title: 'Fictional note' }),
+        call('fictional-cross', 'create_in_investigation', { investigationId: 'fictional-written', entityType: 'note', data: { title: 'Fictional note' } }),
+      ] }] }],
+  });
+  await page.evaluate(() => {
+    localStorage.setItem('threatcaddy-settings', JSON.stringify({ language: 'en', tiAutoExtractEnabled: false }));
+    sessionStorage.setItem('threatcaddy-nav-state', JSON.stringify({ view: 'investigations' }));
+  });
+  await page.reload();
+  await waitForAppReady(page);
+  await enableEncryption(page);
+  const stored = await readRows(page, ['chatThreads', 'notes']);
+  expect(stored.chatThreads.find(row => row.id === 'fictional-source-chat')?.messages).toMatchObject({ __enc: 1 });
+  expect(stored.notes.find(row => row.id === 'fictional-analyst-note-0')?.content).toMatchObject({ __enc: 1 });
+  await page.getByRole('button', { name: /^Investigations/ }).first().click();
+
+  const text = locale('en', 'investigations');
+  const dialog = page.getByRole('dialog', { name: text['detail.shareAiTitle'] });
+  const open = async (name: string) => {
+    const card = page.getByRole('group', { name });
+    await card.getByRole('button', { name: text['card.actions'], exact: true }).click();
+    await card.getByRole('button', { name: text['card.settings'], exact: true }).click();
+    const keepLocal = page.getByRole('switch', { name: text['detail.keepLocalLabel'] });
+    await expect(keepLocal).toHaveAttribute('aria-checked', 'true');
+    return keepLocal;
+  };
+
+  const hunt = await open('Fictional hunting case');
+  await hunt.click();
+  await expect(hunt).toHaveAttribute('aria-checked', 'false');
+  await expect(dialog).toHaveCount(0);
+  await expect.poll(async () => (await readRows(page, ['folders'])).folders.find(row => row.id === 'fictional-hunt')?.localOnly).toBe(false);
+  await page.keyboard.press('Escape');
+
+  const written = await open('Fictional written case');
+  await written.click();
+  await expect(dialog).toContainText(text['detail.shareAiMessageLater']);
+  await dialog.getByRole('button', { name: locale('en', 'common').cancel, exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(written).toHaveAttribute('aria-checked', 'true');
+  expect((await readRows(page, ['folders'])).folders.find(row => row.id === 'fictional-written')?.localOnly).toBe(true);
 });

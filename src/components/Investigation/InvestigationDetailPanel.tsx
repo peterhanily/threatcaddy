@@ -101,7 +101,10 @@ export function InvestigationDetailPanel({
   // included. What it wrote here syncs once this stops being local-only, so ask first.
   const toggleSync = async () => {
     if (!onToggleSync) return;
-    if (folder.localOnly && await hasAiWrittenContent(folder.id).catch(() => true)) setShowConfirmShare(true);
+    if (folder.localOnly && await hasAiWrittenContent(folder.id).catch((error: unknown) => {
+      console.warn('[investigations] The AI-content check failed, so sharing asks first', error);
+      return true;
+    })) setShowConfirmShare(true);
     else onToggleSync(folder.id, !!folder.localOnly);
   };
   // The question closes with its control, so a share never starts after the connection it needs is gone.
