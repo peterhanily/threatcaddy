@@ -10,6 +10,7 @@ import { db } from '../db';
 import type { AgentDeployment, Folder, Settings } from '../types';
 import { AgentPanel } from '../components/Agent/AgentPanel';
 import { useServerAgents } from '../hooks/useServerAgents';
+import { useAgentDeployments } from '../hooks/useAgentDeployments';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { seedAIWorkspace } from './helpers/ai-workspace';
 import i18n from '../i18n';
@@ -32,8 +33,9 @@ const answering = (body: Record<string, unknown>) => vi.fn(async () => new Respo
 const deployment = (values: Partial<AgentDeployment> = {}): AgentDeployment => ({ id: 'dep-hunter', investigationId: 'S', profileId: 'ap-threat-hunter',
   status: 'idle', order: 0, createdAt: 1, updatedAt: 1, ...values });
 
-/** The agent panel with the props App passes from useServerAgents. */
-function Panel({ folder, deployments }: { folder: Folder; deployments: AgentDeployment[] }) {
+/** The agent panel with the props App passes from useAgentDeployments and useServerAgents. */
+function Panel({ folder }: { folder: Folder }) {
+  const { deployments } = useAgentDeployments(folder.id);
   const serverAgents = useServerAgents({ investigationId: folder.id, deployments, profiles: BUILTIN_AGENT_PROFILES, enabled: deployments.some(d => d.serverSideEnabled) });
   return (
     <AgentPanel folder={folder} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={deployments} agentError={serverAgents.error}
@@ -46,7 +48,7 @@ function Panel({ folder, deployments }: { folder: Folder; deployments: AgentDepl
 async function showPanel(deployments: AgentDeployment[], answer: ReturnType<typeof answering>) {
   await db.agentDeployments.bulkAdd(deployments);
   vi.stubGlobal('fetch', answer);
-  render(<Panel folder={await db.folders.get('S') as Folder} deployments={deployments} />);
+  render(<Panel folder={await db.folders.get('S') as Folder} />);
   await waitFor(() => expect(answer).toHaveBeenCalledWith('https://team.example.invalid/api/caddy-agents/status/S', expect.anything()));
   await act(async () => {});
 }
@@ -115,9 +117,12 @@ describe('the paused notice', () => {
   });
 
   it('a copy that is paused, by the server or otherwise, does not count as deployed again', async () => {
-    // The list can still show the status from before the pause until it reloads.
-    await showNotice(['dep-hunter', 'dep-hunter-2'], [deployment({ status: 'running' }), deployment({ id: 'dep-hunter-2', status: 'running', order: 2 }),
-      deployment({ id: 'dep-hunter-3', status: 'paused', order: 3 })]);
+    // The list can still show the status from before the pause until it reloads; the notice waits for it.
+    const stale = [deployment({ status: 'running' }), deployment({ id: 'dep-hunter-2', status: 'running', order: 2 }),
+      deployment({ id: 'dep-hunter-3', status: 'paused', order: 3 })];
+    const show = await showNotice(['dep-hunter', 'dep-hunter-2'], stale);
+    expect(document.body.textContent).not.toContain('set to run there');
+    show(['dep-hunter', 'dep-hunter-2'], stale.map(d => ({ ...d, status: 'paused' as const })));
     expect(await screen.findByText(notice(2))).toBeInTheDocument();
   });
 

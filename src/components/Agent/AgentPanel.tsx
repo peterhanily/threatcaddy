@@ -171,10 +171,10 @@ function InvestigationAgentPanel({
     setCeilingNoticeDismissed(true);
     try { localStorage.setItem(ceilingNoticeKey, '1'); } catch { /* The notice shows again next time. */ }
   };
-  // This investigation's agents that the team server's unavailable answer paused, leaving out
+  // This investigation's agents that the team server's unavailable answer paused and that are still paused, leaving out
   // each one the analyst has deployed again here, as the notice asks: a copy of its profile that is not paused
   // and was deployed after the pause, which stamps the paused row's updatedAt (an older version could deploy a profile twice).
-  const serverPaused = deployments.filter(d => serverPausedDeploymentIds?.includes(d.id) && !deployments.some(again =>
+  const serverPaused = deployments.filter(d => serverPausedDeploymentIds?.includes(d.id) && d.status === 'paused' && !deployments.some(again =>
     again.profileId === d.profileId && again.status !== 'paused' && !serverPausedDeploymentIds.includes(again.id)
     && again.createdAt >= d.updatedAt)).map(d => d.id);
   const [dismissedServerPaused, setDismissedServerPaused] = useState<string[]>([]);

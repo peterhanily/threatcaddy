@@ -107,7 +107,7 @@ async function runMultiAgentCycleInner(
   // Run agents with concurrency limit — use 1 for local LLMs (serial), 5 for cloud
   const isLocal = (settings.llmDefaultProvider === 'local') || (!settings.llmAnthropicApiKey && !settings.llmOpenAIApiKey && !settings.llmGeminiApiKey && !settings.llmMistralApiKey && settings.llmLocalEndpoint);
   const MAX_CONCURRENT = isLocal ? 1 : 5;
-  const allResults: PromiseSettledResult<{ deploymentId: string; result: AgentCycleResult }>[] = [];
+  const allResults: PromiseSettledResult<{ deploymentId: string; result: AgentCycleResult } | undefined>[] = [];
 
   for (let i = 0; i < deploymentProfiles.length; i += MAX_CONCURRENT) {
     signal.throwIfAborted();
@@ -115,8 +115,14 @@ async function runMultiAgentCycleInner(
     const chunkResults = await Promise.allSettled(
       chunk.map(async ({ deployment, profile }) => {
       signal.throwIfAborted();
-      // Mark running just before execution (not upfront) so failures revert cleanly
-      await db.agentDeployments.update(deployment.id, { status: 'running' });
+      // Mark running just before execution (not upfront) so failures revert cleanly.
+      // A pause written since this cycle began (useServerAgents) stays, and the agent does not start.
+      let pausedMeanwhile = false;
+      await db.agentDeployments.where('id').equals(deployment.id).modify(current => {
+        if (current.status === 'paused') pausedMeanwhile = true;
+        else current.status = 'running';
+      });
+      if (pausedMeanwhile) return undefined;
 
       let result: AgentCycleResult;
       try {
@@ -142,8 +148,11 @@ async function runMultiAgentCycleInner(
           });
           throw err;
         }
-        // Revert to error status on unexpected crash
-        await db.agentDeployments.update(deployment.id, { status: 'error', lastRunAt: Date.now() });
+        // Revert to error status on unexpected crash, keeping a pause written while it ran
+        await db.agentDeployments.where('id').equals(deployment.id).modify(current => {
+          if (current.status !== 'paused') current.status = 'error';
+          current.lastRunAt = Date.now();
+        });
         throw err;
       }
 
@@ -201,10 +210,11 @@ async function runMultiAgentCycleInner(
         cyclesByOutcome: prevByOutcome,
         tasksEscalated: (prev.tasksEscalated || 0) + (summary?.tasksEscalated || 0),
       };
-      await db.agentDeployments.update(deployment.id, {
-        status: newStatus,
-        lastRunAt: Date.now(),
-        metrics,
+      // A pause written while the cycle ran (useServerAgents) stays; the run is still recorded.
+      await db.agentDeployments.where('id').equals(deployment.id).modify(current => {
+        if (current.status !== 'paused') current.status = newStatus;
+        current.lastRunAt = Date.now();
+        current.metrics = metrics;
       });
 
       return { deploymentId: deployment.id, result };
@@ -224,6 +234,7 @@ async function runMultiAgentCycleInner(
   for (let idx = 0; idx < results.length; idx++) {
     const r = results[idx];
     if (r.status === 'fulfilled') {
+      if (!r.value) continue; // Paused before its turn: it did not run.
       deploymentResults.set(r.value.deploymentId, r.value.result);
       if (r.value.result.error) {
         const name = profileNames.get(r.value.deploymentId) || 'Unknown';
