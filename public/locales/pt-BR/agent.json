@@ -209,6 +209,7 @@
   "action.destination": "Envia para: {{destination}}",
   "action.lookupDestinations": "Envia {{value}} para: {{vendors}}",
   "action.lookupNone": "Nada é enviado: nenhuma consulta ativada se aplica a {{value}}.",
+  "action.lookupUnavailable": "Nada é enviado: {{value}} não está disponível nesta investigação.",
   "action.lookupChecking": "Verificando quais consultas se aplicam…",
   "action.localAgent": "seu agente local",
   "action.hostIsIoc": "Este site é um IOC desta investigação. Visitá-lo pode alertar o atacante.",

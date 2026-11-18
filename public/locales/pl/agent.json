@@ -219,6 +219,7 @@
   "action.destination": "Wysyła do: {{destination}}",
   "action.lookupDestinations": "Wysyła {{value}} do: {{vendors}}",
   "action.lookupNone": "Nic nie jest wysyłane: żadne włączone wyszukiwanie nie dotyczy {{value}}.",
+  "action.lookupUnavailable": "Nic nie jest wysyłane: {{value}} nie jest dostępne w tym dochodzeniu.",
   "action.lookupChecking": "Sprawdzanie, które wyszukiwania mają zastosowanie…",
   "action.localAgent": "Twojego lokalnego agenta",
   "action.hostIsIoc": "Ta witryna jest IOC w tym śledztwie. Jej odwiedzenie może zaalarmować atakującego.",

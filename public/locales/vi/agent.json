@@ -199,6 +199,7 @@
   "action.destination": "Gửi đến: {{destination}}",
   "action.lookupDestinations": "Gửi {{value}} tới: {{vendors}}",
   "action.lookupNone": "Không gửi gì: không có tra cứu nào đang bật áp dụng cho {{value}}.",
+  "action.lookupUnavailable": "Không gửi gì: {{value}} không có trong điều tra này.",
   "action.lookupChecking": "Đang kiểm tra các tra cứu áp dụng…",
   "action.localAgent": "tác nhân cục bộ của bạn",
   "action.hostIsIoc": "Trang này là một IOC trong cuộc điều tra này. Truy cập nó có thể khiến kẻ tấn công cảnh giác.",

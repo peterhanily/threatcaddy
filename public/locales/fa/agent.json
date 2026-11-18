@@ -199,6 +199,7 @@
   "action.destination": "ارسال به: {{destination}}",
   "action.lookupDestinations": "{{value}} را به این‌ها ارسال می‌کند: {{vendors}}",
   "action.lookupNone": "چیزی ارسال نمی‌شود: هیچ جستجوی فعالی برای {{value}} اعمال نمی‌شود.",
+  "action.lookupUnavailable": "چیزی ارسال نمی‌شود: {{value}} در این تحقیق در دسترس نیست.",
   "action.lookupChecking": "در حال بررسی جستجوهای قابل اعمال…",
   "action.localAgent": "عامل محلی شما",
   "action.hostIsIoc": "این سایت یک IOC در این تحقیق است. بازدید از آن ممکن است مهاجم را آگاه کند.",

@@ -199,6 +199,7 @@
   "action.destination": "Mengirim ke: {{destination}}",
   "action.lookupDestinations": "Mengirim {{value}} ke: {{vendors}}",
   "action.lookupNone": "Tidak ada yang dikirim: tidak ada pencarian aktif yang berlaku untuk {{value}}.",
+  "action.lookupUnavailable": "Tidak ada yang dikirim: {{value}} tidak tersedia di investigasi ini.",
   "action.lookupChecking": "Memeriksa pencarian yang berlaku…",
   "action.localAgent": "agen lokal Anda",
   "action.hostIsIoc": "Situs ini adalah IOC dalam investigasi ini. Mengunjunginya dapat memperingatkan penyerang.",

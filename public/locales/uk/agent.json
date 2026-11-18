@@ -219,6 +219,7 @@
   "action.destination": "Надсилання: {{destination}}",
   "action.lookupDestinations": "Надсилає {{value}} до: {{vendors}}",
   "action.lookupNone": "Нічого не надсилається: до {{value}} не застосовується жоден увімкнений пошук.",
+  "action.lookupUnavailable": "Нічого не надсилається: {{value}} недоступне в цьому розслідуванні.",
   "action.lookupChecking": "Перевірка застосовних пошуків…",
   "action.localAgent": "ваш локальний агент",
   "action.hostIsIoc": "Цей сайт є IOC у цьому розслідуванні. Його відвідування може насторожити зловмисника.",

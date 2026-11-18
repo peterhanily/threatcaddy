@@ -199,6 +199,7 @@
   "action.destination": "发送至：{{destination}}",
   "action.lookupDestinations": "将 {{value}} 发送到：{{vendors}}",
   "action.lookupNone": "不会发送任何内容：没有适用于 {{value}} 的已启用查询。",
+  "action.lookupUnavailable": "不会发送任何内容：{{value}} 在此调查中不可用。",
   "action.lookupChecking": "正在检查适用的查询…",
   "action.localAgent": "您的本地代理",
   "action.hostIsIoc": "此网站是此调查中的 IOC。访问它可能会惊动攻击者。",

@@ -218,6 +218,7 @@
   "action.destination": "Sends to: {{destination}}",
   "action.lookupDestinations": "Sends {{value}} to: {{vendors}}",
   "action.lookupNone": "Nothing is sent: no enabled lookup applies to {{value}}.",
+  "action.lookupUnavailable": "Nothing is sent: {{value}} is not available in this investigation.",
   "action.lookupChecking": "Checking which lookups apply…",
   "action.localAgent": "your local agent",
   "action.hostIsIoc": "This site is an IOC in this investigation. Visiting it can alert the attacker.",

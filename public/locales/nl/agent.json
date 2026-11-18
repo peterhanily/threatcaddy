@@ -199,6 +199,7 @@
   "action.destination": "Stuurt naar: {{destination}}",
   "action.lookupDestinations": "Stuurt {{value}} naar: {{vendors}}",
   "action.lookupNone": "Er wordt niets verzonden: geen ingeschakelde opzoeking is van toepassing op {{value}}.",
+  "action.lookupUnavailable": "Er wordt niets verzonden: {{value}} is niet beschikbaar in dit onderzoek.",
   "action.lookupChecking": "Controleren welke opzoekingen van toepassing zijn…",
   "action.localAgent": "uw lokale agent",
   "action.hostIsIoc": "Deze site is een IOC in dit onderzoek. Een bezoek kan de aanvaller waarschuwen.",

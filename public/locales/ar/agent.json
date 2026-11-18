@@ -239,6 +239,7 @@
   "action.destination": "يُرسل إلى: {{destination}}",
   "action.lookupDestinations": "يرسل {{value}} إلى: {{vendors}}",
   "action.lookupNone": "لا يُرسَل شيء: لا ينطبق أي بحث مفعَّل على {{value}}.",
+  "action.lookupUnavailable": "لا يُرسَل شيء: {{value}} غير متاح في هذا التحقيق.",
   "action.lookupChecking": "جارٍ التحقق من عمليات البحث المنطبقة…",
   "action.localAgent": "وكيلك المحلي",
   "action.hostIsIoc": "هذا الموقع مؤشر اختراق (IOC) في هذا التحقيق. قد تؤدي زيارته إلى تنبيه المهاجم.",

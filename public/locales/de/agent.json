@@ -199,6 +199,7 @@
   "action.destination": "Sendet an: {{destination}}",
   "action.lookupDestinations": "Sendet {{value}} an: {{vendors}}",
   "action.lookupNone": "Es wird nichts gesendet: Für {{value}} gilt keine aktivierte Abfrage.",
+  "action.lookupUnavailable": "Es wird nichts gesendet: {{value}} ist in dieser Untersuchung nicht verfügbar.",
   "action.lookupChecking": "Geltende Abfragen werden ermittelt …",
   "action.localAgent": "Ihren lokalen Agenten",
   "action.hostIsIoc": "Diese Website ist ein IOC in dieser Untersuchung. Ein Besuch kann den Angreifer warnen.",

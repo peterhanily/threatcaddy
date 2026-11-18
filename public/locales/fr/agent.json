@@ -209,6 +209,7 @@
   "action.destination": "Envoie à : {{destination}}",
   "action.lookupDestinations": "Envoie {{value}} à : {{vendors}}",
   "action.lookupNone": "Rien n'est envoyé : aucune recherche activée ne s'applique à {{value}}.",
+  "action.lookupUnavailable": "Rien n'est envoyé : {{value}} n'est pas disponible dans cette enquête.",
   "action.lookupChecking": "Vérification des recherches applicables…",
   "action.localAgent": "votre agent local",
   "action.hostIsIoc": "Ce site est un IOC de cette enquête. Le visiter peut alerter l'attaquant.",

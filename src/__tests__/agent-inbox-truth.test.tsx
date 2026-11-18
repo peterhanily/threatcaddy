@@ -134,7 +134,7 @@ describe('A4-2 an enrichment proposal names each destination and the IOC value',
     const elsewhere = action({ id: 'enrich-p', agentConfigId: 'ap-ioc-enricher', toolName: 'enrich_ioc', toolInput: { iocId: ids('P').ioc } });
     await db.agentActions.add(elsewhere);
     const view = render(<AgentActionCard action={elsewhere} />);
-    expect(await screen.findByText('Nothing is sent: no enabled lookup applies to canary-p.example.')).toBeInTheDocument();
+    expect(await screen.findByText('Nothing is sent: canary-p.example is not available in this investigation.')).toBeInTheDocument();
     await executeApprovedAction(elsewhere);
     expect(egress.fetches).toEqual([]);
     view.rerender(<AgentActionCard action={{ ...proposal(), status: 'executed' }} />);
@@ -148,9 +148,26 @@ describe('A4-2 an enrichment proposal names each destination and the IOC value',
     const row = proposal();
     await db.agentActions.add(row);
     render(<AgentActionCard action={row} />);
-    expect(await screen.findByText('Nothing is sent: no enabled lookup applies to canary-s.example.')).toBeInTheDocument();
+    // A lookup applies to the IOC; it is the IOC that approval cannot reach.
+    expect(await screen.findByText('Nothing is sent: canary-s.example is not available in this investigation.')).toBeInTheDocument();
     await executeApprovedAction(row);
     expect(egress.fetches).toEqual([]);
+  });
+
+  it('joins the lookups as the analyst’s language joins a list', async () => {
+    await db.installedIntegrations.bulkAdd([
+      install('slack', 'slack-webhook-notify', { webhookUrl: 'https://hooks.slack.com/services/T0/B0/X0', channel: '#soc' }),
+      install('vt', 'vt-domain-lookup', { apiKey: 'fixture-key' }),
+    ]);
+    render(<AgentActionCard action={proposal()} />);
+    expect(await screen.findByText('Sends canary-s.example to: Slack Webhook Notification (hooks.slack.com) and VirusTotal Domain Lookup (www.virustotal.com)'))
+      .toBeInTheDocument();
+    i18n.addResourceBundle('de', 'integrations', deIntegrations, true, true);
+    try {
+      await act(inGerman);
+      expect(await screen.findByText(deText('action.lookupDestinations', { value: 'canary-s.example',
+        vendors: 'Slack-Webhook-Benachrichtigung (hooks.slack.com) und VirusTotal Domain-Abfrage (www.virustotal.com)' }))).toBeInTheDocument();
+    } finally { i18n.removeResourceBundle('de', 'integrations'); }
   });
 
   it('names builtin lookups when their translations load on demand, as in the hosted build', async () => {
@@ -364,7 +381,8 @@ describe('A4-6 and A4-7 phone layout (measured in Playwright; these pin the stru
 
 describe('A4 catalogs', () => {
   const ADDED = [
-    'action.lookupDestinations', 'action.lookupNone', 'action.lookupChecking', 'action.severityWarning', 'action.severityCritical', 'action.questionAcknowledged',
+    'action.lookupDestinations', 'action.lookupNone', 'action.lookupUnavailable', 'action.lookupChecking', 'action.severityWarning', 'action.severityCritical',
+    'action.questionAcknowledged',
     'refusal.serverProposal', 'refusal.investigationUnavailable', 'refusal.profileGone', 'refusal.toolNotAllowed', 'refusal.targetMoved',
     'refusal.targetInvestigationUnavailable', 'refusal.supervisorIocGone', 'refusal.supervisorLinkGone',
     'refusal.otherInvestigationChange', 'refusal.otherInvestigationRead', 'refusal.notInInvestigation', 'refusal.toolChanged',

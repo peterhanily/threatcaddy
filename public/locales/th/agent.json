@@ -199,6 +199,7 @@
   "action.destination": "ส่งไปยัง: {{destination}}",
   "action.lookupDestinations": "ส่ง {{value}} ไปยัง: {{vendors}}",
   "action.lookupNone": "ไม่มีการส่งข้อมูล: ไม่มีการค้นหาที่เปิดใช้งานซึ่งใช้กับ {{value}}",
+  "action.lookupUnavailable": "ไม่มีการส่งข้อมูล: {{value}} ไม่มีอยู่ในการสืบสวนนี้",
   "action.lookupChecking": "กำลังตรวจสอบการค้นหาที่ใช้ได้…",
   "action.localAgent": "เอเจนต์ในเครื่องของคุณ",
   "action.hostIsIoc": "เว็บไซต์นี้เป็น IOC ในการสืบสวนนี้ การเข้าชมอาจทำให้ผู้โจมตีรู้ตัว",

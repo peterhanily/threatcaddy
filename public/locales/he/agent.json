@@ -209,6 +209,7 @@
   "action.destination": "נשלח אל: {{destination}}",
   "action.lookupDestinations": "שולח את {{value}} אל: {{vendors}}",
   "action.lookupNone": "לא נשלח דבר: אף בדיקה מופעלת אינה חלה על {{value}}.",
+  "action.lookupUnavailable": "לא נשלח דבר: {{value}} אינו זמין בחקירה הזו.",
   "action.lookupChecking": "בודק אילו בדיקות חלות…",
   "action.localAgent": "הסוכן המקומי שלך",
   "action.hostIsIoc": "אתר זה הוא IOC בחקירה זו. ביקור בו עלול להתריע לתוקף.",

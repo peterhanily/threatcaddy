@@ -199,6 +199,7 @@
   "action.destination": "यहाँ भेजता है: {{destination}}",
   "action.lookupDestinations": "{{value}} को यहां भेजता है: {{vendors}}",
   "action.lookupNone": "कुछ नहीं भेजा जाता: {{value}} पर कोई सक्षम लुकअप लागू नहीं होता।",
+  "action.lookupUnavailable": "कुछ नहीं भेजा जाता: {{value}} इस जाँच में उपलब्ध नहीं है।",
   "action.lookupChecking": "जाँच रहे हैं कि कौन से लुकअप लागू होते हैं…",
   "action.localAgent": "आपका स्थानीय एजेंट",
   "action.hostIsIoc": "यह साइट इस जांच में एक IOC है। इस पर जाने से हमलावर सतर्क हो सकता है।",

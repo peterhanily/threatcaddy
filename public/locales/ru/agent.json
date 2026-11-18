@@ -219,6 +219,7 @@
   "action.destination": "Отправка: {{destination}}",
   "action.lookupDestinations": "Отправляет {{value}} в: {{vendors}}",
   "action.lookupNone": "Ничего не отправляется: к {{value}} не применяется ни один включённый поиск.",
+  "action.lookupUnavailable": "Ничего не отправляется: {{value}} недоступно в этом расследовании.",
   "action.lookupChecking": "Проверка применимых поисков…",
   "action.localAgent": "ваш локальный агент",
   "action.hostIsIoc": "Этот сайт является IOC в этом расследовании. Его посещение может насторожить злоумышленника.",

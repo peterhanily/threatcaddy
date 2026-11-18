@@ -199,6 +199,7 @@
   "action.destination": "送信先: {{destination}}",
   "action.lookupDestinations": "{{value}} を次に送信します：{{vendors}}",
   "action.lookupNone": "何も送信されません：{{value}} に適用される有効な照会はありません。",
+  "action.lookupUnavailable": "何も送信されません：{{value}} はこの調査で利用できません。",
   "action.lookupChecking": "適用される照会を確認しています…",
   "action.localAgent": "ローカルエージェント",
   "action.hostIsIoc": "このサイトはこの調査の IOC です。アクセスすると攻撃者に気付かれる可能性があります。",

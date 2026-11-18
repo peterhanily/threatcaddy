@@ -199,6 +199,7 @@
   "action.destination": "Gönderildiği yer: {{destination}}",
   "action.lookupDestinations": "{{value}} değerini şuraya gönderir: {{vendors}}",
   "action.lookupNone": "Hiçbir şey gönderilmez: {{value}} için geçerli etkin bir sorgu yok.",
+  "action.lookupUnavailable": "Hiçbir şey gönderilmez: {{value}} bu soruşturmada kullanılamıyor.",
   "action.lookupChecking": "Geçerli sorgular kontrol ediliyor…",
   "action.localAgent": "yerel ajanınız",
   "action.hostIsIoc": "Bu site bu soruşturmada bir IOC. Ziyaret etmek saldırganı uyarabilir.",

@@ -199,6 +199,7 @@
   "action.destination": "전송 대상: {{destination}}",
   "action.lookupDestinations": "{{value}}을(를) 다음으로 보냅니다: {{vendors}}",
   "action.lookupNone": "아무것도 전송되지 않습니다: {{value}}에 적용되는 활성 조회가 없습니다.",
+  "action.lookupUnavailable": "아무것도 전송되지 않습니다: {{value}}을(를) 이 조사에서 사용할 수 없습니다.",
   "action.lookupChecking": "적용되는 조회를 확인하는 중…",
   "action.localAgent": "로컬 에이전트",
   "action.hostIsIoc": "이 사이트는 이 조사의 IOC입니다. 방문하면 공격자에게 알려질 수 있습니다.",

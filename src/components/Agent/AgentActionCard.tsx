@@ -73,7 +73,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
   // Display only, read from the case's IOCs: it never blocks or approves anything.
   const [iocHostActionId, setIocHostActionId] = useState<string>();
   /** The lookups approving a pending enrichment runs, found as the chat card finds them. */
-  const [lookup, setLookup] = useState<{ actionId: string; iocId: string; value: string; vendors: string[] }>();
+  const [lookup, setLookup] = useState<{ actionId: string; iocId: string; value: string; runs: boolean; vendors: string[] }>();
   const { id, toolName, investigationId } = action;
   // Keyed on the URL and IOC id, not the input object: the inbox refresh returns new rows.
   const { url } = action.toolInput;
@@ -96,7 +96,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
         // Approval runs no lookup for an IOC that is gone or filed in another investigation.
         const runs = !!ioc && !ioc.trashed && ioc.folderId === investigationId;
         const value = String(ioc?.value ?? iocId).replace(BIDI_CONTROLS, '');
-        if (current) setLookup({ actionId: id, iocId, value, vendors: runs ? reach.destinations : [] });
+        if (current) setLookup({ actionId: id, iocId, value, runs, vendors: reach.destinations });
       })().catch(() => { /* The card keeps its neutral line. */ });
     }
     return () => { current = false; };
@@ -105,7 +105,8 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
   const hostIsIoc = isPending && toolName === 'fetch_url' && iocHostActionId === id;
   const lookupLine = !isPending || toolName !== 'enrich_ioc' ? undefined
     : lookup?.actionId !== id || lookup.iocId !== iocId ? t('action.lookupChecking')
-    : lookup.vendors.length ? t('action.lookupDestinations', { value: lookup.value, vendors: lookup.vendors.join(', ') })
+    : !lookup.runs ? t('action.lookupUnavailable', { value: lookup.value })
+    : lookup.vendors.length ? t('action.lookupDestinations', { value: lookup.value, vendors: new Intl.ListFormat(i18n.language).format(lookup.vendors) })
     : t('action.lookupNone', { value: lookup.value });
 
   return (

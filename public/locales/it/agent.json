@@ -209,6 +209,7 @@
   "action.destination": "Invia a: {{destination}}",
   "action.lookupDestinations": "Invia {{value}} a: {{vendors}}",
   "action.lookupNone": "Non viene inviato nulla: nessuna ricerca attiva si applica a {{value}}.",
+  "action.lookupUnavailable": "Non viene inviato nulla: {{value}} non è disponibile in questa indagine.",
   "action.lookupChecking": "Verifica delle ricerche applicabili…",
   "action.localAgent": "il tuo agente locale",
   "action.hostIsIoc": "Questo sito è un IOC di questa indagine. Visitarlo può allertare l'attaccante.",
