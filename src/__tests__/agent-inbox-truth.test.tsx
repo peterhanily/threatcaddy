@@ -275,6 +275,20 @@ describe('A4-2 an enrichment proposal names each destination and the IOC value',
       await act(async () => { await db.installedIntegrations.update('vt', { enabled: false }); });
       expect(await screen.findByText(NONE)).toBeInTheDocument();
     });
+
+    it('a custom lookup whose template starts to apply to the IOC is named', async () => {
+      await db.integrationTemplates.add({
+        id: 'team-dns', schemaVersion: '1.0', version: '1', name: 'Team DNS', description: '', author: 'team', icon: '', color: '',
+        category: 'enrichment', tags: [], triggers: [{ type: 'manual', iocTypes: ['ipv4'] }], configSchema: [],
+        steps: [{ id: 's1', type: 'http', label: 'q', method: 'GET', url: 'https://dns.team.example/q?d={{ioc.value}}', responseType: 'json' }],
+        outputs: [], requiredDomains: ['dns.team.example'], source: 'team', createdAt: 1, updatedAt: 1,
+      } as unknown as IntegrationTemplate);
+      await db.installedIntegrations.add(install('team', 'team-dns', {}));
+      render(<AgentActionCard action={proposal()} />);
+      expect(await screen.findByText(NONE)).toBeInTheDocument();
+      await act(async () => { await db.integrationTemplates.update('team-dns', { triggers: [{ type: 'manual', iocTypes: ['domain'] }] }); });
+      expect(await screen.findByText('Sends canary-s.example to: Team DNS (dns.team.example)')).toBeInTheDocument();
+    });
   });
 });
 
