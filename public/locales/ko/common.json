@@ -402,5 +402,8 @@
   "offlineStatus.settingUnavailable": "이 브라우저에서는 ThreatCaddy를 오프라인으로 사용할 수 있게 유지할 수 없지만, 온라인에서는 계속 작동합니다.",
   "offlineStatus.backupNote": "오프라인 사용은 백업이 아닙니다. 이 브라우저의 데이터를 지우면 여기에 저장된 모든 내용이 삭제되며, 저장 공간이 부족할 때처럼 브라우저가 저장된 사이트 데이터를 스스로 제거할 수도 있습니다. JSON 백업을 정기적으로 내보내고 파일을 안전한 곳에 보관하세요.",
   "sync.backupWarning": "로컬 데이터를 삭제하기 전에 전체 백업을 저장하고 확인하세요. 팀 동기화는 노트 폴더, 체크리스트, 플레이북 진행 상황, 채팅 도구 결과나 이미지처럼 이 기기에만 있는 세부 정보를 복구할 수 없습니다. 백업 저장은 암호화되지 않은 JSON을 다운로드합니다.",
-  "demoModal.reportWorkflow": "연결된 노트를 따라 원본 증거부터 보고서 초안까지 확인하세요. 결론을 검토하고 보고서를 Markdown으로 다운로드하세요. 전체 작업 공간은 별도로 백업 저장하세요."
+  "demoModal.reportWorkflow": "연결된 노트를 따라 원본 증거부터 보고서 초안까지 확인하세요. 결론을 검토하고 보고서를 Markdown으로 다운로드하세요. 전체 작업 공간은 별도로 백업 저장하세요.",
+  "bootGuard.framed": "보안을 위해 ThreatCaddy는 다른 웹사이트 안에서 실행되지 않습니다.",
+  "bootGuard.fileOnly": "이 ThreatCaddy 오프라인 사본은 컴퓨터에 저장된 파일을 열 때만 실행됩니다.",
+  "bootGuard.open": "ThreatCaddy 열기"
 }

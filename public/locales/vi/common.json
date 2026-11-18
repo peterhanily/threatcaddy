@@ -297,5 +297,8 @@
   "offlineStatus.settingUnavailable": "Trình duyệt này không thể giữ ThreatCaddy sẵn sàng ngoại tuyến, nhưng ứng dụng vẫn hoạt động trực tuyến.",
   "offlineStatus.backupNote": "Dùng ngoại tuyến không phải là bản sao lưu. Xóa dữ liệu của trình duyệt này sẽ xóa mọi thứ được lưu ở đây, và trình duyệt cũng có thể tự xóa dữ liệu trang web đã lưu, chẳng hạn khi sắp hết dung lượng. Hãy xuất bản sao lưu JSON thường xuyên và cất tệp ở nơi an toàn.",
   "sync.backupWarning": "Trước khi xóa dữ liệu cục bộ, hãy lưu và kiểm tra bản sao lưu đầy đủ. Đồng bộ nhóm không thể khôi phục chi tiết chỉ có trên thiết bị, như thư mục ghi chú, danh sách kiểm tra, tiến độ quy trình và kết quả công cụ hoặc hình ảnh trong trò chuyện. Lưu bản sao lưu tải xuống JSON không mã hóa.",
-  "demoModal.reportWorkflow": "Theo các ghi chú liên kết từ bằng chứng đến bản nháp báo cáo. Kiểm tra kết luận và tải ghi chú dưới dạng Markdown; lưu bản sao lưu toàn bộ không gian làm việc."
+  "demoModal.reportWorkflow": "Theo các ghi chú liên kết từ bằng chứng đến bản nháp báo cáo. Kiểm tra kết luận và tải ghi chú dưới dạng Markdown; lưu bản sao lưu toàn bộ không gian làm việc.",
+  "bootGuard.framed": "Vì sự an toàn của bạn, ThreatCaddy không chạy bên trong một trang web khác.",
+  "bootGuard.fileOnly": "Bản sao ngoại tuyến này của ThreatCaddy chỉ chạy khi bạn mở tệp đã lưu trên máy tính của mình.",
+  "bootGuard.open": "Mở ThreatCaddy"
 }

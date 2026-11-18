@@ -257,3 +257,23 @@ test('a whiteboard holding web embeds makes no third-party request and keeps the
   await expect(page.locator('.excalidraw iframe')).toHaveCount(0);
   expect(failures).toEqual([]);
 });
+
+test('the copied file refuses frames, plugins and base URL changes', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'WebKit does not apply a meta Content-Security-Policy to file:// pages.');
+  await page.evaluate(() => {
+    const seen: string[] = [];
+    Object.defineProperty(window, '__violations', { value: seen });
+    document.addEventListener('securitypolicyviolation', event => seen.push(event.effectiveDirective));
+    const frame = document.createElement('iframe');
+    frame.src = 'https://collector.example/frame';
+    const object = document.createElement('object');
+    object.data = 'https://collector.example/object';
+    const base = document.createElement('base');
+    base.href = 'https://collector.example/';
+    document.body.append(frame, object);
+    document.head.append(base);
+  });
+  await expect.poll(() => page.evaluate(() => [...new Set((window as unknown as { __violations: string[] }).__violations)].sort()))
+    .toEqual(['base-uri', 'frame-src', 'object-src']);
+  await page.evaluate(() => document.querySelectorAll('iframe, object, base').forEach(node => node.remove()));
+});
