@@ -14,6 +14,7 @@ import { clearAIWorkspace } from './helpers/ai-workspace';
 import i18n from '../i18n';
 import deInvestigations from '../../public/locales/de/investigations.json';
 import enInvestigations from '../../public/locales/en/investigations.json';
+import jaAgent from '../../public/locales/ja/agent.json';
 
 const NAME = 'CaddyAgent Supervisor';
 
@@ -101,5 +102,34 @@ describe('the AgentCaddy dashboard', () => {
     expect(screen.getByText('1 active agent')).toBeInTheDocument();
     fireEvent.click(screen.getByText('NEW-FINDING'));
     expect(open).toHaveBeenLastCalledWith('Z-new');
+  });
+
+  describe('in the analyst\'s language', () => {
+    // Japanese, because the German 'auto' badge is the same word as the English one.
+    beforeEach(async () => {
+      for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('ja', namespace, values, true, false);
+      i18n.addResourceBundle('ja', 'agent', jaAgent, true, true);
+      await act(async () => { await i18n.changeLanguage('ja'); });
+    });
+
+    it('labels an investigation card\'s pending proposals and auto mode', async () => {
+      await db.folders.add({ id: 'case', name: 'Case', order: 0, createdAt: 1, status: 'active', agentEnabled: true });
+      await db.agentActions.add({ ...action('p', 'case', 'create_note'), status: 'pending' });
+      render(<AgentDashboard folders={await db.folders.toArray()} onOpenInvestigation={vi.fn()} />);
+      const section = (await screen.findByRole('heading', { name: jaAgent['dashboard.investigationsWithAgentActivity'] })).closest('section') as HTMLElement;
+      expect(within(section).getByText(jaAgent['dashboard.pendingCount'].replace('{{count}}', '1'))).toBeInTheDocument();
+      expect(within(section).getByText(jaAgent['dashboard.auto'])).toBeInTheDocument();
+      expect(section.textContent).not.toMatch(/pending|auto/);
+    });
+
+    it('gives the getting-started steps, with their emphasis', async () => {
+      const { container } = render(<AgentDashboard folders={[]} onOpenInvestigation={vi.fn()} />);
+      expect(await screen.findByText(jaAgent['dashboard.getStarted'])).toBeInTheDocument();
+      for (const key of ['dashboard.step1', 'dashboard.step2', 'dashboard.step3', 'dashboard.step4'] as const) {
+        expect(container.textContent, key).toContain(jaAgent[key].replace(/<\/?strong>/g, ''));
+      }
+      expect(screen.getByText('AgentCaddy', { selector: 'strong' })).toBeInTheDocument();
+      expect(container.textContent).not.toContain('Open an investigation');
+    });
   });
 });

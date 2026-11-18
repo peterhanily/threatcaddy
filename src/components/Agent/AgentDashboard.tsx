@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import {
   Bot, ChevronRight, AlertTriangle, Check, Clock, X, Shield,
 } from 'lucide-react';
@@ -156,19 +156,19 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
             <div className="text-xs text-start space-y-2 max-w-xs">
               <div className="flex gap-2">
                 <span className="text-accent-blue font-bold shrink-0">1.</span>
-                <span>Open an investigation and go to the <strong>AgentCaddy</strong> tab</span>
+                <span><Trans i18nKey="dashboard.step1" ns="agent" components={{ strong: <strong /> }} /></span>
               </div>
               <div className="flex gap-2">
                 <span className="text-accent-blue font-bold shrink-0">2.</span>
-                <span><strong>Deploy agents</strong> — choose from 17 specialist profiles (CISO, IOC Enricher, Legal Counsel, etc.)</span>
+                <span><Trans i18nKey="dashboard.step2" ns="agent" components={{ strong: <strong /> }} /></span>
               </div>
               <div className="flex gap-2">
                 <span className="text-accent-blue font-bold shrink-0">3.</span>
-                <span>Click <strong>Run Agent</strong> or enable auto-mode — agents research, create notes, enrich IOCs, and build timelines</span>
+                <span><Trans i18nKey="dashboard.step3" ns="agent" components={{ strong: <strong /> }} /></span>
               </div>
               <div className="flex gap-2">
                 <span className="text-accent-blue font-bold shrink-0">4.</span>
-                <span>Start <strong>meetings</strong> for agents to discuss findings, or use <strong>shift handoffs</strong> for continuity</span>
+                <span><Trans i18nKey="dashboard.step4" ns="agent" components={{ strong: <strong /> }} /></span>
               </div>
             </div>
             {onOpenSettings && (
@@ -227,13 +227,13 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
                           )}
                           <span className="text-xs font-medium text-text-primary truncate">{folder.name}</span>
                           {folder.agentEnabled && (
-                            <span className="text-[9px] px-1 py-px rounded bg-accent-green/10 text-accent-green shrink-0">auto</span>
+                            <span className="text-[9px] px-1 py-px rounded bg-accent-green/10 text-accent-green shrink-0">{t('dashboard.auto')}</span>
                           )}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {pendingCount > 0 && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-amber/10 text-accent-amber">
-                              {pendingCount} pending
+                              {t('dashboard.pendingCount', { count: pendingCount })}
                             </span>
                           )}
                           <ChevronRight size={12} className="text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" />
