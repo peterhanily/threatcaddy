@@ -34,14 +34,24 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/** The page's hashed entry script, as a hosted build's index.html loads it. */
+/** A hosted build's scripts in dist/index.html order: structured data and the inline theme script come before the
+ * hashed module entry, so only a module script with a src names the build. */
 function loadBuild(entry: string) {
   document.querySelectorAll('script[data-test-build]').forEach(script => script.remove());
-  const script = document.createElement('script');
-  script.type = 'module';
-  script.setAttribute('src', entry);
-  script.dataset.testBuild = '';
-  document.head.appendChild(script);
+  const script = (attributes: Record<string, string>, text = '') => {
+    const element = document.createElement('script');
+    for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
+    element.textContent = text;
+    element.dataset.testBuild = '';
+    return element;
+  };
+  document.head.append(
+    script({ type: 'application/ld+json' }, '{"@type": "WebApplication"}'),
+    script({}, '/* theme */'),
+    script({ type: 'module', crossorigin: '', src: entry }),
+    script({ id: 'vite-plugin-pwa:register-sw', src: './registerSW.js' }),
+  );
+  document.body.append(script({}, '/* theme */'), script({ src: './chunk-reload-guard.js' }));
 }
 
 /** A lazily loaded view whose chunk import rejects, as React.lazy sees it after the update. */
