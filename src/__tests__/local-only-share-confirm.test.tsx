@@ -10,11 +10,14 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import i18n from '../i18n';
 import { db } from '../db';
 import { hasAiWrittenContent } from '../lib/ai-content';
+import { generateMasterKey } from '../lib/crypto';
+import { setSessionKey } from '../lib/encryptionMiddleware';
+import { clearEncryptionMeta, setEncryptionMeta } from '../lib/encryptionStore';
 import { suppressSyncInCurrentTransaction } from '../lib/sync-state';
 import { SYNC_WORKSPACE_KEY } from '../lib/sync-capture-policy';
 import { InvestigationDetailPanel } from '../components/Investigation/InvestigationDetailPanel';
 import { ToastProvider } from '../contexts/ToastContext';
-import type { ChatThread, Folder } from '../types';
+import type { AgentAction, ChatThread, Folder } from '../types';
 import enInvestigations from '../../public/locales/en/investigations.json';
 import deInvestigations from '../../public/locales/de/investigations.json';
 import enCommon from '../../public/locales/en/common.json';
@@ -71,6 +74,63 @@ describe('hasAiWrittenContent', () => {
   ])('is true for %s', async (_label, seed) => {
     await seed();
     expect(await hasAiWrittenContent('case')).toBe(true);
+  });
+
+  // Chat writes carry no marker, and from a local-only home the other local-only investigations are in reach.
+  describe('AI that wrote here from elsewhere', () => {
+    const call = (name: string, input: Record<string, unknown>) => ({ id: `call-${name}`, name, input, result: '{"success":true}', isError: false });
+    const chatIn = (folderId: string | undefined, toolCalls: ReturnType<typeof call>[]) => db.chatThreads.add(thread('elsewhere', 'other', {
+      folderId, messages: [{ id: 'reply', role: 'assistant', content: 'Fictional reply', toolCalls, createdAt: now }] }));
+    const action = (status: AgentAction['status']): AgentAction => ({ id: `action-${status}`, investigationId: 'case', threadId: 'supervisor-thread',
+      agentConfigId: 'caddy-supervisor', toolName: 'update_ioc', toolInput: { id: 'ioc' }, rationale: 'Fictional rationale', status, createdAt: now });
+
+    beforeEach(async () => {
+      await db.folders.bulkAdd([
+        { id: 'case', name: 'Fictional case', order: 0, status: 'active', createdAt: now, localOnly: true },
+        { id: 'other', name: 'Other case', order: 1, status: 'active', createdAt: now, localOnly: true },
+      ]);
+      await db.notes.add(note('human', 'case', { createdBy: 'Fictional Analyst' }));
+    });
+
+    it.each([
+      ['a note a conversation in another investigation created here', () => chatIn('other', [
+        call('create_in_investigation', { investigationId: 'case', entityType: 'note', data: { title: 'Fictional' } })])],
+      ['an item a conversation outside any investigation created here by name', () => chatIn(undefined, [
+        call('create_in_investigation', { investigationName: 'FICTIONAL case', entityType: 'task', data: { title: 'Fictional' } })])],
+      ['an edit a conversation elsewhere made to an item here', () => chatIn('other', [call('update_note', { id: 'human', content: 'Synthetic text' })])],
+      ['a change an agent or the supervisor made here', () => db.agentActions.add(action('executed'))],
+      ['an approved change that never recorded its result', () => db.agentActions.add(action('approved'))],
+    ])('is true for %s', async (_label, seed) => {
+      await seed();
+      expect(await hasAiWrittenContent('case')).toBe(true);
+    });
+
+    it('is false when AI elsewhere only read here, wrote in its own investigation, or never changed anything here', async () => {
+      await chatIn('other', [call('read_note', { id: 'human' }), call('create_note', { title: 'Fictional' }),
+        call('create_in_investigation', { investigationId: 'other', entityType: 'note', data: { title: 'Fictional' } })]);
+      await db.agentActions.bulkAdd([action('pending'), action('rejected'), action('failed')]);
+      expect(await hasAiWrittenContent('case')).toBe(false);
+      expect(await hasAiWrittenContent('other')).toBe(true);
+    });
+
+    it('sees the write in an encrypted workspace', async () => {
+      setEncryptionMeta({ version: 1, salt: 'fixture-salt', wrappedKey: 'fixture-wrapped', recoverySalt: 'fixture-recovery-salt',
+        recoveryWrappedKey: 'fixture-recovery-key', enabledAt: 1 });
+      setSessionKey(await generateMasterKey());
+      try {
+        await chatIn('other', [call('update_note', { id: 'human', content: 'Synthetic text' })]);
+        const stored = await new Promise<Record<string, unknown>>((resolveRow, reject) => {
+          const request = db.backendDB().transaction('chatThreads').objectStore('chatThreads').get('elsewhere');
+          request.onsuccess = () => resolveRow(request.result);
+          request.onerror = () => reject(request.error);
+        });
+        expect(Array.isArray(stored.messages)).toBe(false);
+        expect(await hasAiWrittenContent('case')).toBe(true);
+      } finally {
+        clearEncryptionMeta();
+        setSessionKey(null);
+      }
+    });
   });
 });
 
