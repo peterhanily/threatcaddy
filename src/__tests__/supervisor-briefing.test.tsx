@@ -3,7 +3,7 @@
  * read the local-only investigation the supervisor writes to. An older synced
  * 'CaddyAgent Supervisor' folder, or a teammate's, is an ordinary investigation.
  */
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import type { AgentAction, Folder } from '../types';
@@ -91,6 +91,13 @@ describe('the AgentCaddy dashboard', () => {
     expect(screen.queryByText('OLD-FINDING')).not.toBeInTheDocument();
     await waitFor(() => expect(container.textContent).toContain('link_entities'));
     expect(container.textContent).not.toContain('create_task');
+    // Both lists show the older folder by name with its activity, and neither shows the supervisor's.
+    for (const heading of ['Investigations with Agent Activity', 'Recent Agent Activity']) {
+      const section = screen.getByRole('heading', { name: heading }).closest('section') as HTMLElement;
+      expect(within(section).getByText(NAME), heading).toBeInTheDocument();
+      expect(within(section).getByText('link_entities'), heading).toBeInTheDocument();
+      expect(within(section).queryByText('create_task'), heading).not.toBeInTheDocument();
+    }
     expect(screen.getByText('1 active agent')).toBeInTheDocument();
     fireEvent.click(screen.getByText('NEW-FINDING'));
     expect(open).toHaveBeenLastCalledWith('Z-new');
