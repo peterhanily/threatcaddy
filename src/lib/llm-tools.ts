@@ -19,6 +19,7 @@ import { cancellableRequest } from './request-cancellation';
 import { readBoundedText } from './bounded-response';
 import { assertConfiguredConnection } from './connection-policy';
 import { agentRefusal } from './llm-router';
+import i18n from '../i18n';
 
 // Re-export definitions so existing consumers don't break
 export { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
@@ -728,6 +729,8 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId: string |
   const installations = await db.installedIntegrations.filter(i => i.enabled).toArray();
   const templates = await db.integrationTemplates.toArray();
   const { BUILTIN_INTEGRATIONS } = await import('./builtin-integrations');
+  // The results name builtin lookups from this namespace, which the hosted build loads on demand.
+  await i18n.loadNamespaces('integrations');
   // Builtins last, so a stored template cannot claim a builtin (passive) id.
   const allTemplates = [...templates, ...BUILTIN_INTEGRATIONS];
   const templateMap = new Map(allTemplates.map(t => [t.id, t]));
@@ -866,6 +869,7 @@ async function executeListIntegrations(inp: Record<string, unknown>): Promise<st
   const installations = await db.installedIntegrations.toArray();
   const templates = await db.integrationTemplates.toArray();
   const { BUILTIN_INTEGRATIONS } = await import('./builtin-integrations');
+  await i18n.loadNamespaces('integrations');
   const allTemplates = [...templates, ...BUILTIN_INTEGRATIONS];
   const templateMap = new Map(allTemplates.map(t => [t.id, t]));
 
