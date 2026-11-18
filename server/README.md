@@ -102,9 +102,9 @@ tests, fixtures, and source maps; unit and integration checks still run separate
 | `BOT_MASTER_KEY` | Yes | — | Stable 32–1024-character key for encrypted bot and saved local-AI credentials (new installation: `openssl rand -hex 32`); preserve and back up the existing key exactly |
 | `BOT_EXECUTION_TIMEOUT_MS` | No | `300000` | Max execution time per bot run (ms) — default 5 minutes |
 | `BOT_MAX_CONCURRENT_RUNS` | No | `10` | Max concurrent bot executions |
-| `SANDBOX_PYTHON_IMAGE` | No | `python:3.12-slim` | Docker image for Python code execution |
-| `SANDBOX_NODE_IMAGE` | No | `node:22-alpine` | Docker image for Node.js code execution |
-| `SANDBOX_BASH_IMAGE` | No | `alpine:3.19` | Docker image for Bash code execution |
+| `SANDBOX_PYTHON_IMAGE` | No | `python:3.12.16-slim-trixie@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b` | Docker image for Python code execution; pin overrides by digest |
+| `SANDBOX_NODE_IMAGE` | No | `node:22.23.5-alpine3.24@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a` | Docker image for Node.js code execution; pin overrides by digest |
+| `SANDBOX_BASH_IMAGE` | No | `alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf` | Docker image for shell (`sh`) code execution; pin overrides by digest |
 
 ## API Endpoints
 

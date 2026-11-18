@@ -280,9 +280,9 @@ and [webhook ownership requirements](../server/docs/credential-recovery.md#webho
 |----------|-------------|---------|
 | `BOT_EXECUTION_TIMEOUT_MS` | Maximum bot execution time in milliseconds | `300000` (5 minutes) |
 | `BOT_MAX_CONCURRENT_RUNS` | Maximum number of bots executing simultaneously | `10` |
-| `SANDBOX_PYTHON_IMAGE` | Docker image for Python sandbox | `python:3.12-slim` |
-| `SANDBOX_NODE_IMAGE` | Docker image for Node.js sandbox | `node:22-alpine` |
-| `SANDBOX_BASH_IMAGE` | Docker image for Bash sandbox | `alpine:3.19` |
+| `SANDBOX_PYTHON_IMAGE` | Docker image for Python sandbox (default: official Python 3.12, pinned by digest) | `python:3.12.16-slim-trixie@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b` |
+| `SANDBOX_NODE_IMAGE` | Docker image for Node.js sandbox (default: official Node.js 22, pinned by digest) | `node:22.23.5-alpine3.24@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a` |
+| `SANDBOX_BASH_IMAGE` | Docker image for shell code, run with `sh` (default: official Alpine 3.24, pinned by digest) | `alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf` |
 
 ### Database Connection Pool
 
@@ -581,12 +581,18 @@ sandbox disabled unless you need it.
    method. A permitted container create can still request privileged mode or
    host bind mounts, so a proxy does not remove the host-root exposure.
 
-3. Pre-pull sandbox images to avoid delays:
-   ```bash
-   docker pull python:3.12-slim
-   docker pull node:22-alpine
-   docker pull alpine:3.19
-   ```
+3. When the server can reach a Docker API, it pulls the three sandbox images at
+   every startup, so the first run does not wait for a download. The defaults
+   are official images pinned by digest (Python 3.12, Node.js 22, and Alpine 3.24
+   for shell code; exact references in
+   [Optional Bot Runtime Settings](#optional-bot-runtime-settings)), so they
+   change only when a ThreatCaddy release moves a pin, never between restarts.
+   To use other reviewed images, for example from a private mirror, set
+   `SANDBOX_PYTHON_IMAGE`, `SANDBOX_NODE_IMAGE` and `SANDBOX_BASH_IMAGE` to
+   references pinned the same way (`name:tag@sha256:<digest>`);
+   `docker buildx imagetools inspect <name:tag>` prints a tag's current digest.
+   A reference without a digest is resolved again at every startup and can
+   change without review.
 
 ### 4.7 Rate Limiting
 
