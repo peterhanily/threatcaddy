@@ -67,6 +67,13 @@ describe('A-BRIDGE-1 with the bridge on and the shared investigation selected', 
     expect(listed.map(folder => folder.id).sort()).toEqual(['P', 'S']);
   });
 
+  it('hides local-only investigations while a team investigation with no local row is selected (remote mode)', async () => {
+    syncBridgeFolderId('team-remote');
+    const listed = JSON.parse(await bridge().investigations(nonce)) as Array<{ id: string; name: string }>;
+    expect(listed.map(folder => folder.id).sort()).toEqual(['P', 'S']);
+    expect(JSON.stringify(listed)).not.toMatch(/Local case|Hunting case/);
+  });
+
   it('lists every investigation from a local-only one, and none while the bridge is off', async () => {
     syncBridgeFolderId('L2');
     const listed = JSON.parse(await bridge().investigations(nonce)) as Array<{ id: string }>;
