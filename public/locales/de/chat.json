@@ -213,5 +213,7 @@
   },
   "input.serverStatus": "Route über den Teamserver",
   "input.serverModelsHelp": "Verfügbare Anbieter und Modelle hängen von der Konfiguration Ihres Teamservers ab.",
-  "input.modelLabel": "KI-Modell"
+  "input.modelLabel": "KI-Modell",
+  "input.localModels": "Lokal",
+  "input.localModel": "Lokal: {{name}}"
 }

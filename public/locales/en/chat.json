@@ -2,6 +2,8 @@
   "input.serverStatus": "Team server route",
   "input.serverModelsHelp": "Available providers and models depend on your team server configuration.",
   "input.modelLabel": "AI model",
+  "input.localModels": "Local",
+  "input.localModel": "Local: {{name}}",
   "cti": {
     "invalidCommand": "That CTI command couldn't be run:",
     "noSourcesV2": "No CTI sources are available. Named agent hosts are no longer configurable in this version.",

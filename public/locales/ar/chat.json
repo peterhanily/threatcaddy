@@ -229,5 +229,7 @@
   },
   "input.serverStatus": "مسار خادم الفريق",
   "input.serverModelsHelp": "تعتمد الجهات المزوّدة والنماذج المتاحة على إعدادات خادم فريقك.",
-  "input.modelLabel": "نموذج الذكاء الاصطناعي"
+  "input.modelLabel": "نموذج الذكاء الاصطناعي",
+  "input.localModels": "محلي",
+  "input.localModel": "محلي: {{name}}"
 }

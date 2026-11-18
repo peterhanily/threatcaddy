@@ -213,5 +213,7 @@
   },
   "input.serverStatus": "Jalur server tim",
   "input.serverModelsHelp": "Penyedia dan model yang tersedia bergantung pada konfigurasi server tim.",
-  "input.modelLabel": "Model AI"
+  "input.modelLabel": "Model AI",
+  "input.localModels": "Lokal",
+  "input.localModel": "Lokal: {{name}}"
 }

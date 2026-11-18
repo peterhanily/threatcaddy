@@ -213,5 +213,7 @@
   },
   "input.serverStatus": "团队服务器通道",
   "input.serverModelsHelp": "可用的提供商和模型取决于团队服务器配置。",
-  "input.modelLabel": "AI 模型"
+  "input.modelLabel": "AI 模型",
+  "input.localModels": "本地",
+  "input.localModel": "本地：{{name}}"
 }

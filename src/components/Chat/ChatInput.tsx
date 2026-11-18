@@ -61,7 +61,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
   const MODELS = useMemo(() => {
     let models = [...STATIC_MODELS];
     if (localModelName) {
-      models.push({ label: `Local: ${localModelName}`, value: localModelName, provider: 'local' as LLMProvider, group: 'Local' });
+      models.push({ label: t('input.localModel', { name: localModelName }), value: localModelName, provider: 'local' as LLMProvider, group: t('input.localModels') });
     }
     // Only show models for providers that have an API key configured
     if (configuredProviders && !serverRoute) {
@@ -71,7 +71,8 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
     // change. Sending to another provider requires an explicit model choice.
     if (provider && model && !models.some(item => item.value === model)) {
       models.push({ label: model, value: model, provider,
-        group: serverRoute ? t('input.serverStatus') : STATIC_MODELS.find(item => item.provider === provider)?.group ?? provider });
+        group: serverRoute ? t('input.serverStatus') : provider === 'local' ? t('input.localModels')
+          : STATIC_MODELS.find(item => item.provider === provider)?.group ?? provider });
     }
     return models;
   }, [localModelName, configuredProviders, serverRoute, provider, model, t]);

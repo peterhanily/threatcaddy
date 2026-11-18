@@ -217,5 +217,7 @@
   },
   "input.serverStatus": "ניתוב דרך שרת הצוות",
   "input.serverModelsHelp": "הספקים והמודלים הזמינים תלויים בהגדרות שרת הצוות.",
-  "input.modelLabel": "מודל בינה מלאכותית"
+  "input.modelLabel": "מודל בינה מלאכותית",
+  "input.localModels": "מקומי",
+  "input.localModel": "מקומי: {{name}}"
 }

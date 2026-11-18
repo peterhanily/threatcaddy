@@ -213,5 +213,7 @@
   },
   "input.serverStatus": "チームサーバー経由",
   "input.serverModelsHelp": "利用できるプロバイダーとモデルはチームサーバーの設定によって異なります。",
-  "input.modelLabel": "AI モデル"
+  "input.modelLabel": "AI モデル",
+  "input.localModels": "ローカル",
+  "input.localModel": "ローカル: {{name}}"
 }

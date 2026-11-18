@@ -213,5 +213,7 @@
   },
   "input.serverStatus": "Route via teamserver",
   "input.serverModelsHelp": "Beschikbare aanbieders en modellen hangen af van de configuratie van je teamserver.",
-  "input.modelLabel": "AI-model"
+  "input.modelLabel": "AI-model",
+  "input.localModels": "Lokaal",
+  "input.localModel": "Lokaal: {{name}}"
 }

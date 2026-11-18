@@ -221,5 +221,7 @@
   },
   "input.serverStatus": "Маршрут через сервер команди",
   "input.serverModelsHelp": "Доступні провайдери й моделі залежать від налаштувань сервера команди.",
-  "input.modelLabel": "Модель ШІ"
+  "input.modelLabel": "Модель ШІ",
+  "input.localModels": "Локальні",
+  "input.localModel": "Локальна: {{name}}"
 }

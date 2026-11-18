@@ -213,5 +213,7 @@
   },
   "input.serverStatus": "Kênh máy chủ nhóm",
   "input.serverModelsHelp": "Nhà cung cấp và mô hình khả dụng phụ thuộc vào cấu hình máy chủ nhóm.",
-  "input.modelLabel": "Mô hình AI"
+  "input.modelLabel": "Mô hình AI",
+  "input.localModels": "Cục bộ",
+  "input.localModel": "Cục bộ: {{name}}"
 }
