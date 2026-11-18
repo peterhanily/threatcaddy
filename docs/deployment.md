@@ -458,10 +458,11 @@ server on the same host without containers, keep the default
 range that only your proxies use. A `/0` range is refused because it would
 trust every peer.
 
-When a peer that is not trusted sends `X-Forwarded-For`, the server logs one
-warning per process that names the peer (`docker compose logs server`). Trust
-that address only after confirming it is your proxy: anyone who can reach the
-server directly can send the header.
+The first time a peer that is not trusted sends `X-Forwarded-For` to a route
+that uses the client address, such as sign-in, the server logs one warning that
+names the peer (`docker compose logs server`). Trust that address only after
+confirming it is your proxy: anyone who can reach the server directly can send
+the header.
 
 Only connections from `TRUSTED_PROXY_IPS` may supply `X-Forwarded-For` (or `X-Real-IP` when absent). The server uses the nearest untrusted address in a valid IP chain. Other connections use their socket address. Your proxy must overwrite or correctly append forwarded addresses. Both variables are passed through by Compose.
 
