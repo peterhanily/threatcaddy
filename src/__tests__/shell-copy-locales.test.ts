@@ -16,17 +16,24 @@ const KEYS: Record<string, string[]> = {
   integrations: ['fetch.updateExtension'],
 };
 
+// French writes "Version" too.
+const SAME_AS_ENGLISH = new Set(['fr settings:general.version']);
+
 describe('shell and settings text in every language', () => {
-  it('has a German value that is not the English source for each key', () => {
+  it('has a value in each language (German included) that is not the English source for each key', () => {
+    expect(locales).toContain('de');
     for (const [namespace, keys] of Object.entries(KEYS)) {
       const en = read('en', namespace);
-      const de = read('de', namespace);
-      for (const key of keys) {
-        expect(en[key], `en ${namespace}:${key}`).toBeTruthy();
-        expect(de[key], `de ${namespace}:${key}`).toBeTruthy();
-        // German uses the loanword "Tags" everywhere else in the app, so the sidebar heading matches it.
-        if (key === 'sidebar.tags') expect(de[key]).toBe(read('de', 'investigations')['detail.tagsLabel']);
-        else expect(de[key], `de ${namespace}:${key}`).not.toBe(en[key]);
+      for (const locale of locales) {
+        const values = read(locale, namespace);
+        for (const key of keys) {
+          const id = `${locale} ${namespace}:${key}`;
+          expect(en[key], `en ${namespace}:${key}`).toBeTruthy();
+          expect(values[key], id).toBeTruthy();
+          // Languages that use the loanword "Tags" elsewhere in the app (German, Dutch, Portuguese) match it here.
+          if (key === 'sidebar.tags') expect(values[key], id).toBe(read(locale, 'investigations')['detail.tagsLabel']);
+          else if (!SAME_AS_ENGLISH.has(`${locale} ${namespace}:${key}`)) expect(values[key], id).not.toBe(en[key]);
+        }
       }
     }
   });
