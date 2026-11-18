@@ -29,6 +29,7 @@ beforeEach(() => {
 afterEach(() => {
   Object.defineProperty(window, 'location', { value: originalLocation, writable: true, configurable: true });
   document.querySelectorAll('script[data-test-build]').forEach(script => script.remove());
+  Reflect.deleteProperty(navigator, 'serviceWorker');
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
@@ -151,12 +152,26 @@ describe('ErrorBoundary: a view whose chunk the update removed', () => {
     expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument();
   });
 
-  it('shows the panel without reloading while the browser is offline, and keeps the reload for later', async () => {
+  it.each([
+    ['no service worker', undefined],
+    ['a service worker that does not control the page yet', { controller: null }],
+  ])('shows the panel without reloading while offline with %s, and keeps the reload for later', async (_case, container) => {
     vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    if (container) Object.defineProperty(navigator, 'serviceWorker', { value: container, configurable: true });
     renderView(new TypeError(CHROMIUM));
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
     expect(sessionStorage.getItem(GUARD_KEY)).toBeNull();
+  });
+
+  it('reloads while offline when a service worker controls the page, because the worker serves the new page', async () => {
+    loadBuild('./assets/index-2Hq1aB3c.js');
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    Object.defineProperty(navigator, 'serviceWorker', { value: { controller: {} }, configurable: true });
+    renderView(new TypeError(CHROMIUM));
+    await waitFor(() => expect(replace).toHaveBeenCalledOnce());
+    expect(new URL(replace.mock.calls[0][0] as string).searchParams.get('_r')).toMatch(/^\d+$/);
+    expect(sessionStorage.getItem(GUARD_KEY)).toBe('view:./assets/index-2Hq1aB3c.js');
   });
 
   it('reloads once per build, so a later update in the same tab reloads again', async () => {

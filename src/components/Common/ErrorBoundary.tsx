@@ -88,8 +88,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
       timestamp: new Date().toISOString(),
     });
 
-    // Offline, the reload cannot fetch the new page; the claim stays free for later.
-    if (isChunkLoadFailure(error) && navigator.onLine !== false && claimChunkReload()) {
+    // Offline, only a service worker in control can serve the new page (it does after an update);
+    // without one the reload cannot fetch it, so the claim stays free for later.
+    const canReload = navigator.onLine !== false || !!navigator.serviceWorker?.controller;
+    if (isChunkLoadFailure(error) && canReload && claimChunkReload()) {
       this.setState({ reloading: true });
       // Cache-busting, as the guard does, so the browser fetches the new page.
       const url = new URL(window.location.href);
