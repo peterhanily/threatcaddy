@@ -14,14 +14,22 @@ import { hasAiWrittenContent } from '../lib/ai-content';
 import { generateMasterKey } from '../lib/crypto';
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { clearEncryptionMeta, setEncryptionMeta } from '../lib/encryptionStore';
+import { DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS, TOOL_DEFINITIONS, isWriteTool } from '../lib/llm-tool-defs';
+import { classifyToolCall } from '../lib/tool-reach';
 import { suppressSyncInCurrentTransaction } from '../lib/sync-state';
 import { SYNC_WORKSPACE_KEY } from '../lib/sync-capture-policy';
 import { InvestigationDetailPanel } from '../components/Investigation/InvestigationDetailPanel';
 import { ToastProvider } from '../contexts/ToastContext';
-import type { AgentAction, ChatThread, Folder } from '../types';
+import type { AgentAction, ChatThread, Folder, Settings } from '../types';
 import enInvestigations from '../../public/locales/en/investigations.json';
 import deInvestigations from '../../public/locales/de/investigations.json';
 import enCommon from '../../public/locales/en/common.json';
+
+// A pass-through spy: the real classifier runs.
+vi.mock('../lib/tool-reach', async importOriginal => {
+  const actual = await importOriginal<typeof import('../lib/tool-reach')>();
+  return { ...actual, classifyToolCall: vi.fn(actual.classifyToolCall) };
+});
 
 /** WebKit keeps a transaction active only while it dispatches an IndexedDB event, so a cursor
  * that awaits Web Crypto between rows (the encryption middleware's) cannot continue there.
@@ -151,6 +159,42 @@ describe('hasAiWrittenContent', () => {
       expect(await hasAiWrittenContent('case')).toBe(false);
       expect(await hasAiWrittenContent('other')).toBe(true);
       expect(await hasAiWrittenContent('third')).toBe(true);
+    });
+
+    // Most recorded writes land in their own conversation's investigation; classifying each one made every share slow.
+    it('classifies only the calls that can reach another investigation', async () => {
+      await chatIn('other', [...Array.from({ length: 20 }, () => call('create_note', { title: 'Fictional' })), call('read_note', { id: 'human' }),
+        call('create_task', { title: 'Fictional' }), call('create_in_investigation', { investigationId: 'other', entityType: 'note', data: { title: 'Fictional' } })]);
+      vi.mocked(classifyToolCall).mockClear();
+      expect(await hasAiWrittenContent('case')).toBe(false);
+      expect(vi.mocked(classifyToolCall).mock.calls.map(([classified]) => classified.name)).toEqual(['create_in_investigation']);
+    });
+
+    // The guard against that shortcut missing a tool: whatever the dispatcher would place here is seen.
+    it('sees every write tool the dispatcher would place here', async () => {
+      await db.tasks.add({ id: 'x', folderId: 'case', title: 'Fictional task', completed: false, priority: 'none', status: 'todo', order: 0,
+        tags: [], trashed: false, archived: false, createdAt: now, updatedAt: now });
+      await db.notes.add(note('x', 'case'));
+      await db.standaloneIOCs.add({ id: 'x', folderId: 'case', type: 'domain', value: 'fictional.example', confidence: 'medium', tags: [],
+        trashed: false, archived: false, createdAt: now, updatedAt: now });
+      await db.timelineEvents.add({ id: 'x', folderId: 'case', timelineId: 't', title: 'Fictional event', timestamp: now, eventType: 'other',
+        source: 'analyst', starred: false, confidence: 'medium', linkedIOCIds: [], linkedNoteIds: [], linkedTaskIds: [], mitreAttackIds: [],
+        assets: [], tags: [], trashed: false, archived: false, createdAt: now, updatedAt: now });
+      // Every argument a call can name a row or an investigation by, all pointing here.
+      const input = { id: 'x', taskId: 'x', iocId: 'x', folderId: 'x', noteId: 'x', parentFolderId: 'x', investigationId: 'case',
+        entityType: 'note', data: { title: 'Fictional' }, links: [{ sourceType: 'note', sourceId: 'x', targetType: 'timeline-event', targetId: 'x' }] };
+      const writes = [...TOOL_DEFINITIONS, ...DELEGATION_TOOL_DEFINITIONS, ...EXECUTIVE_TOOL_DEFINITIONS].map(tool => tool.name).filter(isWriteTool);
+      const seen: string[] = [];
+      for (const name of writes) {
+        await db.chatThreads.clear();
+        await chatIn('other', [call(name, input)]);
+        const reach = await classifyToolCall({ type: 'tool_use', id: `call-${name}`, name, input }, { homeFolderId: 'other', settings: {} as Settings });
+        const here = await hasAiWrittenContent('case');
+        expect(here, name).toBe(reach.targetFolderIds.includes('case'));
+        if (here) seen.push(name);
+      }
+      expect(seen).toEqual(expect.arrayContaining(['create_in_investigation', 'update_note', 'update_task', 'update_ioc', 'update_timeline_event',
+        'link_entities', 'review_completed_task', 'enrich_ioc', 'delete_note_folder', 'move_to_folder']));
     });
 
     describe('in an encrypted workspace, where WebKit cannot continue a decrypting cursor', () => {

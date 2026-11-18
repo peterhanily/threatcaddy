@@ -1,10 +1,14 @@
 import { db } from '../db';
 import type { Settings, ToolCallRecord } from '../types';
-import { isWriteTool } from './llm-tool-defs';
 import { classifyToolCall } from './tool-reach';
 
 /** Item tables that sync with their investigation. */
 const ITEM_TABLES = ['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems'] as const;
+
+/** The write calls whose target classifyToolCall resolves (tool-reach.ts resolveTargets). Every
+ * other write lands in its own conversation's investigation, so classifying it would find nothing. */
+const REACHING_WRITES = new Set(['create_in_investigation', 'update_note', 'update_task', 'update_ioc', 'update_timeline_event',
+  'link_entities', 'review_completed_task', 'enrich_ioc', 'delete_note_folder', 'move_to_folder']);
 
 /** Agents, the supervisor and the bridge tag what they create (D11); 2.0.2 rows carry only createdBy. */
 const agentMade = (row: { tags?: unknown; createdBy?: unknown }) =>
@@ -22,10 +26,11 @@ async function chatWroteHere(folderId: string): Promise<boolean> {
     if (thread.folderId === folderId || !Array.isArray(thread.messages)) continue;
     for (const message of thread.messages) {
       for (const call of Array.isArray(message?.toolCalls) ? message.toolCalls : []) {
-        if (typeof call?.name === 'string' && isWriteTool(call.name)) calls.push({ home: thread.folderId, call });
+        if (typeof call?.name === 'string' && REACHING_WRITES.has(call.name)) calls.push({ home: thread.folderId, call });
       }
     }
   }
+  if (!calls.length) return false;
   // One read-only transaction, as in the dispatcher: Dexie reads only.
   return db.transaction('r', db.tables, async () => {
     for (const { home, call } of calls) {
