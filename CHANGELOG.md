@@ -85,7 +85,7 @@ Hardens CaddyAI chat, AgentCaddy agents, the supervisor and the agent bridge aga
 ### Accessibility
 
 - Screen readers announce approval cards and offline notices. The light-theme Approve label on approval cards is readable, raw tool input reads left to right in Arabic, Hebrew and Farsi, and agent proposal expand buttons have correct accessible names.
-- The Ask/YOLO switch tells screen readers whether YOLO is on and what the current setting allows, not only through its hover tooltip.
+- Screen readers hear the Ask/YOLO switch as a button named after the current setting, followed by a description of what that setting allows, not only through its hover tooltip. It reports no pressed state, because its label already names the setting.
 - In Arabic, Hebrew and Farsi, @-mention prefixes and a sent `/fetch` command read left to right, and the investigation switches ("Keep on this device" and sync) move in the reading direction.
 
 ### Translation and layout
