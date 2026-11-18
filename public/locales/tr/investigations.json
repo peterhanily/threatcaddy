@@ -104,6 +104,7 @@
   "card.unsync": "Eşitlemeyi kaldır",
   "card.syncing": "Eşitleniyor…",
   "card.syncLocally": "Yerel olarak eşitle",
+  "remote.viewingBanner": "Uzak bir soruşturmayı görüntülüyorsunuz: içeriği ekip sunucusundan yüklenir ve bu cihaza kaydedilmez. Görüntülerken eklediğiniz öğeler bu cihaza kaydedilir.",
   "card.removeLocalCopy": "Yerel kopyayı kaldır",
   "card.members_one": "{{count}} üye",
   "card.members_other": "{{count}} üye",

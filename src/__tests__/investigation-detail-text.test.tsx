@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import i18n from '../i18n';
 import { InvestigationDetailPanel } from '../components/Investigation/InvestigationDetailPanel';
 import { formatFullDate } from '../lib/utils';
@@ -10,6 +10,7 @@ import { ToastProvider } from '../contexts/ToastContext';
 import type { Folder } from '../types';
 import enInvestigations from '../../public/locales/en/investigations.json';
 import deInvestigations from '../../public/locales/de/investigations.json';
+import deCommon from '../../public/locales/de/common.json';
 
 const localeRoot = resolve(__dirname, '../../public/locales');
 // These languages write the same words as English: French "note(s)", Italian plural "note", Dutch "whiteboard(s)".
@@ -29,6 +30,7 @@ afterEach(async () => { await act(async () => { await i18n.changeLanguage('en');
 async function inGerman() {
   for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
   i18n.addResourceBundle('de', 'investigations', deInvestigations, true, true);
+  i18n.addResourceBundle('de', 'common', deCommon, true, true);
   await act(async () => { await i18n.changeLanguage('de'); });
 }
 
@@ -60,6 +62,17 @@ describe('investigation details text', () => {
     // The classification and PAP selects' empty choice uses the existing detail.none key.
     expect(screen.getAllByRole('option', { name: (deInvestigations as Record<string, string>)['detail.none'] })).toHaveLength(2);
     expect(screen.queryByRole('option', { name: 'None' })).toBeNull();
+  });
+
+  it('names the dialog and its close button in the analyst\'s language', async () => {
+    await inGerman();
+    const onClose = vi.fn();
+    render(panel({ onClose }));
+    const named = screen.getByRole('dialog', { name: (deInvestigations as Record<string, string>)['detail.title'] });
+    fireEvent.click(within(named).getByRole('button', { name: (deCommon as Record<string, string>).close }));
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('dialog', { name: 'Investigation details' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
   });
 
   it('translates every count form each language uses', () => {

@@ -104,6 +104,7 @@
   "card.unsync": "동기화 해제",
   "card.syncing": "동기화 중…",
   "card.syncLocally": "로컬로 동기화",
+  "remote.viewingBanner": "원격 조사를 보고 있습니다. 내용은 팀 서버에서 불러오며 이 기기에 저장되지 않습니다. 보는 동안 추가한 항목은 이 기기에 저장됩니다.",
   "card.removeLocalCopy": "로컬 복사본 제거",
   "card.members_one": "{{count}}명의 멤버",
   "card.members_other": "{{count}}명의 멤버",

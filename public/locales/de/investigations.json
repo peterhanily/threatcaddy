@@ -104,6 +104,7 @@
   "card.unsync": "Synchronisierung aufheben",
   "card.syncing": "Synchronisierung läuft…",
   "card.syncLocally": "Lokal synchronisieren",
+  "remote.viewingBanner": "Sie sehen eine Remote-Untersuchung: Die Inhalte werden vom Teamserver geladen und nicht auf diesem Gerät gespeichert. Elemente, die Sie währenddessen hinzufügen, werden auf diesem Gerät gespeichert.",
   "card.removeLocalCopy": "Lokale Kopie entfernen",
   "card.members_one": "{{count}} Mitglied",
   "card.members_other": "{{count}} Mitglieder",

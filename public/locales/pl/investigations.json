@@ -116,6 +116,7 @@
   "card.unsync": "Wyłącz synchronizację",
   "card.syncing": "Synchronizowanie…",
   "card.syncLocally": "Synchronizuj lokalnie",
+  "remote.viewingBanner": "Przeglądasz zdalne dochodzenie: jego zawartość jest wczytywana z serwera zespołu i nie jest zapisywana na tym urządzeniu. Elementy dodane podczas przeglądania są zapisywane na tym urządzeniu.",
   "card.removeLocalCopy": "Usuń lokalną kopię",
   "card.members_one": "{{count}} członek",
   "card.members_other": "{{count}} członków",

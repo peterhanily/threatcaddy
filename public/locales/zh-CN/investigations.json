@@ -104,6 +104,7 @@
   "card.unsync": "取消同步",
   "card.syncing": "同步中…",
   "card.syncLocally": "本地同步",
+  "remote.viewingBanner": "正在查看远程调查：其内容从团队服务器加载，不会保存在此设备上。查看期间添加的项目会保存在此设备上。",
   "card.removeLocalCopy": "移除本地副本",
   "card.members_one": "{{count}} 位成员",
   "card.members_other": "{{count}} 位成员",

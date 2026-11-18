@@ -128,6 +128,7 @@
   "card.unsync": "إلغاء المزامنة",
   "card.syncing": "جارٍ المزامنة…",
   "card.syncLocally": "مزامنة محليًا",
+  "remote.viewingBanner": "أنت تعرض تحقيقًا بعيدًا: يُحمَّل محتواه من خادم الفريق ولا يُحفَظ على هذا الجهاز. أما العناصر التي تضيفها أثناء عرضه فتُحفَظ على هذا الجهاز.",
   "card.removeLocalCopy": "إزالة النسخة المحلية",
   "card.members_one": "{{count}} عضو",
   "card.members_other": "{{count}} أعضاء",

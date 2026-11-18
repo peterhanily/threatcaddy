@@ -110,6 +110,7 @@
   "card.unsync": "Désynchroniser",
   "card.syncing": "Synchronisation…",
   "card.syncLocally": "Synchroniser localement",
+  "remote.viewingBanner": "Vous consultez une enquête distante : son contenu est chargé depuis le serveur d’équipe et n’est pas enregistré sur cet appareil. Les éléments que vous ajoutez pendant la consultation sont enregistrés sur cet appareil.",
   "card.removeLocalCopy": "Retirer la copie locale",
   "card.members_one": "{{count}} membre",
   "card.members_other": "{{count}} membres",

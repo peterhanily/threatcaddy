@@ -11,13 +11,17 @@ const KEYS: Record<string, string[]> = {
   settings: ['general.version', 'general.aboutLocalFirst', 'ai.routing.auto', 'ai.routingHelp', 'ai.dataFlow.fetchUpdate'],
   common: ['offlineStatus.unavailableNotice', 'screenshare.viewHidden', 'screenshare.browseVisible', 'sidebar.tags', 'sidebar.noTags', 'sidebar.tagNameRequired',
     'sidebar.tagNameExists', 'sidebar.tagRenameFailed', 'sidebar.tagDeleteFailed', 'sidebar.tagNewName', 'sidebar.tagSaveName',
-    'sidebar.tagCancelRename', 'sidebar.tagRename', 'sidebar.tagDelete', 'sidebar.tagDeleteTitle', 'sidebar.tagDeleteMessage'],
+    'sidebar.tagCancelRename', 'sidebar.tagRename', 'sidebar.tagDelete', 'sidebar.tagDeleteTitle', 'sidebar.tagDeleteMessage',
+    'loadingView', 'dismiss', 'screenshare.toggle', 'screenshare.mode', 'screenshare.level', 'screenshare.off', 'screenshare.showUpTo',
+    'screenshare.notificationHidden', 'toasts.label', 'tagInput.addLabel', 'tagInput.addPlaceholder', 'tagInput.removeLabel',
+    'productDraft.retained', 'productDraft.resume', 'standaloneWarning.message', 'standaloneWarning.enableEncryption'],
   exec: ['dashboard.analystModeBanner'],
   integrations: ['fetch.updateExtension'],
+  investigations: ['remote.viewingBanner'],
 };
 
-// French writes "Version" too.
-const SAME_AS_ENGLISH = new Set(['fr settings:general.version']);
+// French writes "Version" and "Notifications" too.
+const SAME_AS_ENGLISH = new Set(['fr settings:general.version', 'fr common:toasts.label']);
 
 describe('shell and settings text in every language', () => {
   it('has a value in each language (German included) that is not the English source for each key', () => {
@@ -35,6 +39,14 @@ describe('shell and settings text in every language', () => {
           else if (!SAME_AS_ENGLISH.has(`${locale} ${namespace}:${key}`)) expect(values[key], id).not.toBe(en[key]);
         }
       }
+    }
+  });
+
+  it('names file:// and the Settings tab in the standalone warning in every language', () => {
+    for (const locale of ['en', ...locales]) {
+      const common = read(locale, 'common');
+      expect(common['standaloneWarning.message'], locale).toContain('file://');
+      expect(common['standaloneWarning.enableEncryption'], locale).toContain(read(locale, 'settings').title);
     }
   });
 

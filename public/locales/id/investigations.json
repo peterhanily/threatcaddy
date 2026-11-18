@@ -104,6 +104,7 @@
   "card.unsync": "Batalkan sinkron",
   "card.syncing": "Menyinkronkan…",
   "card.syncLocally": "Sinkronkan secara lokal",
+  "remote.viewingBanner": "Anda sedang melihat investigasi jarak jauh: isinya dimuat dari server tim dan tidak disimpan di perangkat ini. Item yang Anda tambahkan saat melihatnya disimpan di perangkat ini.",
   "card.removeLocalCopy": "Hapus salinan lokal",
   "card.members_one": "{{count}} anggota",
   "card.members_other": "{{count}} anggota",

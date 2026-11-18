@@ -110,6 +110,7 @@
   "card.unsync": "Desincronizar",
   "card.syncing": "Sincronizando…",
   "card.syncLocally": "Sincronizar localmente",
+  "remote.viewingBanner": "Está viendo una investigación remota: su contenido se carga desde el servidor del equipo y no se guarda en este dispositivo. Los elementos que agregue mientras la ve se guardan en este dispositivo.",
   "card.removeLocalCopy": "Eliminar copia local",
   "card.members_one": "{{count}} miembro",
   "card.members_other": "{{count}} miembros",

@@ -110,6 +110,7 @@
   "card.unsync": "בטל סנכרון",
   "card.syncing": "מסנכרן…",
   "card.syncLocally": "סנכרן מקומית",
+  "remote.viewingBanner": "מוצגת חקירה מרוחקת: התוכן שלה נטען משרת הצוות ואינו נשמר במכשיר הזה. פריטים שתוסיפו בזמן הצפייה בה נשמרים במכשיר הזה.",
   "card.removeLocalCopy": "הסר עותק מקומי",
   "card.members_one": "{{count}} חבר",
   "card.members_other": "{{count}} חברים",
