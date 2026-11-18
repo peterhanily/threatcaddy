@@ -222,6 +222,74 @@ describe('A4-2 an enrichment proposal names each destination and the IOC value',
       .toBeInTheDocument();
     expect(screen.queryByText(de['action.lookupChecking'])).not.toBeInTheDocument();
   });
+
+  // R5A-3: another tab or a team sync can change the IOC or the lookups while the card is shown.
+  describe('follows changes while the card is shown', () => {
+    const VT = 'Sends canary-s.example to: VirusTotal Domain Lookup (www.virustotal.com)';
+    const UNAVAILABLE = 'Nothing is sent: canary-s.example is not available in this investigation.';
+    const NONE = 'Nothing is sent: no enabled lookup applies to canary-s.example.';
+
+    it('a trashed IOC that is restored names the lookup again', async () => {
+      await db.installedIntegrations.add(install('vt', 'vt-domain-lookup', { apiKey: 'fixture-key' }));
+      await db.standaloneIOCs.update(ids('S').ioc, { trashed: true });
+      // The card keeps the i18n it rendered with, so the spy is in place first.
+      const load = vi.spyOn(i18n, 'loadNamespaces');
+      try {
+        render(<AgentActionCard action={proposal()} />);
+        expect(await screen.findByText(UNAVAILABLE)).toBeInTheDocument();
+        // Until the new answer is known, the card says it is checking, not the old answer.
+        let settle = () => {};
+        load.mockImplementationOnce(() => new Promise<void>(resolve => { settle = resolve; }));
+        await act(async () => { await db.standaloneIOCs.update(ids('S').ioc, { trashed: false }); });
+        expect(await screen.findByText('Checking which lookups apply…')).toBeInTheDocument();
+        expect(screen.queryByText(UNAVAILABLE)).not.toBeInTheDocument();
+        await act(async () => { settle(); });
+        expect(await screen.findByText(VT)).toBeInTheDocument();
+        expect(screen.queryByText(UNAVAILABLE)).not.toBeInTheDocument();
+      } finally { load.mockRestore(); }
+    });
+
+    it('an IOC trashed or moved to another investigation is no longer sent', async () => {
+      await db.installedIntegrations.add(install('vt', 'vt-domain-lookup', { apiKey: 'fixture-key' }));
+      render(<AgentActionCard action={proposal()} />);
+      expect(await screen.findByText(VT)).toBeInTheDocument();
+      await act(async () => { await db.standaloneIOCs.update(ids('S').ioc, { trashed: true }); });
+      expect(await screen.findByText(UNAVAILABLE)).toBeInTheDocument();
+      await act(async () => { await db.standaloneIOCs.update(ids('S').ioc, { trashed: false }); });
+      expect(await screen.findByText(VT)).toBeInTheDocument();
+      await act(async () => { await db.standaloneIOCs.update(ids('S').ioc, { folderId: 'P' }); });
+      expect(await screen.findByText(UNAVAILABLE)).toBeInTheDocument();
+    });
+
+    it('a lookup enabled while the card says nothing is sent is named, and disabling it says nothing is sent again', async () => {
+      await db.installedIntegrations.add({ ...install('vt', 'vt-domain-lookup', { apiKey: 'fixture-key' }), enabled: false });
+      const row = proposal();
+      await db.agentActions.add(row);
+      render(<AgentActionCard action={row} />);
+      expect(await screen.findByText(NONE)).toBeInTheDocument();
+      await act(async () => { await db.installedIntegrations.update('vt', { enabled: true }); });
+      expect(await screen.findByText(VT)).toBeInTheDocument();
+      // What the card says is what approval then does.
+      await executeApprovedAction(row);
+      expect([...new Set(egress.fetches.map(url => new URL(url).hostname))]).toEqual(['www.virustotal.com']);
+      await act(async () => { await db.installedIntegrations.update('vt', { enabled: false }); });
+      expect(await screen.findByText(NONE)).toBeInTheDocument();
+    });
+
+    it('a custom lookup whose template starts to apply to the IOC is named', async () => {
+      await db.integrationTemplates.add({
+        id: 'team-dns', schemaVersion: '1.0', version: '1', name: 'Team DNS', description: '', author: 'team', icon: '', color: '',
+        category: 'enrichment', tags: [], triggers: [{ type: 'manual', iocTypes: ['ipv4'] }], configSchema: [],
+        steps: [{ id: 's1', type: 'http', label: 'q', method: 'GET', url: 'https://dns.team.example/q?d={{ioc.value}}', responseType: 'json' }],
+        outputs: [], requiredDomains: ['dns.team.example'], source: 'team', createdAt: 1, updatedAt: 1,
+      } as unknown as IntegrationTemplate);
+      await db.installedIntegrations.add(install('team', 'team-dns', {}));
+      render(<AgentActionCard action={proposal()} />);
+      expect(await screen.findByText(NONE)).toBeInTheDocument();
+      await act(async () => { await db.integrationTemplates.update('team-dns', { triggers: [{ type: 'manual', iocTypes: ['domain'] }] }); });
+      expect(await screen.findByText('Sends canary-s.example to: Team DNS (dns.team.example)')).toBeInTheDocument();
+    });
+  });
 });
 
 describe('A4-3 the expanded card shows the whole input approval sends', () => {

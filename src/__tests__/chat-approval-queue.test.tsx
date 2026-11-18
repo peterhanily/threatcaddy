@@ -401,3 +401,53 @@ describe('the approval card', () => {
     expect(details?.textContent).toContain(url);
   });
 });
+
+// R5A-5: the hosted build loads the integrations namespace on demand, and builtin lookups take their names from it.
+describe('an enrichment card on the hosted build', () => {
+  const install = (id: string, templateId: string) => ({ id, templateId, name: id, enabled: true, config: { apiKey: 'fixture-key' },
+    scopeType: 'all' as const, scopeFolderIds: [], runCount: 0, errorCount: 0, createdAt: 1, updatedAt: 1 });
+  let restore = () => {};
+  beforeEach(async () => {
+    // As in the hosted build: no language has the namespace until something loads it.
+    const bundles = Object.fromEntries(['en', 'de'].map(lng => [lng, i18n.getResourceBundle(lng, 'integrations') as Record<string, unknown> | undefined]));
+    for (const lng of Object.keys(bundles)) i18n.removeResourceBundle(lng, 'integrations');
+    const load = vi.spyOn(i18n, 'loadNamespaces').mockImplementation(async namespaces => {
+      if (![namespaces].flat().includes('integrations')) return;
+      i18n.addResourceBundle('en', 'integrations', bundles.en ?? {});
+      i18n.addResourceBundle('de', 'integrations', (await import('../../public/locales/de/integrations.json')).default);
+    });
+    restore = () => {
+      load.mockRestore();
+      for (const [lng, bundle] of Object.entries(bundles)) { i18n.removeResourceBundle(lng, 'integrations'); if (bundle) i18n.addResourceBundle(lng, 'integrations', bundle); }
+    };
+    await db.installedIntegrations.add(install('vt', 'vt-domain-lookup'));
+  });
+  afterEach(async () => { restore(); await act(async () => { await i18n.changeLanguage('en'); }); });
+
+  it.each([
+    ['Act', false, 'call-enrich'],
+    ['YOLO, for a call read out of the reply text', true, 'text_tc_enrich'],
+  ])('in %s names VirusTotal, not a builtin.* key', async (_, yolo, id) => {
+    renderChat([makeThread('thread', 'S')]);
+    if (yolo) fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
+    const handler = await sendAndGetHandler();
+    void start(handler, call('enrich_ioc', { iocId: ids('S').ioc }, id));
+    const shown = await card();
+    // The card reads the IOC's value after it appears.
+    expect(await within(shown).findByText('Sends canary-s.example to: VirusTotal Domain Lookup (www.virustotal.com)')).toBeInTheDocument();
+    expect(shown.textContent).not.toContain('builtin.');
+  });
+
+  it('in German names the German lookup', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) if (namespace !== 'integrations') i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'chat', deChat, true, true);
+    await act(async () => { await i18n.changeLanguage('de'); });
+    renderChat([makeThread('thread', 'S')]);
+    const handler = await sendAndGetHandler();
+    void start(handler, call('enrich_ioc', { iocId: ids('S').ioc }));
+    const shown = await card();
+    const vendor = 'VirusTotal Domain-Abfrage (www.virustotal.com)';
+    expect(await within(shown).findByText(deChat.approval.lookup.replace('{{value}}', 'canary-s.example').replace('{{vendors}}', vendor))).toBeInTheDocument();
+    expect(shown.textContent).not.toContain('builtin.');
+  });
+});

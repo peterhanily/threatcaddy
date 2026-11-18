@@ -4,6 +4,7 @@
  * a card in front of the analyst. Only ChatView's approve handler turns a card
  * into a HumanApproval (approval-import-boundary.test.ts).
  */
+import i18n from '../i18n';
 import type { Settings, ToolUseBlock } from '../types';
 import type { HumanApproval } from './human-approval';
 import { executeTool } from './llm-tools';
@@ -46,6 +47,8 @@ export function createChatToolExecutor(deps: {
     catch (error) { return toolExecutionError(error instanceof Error ? error.message : 'Tool configuration is unavailable.'); }
 
     let reach: ToolReach;
+    // An enrichment card names builtin lookups from this namespace, which the hosted build loads on demand.
+    if (toolUse.name === 'enrich_ioc') await i18n.loadNamespaces('integrations');
     try { reach = await classifyToolCall(toolUse, { homeFolderId, settings }); }
     catch { return toolExecutionError('The reach of this tool call could not be checked, so it was not run.'); }
     const verdict = decideToolCall(reach, { surface });

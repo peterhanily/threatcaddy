@@ -40,6 +40,10 @@ interface UseServerAgentsOptions {
 interface UseServerAgentsResult {
   serverRegistered: boolean;
   serverRunning: boolean;
+  /** True only after the server said it can run agents; no 2.0.x server does. */
+  serverExecutionAvailable: boolean;
+  /** Deployments an unavailable answer paused, for the panel to name in the analyst's language. */
+  pausedDeploymentIds: string[];
   registering: boolean;
   error: string | null;
   registerServerAgents: () => Promise<void>;
@@ -50,6 +54,8 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
   const { serverUrl, getAccessToken } = useAuth();
   const [serverRegistered, setServerRegistered] = useState(false);
   const [serverRunning, setServerRunning] = useState(false);
+  const [serverExecutionAvailable, setServerExecutionAvailable] = useState(false);
+  const [pausedDeploymentIds, setPausedDeploymentIds] = useState<string[]>([]);
   const [registering, setRegistering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -97,7 +103,7 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
     if (mountedRef.current) {
       setServerRegistered(false);
       setServerRunning(false);
-      setError(result.reason || result.error || 'Server execution is unavailable.');
+      setServerExecutionAvailable(false);
     }
     if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     heartbeatRef.current = null;
@@ -105,6 +111,7 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
     pendingHandoffIdsRef.current.clear();
     // An unavailable server must not implicitly hand an active deployment back
     // to the browser. Preserve its ownership state and require an explicit run.
+    const paused: string[] = [];
     await db.transaction('rw', db.agentDeployments, async () => {
       for (const deployment of deploymentsRef.current) {
         const current = await db.agentDeployments.get(deployment.id);
@@ -114,8 +121,14 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
         // must not keep rewriting already-paused deployments or restart effects.
         if (!current.serverSideEnabled && current.status === 'paused') continue;
         await db.agentDeployments.update(current.id, { serverSideEnabled: false, status: 'paused', updatedAt: Date.now() });
+        paused.push(current.id);
       }
     });
+    // Every 2.0.x server answers unavailable, so the answer itself is no error;
+    // only a pause is news, and the panel says it in the analyst's language.
+    if (paused.length && mountedRef.current) setPausedDeploymentIds(ids => [...new Set([...ids, ...paused])]);
+    // The deployments list reloads now, so the paused agent's badge agrees with that notice.
+    if (paused.length) window.dispatchEvent(new CustomEvent('tc-folders-changed'));
     return true;
   }, []);
 
@@ -316,7 +329,9 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
     };
   }, [enabled, serverRegistered, investigationId, serverUrl, apiCall, handleUnavailable]);
 
-  // Check initial status
+  // Check initial status, and again when the deployment list changes: the
+  // investigation's deployments load after the first answer can arrive.
+  const deploymentIds = deployments.map(d => d.id).join('\n');
   useEffect(() => {
     if (!investigationId || !serverUrl) return;
     apiCall(`/status/${investigationId}`, 'GET')
@@ -325,14 +340,17 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
         if (mountedRef.current) {
           setServerRegistered(result.registered);
           setServerRunning(result.serverRunning);
+          setServerExecutionAvailable(result.serverExecutionAvailable === true);
         }
       })
       .catch(() => {});
-  }, [investigationId, serverUrl, apiCall, handleUnavailable]);
+  }, [investigationId, serverUrl, apiCall, handleUnavailable, deploymentIds]);
 
   return {
     serverRegistered,
     serverRunning,
+    serverExecutionAvailable,
+    pausedDeploymentIds,
     registering,
     error,
     registerServerAgents,

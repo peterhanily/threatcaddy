@@ -1,6 +1,7 @@
 import { Check, X, Clock, AlertTriangle, Info, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { liveQuery } from 'dexie';
 import { DEFAULT_SETTINGS, type AgentAction } from '../../types';
 import { db } from '../../db';
 import { cn, formatDate } from '../../lib/utils';
@@ -87,17 +88,30 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
         .then(reach => { if (current) setIocHostActionId(reach.flags.includes('host-is-ioc') ? id : undefined); })
         .catch(() => { /* The card still shows the destination. */ });
     } else {
-      (async () => {
-        // Builtin lookups take their names from this namespace, which the hosted build loads on demand.
-        await i18n.loadNamespaces('integrations');
-        // An enrichment's reach reads only the IOC and the enabled integrations, and no settings.
-        const reach = await classifyToolCall({ type: 'tool_use', id, name: toolName, input: { iocId } }, { homeFolderId: investigationId, settings: DEFAULT_SETTINGS });
-        const ioc = iocId ? await db.standaloneIOCs.get(iocId) : undefined;
-        // Approval runs no lookup for an IOC that is gone or filed in another investigation.
-        const runs = !!ioc && !ioc.trashed && ioc.folderId === investigationId;
-        const value = String(ioc?.value ?? iocId).replace(BIDI_CONTROLS, '');
-        if (current) setLookup({ actionId: id, iocId, value, runs, vendors: reach.destinations });
-      })().catch(() => { /* The card keeps its neutral line. */ });
+      // Another tab or a team sync can restore, trash or move the IOC, or change the lookups,
+      // while the card is shown: each change classifies again, and the line says it is checking until then.
+      let latest = 0;
+      const subscription = liveQuery(() => Promise.all([
+        iocId ? db.standaloneIOCs.get(iocId) : undefined, db.installedIntegrations.toArray(), db.integrationTemplates.toArray(),
+      ])).subscribe({
+        next: () => {
+          const run = ++latest;
+          setLookup(undefined);
+          (async () => {
+            // Builtin lookups take their names from this namespace, which the hosted build loads on demand.
+            await i18n.loadNamespaces('integrations');
+            // An enrichment's reach reads only the IOC and the enabled integrations, and no settings.
+            const reach = await classifyToolCall({ type: 'tool_use', id, name: toolName, input: { iocId } }, { homeFolderId: investigationId, settings: DEFAULT_SETTINGS });
+            const ioc = iocId ? await db.standaloneIOCs.get(iocId) : undefined;
+            // Approval runs no lookup for an IOC that is gone or filed in another investigation.
+            const runs = !!ioc && !ioc.trashed && ioc.folderId === investigationId;
+            const value = String(ioc?.value ?? iocId).replace(BIDI_CONTROLS, '');
+            if (current && run === latest) setLookup({ actionId: id, iocId, value, runs, vendors: reach.destinations });
+          })().catch(() => { /* The card keeps its neutral line. */ });
+        },
+        error: () => { /* The card keeps its neutral line. */ },
+      });
+      return () => { current = false; subscription.unsubscribe(); };
     }
     return () => { current = false; };
     // react-i18next hands a new i18n for each language, so a new language renames the builtin lookups.

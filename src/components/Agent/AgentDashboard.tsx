@@ -142,7 +142,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
             <div>
               <h1 className="text-lg font-bold text-text-primary">{t('dashboard.agentCaddy')}</h1>
               <p className="text-xs text-text-muted">
-                {activeAgents > 0 ? t('dashboard.activeAgents', { count: activeAgents, suffix: activeAgents !== 1 ? 's' : '' }) : t('dashboard.noActiveAgents')}
+                {activeAgents > 0 ? t('dashboard.activeAgents', { count: activeAgents }) : t('dashboard.noActiveAgents')}
                 {totalPending > 0 && <span className="text-accent-amber ms-2">{t('dashboard.pendingCount', { count: totalPending })}</span>}
               </p>
             </div>
