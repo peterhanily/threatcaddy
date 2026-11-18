@@ -114,7 +114,7 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
               onBlur={() => setTimeout(() => { setShowDropdown(false); setHighlightIdx(-1); }, 200)}
               onKeyDown={handleKeyDown}
               placeholder={tCommon('tagInput.addPlaceholder')}
-              className="w-20 bg-transparent border-none text-xs text-gray-300 placeholder-gray-500 focus:outline-none"
+              className="w-36 bg-transparent border-none text-xs text-gray-300 placeholder-gray-500 focus:outline-none"
               aria-label={tCommon('tagInput.addLabel')}
               role="combobox"
               aria-expanded={showDropdown && filteredTags.length > 0}
