@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "Bu Haftaki Olaylar",
   "metrics.aiChats": "AI Sohbetleri",
   "metrics.graphNodes": "Graf Düğümleri",
+  "dashboard.analystModeBanner": "Analist Modu — masaüstü için optimize edildi",
   "dashboard.backToExecView": "Yönetim Görünümüne Dön",
   "dashboard.switchToLight": "Açık temaya geç",
   "dashboard.switchToDark": "Koyu temaya geç",

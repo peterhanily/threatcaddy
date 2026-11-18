@@ -1,10 +1,11 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SettingsPanel } from '../components/Settings/SettingsPanel';
 import { DEFAULT_SETTINGS } from '../types';
 import type { Settings } from '../types';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
+import packageJson from '../../package.json';
 
 // Mock contexts
 vi.mock('../contexts/ToastContext', () => ({
@@ -173,6 +174,28 @@ describe('SettingsPanel', () => {
     expect(within(general).getByTestId('offline-status')).toHaveTextContent("This browser can't keep ThreatCaddy available offline, but it still works online.");
     clickTab('Data');
     expect(screen.queryByRole('heading', { name: 'Offline use' })).not.toBeInTheDocument();
+  });
+
+  it('shows the running version under About, from package.json at build time', () => {
+    render(<SettingsPanel {...defaultProps} />);
+    const general = screen.getByRole('tabpanel', { name: 'General' });
+    expect(packageJson.version).toMatch(/^\d+\.\d+\.\d+/);
+    expect(within(general).getByText(`Version ${packageJson.version}`)).toBeInTheDocument();
+  });
+
+  it('says in About which features send data out of this browser', () => {
+    render(<SettingsPanel {...defaultProps} />);
+    expect(screen.getByText('Local-first. Your data stays in this browser unless you connect a team server or use AI, integrations '
+      + 'or cloud backup. Settings → AI shows where AI requests go.')).toBeInTheDocument();
+    expect(screen.queryByText(/self-hosted server/)).not.toBeInTheDocument();
+  });
+
+  it('describes the routing modes as resolveRoute applies them, including local models', () => {
+    render(<SettingsPanel {...defaultProps} initialTab="ai" />);
+    expect(screen.getByRole('option', { name: 'Auto (server while signed in)' })).toBeInTheDocument();
+    expect(screen.getByText('Extension: through the browser extension, with API keys saved on this device. Server: through the team '
+      + 'server you are signed in to, with its API keys. Auto: the team server while you are signed in, otherwise the extension. '
+      + 'A local model with an endpoint is always called directly.')).toBeInTheDocument();
   });
 
   it('describes both samples above their buttons and shows no stale version number', () => {
@@ -387,6 +410,7 @@ describe('SettingsPanel: where AI data goes', () => {
   });
 
   const FETCH_UPDATE = 'Web fetch: unavailable. It needs the ThreatCaddy extension 1.1.3 or later, approved for this app. '
+    + "If your browser's extension store offers no update, install the latest version from the ThreatCaddy releases on GitHub. "
     + 'Keep only the newest ThreatCaddy extension installed, then reload the page.';
   const FETCH_AVAILABLE = 'Web fetch: available. The extension opens only public web addresses.';
 
@@ -447,6 +471,41 @@ describe('SettingsPanel: where AI data goes', () => {
     expect(await within(section()).findByText(FETCH_UPDATE)).toBeInTheDocument();
   });
 
+  // A check still waiting for its ping when the capabilities go and come back answers for the bridge that
+  // published them first; that late answer must not show while the new check runs.
+  it('drops the answer of a check that was still running when its capabilities were withdrawn', async () => {
+    const post = answerPing(GUARDED_CAPS);
+    const held: { requestId: string }[] = [];
+    post.mockImplementation((message: unknown) => {
+      if ((message as { type?: string })?.type === 'TC_EXTENSION_PING') held.push(message as { requestId: string });
+      else deliver(message);
+    });
+    document.documentElement.dataset.tcBridgeCaps = GUARDED_CAPS;
+    renderAI();
+    await waitFor(() => expect(held).toHaveLength(1));
+    delete document.documentElement.dataset.tcBridgeCaps;
+    expect(await within(section()).findByText('Web fetch needs the ThreatCaddy browser extension.')).toBeInTheDocument();
+    document.documentElement.dataset.tcBridgeCaps = GUARDED_CAPS;
+    await waitFor(() => expect(held).toHaveLength(2));
+    // The first check's ping reaches the guarded bridge, and that check finishes.
+    deliver(held[0]);
+    await waitFor(() => expect(post).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'TC_EXTENSION_PING_END', requestId: held[0].requestId }), expect.anything()));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 50)); });
+    expect(within(section()).queryByText(FETCH_AVAILABLE)).not.toBeInTheDocument();
+    expect(within(section()).queryByText(FETCH_UPDATE)).not.toBeInTheDocument();
+    // The bridge that answers the second check's ping is store 1.1.1, so only the update line is true.
+    if (bridges) window.removeEventListener('message', bridges);
+    bridges = event => {
+      if (event.source !== window || event.data?.type !== 'TC_EXTENSION_PING') return;
+      deliver({ type: 'TC_EXTENSION_READY', protocolVersion: 1, capabilities: STORE_1_1_1_CAPS.split(',') });
+    };
+    window.addEventListener('message', bridges);
+    deliver(held[1]);
+    expect(await within(section()).findByText(FETCH_UPDATE)).toBeInTheDocument();
+    expect(within(section()).queryByText(FETCH_AVAILABLE)).not.toBeInTheDocument();
+  });
+
   it('says where keys and prompts go instead of claiming every call uses the extension', () => {
     renderAI();
     expect(screen.getByText(/its operator receives your prompts, attachments and tool results/)).toBeInTheDocument();
@@ -471,6 +530,19 @@ describe('SettingsPanel: where AI data goes', () => {
     expect(within(row('http://10.0.0.5:8080')).getByText('Not used: needs https')).toBeInTheDocument();
     expect(within(row('https://soc.example')).queryByText('Not used: needs https')).not.toBeInTheDocument();
     expect(within(row('http://localhost:8080')).queryByText('Not used: needs https')).not.toBeInTheDocument();
+  });
+
+  // On a phone a long display name used to push the address out of the same truncated line.
+  it('shows each agent host name and address on lines of their own, the address left to right', () => {
+    const url = 'http://soc.example.invalid/api/v1/agents';
+    const name = 'Fictional SOC host with a rather long display name';
+    renderAI({ agentHosts: [{ id: 'soc', name: 'soc', displayName: name, url, enabled: true, skills: [] }] });
+    const nameLine = screen.getByText(name);
+    const urlLine = screen.getByText(url);
+    expect(nameLine).not.toContainElement(urlLine);
+    for (const line of [nameLine, urlLine]) expect(line).toHaveClass('block', 'truncate');
+    expect(urlLine).toHaveAttribute('dir', 'ltr');
+    expect(within(urlLine.closest('li') as HTMLElement).getByText('Not used: needs https')).toBeInTheDocument();
   });
 
   it('hides the agent host list when none are configured', () => {

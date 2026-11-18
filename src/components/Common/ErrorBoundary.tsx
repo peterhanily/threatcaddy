@@ -13,14 +13,59 @@ interface State {
   error: Error | null;
   componentStack: string | null;
   copied: boolean;
+  reloading: boolean;
+}
+
+// After an update the new service worker removes the old build's chunks, so a view this tab had not
+// loaded yet fails to import. A boundary catches that failure, so public/chunk-reload-guard.js never
+// sees it. Both use the guard's message patterns and its sessionStorage claim: the guard's boot claim
+// ('1') blocks until it releases it, and a view claim blocks only while the same build runs, so each
+// build reloads at most once and a later update in the same tab can still reload.
+const CHUNK_RELOAD_KEY = 'tc_chunk_reload';
+const GUARD_BOOT_CLAIM = '1';
+// The page stays if the reload does not happen (a "Leave site?" prompt answered with Stay).
+const RELOAD_FALLBACK_MS = 3_000;
+const CHUNK_FAILURE_PATTERNS = [
+  'ChunkLoadError',
+  'Loading chunk',
+  'dynamically imported module',
+  'Failed to fetch dynamically imported module',
+  'Importing a module script failed',
+  'error loading dynamically imported module',
+  'Failed to load module script',
+];
+
+function isChunkLoadFailure(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return CHUNK_FAILURE_PATTERNS.some(pattern => message.includes(pattern));
+}
+
+/** Names the running build by its hashed entry script, as the guard does. */
+function viewReloadClaim(): string {
+  return `view:${document.querySelector('script[type="module"][src]')?.getAttribute('src') ?? ''}`;
+}
+
+/** Takes this build's one chunk reload; false when it is used or session storage is unavailable. */
+function claimChunkReload(): boolean {
+  try {
+    const claim = sessionStorage.getItem(CHUNK_RELOAD_KEY);
+    const viewClaim = viewReloadClaim();
+    if (claim === GUARD_BOOT_CLAIM || claim === viewClaim) return false;
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, viewClaim);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
-  state: State = { hasError: false, error: null, componentStack: null, copied: false };
+  state: State = { hasError: false, error: null, componentStack: null, copied: false, reloading: false };
   private copyTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private reloadFallbackId: ReturnType<typeof setTimeout> | null = null;
 
   componentWillUnmount() {
     if (this.copyTimeoutId !== null) clearTimeout(this.copyTimeoutId);
+    if (this.reloadFallbackId !== null) clearTimeout(this.reloadFallbackId);
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
@@ -42,6 +87,18 @@ export class ErrorBoundary extends React.Component<Props, State> {
       url: window.location.href,
       timestamp: new Date().toISOString(),
     });
+
+    // Offline, only a service worker in control can serve the new page (it does after an update);
+    // without one the reload cannot fetch it, so the claim stays free for later.
+    const canReload = navigator.onLine !== false || !!navigator.serviceWorker?.controller;
+    if (isChunkLoadFailure(error) && canReload && claimChunkReload()) {
+      this.setState({ reloading: true });
+      // Cache-busting, as the guard does, so the browser fetches the new page.
+      const url = new URL(window.location.href);
+      url.searchParams.set('_r', Date.now().toString());
+      window.location.replace(url.toString());
+      this.reloadFallbackId = setTimeout(() => this.setState({ reloading: false }), RELOAD_FALLBACK_MS);
+    }
   }
 
   private getErrorDetails(): string {
@@ -85,6 +142,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   };
 
   render() {
+    if (this.state.reloading) return <ReloadingNotice />;
     if (this.state.hasError) {
       return (
         <ErrorFallback
@@ -97,6 +155,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
     }
     return this.props.children;
   }
+}
+
+function ReloadingNotice() {
+  const { t } = useTranslation('common');
+  return <div role="status" className="flex flex-1 items-center justify-center h-full p-8 text-gray-500">{t('loading')}</div>;
 }
 
 interface ErrorFallbackProps {

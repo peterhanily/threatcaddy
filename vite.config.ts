@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -60,6 +60,7 @@ export default defineConfig(({ mode }) => {
   // The page deletes locale caches written under any other name.
   define: {
     __LOCALE_CACHE__: JSON.stringify(localeCache),
+    __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8')).version),
   },
   base: './',
   worker: {

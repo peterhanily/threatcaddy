@@ -119,6 +119,7 @@ export default defineConfig({
   define: {
     __STANDALONE__: JSON.stringify(true),
     __BUILD_TIME__: JSON.stringify(Date.now()),
+    __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8')).version),
     __STANDALONE_LOCALES_GZ__: JSON.stringify(loadCompressedLocales()),
   },
   build: {

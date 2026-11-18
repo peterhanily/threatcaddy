@@ -230,7 +230,7 @@ export function InvestigationDetailPanel({
                 onChange={(e) => onUpdate(folder.id, { clsLevel: e.target.value || undefined })}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
               >
-                <option value="">None</option>
+                <option value="">{t('detail.none')}</option>
                 {effectiveClsLevels.map((v) => (
                   <option key={v} value={v}>{v}</option>
                 ))}
@@ -243,7 +243,7 @@ export function InvestigationDetailPanel({
                 onChange={(e) => onUpdate(folder.id, { papLevel: e.target.value || undefined })}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
               >
-                <option value="">None</option>
+                <option value="">{t('detail.none')}</option>
                 <option value="PAP:WHITE">PAP:WHITE</option>
                 <option value="PAP:GREEN">PAP:GREEN</option>
                 <option value="PAP:AMBER">PAP:AMBER</option>
@@ -286,10 +286,10 @@ export function InvestigationDetailPanel({
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.contentsLabel', { count: totalEntities })}</label>
             <div className="flex gap-3 text-xs text-gray-400">
-              <span>{entityCounts.notes} {t('detail.notesCount')}</span>
-              <span>{entityCounts.tasks} {t('detail.tasksCount')}</span>
-              <span>{entityCounts.events} {t('detail.eventsCount')}</span>
-              <span>{entityCounts.whiteboards} {t('detail.whiteboardsCount')}</span>
+              <span>{t('detail.notesCount', { count: entityCounts.notes })}</span>
+              <span>{t('detail.tasksCount', { count: entityCounts.tasks })}</span>
+              <span>{t('detail.eventsCount', { count: entityCounts.events })}</span>
+              <span>{t('detail.whiteboardsCount', { count: entityCounts.whiteboards })}</span>
             </div>
           </div>
 
@@ -396,7 +396,7 @@ export function InvestigationDetailPanel({
                 )}>
                   <div className={cn(
                     'absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white transition-all',
-                    folder.localOnly ? 'left-[2px]' : 'left-[14px]'
+                    folder.localOnly ? 'start-[2px]' : 'start-[14px]'
                   )} />
                 </div>
               </button>
@@ -424,7 +424,7 @@ export function InvestigationDetailPanel({
               )}>
                 <div className={cn(
                   'absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white transition-all',
-                  folder.localOnly ? 'left-[14px]' : 'left-[2px]'
+                  folder.localOnly ? 'start-[14px]' : 'start-[2px]'
                 )} />
               </div>
             </button>
@@ -506,8 +506,8 @@ export function InvestigationDetailPanel({
 
           {/* Timestamps */}
           <div className="flex gap-4 text-xs text-gray-500 pt-2 border-t border-gray-800">
-            <span>{t('detail.created')} {formatFullDate(folder.createdAt)}</span>
-            {folder.updatedAt && <span>{t('detail.updated')} {formatFullDate(folder.updatedAt)}</span>}
+            <span>{t('detail.created', { date: formatFullDate(folder.createdAt) })}</span>
+            {folder.updatedAt && <span>{t('detail.updated', { date: formatFullDate(folder.updatedAt) })}</span>}
           </div>
         </div>
       </div>

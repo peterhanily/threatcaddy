@@ -498,6 +498,9 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               {t('general.aboutDesc')}
             </p>
             <p className="text-xs text-gray-600">{t('general.aboutLocalFirst')}</p>
+            {typeof __APP_VERSION__ === 'string' && (
+              <p className="text-xs text-gray-500">{t('general.version', { version: __APP_VERSION__ })}</p>
+            )}
             <div className="flex items-center gap-4 pt-2">
               <a
                 href="https://github.com/peterhanily/threatcaddy"
@@ -943,8 +946,9 @@ function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpda
           <ul className="space-y-1">
             {hosts.map(host => (
               <li key={host.id} className="flex min-w-0 items-center justify-between gap-2 text-xs">
-                <span className="min-w-0 truncate text-gray-300">
-                  {host.displayName || host.name} <span className="text-gray-500">{host.url}</span>
+                <span className="min-w-0">
+                  <span className="block truncate text-gray-300">{host.displayName || host.name}</span>
+                  <span dir="ltr" className="block truncate text-gray-500 rtl:text-right">{host.url}</span>
                   {!isHttpsOrLoopback(host.url) && <span className="block text-[10px] text-amber-400">{t('ai.dataFlow.hostNeedsHttps')}</span>}
                 </span>
                 <button

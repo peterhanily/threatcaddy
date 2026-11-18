@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "Событий на этой неделе",
   "metrics.aiChats": "ИИ-чаты",
   "metrics.graphNodes": "Узлы графа",
+  "dashboard.analystModeBanner": "Режим аналитика — оптимизирован для компьютера",
   "dashboard.backToExecView": "Назад к Обзору руководства",
   "dashboard.switchToLight": "Включить светлую тему",
   "dashboard.switchToDark": "Включить тёмную тему",

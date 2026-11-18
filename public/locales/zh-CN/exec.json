@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "本周事件",
   "metrics.aiChats": "AI 聊天",
   "metrics.graphNodes": "图谱节点",
+  "dashboard.analystModeBanner": "分析师模式 — 针对桌面端优化",
   "dashboard.backToExecView": "返回高管视图",
   "dashboard.switchToLight": "切换到浅色主题",
   "dashboard.switchToDark": "切换到深色主题",

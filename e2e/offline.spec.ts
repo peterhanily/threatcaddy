@@ -4,7 +4,7 @@ import { startOfflineOrigin } from './offline-origin';
 
 const INSTALLING_NOTICE = 'ThreatCaddy is still saving itself for offline use. Keep this tab open.';
 const FAILED_NOTICE = "ThreatCaddy couldn't finish saving itself for offline use. It still works online and will try again next time you open it.";
-const UNAVAILABLE_NOTICE = "This browser can't keep ThreatCaddy available offline. It still works online. To keep a copy of your investigations, save a backup from Settings → Data.";
+const UNAVAILABLE_NOTICE = "This browser can't keep ThreatCaddy available offline. It still works online. To keep a copy of your investigations, export a JSON backup from Settings → Data.";
 const INSTALLED_SETTING = 'ThreatCaddy opens in this browser without an internet connection; team sync, AI and other online services still need one.';
 const FAILED_SETTING = "The last attempt to save ThreatCaddy for offline use didn't finish. ThreatCaddy still works online and tries again next time you open it.";
 const UNAVAILABLE_SETTING = "This browser can't keep ThreatCaddy available offline, but it still works online.";

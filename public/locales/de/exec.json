@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "Ereignisse diese Woche",
   "metrics.aiChats": "KI-Chats",
   "metrics.graphNodes": "Graph-Knoten",
+  "dashboard.analystModeBanner": "Analysten-Modus — für den Desktop optimiert",
   "dashboard.backToExecView": "Zurück zur Führungsansicht",
   "dashboard.switchToLight": "Zum hellen Design wechseln",
   "dashboard.switchToDark": "Zum dunklen Design wechseln",

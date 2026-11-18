@@ -172,5 +172,6 @@
   "metrics.eventsThisWeek": "Events This Week",
   "metrics.aiChats": "AI Chats",
   "metrics.graphNodes": "Graph Nodes",
+  "dashboard.analystModeBanner": "Analyst Mode — optimized for desktop",
   "dashboard.backToExecView": "Back to Executive View"
 }
