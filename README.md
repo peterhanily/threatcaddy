@@ -110,7 +110,7 @@ Deploy a team of AI analysts that run autonomously in the background, enriching 
 
 These agents run in the open client. Server-side AgentCaddy handoff and the legacy server integration runner are unavailable; saved definitions and history are retained. Client integration execution and team template sharing remain supported.
 
-#### The 17 Built-in Analyst Profiles
+#### The 18 Built-in Analyst Profiles
 
 | Role | Profile | Focus |
 |------|---------|-------|
@@ -131,6 +131,7 @@ These agents run in the open client. Server-side AgentCaddy handoff and the lega
 | 🏢 Business Continuity | Observer | Operational impact, RTO/RPO, recovery actions |
 | 🔗 Pattern Hunter | Cross-case | Shared IOCs, TTPs, campaign connections across investigations, when deployed in a local-only investigation |
 | 📝 Reporter | Specialist | Structured report generation, IOC stats, timeline coverage |
+| 🛡️ Forensicate Scanner | Specialist | Basic check of investigation content for common prompt-injection patterns; the check runs on this device, and like every agent it sends what it reads to your AI model |
 
 **Executives** can propose spawning, defining and dismissing agents; each proposal waits for your approval. **Observers** have read-only access to technical entities. **Pattern Hunter** compares investigations only from a local-only investigation; in one that can sync, its cross-investigation tools are off. No other agent reads or changes other investigations.
 
