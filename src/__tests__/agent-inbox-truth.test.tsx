@@ -384,11 +384,17 @@ describe('A4 catalogs', () => {
     }
   });
 
-  it('Arabic names the token total as a label: no counted noun follows a compact number such as 12 ألف', () => {
-    const ar = agentCatalogs['../../public/locales/ar/agent.json'].default;
-    const forms = Object.keys(ar).filter(key => key.startsWith('panel.tokens_'));
-    expect(forms).toHaveLength(6);
-    for (const key of forms) expect(ar[key], key).toBe('الرموز: {{count, number(notation: compact)}}');
+  // The plural form follows the raw count, but a compact number such as 12 ألف or 2 тыс. takes its own noun form.
+  it.each([
+    ['ar', 6, 'الرموز: {{count, number(notation: compact)}}'],
+    ['ru', 4, 'Токены: {{count, number(notation: compact)}}'],
+    ['uk', 4, 'Токени: {{count, number(notation: compact)}}'],
+    ['pl', 4, 'Tokeny: {{count, number(notation: compact)}}'],
+  ] as const)('%s names the token total as a label: no counted noun follows a compact number', (lng, count, label) => {
+    const catalog = agentCatalogs[`../../public/locales/${lng}/agent.json`].default;
+    const forms = Object.keys(catalog).filter(key => key.startsWith('panel.tokens_'));
+    expect(forms).toHaveLength(count);
+    for (const key of forms) expect(catalog[key], key).toBe(label);
   });
 
   it('every language has the added strings and none keeps a superseded one', () => {
