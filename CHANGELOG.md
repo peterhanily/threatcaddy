@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The dashboard's default quick links add MacCrab.com and CaddyLabs.io after Forensicate.ai and OpenSlaw.ai. A workspace whose quick links were already edited keeps its own list; add them with **Add Link**.
+
 ## v2.0.3 — 2026-11-18
 
 Hardens CaddyAI chat, AgentCaddy agents, the supervisor and the agent bridge against instructions planted in investigation content (prompt injection). Each AI tool call is decided by where it reaches: a person approves every write into another investigation and every tool call that sends data off the device, apart from built-in vendor lookups and agents' fetches from a short list of reference sites. Changes AI makes inside an investigation that syncs still sync to its members. Settings → AI says where AI data goes. Also replaces the permanent offline strip. The server code is unchanged apart from its version, with no database migrations. See the [upgrade and channel notes](docs/releases/v2.0.3.md). The extension is released at 1.1.4.

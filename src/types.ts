@@ -237,6 +237,8 @@ export const DEFAULT_QUICK_LINKS: QuickLink[] = [
   { id: 'ql-8', title: 'MalwareBazaar',    url: 'https://bazaar.abuse.ch',        description: 'Malware sample sharing',      color: '#06b6d4', icon: '\u2623\uFE0F' },
   { id: 'ql-9', title: 'Forensicate.ai',   url: 'https://forensicate.ai',         description: 'AI-powered forensic analysis', color: '#6366f1', icon: '\uD83E\uDDE0' },
   { id: 'ql-10', title: 'OpenSlaw.ai',    url: 'https://openslaw.ai',            description: 'Parody site \u2014 homage to OpenClaw by the ThreatCaddy creator', color: '#f43f5e', icon: '\uD83E\uDD9E' },
+  { id: 'ql-11', title: 'MacCrab.com',    url: 'https://maccrab.com',            description: 'Local-first macOS threat detection by the ThreatCaddy creator', color: '#ea580c', icon: '\uD83E\uDD80' },
+  { id: 'ql-12', title: 'CaddyLabs.io',   url: 'https://caddylabs.io',           description: 'Writing, talks and tools by the ThreatCaddy creator', color: '#22c55e', icon: '\u26F3' },
 ];
 
 export interface Settings {
