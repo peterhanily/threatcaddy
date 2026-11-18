@@ -8,6 +8,7 @@ import { ConfirmDialog } from '../Common/ConfirmDialog';
 import type { Tag } from '../../types';
 import { cn, formatFullDate } from '../../lib/utils';
 import { isSyncWorkspaceBound } from '../../lib/sync-workspace';
+import { hasAiWrittenContent } from '../../lib/ai-content';
 import { PlaybookProgress } from '../Playbooks/PlaybookProgress';
 
 interface InvestigationDetailPanelProps {
@@ -65,6 +66,7 @@ export function InvestigationDetailPanel({
   const [name, setName] = useState(folder.name);
   const [description, setDescription] = useState(folder.description || '');
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [showConfirmShare, setShowConfirmShare] = useState(false);
   const keepLocalId = useId();
   // Offline, only a workspace never bound to a team server may change privacy: a bound
   // one must replay rows skipped while local-only (syncFolder), which needs the connection.
@@ -94,6 +96,16 @@ export function InvestigationDetailPanel({
       onUpdate(folder.id, { description: description.trim() || undefined });
     }
   };
+
+  // From a local-only investigation, AI may read other investigations, local-only ones
+  // included. What it wrote here syncs once this stops being local-only, so ask first.
+  const toggleSync = async () => {
+    if (!onToggleSync) return;
+    if (folder.localOnly && await hasAiWrittenContent(folder.id).catch(() => true)) setShowConfirmShare(true);
+    else onToggleSync(folder.id, !!folder.localOnly);
+  };
+  // The question closes with its control, so a share never starts after the connection it needs is gone.
+  if (showConfirmShare && !serverConnected && !unbound) setShowConfirmShare(false);
 
   const status = folder.status || 'active';
   const totalEntities = entityCounts.notes + entityCounts.tasks + entityCounts.events + entityCounts.whiteboards;
@@ -367,7 +379,7 @@ export function InvestigationDetailPanel({
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-2">{t('detail.cloudSyncLabel')}</label>
               <button
-                onClick={() => onToggleSync(folder.id, !!folder.localOnly)}
+                onClick={() => void toggleSync()}
                 className={cn(
                   'flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border transition-colors text-start',
                   folder.localOnly
@@ -410,7 +422,7 @@ export function InvestigationDetailPanel({
               aria-checked={!!folder.localOnly}
               aria-labelledby={`${keepLocalId}-label`}
               aria-describedby={`${keepLocalId}-desc`}
-              onClick={() => onToggleSync(folder.id, !!folder.localOnly)}
+              onClick={() => void toggleSync()}
               className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-colors text-start"
             >
               <CloudOff size={16} className="shrink-0 text-gray-500" />
@@ -521,6 +533,17 @@ export function InvestigationDetailPanel({
           message={t('detail.deleteMessage', { name: folder.name })}
           confirmLabel={t('detail.deleteConfirm')}
           danger
+        />
+      )}
+
+      {onToggleSync && (
+        <ConfirmDialog
+          open={showConfirmShare}
+          onClose={() => setShowConfirmShare(false)}
+          onConfirm={() => onToggleSync(folder.id, true)}
+          title={t('detail.shareAiTitle')}
+          message={t(serverConnected ? 'detail.shareAiMessageNow' : 'detail.shareAiMessageLater')}
+          confirmLabel={t('detail.shareAiConfirm')}
         />
       )}
     </div>
