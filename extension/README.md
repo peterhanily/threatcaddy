@@ -11,8 +11,8 @@ At the time of ThreatCaddy 2.0.3 the store offers version 1.1.1, which ThreatCad
 <details>
 <summary>Manual install (developer mode)</summary>
 
-1. **[Download threatcaddy-chrome.zip](./threatcaddy-chrome.zip)**
-2. Unzip the file
+1. **[Download threatcaddy-chrome.zip](./threatcaddy-chrome.zip)**, or the file of the same name from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest)
+2. Unzip it into a new, empty folder (the archive has no top-level folder)
 3. Open `chrome://extensions` in Chrome
 4. Enable **Developer mode** (toggle in top-right)
 5. Click **Load unpacked**
@@ -22,13 +22,13 @@ At the time of ThreatCaddy 2.0.3 the store offers version 1.1.1, which ThreatCad
 
 ## Install — Firefox
 
-1. **[Download threatcaddy-firefox.zip](./threatcaddy-firefox.zip)**
-2. Unzip the file
+1. **[Download threatcaddy-firefox.zip](./threatcaddy-firefox.zip)**, or the file of the same name from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest)
+2. Unzip it into a new, empty folder (the archive has no top-level folder)
 3. Open `about:debugging#/runtime/this-firefox` in Firefox
 4. Click **Load Temporary Add-on...**
 5. Select `manifest.json` inside the unzipped folder
 
-> Firefox temporary add-ons are removed when the browser closes. For permanent installation, the extension must be signed via [addons.mozilla.org](https://addons.mozilla.org).
+> Firefox removes a temporary add-on when the browser closes, so load it again after each restart. The ZIP is not signed; a permanent installation needs a build signed through [addons.mozilla.org](https://addons.mozilla.org), which is not yet available.
 
 ## Features
 

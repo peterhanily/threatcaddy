@@ -208,7 +208,7 @@ REST endpoints that expose skills through `GET /skills` and `POST /execute` (see
 
 ### Browser Extension
 
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or load the Firefox build manually — see [extension/README.md](extension/README.md). At the time of the 2.0.3 release the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch (it needs 1.1.3 or later). For web fetch, install 1.1.4 manually from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest), approve ThreatCaddy in its popup, and keep only that extension enabled.
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or load the Firefox build manually — see [extension/README.md](extension/README.md). At the time of the 2.0.3 release the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch (it needs 1.1.3 or later). For web fetch, install 1.1.4 manually from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest) with the [manual install steps](extension/README.md#install--chrome) (in Firefox it is a temporary add-on until a signed build is available), approve ThreatCaddy in its popup, and keep only that extension enabled.
 
 The extension connects to any ThreatCaddy instance: the hosted app, a self-hosted server, a local dev build, or a standalone `file://` HTML file.
 
@@ -312,7 +312,7 @@ pnpm build:single     # Standalone HTML → dist-single/index.html
 
 ## Browser Extension
 
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or see [extension/README.md](extension/README.md) for Firefox and manual install instructions. At the time of the 2.0.3 release the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch; for web fetch, install 1.1.4 manually from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest).
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or see [extension/README.md](extension/README.md) for Firefox and manual install instructions. At the time of the 2.0.3 release the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch; for web fetch, install 1.1.4 manually from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest) with the [manual install steps](extension/README.md#install--chrome).
 
 To build from source:
 
