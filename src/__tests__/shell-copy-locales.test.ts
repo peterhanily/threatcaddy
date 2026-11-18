@@ -48,6 +48,10 @@ describe('shell and settings text in every language', () => {
       expect(common['standaloneWarning.message'], locale).toContain('file://');
       expect(common['standaloneWarning.enableEncryption'], locale).toContain(read(locale, 'settings').title);
     }
+    // Between "file" and right-to-left text, "://" would take the right-to-left direction and show as "//:file".
+    for (const locale of ['ar', 'fa', 'he']) {
+      expect(read(locale, 'common')['standaloneWarning.message'], locale).toContain('file://‎');
+    }
   });
 
   it('says where to get a newer extension in every language', () => {

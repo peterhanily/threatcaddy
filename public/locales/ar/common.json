@@ -159,7 +159,7 @@
   "header.update": "تحديث",
   "header.updateFailed": "فشل تنزيل التحديث. قم بزيارة https://threatcaddy.com للحصول على أحدث إصدار.",
   "header.standalone": "مستقل",
-  "standaloneWarning.message": "تعمل النسخة المستقلة عبر file:// دون تشفير. يمكن لملفات HTML المحلية الأخرى الوصول إلى بياناتك. في الوضع المستقل، لا تقيّد سياسة أمان المحتوى (Content Security Policy) النصوص البرمجية ولا اتصالات الشبكة.",
+  "standaloneWarning.message": "تعمل النسخة المستقلة عبر file://\u200e دون تشفير. يمكن لملفات HTML المحلية الأخرى الوصول إلى بياناتك. في الوضع المستقل، لا تقيّد سياسة أمان المحتوى (Content Security Policy) النصوص البرمجية ولا اتصالات الشبكة.",
   "standaloneWarning.enableEncryption": "تفعيل التشفير في الإعدادات",
   "header.chromeExtension": "إضافة Chrome",
   "header.privacy": "الخصوصية",

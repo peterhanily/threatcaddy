@@ -158,7 +158,7 @@
   "header.update": "به‌روزرسانی",
   "header.updateFailed": "دانلود به‌روزرسانی ناموفق بود. از https://threatcaddy.com آخرین نسخه را دریافت کنید.",
   "header.standalone": "مستقل",
-  "standaloneWarning.message": "نسخهٔ مستقل از طریق file:// و بدون رمزنگاری اجرا می‌شود. فایل‌های HTML محلی دیگر می‌توانند به داده‌های شما دسترسی داشته باشند. در حالت مستقل، سیاست امنیت محتوا (Content Security Policy) اسکریپت‌ها یا اتصالات شبکه را محدود نمی‌کند.",
+  "standaloneWarning.message": "نسخهٔ مستقل از طریق file://\u200e و بدون رمزنگاری اجرا می‌شود. فایل‌های HTML محلی دیگر می‌توانند به داده‌های شما دسترسی داشته باشند. در حالت مستقل، سیاست امنیت محتوا (Content Security Policy) اسکریپت‌ها یا اتصالات شبکه را محدود نمی‌کند.",
   "standaloneWarning.enableEncryption": "فعال کردن رمزنگاری در تنظیمات",
   "header.chromeExtension": "افزونه Chrome",
   "header.privacy": "حریم خصوصی",

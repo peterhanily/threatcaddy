@@ -158,7 +158,7 @@
   "header.update": "עדכן",
   "header.updateFailed": "הורדת העדכון נכשלה. בקר ב-https://threatcaddy.com לקבלת הגרסה האחרונה.",
   "header.standalone": "עצמאי",
-  "standaloneWarning.message": "הגרסה העצמאית פועלת מ-file:// ללא הצפנה. קובצי HTML מקומיים אחרים יכולים לגשת לנתונים שלך. במצב עצמאי, מדיניות אבטחת התוכן (Content Security Policy) אינה מגבילה סקריפטים או חיבורי רשת.",
+  "standaloneWarning.message": "הגרסה העצמאית פועלת מ-file://\u200e ללא הצפנה. קובצי HTML מקומיים אחרים יכולים לגשת לנתונים שלך. במצב עצמאי, מדיניות אבטחת התוכן (Content Security Policy) אינה מגבילה סקריפטים או חיבורי רשת.",
   "standaloneWarning.enableEncryption": "הפעלת הצפנה בהגדרות",
   "header.chromeExtension": "תוסף Chrome",
   "header.privacy": "פרטיות",
