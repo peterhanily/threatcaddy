@@ -18,10 +18,13 @@ interface State {
 
 // After an update the new service worker removes the old build's chunks, so a view this tab had not
 // loaded yet fails to import. A boundary catches that failure, so public/chunk-reload-guard.js never
-// sees it. Both use the guard's message patterns and its sessionStorage claim, so between them a
-// session reloads at most once for a missing chunk; the guard releases only its own boot claim ('1').
+// sees it. Both use the guard's message patterns and its sessionStorage claim: the guard's boot claim
+// ('1') blocks until it releases it, and a view claim blocks only while the same build runs, so each
+// build reloads at most once and a later update in the same tab can still reload.
 const CHUNK_RELOAD_KEY = 'tc_chunk_reload';
-const VIEW_RELOAD_CLAIM = 'view';
+const GUARD_BOOT_CLAIM = '1';
+// The page stays if the reload does not happen (a "Leave site?" prompt answered with Stay).
+const RELOAD_FALLBACK_MS = 3_000;
 const CHUNK_FAILURE_PATTERNS = [
   'ChunkLoadError',
   'Loading chunk',
@@ -37,11 +40,18 @@ function isChunkLoadFailure(error: unknown): boolean {
   return CHUNK_FAILURE_PATTERNS.some(pattern => message.includes(pattern));
 }
 
-/** Takes the session's one chunk reload; false when it is used or session storage is unavailable. */
+/** Names the running build by its hashed entry script, as the guard does. */
+function viewReloadClaim(): string {
+  return `view:${document.querySelector('script[type="module"][src]')?.getAttribute('src') ?? ''}`;
+}
+
+/** Takes this build's one chunk reload; false when it is used or session storage is unavailable. */
 function claimChunkReload(): boolean {
   try {
-    if (sessionStorage.getItem(CHUNK_RELOAD_KEY)) return false;
-    sessionStorage.setItem(CHUNK_RELOAD_KEY, VIEW_RELOAD_CLAIM);
+    const claim = sessionStorage.getItem(CHUNK_RELOAD_KEY);
+    const viewClaim = viewReloadClaim();
+    if (claim === GUARD_BOOT_CLAIM || claim === viewClaim) return false;
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, viewClaim);
     return true;
   } catch {
     return false;
@@ -51,9 +61,11 @@ function claimChunkReload(): boolean {
 export class ErrorBoundary extends React.Component<Props, State> {
   state: State = { hasError: false, error: null, componentStack: null, copied: false, reloading: false };
   private copyTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private reloadFallbackId: ReturnType<typeof setTimeout> | null = null;
 
   componentWillUnmount() {
     if (this.copyTimeoutId !== null) clearTimeout(this.copyTimeoutId);
+    if (this.reloadFallbackId !== null) clearTimeout(this.reloadFallbackId);
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
@@ -76,12 +88,14 @@ export class ErrorBoundary extends React.Component<Props, State> {
       timestamp: new Date().toISOString(),
     });
 
-    if (isChunkLoadFailure(error) && claimChunkReload()) {
+    // Offline, the reload cannot fetch the new page; the claim stays free for later.
+    if (isChunkLoadFailure(error) && navigator.onLine !== false && claimChunkReload()) {
       this.setState({ reloading: true });
       // Cache-busting, as the guard does, so the browser fetches the new page.
       const url = new URL(window.location.href);
       url.searchParams.set('_r', Date.now().toString());
       window.location.replace(url.toString());
+      this.reloadFallbackId = setTimeout(() => this.setState({ reloading: false }), RELOAD_FALLBACK_MS);
     }
   }
 

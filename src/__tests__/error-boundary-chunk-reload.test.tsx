@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { lazy, Suspense } from 'react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { ErrorBoundary } from '../components/Common/ErrorBoundary';
 
 const GUARD_KEY = 'tc_chunk_reload';
@@ -28,9 +28,20 @@ beforeEach(() => {
 
 afterEach(() => {
   Object.defineProperty(window, 'location', { value: originalLocation, writable: true, configurable: true });
+  document.querySelectorAll('script[data-test-build]').forEach(script => script.remove());
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
+
+/** The page's hashed entry script, as a hosted build's index.html loads it. */
+function loadBuild(entry: string) {
+  document.querySelectorAll('script[data-test-build]').forEach(script => script.remove());
+  const script = document.createElement('script');
+  script.type = 'module';
+  script.setAttribute('src', entry);
+  script.dataset.testBuild = '';
+  document.head.appendChild(script);
+}
 
 /** A lazily loaded view whose chunk import rejects, as React.lazy sees it after the update. */
 function renderView(error: unknown) {
@@ -124,6 +135,57 @@ describe('ErrorBoundary: a view whose chunk the update removed', () => {
     renderView(new TypeError(CHROMIUM));
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
     expect(replace).toHaveBeenCalledOnce();
+  });
+
+  it('shows the panel when the reload does not happen, so the analyst can still leave the view', async () => {
+    // For example a "Leave site?" prompt answered with Stay while a save is pending.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    renderView(new TypeError(CHROMIUM));
+    // Testing Library's waitFor drains with setTimeout, which is fake here.
+    await vi.waitFor(() => expect(replace).toHaveBeenCalledOnce());
+    expect(screen.getByRole('status')).toHaveTextContent('Loading...');
+    act(() => { vi.advanceTimersByTime(3_000); });
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument();
+  });
+
+  it('shows the panel without reloading while the browser is offline, and keeps the reload for later', async () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    renderView(new TypeError(CHROMIUM));
+    expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(GUARD_KEY)).toBeNull();
+  });
+
+  it('reloads once per build, so a later update in the same tab reloads again', async () => {
+    loadBuild('./assets/index-2Hq1aB3c.js');
+    const first = renderView(new TypeError(CHROMIUM));
+    await waitFor(() => expect(replace).toHaveBeenCalledOnce());
+    first.unmount();
+    // The reloaded page runs the new build; a later update removes that build's chunks too.
+    loadBuild('./assets/index-9Zx8yW7v.js');
+    const second = renderView(new TypeError(CHROMIUM));
+    await waitFor(() => expect(replace).toHaveBeenCalledTimes(2));
+    second.unmount();
+    // The same build failing again after its own reload shows the panel.
+    renderView(new TypeError(CHROMIUM));
+    expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
+    expect(replace).toHaveBeenCalledTimes(2);
+  });
+
+  it('lets the stale-deploy guard reload after a view reload made by an older build', async () => {
+    loadBuild('./assets/index-2Hq1aB3c.js');
+    const view = renderView(new TypeError(CHROMIUM));
+    await waitFor(() => expect(replace).toHaveBeenCalledOnce());
+    view.unmount();
+    // The reloaded page runs the new build and outlives the guard's boot check.
+    loadBuild('./assets/index-9Zx8yW7v.js');
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const guardWindow = bootGuard();
+    vi.advanceTimersByTime(9_000);
+    // A chunk outside every boundary fails after the next update.
+    guardWindow.dispatchEvent(Object.assign(new Event('unhandledrejection'), { reason: new TypeError(CHROMIUM) }));
+    expect(replace).toHaveBeenCalledTimes(2);
   });
 
   it('keeps the guard releasing its own boot claim, so a later update can still reload once', () => {

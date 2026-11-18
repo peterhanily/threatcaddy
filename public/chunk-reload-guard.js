@@ -6,8 +6,16 @@
 (function () {
   var KEY = 'tc_chunk_reload';
 
+  // ErrorBoundary claims 'view:<entry script>' when it reloads for a view;
+  // that claim blocks only while the same build runs.
+  function viewClaim() {
+    var entry = document.querySelector('script[type="module"][src]');
+    return 'view:' + (entry ? entry.getAttribute('src') : '');
+  }
+
   function shouldReload() {
-    if (sessionStorage.getItem(KEY)) return false;
+    var claim = sessionStorage.getItem(KEY);
+    if (claim === '1' || claim === viewClaim()) return false;
     sessionStorage.setItem(KEY, '1');
     return true;
   }
@@ -51,6 +59,6 @@
 
   // Clear guard after successful boot so future deploys can trigger reload.
   // ErrorBoundary shares KEY for views that fail to load later; its claim
-  // ('view') lasts for the session, so the two can never reload in a loop.
+  // stays, so the two never reload the same build twice.
   setTimeout(function () { if (sessionStorage.getItem(KEY) === '1') sessionStorage.removeItem(KEY); }, 8000);
 })();
