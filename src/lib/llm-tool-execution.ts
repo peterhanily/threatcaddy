@@ -1,5 +1,6 @@
 import type { ToolUseBlock } from '../types';
-import { isWriteTool } from './llm-tool-defs';
+import type { HumanApproval } from './human-approval';
+import { isPlanModeTool, type ToolSurface } from './tool-reach';
 
 export interface ToolExecutionResult {
   result: string;
@@ -8,8 +9,11 @@ export interface ToolExecutionResult {
 
 /** Request-specific permissions are enforced again immediately before dispatch. */
 export interface ToolExecutionConstraints {
+  /** Where the call comes from; the dispatcher re-runs the decision table for it. Plan is 'chat-plan'. */
+  surface: ToolSurface;
   allowedTools: ReadonlySet<string>;
-  readOnly?: boolean;
+  /** A person approved this exact call (human-approval.ts). */
+  approval?: HumanApproval;
   signal?: AbortSignal;
   toolBinding?: string;
   validateScope?: (toolUse: ToolUseBlock) => Promise<string | undefined>;
@@ -18,12 +22,18 @@ export interface ToolExecutionConstraints {
 export function getToolExecutionError(toolUse: ToolUseBlock, constraints: ToolExecutionConstraints): string | undefined {
   if (constraints.signal?.aborted) return 'Tool execution was cancelled.';
   if (!constraints.allowedTools.has(toolUse.name)) return `Tool "${toolUse.name}" is not allowed for this request.`;
-  if (constraints.readOnly && isWriteTool(toolUse.name)) return 'Plan mode does not permit tools that modify data.';
+  if (constraints.surface === 'chat-plan' && !isPlanModeTool(toolUse.name)) return 'Plan mode only reads this investigation.';
   if (!toolUse.input || typeof toolUse.input !== 'object' || Array.isArray(toolUse.input)) return 'Tool input must be an object.';
 }
 
 export function toolExecutionError(error: string): ToolExecutionResult {
   return { result: JSON.stringify({ error }), isError: true };
+}
+
+/** Truncate tool results and signal truncation to the LLM */
+export function truncateToolResult(result: string, maxLen: number): string {
+  if (result.length <= maxLen) return result;
+  return result.substring(0, maxLen) + `\n\n[TRUNCATED: showing ${maxLen.toLocaleString()} of ${result.length.toLocaleString()} chars. Use more specific queries or filters to get complete data.]`;
 }
 
 /** Preserve existing payloads while making handler errors visible to every caller. */

@@ -1111,3 +1111,14 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
     requiredDomains: ['api.greynoise.io'],
   },
 ];
+
+/** Builtin passive vendor lookups an agent or YOLO chat may run without a person.
+ * Notification templates such as slack-webhook-notify are deliberately absent. */
+export const PASSIVE_LOOKUP_TEMPLATE_IDS: ReadonlySet<string> = new Set([
+  'vt-ip-lookup', 'vt-domain-lookup', 'vt-hash-lookup',
+  'abuseipdb-check',
+  'shodan-host-info', 'shodan-internetdb',
+  'urlhaus-lookup', 'urlhaus-domain-lookup',
+  'threatfox-lookup', 'malwarebazaar-lookup',
+  'greynoise-community',
+]);

@@ -22,22 +22,19 @@
     "badgeMeeting": "cuộc họp",
     "planMode": "Lên kế hoạch",
     "actMode": "Hành động",
-    "planModeTitle": "Chế độ lên kế hoạch: AI đề xuất nhưng không thực thi các hành động ghi",
-    "actModeTitle": "Chế độ hành động: AI thực thi các hành động với sự chấp thuận",
+    "actModeTitleV2": "Chế độ hành động: CaddyAI có thể thực hiện thay đổi và dùng công cụ. Công tắc Hỏi/YOLO quyết định những gì cần bạn phê duyệt.",
     "yoloLabel": "YOLO",
-    "safeLabel": "An toàn",
-    "yoloOnTitle": "Chế độ YOLO BẬT — tất cả lệnh gọi công cụ được tự động phê duyệt",
-    "yoloOffTitle": "Nhấp để bật chế độ YOLO (tự động phê duyệt tất cả hành động)",
     "tokSuffix": "tok",
     "tokenTotal": "Tổng token: {{total}}",
     "tokenTotalBudget": "Tổng token: {{total}} / {{budget}} ngân sách",
     "loopCount_one": "{{count}} vòng lặp",
     "loopCount_other": "{{count}} vòng lặp",
     "stopAllLoops": "Dừng tất cả vòng lặp",
+    "loopRetrying": "Đang thử lại sau lỗi",
     "exportAsNote": "Xuất dưới dạng ghi chú",
     "shareChat": "Chia sẻ trò chuyện",
     "emptyTitle": "Bắt đầu cuộc trò chuyện",
-    "emptySubtitle": "Tin nhắn được lưu cục bộ và mã hóa khi lưu trữ",
+    "emptySubtitleV2": "Tin nhắn được lưu trong trình duyệt này. Cuộc trò chuyện trong một cuộc điều tra có đồng bộ sẽ được chia sẻ với máy chủ nhóm của cuộc điều tra đó, và mỗi yêu cầu được gửi tới nơi mà Cài đặt → AI hiển thị.",
     "emptyFolderContext": "AI có thể đọc và tạo thực thể trong \"{{name}}\"",
     "caddyAI": "CaddyAI",
     "selectThread": "Chọn luồng để xem cuộc trò chuyện",
@@ -54,12 +51,10 @@
     "restoreDialog": "Khôi phục điểm kiểm tra",
     "restoreMessage": "Thao tác này sẽ hoàn tác các thay đổi AI — thực thể được tạo sẽ bị xóa và thực thể được sửa đổi sẽ được khôi phục về trạng thái trước đó. Không thể hoàn tác.",
     "restoreLabel": "Khôi phục",
-    "approvalTitle": "Phê duyệt hành động ghi?",
     "approve": "Phê duyệt",
     "reject": "Từ chối",
-    "switchedToPlan": "Đã chuyển sang chế độ lên kế hoạch — AI sẽ đề xuất mà không thực thi",
-    "switchedToAct": "Đã chuyển sang chế độ hành động — AI sẽ thực thi với sự chấp thuận",
-    "switchedToActMessage": "Đã chuyển sang **chế độ hành động**. Gửi \"thực thi kế hoạch\" để chạy các hành động đề xuất với cổng phê duyệt, hoặc tiếp tục cuộc trò chuyện.",
+    "switchedToActV2": "Đã chuyển sang chế độ hành động. Công tắc Hỏi/YOLO quyết định những gì cần bạn phê duyệt.",
+    "switchedToActMessageV2": "Đã chuyển sang **chế độ hành động**. Gửi \"thực thi kế hoạch\" để chạy các hành động đề xuất, hoặc tiếp tục cuộc trò chuyện. Công tắc Hỏi/YOLO quyết định những hành động nào cần bạn phê duyệt.",
     "errorCreateThread": "Tạo luồng trò chuyện thất bại. Thử làm mới trang.",
     "settingsAiLlm": "Cài đặt → AI/LLM",
     "errorNoLocalEndpoint": "Chưa cấu hình endpoint LLM cục bộ. Thêm vào Cài đặt → AI/LLM.",
@@ -74,8 +69,49 @@
     "onboardingStep2Title": "2. Cài đặt tiện ích mở rộng trình duyệt",
     "onboardingStep2Desc": "CaddyAI cần tiện ích mở rộng trình duyệt ThreatCaddy để chuyển tiếp yêu cầu API.",
     "onboardingStep3Title": "3. Kích hoạt quyền",
-    "onboardingStep3Desc": "Trong popup tiện ích mở rộng, bật \"Cho phép CaddyAI\" để truy cập nhà cung cấp AI và \"Cho phép lấy URL\" cho công cụ /fetch.",
+    "onboardingStep3Desc": "Trong popup tiện ích mở rộng, bật \"Cho phép CaddyAI\" để truy cập nhà cung cấp AI và \"Cho phép lấy URL\" cho công cụ <cmd>/fetch</cmd>.",
     "onboardingDismiss": "Đã hiểu"
+  },
+  "mode": {
+    "planTitleV2": "Chế độ lên kế hoạch: CaddyAI chỉ đọc và mô tả mọi thứ khác dưới dạng kế hoạch. Trong một cuộc điều tra, nó chỉ đọc cuộc điều tra đó; ngoài mọi cuộc điều tra, nó có thể đọc tất cả.",
+    "switchedToPlanV2": "Đã chuyển sang chế độ lên kế hoạch. CaddyAI chỉ đọc và mô tả mọi thứ khác dưới dạng kế hoạch.",
+    "askLabel": "Hỏi",
+    "yoloOnTitleV2": "YOLO đang bật: hầu hết các thay đổi và tra cứu nhà cung cấp tích hợp sẵn chạy mà không hỏi. Trang web, kỹ năng, các tích hợp khác và thay đổi đối với cuộc điều tra khác hoặc tác tử vẫn cần bạn phê duyệt, cũng như việc đọc các cuộc điều tra khác từ một cuộc điều tra có thể đồng bộ. Tra cứu nhà cung cấp sẽ bỏ qua các tích hợp khác thay vì hỏi; hãy tắt YOLO để phê duyệt chúng.",
+    "yoloOffTitleV2": "CaddyAI hỏi trước mỗi thay đổi, trang web, tra cứu nhà cung cấp, kỹ năng hoặc tích hợp khác, và trước khi đọc các cuộc điều tra khác từ một cuộc điều tra có thể đồng bộ. Nhấp để bật YOLO: khi đó hầu hết các thay đổi và tra cứu nhà cung cấp tích hợp sẵn chạy mà không hỏi, trừ thay đổi đối với cuộc điều tra khác hoặc tác tử.",
+    "yoloInPlanTitle": "Ở chế độ lên kế hoạch, CaddyAI chỉ đọc; công tắc Hỏi/YOLO chỉ áp dụng ở chế độ hành động. {{setting}}"
+  },
+  "approval": {
+    "position": "{{index}} trên {{total}}",
+    "title": {
+      "write": "Phê duyệt thay đổi trong cuộc điều tra này?",
+      "writeUnfiled": "Phê duyệt thay đổi nằm ngoài mọi cuộc điều tra?",
+      "egress": "Gửi dữ liệu ra ngoài ThreatCaddy?",
+      "lookupNothingSent": "Phê duyệt làm phong phú dữ liệu IOC?",
+      "crossRead": "Đọc các cuộc điều tra khác?",
+      "crossWrite": "Thay đổi một cuộc điều tra khác?",
+      "agentControl": "Thay đổi các tác tử AI?",
+      "harvested": "Chạy lệnh gọi công cụ được tìm thấy trong văn bản trả lời?"
+    },
+    "opensPage": "Mở một trang trên {{host}}. Trang web nhận được địa chỉ đầy đủ.",
+    "lookup": "Gửi {{value}} tới: {{vendors}}",
+    "lookupNone": "Không có gì được gửi: không có tra cứu nào đang bật áp dụng cho {{value}}.",
+    "sendsTo": "Gửi yêu cầu này tới {{destination}}.",
+    "agentChange": "Thay đổi các tác tử AI đang làm việc trong cuộc điều tra này.",
+    "readsOthers": "Đọc các cuộc điều tra khác, không chỉ cuộc điều tra này.",
+    "targetSynced": "{{name}}: đồng bộ với các thành viên",
+    "targetSyncsLater": "{{name}}: ở lại trên thiết bị này cho đến khi kết nối máy chủ nhóm",
+    "targetLocal": "{{name}}: ở lại trên thiết bị này",
+    "unfiled": "Ngoài mọi cuộc điều tra: ở lại trên thiết bị này",
+    "conversationSyncs": "Những gì nó đọc sẽ trở thành một phần của cuộc trò chuyện này, vốn được đồng bộ với các thành viên của \"{{name}}\".",
+    "conversationSyncsLater": "Những gì nó đọc sẽ trở thành một phần của cuộc trò chuyện này, vốn sẽ được đồng bộ với các thành viên của \"{{name}}\" khi máy chủ nhóm được kết nối.",
+    "flag": {
+      "untrustedHost": "Không phải một trong các trang tham khảo tích hợp sẵn.",
+      "urlCarriesData": "Địa chỉ đủ dài để mang theo dữ liệu điều tra.",
+      "hostIsIoc": "Trang này là một IOC trong cuộc điều tra này. Truy cập nó có thể khiến kẻ tấn công cảnh giác.",
+      "harvested": "Lệnh gọi này được lấy từ văn bản trả lời thay vì được gửi dưới dạng lệnh gọi công cụ, nên có thể do nội dung bị chèn tạo ra.",
+      "readForeign": "Trước đó trong câu trả lời này, CaddyAI đã đọc một cuộc điều tra khác. Hành động này có thể mang theo dữ liệu đó."
+    },
+    "details": "Chi tiết"
   },
   "input": {
     "noApiKeys": "Chưa cấu hình khóa API — thêm vào Cài đặt → AI/LLM",
@@ -160,9 +196,24 @@
   },
   "cti": {
     "invalidCommand": "Không thể chạy lệnh CTI đó:",
-    "noSources": "Chưa cấu hình nguồn CTI Agent Host nào. Hãy thêm một CTI host trong Cài đặt → AI → Agent Hosts để sử dụng lệnh này."
+    "noSourcesV2": "Không có nguồn CTI nào khả dụng. Không thể cấu hình agent host có tên trong phiên bản này nữa.",
+    "hostNeedsHttps": "Không có nguồn CTI nào khả dụng. Agent host CTI không được dùng vì cần https (http thường chỉ hoạt động trên máy tính này). Xem Cài đặt → AI."
+  },
+  "fetch": {
+    "createdNote": "Đã tạo ghi chú **{{title}}** từ {{url}}",
+    "failed": "Không thể lấy URL: {{error}}",
+    "unknownError": "Lỗi không xác định"
+  },
+  "loop": {
+    "started": "Đã bắt đầu vòng lặp nền `{{id}}`. Chạy mỗi {{interval}}:",
+    "stopHint": "Dùng `/stoploop` để dừng.",
+    "stopped_one": "Đã dừng {{count}} vòng lặp nền.",
+    "stopped_other": "Đã dừng {{count}} vòng lặp nền.",
+    "noneToStop": "Không có vòng lặp đang hoạt động để dừng."
   },
   "input.serverStatus": "Kênh máy chủ nhóm",
   "input.serverModelsHelp": "Nhà cung cấp và mô hình khả dụng phụ thuộc vào cấu hình máy chủ nhóm.",
-  "input.modelLabel": "Mô hình AI"
+  "input.modelLabel": "Mô hình AI",
+  "input.localModels": "Cục bộ",
+  "input.localModel": "Cục bộ: {{name}}"
 }

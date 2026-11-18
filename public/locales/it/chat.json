@@ -22,22 +22,19 @@
     "badgeMeeting": "riunione",
     "planMode": "Piano",
     "actMode": "Azione",
-    "planModeTitle": "Modalità piano: l'AI propone ma non esegue azioni di scrittura",
-    "actModeTitle": "Modalità azione: l'AI esegue azioni con approvazione",
+    "actModeTitleV2": "Modalità azione: CaddyAI può apportare modifiche e usare strumenti. Il selettore Chiedi/YOLO stabilisce cosa richiede la tua approvazione.",
     "yoloLabel": "YOLO",
-    "safeLabel": "Sicuro",
-    "yoloOnTitle": "Modalità YOLO ATTIVA — tutte le chiamate agli strumenti sono approvate automaticamente",
-    "yoloOffTitle": "Clicca per attivare la modalità YOLO (approva automaticamente tutte le azioni)",
     "tokSuffix": "tok",
     "tokenTotal": "Token totali: {{total}}",
     "tokenTotalBudget": "Token totali: {{total}} / {{budget}} budget",
     "loopCount_one": "{{count}} loop",
     "loopCount_other": "{{count}} loop",
     "stopAllLoops": "Ferma tutti i loop",
+    "loopRetrying": "Nuovo tentativo dopo un errore",
     "exportAsNote": "Esporta come nota",
     "shareChat": "Condividi chat",
     "emptyTitle": "Inizia una conversazione",
-    "emptySubtitle": "I messaggi sono salvati localmente e crittografati a riposo",
+    "emptySubtitleV2": "I messaggi vengono salvati in questo browser. Una conversazione in un'indagine che si sincronizza viene condivisa con il suo server del team, e ogni richiesta va dove indica Impostazioni → AI.",
     "emptyFolderContext": "L'AI può leggere e creare entità in \"{{name}}\"",
     "caddyAI": "CaddyAI",
     "selectThread": "Seleziona un thread per vedere la conversazione",
@@ -54,12 +51,10 @@
     "restoreDialog": "Ripristina checkpoint",
     "restoreMessage": "Questo annullerà le modifiche AI — le entità create verranno eliminate e quelle modificate verranno ripristinate allo stato precedente. Questa azione non può essere annullata.",
     "restoreLabel": "Ripristina",
-    "approvalTitle": "Approvare azioni di scrittura?",
     "approve": "Approva",
     "reject": "Rifiuta",
-    "switchedToPlan": "Passato a modalità piano — l'AI proporrà senza eseguire",
-    "switchedToAct": "Passato a modalità azione — l'AI eseguirà con approvazione",
-    "switchedToActMessage": "Passato a **modalità azione**. Invia \"esegui piano\" per eseguire le azioni proposte con gate di approvazione, o continua la conversazione.",
+    "switchedToActV2": "Passato a modalità azione. Il selettore Chiedi/YOLO stabilisce cosa richiede la tua approvazione.",
+    "switchedToActMessageV2": "Passato a **modalità azione**. Invia \"esegui piano\" per eseguire le azioni proposte, o continua la conversazione. Il selettore Chiedi/YOLO stabilisce quali azioni richiedono la tua approvazione.",
     "errorCreateThread": "Impossibile creare il thread di chat. Prova ad aggiornare la pagina.",
     "settingsAiLlm": "Impostazioni → AI/LLM",
     "errorNoLocalEndpoint": "Nessun endpoint LLM locale configurato. Aggiungine uno in Impostazioni → AI/LLM.",
@@ -74,9 +69,50 @@
     "onboardingStep2Title": "2. Installa l'estensione browser",
     "onboardingStep2Desc": "CaddyAI richiede l'estensione browser ThreatCaddy per inoltrare le richieste API.",
     "onboardingStep3Title": "3. Abilita i permessi",
-    "onboardingStep3Desc": "Nel popup dell'estensione, abilita \"Consenti CaddyAI\" per l'accesso ai provider AI e \"Consenti recupero URL\" per lo strumento /fetch.",
+    "onboardingStep3Desc": "Nel popup dell'estensione, abilita \"Consenti CaddyAI\" per l'accesso ai provider AI e \"Consenti recupero URL\" per lo strumento <cmd>/fetch</cmd>.",
     "onboardingDismiss": "Capito",
     "loopCount_many": "{{count}} loop"
+  },
+  "mode": {
+    "planTitleV2": "Modalità piano: CaddyAI si limita a leggere e descrive tutto il resto come un piano. In un'indagine legge solo quell'indagine; fuori da qualsiasi indagine può leggerle tutte.",
+    "switchedToPlanV2": "Passato a modalità piano. CaddyAI si limita a leggere e descrive tutto il resto come un piano.",
+    "askLabel": "Chiedi",
+    "yoloOnTitleV2": "YOLO attivo: la maggior parte delle modifiche e delle ricerche integrate presso i fornitori viene eseguita senza chiedere. Pagine web, skill, altre integrazioni e modifiche ad altre indagini o agli agenti richiedono comunque la tua approvazione, così come la lettura di altre indagini da un'indagine sincronizzabile. Una ricerca presso i fornitori salta le altre integrazioni invece di chiedere; disattiva YOLO per approvarle.",
+    "yoloOffTitleV2": "CaddyAI chiede prima di ogni modifica, pagina web, ricerca presso i fornitori, skill o altra integrazione, e prima di leggere altre indagini da un'indagine sincronizzabile. Clicca per attivare YOLO: la maggior parte delle modifiche e delle ricerche integrate presso i fornitori verrà poi eseguita senza chiedere, tranne le modifiche ad altre indagini o agli agenti.",
+    "yoloInPlanTitle": "In modalità piano CaddyAI si limita a leggere; il selettore Chiedi/YOLO vale solo in modalità azione. {{setting}}"
+  },
+  "approval": {
+    "position": "{{index}} di {{total}}",
+    "title": {
+      "write": "Approvare una modifica a questa indagine?",
+      "writeUnfiled": "Approvare una modifica fuori da qualsiasi indagine?",
+      "egress": "Inviare dati fuori da ThreatCaddy?",
+      "lookupNothingSent": "Approvare l'arricchimento di un IOC?",
+      "crossRead": "Leggere altre indagini?",
+      "crossWrite": "Modificare un'altra indagine?",
+      "agentControl": "Modificare gli agenti AI?",
+      "harvested": "Eseguire una chiamata a strumento trovata nel testo della risposta?"
+    },
+    "opensPage": "Apre una pagina su {{host}}. Il sito riceve l'indirizzo completo.",
+    "lookup": "Invia {{value}} a: {{vendors}}",
+    "lookupNone": "Non viene inviato nulla: nessuna ricerca attiva si applica a {{value}}.",
+    "sendsTo": "Invia questa richiesta a {{destination}}.",
+    "agentChange": "Modifica gli agenti AI che lavorano in questa indagine.",
+    "readsOthers": "Legge altre indagini, non solo questa.",
+    "targetSynced": "{{name}}: si sincronizza con i suoi membri",
+    "targetSyncsLater": "{{name}}: resta su questo dispositivo finché non viene collegato un server del team",
+    "targetLocal": "{{name}}: resta su questo dispositivo",
+    "unfiled": "Fuori da qualsiasi indagine: resta su questo dispositivo",
+    "conversationSyncs": "Ciò che legge entra a far parte di questa conversazione, che si sincronizza con i membri di \"{{name}}\".",
+    "conversationSyncsLater": "Ciò che legge entra a far parte di questa conversazione, che si sincronizzerà con i membri di \"{{name}}\" non appena verrà collegato un server del team.",
+    "flag": {
+      "untrustedHost": "Non è uno dei siti di riferimento integrati.",
+      "urlCarriesData": "L'indirizzo è abbastanza lungo da trasportare dati dell'indagine.",
+      "hostIsIoc": "Questo sito è un IOC di questa indagine. Visitarlo può allertare l'attaccante.",
+      "harvested": "Questa chiamata è stata presa dal testo della risposta invece di essere inviata come chiamata a strumento, quindi potrebbe essere stata prodotta da contenuto iniettato.",
+      "readForeign": "In precedenza in questa risposta CaddyAI ha letto un'altra indagine. Questa azione potrebbe trasportare quei dati."
+    },
+    "details": "Dettagli"
   },
   "input": {
     "noApiKeys": "Nessuna chiave API configurata — aggiungila in Impostazioni → AI/LLM",
@@ -163,9 +199,25 @@
   },
   "cti": {
     "invalidCommand": "Non è stato possibile eseguire quel comando CTI:",
-    "noSources": "Nessuna origine CTI Agent Host è configurata. Aggiungi un host CTI in Impostazioni → AI → Agent Hosts per usare questo comando."
+    "noSourcesV2": "Nessuna origine CTI disponibile. Gli Agent Host con nome non sono più configurabili in questa versione.",
+    "hostNeedsHttps": "Nessuna origine CTI disponibile. L'Agent Host CTI non viene usato perché richiede https (http semplice funziona solo su questo computer). Vedi Impostazioni → AI."
+  },
+  "fetch": {
+    "createdNote": "Nota **{{title}}** creata da {{url}}",
+    "failed": "Impossibile recuperare l'URL: {{error}}",
+    "unknownError": "Errore sconosciuto"
+  },
+  "loop": {
+    "started": "Loop in background `{{id}}` avviato. Esecuzione ogni {{interval}}:",
+    "stopHint": "Usa `/stoploop` per fermarlo.",
+    "stopped_one": "Fermato {{count}} loop in background.",
+    "stopped_many": "Fermati {{count}} loop in background.",
+    "stopped_other": "Fermati {{count}} loop in background.",
+    "noneToStop": "Nessun loop attivo da fermare."
   },
   "input.serverStatus": "Instradamento tramite server del team",
   "input.serverModelsHelp": "I fornitori e i modelli disponibili dipendono dalla configurazione del server del team.",
-  "input.modelLabel": "Modello IA"
+  "input.modelLabel": "Modello IA",
+  "input.localModels": "Locale",
+  "input.localModel": "Locale: {{name}}"
 }

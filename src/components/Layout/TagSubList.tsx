@@ -73,11 +73,11 @@ export function TagSubList({
     if (sharing || busyRef.current || !onRenameTag) return;
     const name = editName.trim();
     if (!name) {
-      setRenameError(t('sidebar.tagNameRequired', { defaultValue: 'Enter a tag name.' }));
+      setRenameError(t('sidebar.tagNameRequired'));
       return;
     }
     if (tags.some(other => other.id !== tag.id && other.name.trim().toLowerCase() === name.toLowerCase())) {
-      setRenameError(t('sidebar.tagNameExists', { defaultValue: 'A tag with that name already exists.' }));
+      setRenameError(t('sidebar.tagNameExists'));
       return;
     }
     if (name === tag.name) { stopRenaming(tag.id); return; }
@@ -91,7 +91,7 @@ export function TagSubList({
       pendingFocus.current = { action: 'rename', id: tag.id };
       setEditingId(null);
     } catch {
-      if (mountedRef.current) setRenameError(t('sidebar.tagRenameFailed', { defaultValue: 'Could not rename the tag. Your edit is still here; please try again.' }));
+      if (mountedRef.current) setRenameError(t('sidebar.tagRenameFailed'));
     } finally {
       busyRef.current = false;
       if (mountedRef.current) setBusy(false);
@@ -115,7 +115,7 @@ export function TagSubList({
       await onDeleteTag(deletingId);
       if (mountedRef.current && deletedName && selectedTagRef.current === deletedName) onTagSelect(undefined);
     } catch {
-      if (mountedRef.current) setDeleteError(t('sidebar.tagDeleteFailed', { defaultValue: 'Could not delete the tag. Please try again.' }));
+      if (mountedRef.current) setDeleteError(t('sidebar.tagDeleteFailed'));
     } finally {
       busyRef.current = false;
       if (mountedRef.current) setBusy(false);
@@ -138,7 +138,7 @@ export function TagSubList({
           className="transition-transform duration-200"
           style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}
         />
-        {t('sidebar.tags', { defaultValue: 'Tags' })}
+        {t('sidebar.tags')}
       </button>
 
       {open && (
@@ -154,13 +154,13 @@ export function TagSubList({
                   value={editName}
                   onChange={(e) => { setEditName(e.target.value); setRenameError(''); }}
                   onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); stopRenaming(tag.id); } }}
-                  aria-label={t('sidebar.tagNewName', { defaultValue: 'New name for tag {{name}}', name: tag.name })}
+                  aria-label={t('sidebar.tagNewName', { name: tag.name })}
                   aria-invalid={!!renameError}
                   aria-describedby={renameError ? `${listId}-rename-error` : undefined}
                   className="bg-bg-deep border border-border-medium rounded px-2 py-0.5 text-xs text-text-primary focus:outline-none focus:border-purple w-24"
                 />
-                <button type="submit" disabled={busy || sharing} className="inline-flex min-h-6 min-w-6 items-center justify-center p-1 rounded text-purple focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple disabled:opacity-50" aria-label={t('sidebar.tagSaveName', { defaultValue: 'Save tag name' })}><Check size={14} /></button>
-                <button type="button" disabled={busy || sharing} onClick={() => stopRenaming(tag.id)} className="inline-flex min-h-6 min-w-6 items-center justify-center p-1 rounded text-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple disabled:opacity-50" aria-label={t('sidebar.tagCancelRename', { defaultValue: 'Cancel renaming tag' })}><X size={14} /></button>
+                <button type="submit" disabled={busy || sharing} className="inline-flex min-h-6 min-w-6 items-center justify-center p-1 rounded text-purple focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple disabled:opacity-50" aria-label={t('sidebar.tagSaveName')}><Check size={14} /></button>
+                <button type="button" disabled={busy || sharing} onClick={() => stopRenaming(tag.id)} className="inline-flex min-h-6 min-w-6 items-center justify-center p-1 rounded text-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple disabled:opacity-50" aria-label={t('sidebar.tagCancelRename')}><X size={14} /></button>
                 {renameError && <p id={`${listId}-rename-error`} role="alert" className="basis-full max-w-52 text-xs text-red-400">{renameError}</p>}
                 </form>
               ) : (
@@ -179,23 +179,23 @@ export function TagSubList({
                   type="button" disabled={busy || sharing}
                   onClick={() => { setEditingId(tag.id); setEditName(tag.name); setRenameError(''); }}
                   className="inline-flex min-h-6 min-w-6 items-center justify-center p-1 rounded text-text-muted hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple disabled:opacity-50"
-                  aria-label={t('sidebar.tagRename', { defaultValue: 'Rename tag {{name}}', name: tag.name })}
-                  title={t('sidebar.tagRename', { defaultValue: 'Rename tag {{name}}', name: tag.name })}
+                  aria-label={t('sidebar.tagRename', { name: tag.name })}
+                  title={t('sidebar.tagRename', { name: tag.name })}
                 ><Pencil size={12} /></button>}
                 {onDeleteTag && <button
                   ref={element => { if (element) deleteButtons.current.set(tag.id, element); else deleteButtons.current.delete(tag.id); }}
                   type="button" disabled={busy || sharing}
                   onClick={() => { setDeletingId(tag.id); setDeleteError(''); }}
                   className="inline-flex min-h-6 min-w-6 items-center justify-center p-1 rounded text-text-muted hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple disabled:opacity-50"
-                  aria-label={t('sidebar.tagDelete', { defaultValue: 'Delete tag {{name}}', name: tag.name })}
-                  title={t('sidebar.tagDelete', { defaultValue: 'Delete tag {{name}}', name: tag.name })}
+                  aria-label={t('sidebar.tagDelete', { name: tag.name })}
+                  title={t('sidebar.tagDelete', { name: tag.name })}
                 ><X size={12} /></button>}
                 </div>
               )}
             </div>
           ))}
           {tags.length === 0 && (
-            <p className="text-[10px] text-text-muted font-mono">{t('sidebar.noTags', { defaultValue: 'No tags yet' })}</p>
+            <p className="text-[10px] text-text-muted font-mono">{t('sidebar.noTags')}</p>
           )}
         </div>
       )}
@@ -206,9 +206,9 @@ export function TagSubList({
         open={deletingId !== null}
         onClose={closeDelete}
         onConfirm={() => { void handleDelete(); }}
-        title={t('sidebar.tagDeleteTitle', { defaultValue: 'Delete Tag' })}
-        message={t('sidebar.tagDeleteMessage', { defaultValue: 'This tag will be removed from all investigations and items that use it.' })}
-        confirmLabel={t('sidebar.tagDeleteTitle', { defaultValue: 'Delete Tag' })}
+        title={t('sidebar.tagDeleteTitle')}
+        message={t('sidebar.tagDeleteMessage')}
+        confirmLabel={t('sidebar.tagDeleteTitle')}
         danger
       />, document.body)}
     </div>

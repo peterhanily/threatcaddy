@@ -22,22 +22,19 @@
     "badgeMeeting": "ミーティング",
     "planMode": "プラン",
     "actMode": "実行",
-    "planModeTitle": "プランモード：AIは提案するが書き込みアクションは実行しない",
-    "actModeTitle": "実行モード：AIは承認を得てアクションを実行する",
+    "actModeTitleV2": "実行モード：CaddyAI は変更を加えたりツールを使ったりできます。確認/YOLO スイッチで、承認が必要な操作を設定します。",
     "yoloLabel": "YOLO",
-    "safeLabel": "安全",
-    "yoloOnTitle": "YOLOモードON——すべてのツール呼び出しが自動承認されます",
-    "yoloOffTitle": "クリックしてYOLOモードを有効化（すべてのアクションを自動承認）",
     "tokSuffix": "tok",
     "tokenTotal": "総トークン数：{{total}}",
     "tokenTotalBudget": "総トークン数：{{total}} / {{budget}} 予算",
     "loopCount_one": "{{count}} ループ",
     "loopCount_other": "{{count}} ループ",
     "stopAllLoops": "すべてのループを停止",
+    "loopRetrying": "エラー後に再試行中",
     "exportAsNote": "ノートとしてエクスポート",
     "shareChat": "チャットを共有",
     "emptyTitle": "会話を始める",
-    "emptySubtitle": "メッセージはローカルに保存され、静止時に暗号化されます",
+    "emptySubtitleV2": "メッセージはこのブラウザーに保存されます。同期される調査内の会話はその調査のチームサーバーと共有され、各リクエストは設定 → AI に表示される送信先に送られます。",
     "emptyFolderContext": "AIは「{{name}}」内のエンティティを読み取り、作成できます",
     "caddyAI": "CaddyAI",
     "selectThread": "スレッドを選択して会話を表示",
@@ -54,12 +51,10 @@
     "restoreDialog": "チェックポイントを復元",
     "restoreMessage": "AIの変更を取り消します——作成されたエンティティは削除され、変更されたエンティティは以前の状態に戻されます。この操作は元に戻せません。",
     "restoreLabel": "復元",
-    "approvalTitle": "書き込みアクションを承認しますか？",
     "approve": "承認",
     "reject": "拒否",
-    "switchedToPlan": "プランモードに切り替えました——AIは実行せずに提案します",
-    "switchedToAct": "実行モードに切り替えました——AIは承認を得て実行します",
-    "switchedToActMessage": "**実行モード**に切り替えました。「プランを実行する」と送信して承認ゲート付きで提案されたアクションを実行するか、会話を続けてください。",
+    "switchedToActV2": "実行モードに切り替えました。確認/YOLO スイッチで、承認が必要な操作を設定します。",
+    "switchedToActMessageV2": "**実行モード**に切り替えました。「プランを実行する」と送信して提案されたアクションを実行するか、会話を続けてください。確認/YOLO スイッチで、承認が必要なアクションを設定します。",
     "errorCreateThread": "チャットスレッドの作成に失敗しました。ページを更新してください。",
     "settingsAiLlm": "設定 → AI/LLM",
     "errorNoLocalEndpoint": "ローカルLLMエンドポイントが設定されていません。設定 → AI/LLM で追加してください。",
@@ -74,8 +69,49 @@
     "onboardingStep2Title": "2. ブラウザ拡張機能をインストール",
     "onboardingStep2Desc": "CaddyAI は API リクエストのプロキシに ThreatCaddy ブラウザ拡張機能が必要です。",
     "onboardingStep3Title": "3. 権限を有効化",
-    "onboardingStep3Desc": "拡張機能のポップアップで、AIプロバイダーアクセスのための「CaddyAIを許可」と、/fetchツールのための「URLフェッチを許可」を有効にします。",
+    "onboardingStep3Desc": "拡張機能のポップアップで、AIプロバイダーアクセスのための「CaddyAIを許可」と、<cmd>/fetch</cmd>ツールのための「URLフェッチを許可」を有効にします。",
     "onboardingDismiss": "了解"
+  },
+  "mode": {
+    "planTitleV2": "プランモード：CaddyAI は読み取りのみを行い、それ以外はすべてプランとして説明します。調査内ではその調査のみを読み取り、どの調査にも属さない会話ではすべての調査を読み取れます。",
+    "switchedToPlanV2": "プランモードに切り替えました。CaddyAI は読み取りのみを行い、それ以外はすべてプランとして説明します。",
+    "askLabel": "確認",
+    "yoloOnTitleV2": "YOLO オン：ほとんどの変更と組み込みのベンダー照会は確認なしで実行されます。Web ページ、スキル、その他の連携、他の調査やエージェントへの変更には引き続き承認が必要です。同期可能な調査から他の調査を読み取る場合も同様です。ベンダー照会では、その他の連携は確認されずにスキップされます。承認するには YOLO をオフにしてください。",
+    "yoloOffTitleV2": "CaddyAI は変更、Web ページ、ベンダー照会、スキル、その他の連携のたびに確認し、同期可能な調査から他の調査を読み取る前にも確認します。クリックすると YOLO がオンになります：ほとんどの変更と組み込みのベンダー照会は確認なしで実行されます。ただし、他の調査やエージェントへの変更は除きます。",
+    "yoloInPlanTitle": "プランモードでは CaddyAI は読み取りのみを行うため、確認/YOLO スイッチは実行モードでのみ適用されます。{{setting}}"
+  },
+  "approval": {
+    "position": "{{total}} 件中 {{index}} 件目",
+    "title": {
+      "write": "この調査への変更を承認しますか？",
+      "writeUnfiled": "どの調査にも属さない変更を承認しますか？",
+      "egress": "ThreatCaddy の外部にデータを送信しますか？",
+      "lookupNothingSent": "IOC のエンリッチを承認しますか？",
+      "crossRead": "他の調査を読み取りますか？",
+      "crossWrite": "別の調査を変更しますか？",
+      "agentControl": "AI エージェントを変更しますか？",
+      "harvested": "応答テキスト内で見つかったツール呼び出しを実行しますか？"
+    },
+    "opensPage": "{{host}} のページを開きます。サイトには完全なアドレスが送信されます。",
+    "lookup": "{{value}} を次に送信します：{{vendors}}",
+    "lookupNone": "何も送信されません：{{value}} に適用される有効な照会はありません。",
+    "sendsTo": "このリクエストを {{destination}} に送信します。",
+    "agentChange": "この調査で作業している AI エージェントを変更します。",
+    "readsOthers": "この調査だけでなく、他の調査も読み取ります。",
+    "targetSynced": "{{name}}：メンバーと同期されます",
+    "targetSyncsLater": "{{name}}：チームサーバーが接続されるまでこのデバイスに留まります",
+    "targetLocal": "{{name}}：このデバイスに留まります",
+    "unfiled": "どの調査にも属さない：このデバイスに留まります",
+    "conversationSyncs": "読み取った内容はこの会話の一部になり、「{{name}}」のメンバーと同期されます。",
+    "conversationSyncsLater": "読み取った内容はこの会話の一部になり、チームサーバーが接続されると「{{name}}」のメンバーと同期されます。",
+    "flag": {
+      "untrustedHost": "組み込みの参照サイトではありません。",
+      "urlCarriesData": "このアドレスは調査データを運べるほど長いです。",
+      "hostIsIoc": "このサイトはこの調査の IOC です。アクセスすると攻撃者に気付かれる可能性があります。",
+      "harvested": "この呼び出しはツール呼び出しとして送信されたものではなく、応答テキストから取り出されたものです。注入されたコンテンツによって生成された可能性があります。",
+      "readForeign": "この応答の前半で CaddyAI は別の調査を読み取りました。この操作にはそのデータが含まれる可能性があります。"
+    },
+    "details": "詳細"
   },
   "input": {
     "noApiKeys": "APIキーが設定されていません——設定 → AI/LLM で追加してください",
@@ -160,9 +196,24 @@
   },
   "cti": {
     "invalidCommand": "その CTI コマンドは実行できませんでした:",
-    "noSources": "CTI Agent Host のソースが設定されていません。このコマンドを使用するには、設定 → AI → Agent Hosts で CTI ホストを追加してください。"
+    "noSourcesV2": "利用できる CTI ソースがありません。このバージョンでは名前付きエージェントホストを設定できなくなりました。",
+    "hostNeedsHttps": "利用できる CTI ソースがありません。CTI エージェントホストは https が必要なため使用されません（プレーンな http はこのコンピューター上でのみ動作します）。設定 → AI を参照してください。"
+  },
+  "fetch": {
+    "createdNote": "{{url}} からノート **{{title}}** を作成しました",
+    "failed": "URL を取得できませんでした: {{error}}",
+    "unknownError": "不明なエラー"
+  },
+  "loop": {
+    "started": "バックグラウンドループ `{{id}}` を開始しました。{{interval}} ごとに実行します：",
+    "stopHint": "停止するには `/stoploop` を使用してください。",
+    "stopped_one": "{{count}} 件のバックグラウンドループを停止しました。",
+    "stopped_other": "{{count}} 件のバックグラウンドループを停止しました。",
+    "noneToStop": "停止するアクティブなループはありません。"
   },
   "input.serverStatus": "チームサーバー経由",
   "input.serverModelsHelp": "利用できるプロバイダーとモデルはチームサーバーの設定によって異なります。",
-  "input.modelLabel": "AI モデル"
+  "input.modelLabel": "AI モデル",
+  "input.localModels": "ローカル",
+  "input.localModel": "ローカル: {{name}}"
 }

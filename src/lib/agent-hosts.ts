@@ -31,6 +31,61 @@ function redactAuth(s: string): string {
     .replace(/(["']?(?:api[_-]?key|access[_-]?token|token|secret|password)["']?\s*[:=]\s*["']?)[^"'\s,}]+/gi, '$1[redacted]');
 }
 
+/** Control characters become spaces; invisible format, private-use and lone surrogate characters go. */
+function stripInvisible(text: string): string {
+  return text
+    // eslint-disable-next-line no-control-regex -- intentional: strip control chars from host-authored text
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+    .replace(/[\p{Cf}\p{Co}\p{Cs}]/gu, '');
+}
+
+/** Host-authored skill text, capped at 200 characters without control, invisible format
+ * or private-use characters. Applied at discovery and again to descriptions stored by older versions. */
+function sanitizeSkillDescription(description: string): string {
+  const text = stripInvisible(description).replace(/\s+/g, ' ').trim();
+  return Array.from(text).slice(0, 200).join('');
+}
+
+const MAX_SKILL_SCHEMA_CHARS = 2000;
+const PARAMETER_NAME_RE = /^[a-zA-Z0-9_.-]{1,64}$/;
+/** Removed in turn while a schema is over the size cap; the last step leaves names and types. */
+const SCHEMA_DEGRADE_STEPS: ReadonlySet<string>[] = [
+  new Set(),
+  new Set(['description', 'title']),
+  new Set(['description', 'title', 'examples', 'example', 'default']),
+];
+
+/** Host-authored parameter schema: every string and key stripped like skill text, descriptions and
+ * titles capped, parameters with unsafe names dropped (from `required` too). Over 2000 JSON chars it
+ * loses descriptions and titles, then examples and defaults, and only then all parameters. */
+function sanitizeSkillParameters(parameters: unknown): ToolDef['input_schema'] {
+  const empty = { type: 'object' as const, properties: {}, required: [] };
+  const names = (value: unknown): string[] => Array.isArray(value)
+    ? value.filter((name): name is string => typeof name === 'string').map(stripInvisible).filter(name => PARAMETER_NAME_RE.test(name)) : [];
+  // `key` is the schema keyword holding `value`; a `properties` map holds parameter schemas under parameter names.
+  const clean = (value: unknown, drop: ReadonlySet<string>, key?: string): unknown =>
+    typeof value === 'string' ? (key === 'description' || key === 'title' ? sanitizeSkillDescription(value) : stripInvisible(value))
+    : Array.isArray(value) ? (key === 'required' ? names(value) : value.map(item => clean(item, drop)))
+    : value !== null && typeof value === 'object' ? Object.fromEntries(Object.entries(value).flatMap(([raw, item]) => {
+      const name = stripInvisible(raw);
+      if (key === 'properties') return PARAMETER_NAME_RE.test(name) ? [[name, clean(item, drop)]] : [];
+      return drop.has(name) ? [] : [[name, clean(item, drop, name)]];
+    }))
+    : value;
+  try {
+    const { properties, required } = (parameters ?? {}) as { properties?: unknown; required?: unknown };
+    for (const drop of SCHEMA_DEGRADE_STEPS) {
+      const schema = {
+        type: 'object' as const,
+        properties: properties !== null && typeof properties === 'object' && !Array.isArray(properties) ? clean(properties, drop, 'properties') as Record<string, unknown> : {},
+        required: names(required),
+      };
+      if (JSON.stringify(schema).length <= MAX_SKILL_SCHEMA_CHARS) return schema;
+    }
+    return empty;
+  } catch { return empty; }
+}
+
 // ── Skill Discovery ──────────────────────────────────────────────────
 
 /**
@@ -68,8 +123,8 @@ export async function fetchHostSkills(host: AgentHost, signal?: AbortSignal): Pr
         typeof (s as AgentHostSkill).description === 'string'
     ).map(s => ({
       name: s.name,
-      description: s.description.substring(0, 500),
-      parameters: s.parameters || { type: 'object' as const, properties: {}, required: [] },
+      description: sanitizeSkillDescription(s.description),
+      parameters: sanitizeSkillParameters(s.parameters),
       actionClass: normalizeHostActionClass(s.actionClass),
     }));
   } finally {
@@ -100,28 +155,20 @@ export function getHostToolDefinitions(settings: Settings): ToolDef[] {
     for (const skill of localSkills) {
       tools.push({
         name: `local:${skill.name}`,
-        description: `[Local Agent] ${skill.description}`,
-        input_schema: {
-          type: 'object' as const,
-          properties: skill.parameters?.properties || {},
-          required: (skill.parameters?.required || []) as string[],
-        },
+        description: `[Local Agent] ${sanitizeSkillDescription(skill.description)}`,
+        input_schema: sanitizeSkillParameters(skill.parameters),
       });
     }
   }
 
-  // Additional agent hosts
-  const hosts = (settings.agentHosts || []).filter(h => h.enabled && h.skills.length > 0);
+  // Additional agent hosts, leaving out those executeHostSkill would refuse for their transport
+  const hosts = (settings.agentHosts || []).filter(h => h.enabled && h.skills.length > 0 && isHttpsOrLoopback(h.url));
   for (const host of hosts) {
     for (const skill of host.skills) {
       tools.push({
         name: `host:${host.name}:${skill.name}`,
-        description: `[${host.displayName}] ${skill.description}`,
-        input_schema: {
-          type: 'object' as const,
-          properties: skill.parameters?.properties || {},
-          required: (skill.parameters?.required || []) as string[],
-        },
+        description: `[${host.displayName}] ${sanitizeSkillDescription(skill.description)}`,
+        input_schema: sanitizeSkillParameters(skill.parameters),
       });
     }
   }
@@ -164,10 +211,19 @@ export async function executeHostSkill(
   const hosts: AgentHost[] = s.agentHosts || [];
   const host = hosts.find(h => h.name === hostName);
 
-  if (!host) return JSON.stringify({ error: `Agent host not found: ${hostName}. Configure in Settings > AI > Agent Hosts.` });
+  if (!host) return JSON.stringify({ error: `Agent host not found: ${hostName}. Named agent hosts can no longer be configured; remove it in Settings → AI.` });
   if (!host.enabled) return JSON.stringify({ error: `Agent host "${host.displayName}" is disabled.` });
+  if (!isHttpsOrLoopback(host.url)) return JSON.stringify({ error: `Agent host "${host.displayName}" must use https (plain http only on localhost).` });
 
   return await callHostExecute(host.url, host.apiKey, skillName, input, host.displayName, signal);
+}
+
+/** Named hosts receive investigation data: https, or plain http only to this machine. */
+export function isHttpsOrLoopback(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    return url.protocol === 'https:' || (url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname));
+  } catch { return false; }
 }
 
 /** Shared POST /execute call for both local and named hosts. */

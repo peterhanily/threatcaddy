@@ -7,9 +7,10 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { AgentDeployment, AgentProfile } from '../types';
+import type { AgentActionStatus, AgentDeployment, AgentProfile } from '../types';
 import { db } from '../db';
 import { useAuth } from '../contexts/AuthContext';
+import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
 import {
   markHandoffPending,
   markReclaimPending,
@@ -22,6 +23,13 @@ const HEARTBEAT_INTERVAL_MS = 30_000; // 30 seconds
  *  precede the proposed 90s takeover grace. Current servers disable takeover. */
 const HEARTBEAT_FAIL_THRESHOLD = 2;
 
+/** Server rows are stored as terminal history only (srv: ids), never as approvable proposals. */
+const STATIC_TOOL_NAMES: ReadonlySet<string> = new Set(
+  [...TOOL_DEFINITIONS, ...DELEGATION_TOOL_DEFINITIONS, ...EXECUTIVE_TOOL_DEFINITIONS].map(tool => tool.name));
+const TERMINAL_STATUSES: ReadonlySet<string> = new Set<AgentActionStatus>(['executed', 'failed', 'rejected']);
+/** Milliseconds for a server timestamp; NaN when present but unparseable. */
+const serverTime = (value: unknown) => value ? new Date(value as string).getTime() : undefined;
+
 interface UseServerAgentsOptions {
   investigationId?: string;
   deployments: AgentDeployment[];
@@ -32,6 +40,13 @@ interface UseServerAgentsOptions {
 interface UseServerAgentsResult {
   serverRegistered: boolean;
   serverRunning: boolean;
+  /** True only after the server said it can run agents; no 2.0.x server does. */
+  serverExecutionAvailable: boolean;
+  /** Deployments an unavailable answer paused, for the panel to name in the analyst's language. */
+  pausedDeploymentIds: string[];
+  /** Paused deployments whose notice the analyst dismissed: kept here, so the dismissal outlasts the panel. */
+  dismissedPausedIds: string[];
+  dismissPausedNotice: (deploymentIds: string[]) => void;
   registering: boolean;
   error: string | null;
   registerServerAgents: () => Promise<void>;
@@ -42,6 +57,12 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
   const { serverUrl, getAccessToken } = useAuth();
   const [serverRegistered, setServerRegistered] = useState(false);
   const [serverRunning, setServerRunning] = useState(false);
+  const [serverExecutionAvailable, setServerExecutionAvailable] = useState(false);
+  const [pausedDeploymentIds, setPausedDeploymentIds] = useState<string[]>([]);
+  const [dismissedPausedIds, setDismissedPausedIds] = useState<string[]>([]);
+  const dismissPausedNotice = useCallback((deploymentIds: string[]) => {
+    setDismissedPausedIds(ids => [...new Set([...ids, ...deploymentIds])]);
+  }, []);
   const [registering, setRegistering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -89,7 +110,7 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
     if (mountedRef.current) {
       setServerRegistered(false);
       setServerRunning(false);
-      setError(result.reason || result.error || 'Server execution is unavailable.');
+      setServerExecutionAvailable(false);
     }
     if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     heartbeatRef.current = null;
@@ -97,6 +118,7 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
     pendingHandoffIdsRef.current.clear();
     // An unavailable server must not implicitly hand an active deployment back
     // to the browser. Preserve its ownership state and require an explicit run.
+    const paused: string[] = [];
     await db.transaction('rw', db.agentDeployments, async () => {
       for (const deployment of deploymentsRef.current) {
         const current = await db.agentDeployments.get(deployment.id);
@@ -106,8 +128,14 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
         // must not keep rewriting already-paused deployments or restart effects.
         if (!current.serverSideEnabled && current.status === 'paused') continue;
         await db.agentDeployments.update(current.id, { serverSideEnabled: false, status: 'paused', updatedAt: Date.now() });
+        paused.push(current.id);
       }
     });
+    // Every 2.0.x server answers unavailable, so the answer itself is no error;
+    // only a pause is news, and the panel says it in the analyst's language.
+    if (paused.length && mountedRef.current) setPausedDeploymentIds(ids => [...new Set([...ids, ...paused])]);
+    // The deployments list reloads now, so the paused agent's badge agrees with that notice.
+    if (paused.length) window.dispatchEvent(new CustomEvent('tc-folders-changed'));
     return true;
   }, []);
 
@@ -216,25 +244,34 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
             const actionsResult = await apiCall(`/actions/${investigationId}`, 'GET');
             if (actionsResult.actions?.length > 0) {
               for (const action of actionsResult.actions) {
-                const existing = await db.agentActions.get(action.id);
+                // History only: a srv: id, the requested investigation and a
+                // terminal status, so no server row can be approved here.
+                const id = `srv:${action.id}`;
+                const createdAt = serverTime(action.createdAt);
+                const executedAt = serverTime(action.executedAt);
+                const reviewedAt = serverTime(action.reviewedAt);
+                if (!STATIC_TOOL_NAMES.has(action.toolName)) continue;
+                if (!Number.isFinite(createdAt) || [executedAt, reviewedAt].some(time => time !== undefined && !Number.isFinite(time))) continue;
+                const terminal = TERMINAL_STATUSES.has(action.status);
+                const existing = await db.agentActions.get(id);
                 if (!existing) {
                   await db.agentActions.add({
-                    id: action.id,
-                    investigationId: action.investigationId,
+                    id,
+                    investigationId,
                     threadId: action.threadId || '',
                     // Nullable server columns are absent fields locally (backup shape).
                     agentConfigId: action.botConfigId ?? undefined,
                     toolName: action.toolName,
                     toolInput: action.toolInput || {},
                     rationale: action.rationale || '',
-                    status: action.status,
-                    resultSummary: action.resultSummary ?? undefined,
+                    status: terminal ? action.status : 'rejected',
+                    resultSummary: terminal ? action.resultSummary ?? undefined : 'Server proposal not imported',
                     severity: action.severity ?? undefined,
-                    createdAt: new Date(action.createdAt).getTime(),
-                    executedAt: action.executedAt ? new Date(action.executedAt).getTime() : undefined,
-                    reviewedAt: action.reviewedAt ? new Date(action.reviewedAt).getTime() : undefined,
+                    createdAt: createdAt as number,
+                    executedAt,
+                    reviewedAt,
                   });
-                  newServerActionIds.push(action.id);
+                  newServerActionIds.push(id);
                 }
               }
             }
@@ -299,7 +336,9 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
     };
   }, [enabled, serverRegistered, investigationId, serverUrl, apiCall, handleUnavailable]);
 
-  // Check initial status
+  // Check initial status, and again when the deployment list changes: the
+  // investigation's deployments load after the first answer can arrive.
+  const deploymentIds = deployments.map(d => d.id).join('\n');
   useEffect(() => {
     if (!investigationId || !serverUrl) return;
     apiCall(`/status/${investigationId}`, 'GET')
@@ -308,14 +347,19 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
         if (mountedRef.current) {
           setServerRegistered(result.registered);
           setServerRunning(result.serverRunning);
+          setServerExecutionAvailable(result.serverExecutionAvailable === true);
         }
       })
       .catch(() => {});
-  }, [investigationId, serverUrl, apiCall, handleUnavailable]);
+  }, [investigationId, serverUrl, apiCall, handleUnavailable, deploymentIds]);
 
   return {
     serverRegistered,
     serverRunning,
+    serverExecutionAvailable,
+    pausedDeploymentIds,
+    dismissedPausedIds,
+    dismissPausedNotice,
     registering,
     error,
     registerServerAgents,

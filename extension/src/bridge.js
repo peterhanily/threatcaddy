@@ -3,7 +3,7 @@
 // Protocol version — increment when message shapes change in breaking ways.
 // The webapp reads this to know which features/messages the extension supports.
 var TC_PROTOCOL_VERSION = 1;
-var TC_CAPABILITIES = ['llm_streaming', 'fetch_url', 'clip_import', 'clip_import_ack_v2', 'proxy_fetch', 'proxy_fetch_abort', 'notification_ack'];
+var TC_CAPABILITIES = ['llm_streaming', 'fetch_url', 'fetch_url_public_v1', 'clip_import', 'clip_import_ack_v2', 'proxy_fetch', 'proxy_fetch_abort', 'notification_ack'];
 var tcAppApproved = typeof tcAppApproved === 'boolean' ? tcAppApproved : false;
 var tcApprovalRequest = typeof tcApprovalRequest === 'number' ? tcApprovalRequest : 0;
 
@@ -47,8 +47,10 @@ async function refreshAppApproval() {
 
 // Guard against duplicate injection (static content_scripts + dynamic executeScript)
 if (document.documentElement.dataset.tcBridgeLoaded) {
-  // Already loaded — just re-signal readiness and bail out
-  if (chrome && chrome.runtime && chrome.runtime.id) {
+  // Already loaded — just re-signal readiness and bail out. Only this isolated world's own earlier
+  // run may republish capabilities (it set `ports`): when another installed ThreatCaddy extension
+  // loaded the bridge, its listeners serve the page and its capabilities must stand.
+  if (ports instanceof Map && chrome && chrome.runtime && chrome.runtime.id) {
     refreshAppApproval();
   }
 } else {

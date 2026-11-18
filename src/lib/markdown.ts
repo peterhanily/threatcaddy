@@ -168,9 +168,18 @@ const SANITIZE_CONFIG = {
   FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onsubmit'],
 };
 
+// Local report previews must not fetch media embedded in a source/template.
+// Keep the normal renderer's sanitization and opt out of resource-bearing
+// elements before the sanitized markup is ever mounted in the document.
+const NO_MEDIA_SANITIZE_CONFIG = {
+  ...SANITIZE_CONFIG,
+  FORBID_TAGS: [...SANITIZE_CONFIG.FORBID_TAGS, 'style', 'img', 'image', 'picture', 'video', 'audio', 'source', 'track', 'svg', 'math'],
+  FORBID_ATTR: [...SANITIZE_CONFIG.FORBID_ATTR, 'src', 'srcset', 'poster', 'background', 'xlink:href'],
+};
+
 /** Re-sanitize arbitrary HTML using the same DOMPurify config as renderMarkdown. */
-export function sanitizeHtml(html: string): string {
-  return DOMPurify.sanitize(html, SANITIZE_CONFIG) as string;
+export function sanitizeHtml(html: string, options?: { disableMedia?: boolean }): string {
+  return DOMPurify.sanitize(html, options?.disableMedia ? NO_MEDIA_SANITIZE_CONFIG : SANITIZE_CONFIG) as string;
 }
 
 export function renderMarkdown(content: string, wikiLinkTargets?: WikiLinkTarget[], options?: { disableMedia?: boolean }): string {
@@ -178,13 +187,5 @@ export function renderMarkdown(content: string, wikiLinkTargets?: WikiLinkTarget
   ensureHljsCss();
   const processed = wikiLinkTargets ? preprocessWikiLinks(content, wikiLinkTargets) : content;
   const raw = marked.parse(processed) as string;
-  // Local report previews must not fetch media embedded in a source/template.
-  // Keep the normal renderer's sanitization and opt out of resource-bearing
-  // elements before the sanitized markup is ever mounted in the document.
-  const config = options?.disableMedia ? {
-    ...SANITIZE_CONFIG,
-    FORBID_TAGS: [...SANITIZE_CONFIG.FORBID_TAGS, 'style', 'img', 'image', 'picture', 'video', 'audio', 'source', 'track', 'svg', 'math'],
-    FORBID_ATTR: [...SANITIZE_CONFIG.FORBID_ATTR, 'src', 'srcset', 'poster', 'background', 'xlink:href'],
-  } : SANITIZE_CONFIG;
-  return DOMPurify.sanitize(raw, config) as string;
+  return sanitizeHtml(raw, options);
 }

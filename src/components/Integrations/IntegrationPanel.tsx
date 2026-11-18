@@ -1101,8 +1101,11 @@ export function IntegrationPanel() {
     try {
       const teamTemplate = { ...template, source: 'team' as const };
       await installTemplate(teamTemplate, true);
-      await createInstallation(teamTemplate.id, {});
-      addToast('success', tt('integration.installedFromTeam', { name: template.name }));
+      // A teammate's template must not start sending IOC values before this user reviews it.
+      await createInstallation(teamTemplate.id, {}, { enabled: false });
+      addToast('info', template.requiredDomains.length > 0
+        ? t('team.installedDisabled', { name: template.name, domains: template.requiredDomains.join(', ') })
+        : t('team.installedDisabledNoDomains', { name: template.name }), 10000);
       if (template.configSchema.length > 0) {
         setActiveSubTab('installed');
       }

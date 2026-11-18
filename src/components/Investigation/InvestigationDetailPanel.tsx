@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Briefcase, FileBarChart, Share2, Cloud, CloudOff, Archive, Trash2, Printer, BookOpen } from 'lucide-react';
 import type { Folder, InvestigationStatus, ClosureResolution, PlaybookStep } from '../../types';
@@ -7,6 +7,8 @@ import { TagInput } from '../Common/TagInput';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import type { Tag } from '../../types';
 import { cn, formatFullDate } from '../../lib/utils';
+import { isSyncWorkspaceBound } from '../../lib/sync-workspace';
+import { hasAiWrittenContent } from '../../lib/ai-content';
 import { PlaybookProgress } from '../Playbooks/PlaybookProgress';
 
 interface InvestigationDetailPanelProps {
@@ -64,6 +66,19 @@ export function InvestigationDetailPanel({
   const [name, setName] = useState(folder.name);
   const [description, setDescription] = useState(folder.description || '');
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [showConfirmShare, setShowConfirmShare] = useState(false);
+  const [checkingShare, setCheckingShare] = useState(false);
+  const keepLocalId = useId();
+  // Offline, only a workspace never bound to a team server may change privacy: a bound
+  // one must replay rows skipped while local-only (syncFolder), which needs the connection.
+  const [unbound, setUnbound] = useState(false);
+
+  useEffect(() => {
+    if (serverConnected) return;
+    let alive = true;
+    void isSyncWorkspaceBound().then(bound => { if (alive) setUnbound(!bound); }, () => {});
+    return () => { alive = false; setUnbound(false); };
+  }, [serverConnected]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -82,6 +97,26 @@ export function InvestigationDetailPanel({
       onUpdate(folder.id, { description: description.trim() || undefined });
     }
   };
+
+  // From a local-only investigation, AI may read other investigations, local-only ones
+  // included. What it wrote here syncs once this stops being local-only, so ask first.
+  const toggleSync = async () => {
+    // The check can take a moment in a large workspace: the control ignores clicks until it ends.
+    if (!onToggleSync || checkingShare) return;
+    let ask = false;
+    if (folder.localOnly) {
+      setCheckingShare(true);
+      ask = await hasAiWrittenContent(folder.id).catch((error: unknown) => {
+        console.warn('[investigations] The AI-content check failed, so sharing asks first', error);
+        return true;
+      });
+      setCheckingShare(false);
+    }
+    if (ask) setShowConfirmShare(true);
+    else onToggleSync(folder.id, !!folder.localOnly);
+  };
+  // The question closes with its control, so a share never starts after the connection it needs is gone.
+  if (showConfirmShare && !serverConnected && !unbound) setShowConfirmShare(false);
 
   const status = folder.status || 'active';
   const totalEntities = entityCounts.notes + entityCounts.tasks + entityCounts.events + entityCounts.whiteboards;
@@ -103,7 +138,7 @@ export function InvestigationDetailPanel({
   }, [handleKeyDown]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Investigation details">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label={t('detail.title')}>
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto mx-4">
         {/* Header */}
@@ -113,7 +148,7 @@ export function InvestigationDetailPanel({
           <button
             onClick={onClose}
             className="p-1.5 rounded hover:bg-gray-800 text-gray-400 hover:text-gray-200"
-            aria-label="Close"
+            aria-label={t('close', { ns: 'common' })}
           >
             <X size={18} />
           </button>
@@ -218,7 +253,7 @@ export function InvestigationDetailPanel({
                 onChange={(e) => onUpdate(folder.id, { clsLevel: e.target.value || undefined })}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
               >
-                <option value="">None</option>
+                <option value="">{t('detail.none')}</option>
                 {effectiveClsLevels.map((v) => (
                   <option key={v} value={v}>{v}</option>
                 ))}
@@ -231,7 +266,7 @@ export function InvestigationDetailPanel({
                 onChange={(e) => onUpdate(folder.id, { papLevel: e.target.value || undefined })}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
               >
-                <option value="">None</option>
+                <option value="">{t('detail.none')}</option>
                 <option value="PAP:WHITE">PAP:WHITE</option>
                 <option value="PAP:GREEN">PAP:GREEN</option>
                 <option value="PAP:AMBER">PAP:AMBER</option>
@@ -274,10 +309,10 @@ export function InvestigationDetailPanel({
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.contentsLabel', { count: totalEntities })}</label>
             <div className="flex gap-3 text-xs text-gray-400">
-              <span>{entityCounts.notes} {t('detail.notesCount')}</span>
-              <span>{entityCounts.tasks} {t('detail.tasksCount')}</span>
-              <span>{entityCounts.events} {t('detail.eventsCount')}</span>
-              <span>{entityCounts.whiteboards} {t('detail.whiteboardsCount')}</span>
+              <span>{t('detail.notesCount', { count: entityCounts.notes })}</span>
+              <span>{t('detail.tasksCount', { count: entityCounts.tasks })}</span>
+              <span>{t('detail.eventsCount', { count: entityCounts.events })}</span>
+              <span>{t('detail.whiteboardsCount', { count: entityCounts.whiteboards })}</span>
             </div>
           </div>
 
@@ -355,9 +390,10 @@ export function InvestigationDetailPanel({
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-2">{t('detail.cloudSyncLabel')}</label>
               <button
-                onClick={() => onToggleSync(folder.id, !!folder.localOnly)}
+                onClick={() => void toggleSync()}
+                aria-disabled={checkingShare || undefined}
                 className={cn(
-                  'flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border transition-colors text-start',
+                  'flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border transition-colors text-start aria-disabled:opacity-50',
                   folder.localOnly
                     ? 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
                     : 'bg-purple/5 border-purple/30 hover:border-purple/50'
@@ -374,7 +410,7 @@ export function InvestigationDetailPanel({
                   </div>
                   <div className="text-[11px] text-gray-500 mt-0.5">
                     {folder.localOnly
-                      ? t('detail.localOnlyDesc')
+                      ? t('detail.localOnlyDescV2')
                       : t('detail.syncedToServerDesc')}
                   </div>
                 </div>
@@ -384,11 +420,39 @@ export function InvestigationDetailPanel({
                 )}>
                   <div className={cn(
                     'absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white transition-all',
-                    folder.localOnly ? 'left-[2px]' : 'left-[14px]'
+                    folder.localOnly ? 'start-[2px]' : 'start-[14px]'
                   )} />
                 </div>
               </button>
             </div>
+          )}
+
+          {/* Without a team server: binding one later shares every investigation that is not local-only */}
+          {!serverConnected && unbound && onToggleSync && (
+            <button
+              role="switch"
+              aria-checked={!!folder.localOnly}
+              aria-labelledby={`${keepLocalId}-label`}
+              aria-describedby={`${keepLocalId}-desc`}
+              onClick={() => void toggleSync()}
+              aria-disabled={checkingShare || undefined}
+              className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border bg-gray-800/50 border-gray-700 hover:border-gray-600 transition-colors text-start aria-disabled:opacity-50"
+            >
+              <CloudOff size={16} className="shrink-0 text-gray-500" />
+              <div className="flex-1 min-w-0">
+                <div id={`${keepLocalId}-label`} className="text-sm font-medium text-gray-200">{t('detail.keepLocalLabel')}</div>
+                <div id={`${keepLocalId}-desc`} className="text-[11px] text-gray-500 mt-0.5">{t('detail.localOnlyDescV2')}</div>
+              </div>
+              <div className={cn(
+                'w-8 h-[18px] rounded-full transition-colors relative shrink-0',
+                folder.localOnly ? 'bg-purple/60' : 'bg-gray-700'
+              )}>
+                <div className={cn(
+                  'absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white transition-all',
+                  folder.localOnly ? 'start-[14px]' : 'start-[2px]'
+                )} />
+              </div>
+            </button>
           )}
 
           {/* Export, Report & Share */}
@@ -467,8 +531,8 @@ export function InvestigationDetailPanel({
 
           {/* Timestamps */}
           <div className="flex gap-4 text-xs text-gray-500 pt-2 border-t border-gray-800">
-            <span>{t('detail.created')} {formatFullDate(folder.createdAt)}</span>
-            {folder.updatedAt && <span>{t('detail.updated')} {formatFullDate(folder.updatedAt)}</span>}
+            <span>{t('detail.created', { date: formatFullDate(folder.createdAt) })}</span>
+            {folder.updatedAt && <span>{t('detail.updated', { date: formatFullDate(folder.updatedAt) })}</span>}
           </div>
         </div>
       </div>
@@ -482,6 +546,17 @@ export function InvestigationDetailPanel({
           message={t('detail.deleteMessage', { name: folder.name })}
           confirmLabel={t('detail.deleteConfirm')}
           danger
+        />
+      )}
+
+      {onToggleSync && (
+        <ConfirmDialog
+          open={showConfirmShare}
+          onClose={() => setShowConfirmShare(false)}
+          onConfirm={() => onToggleSync(folder.id, true)}
+          title={t('detail.shareAiTitle')}
+          message={t(serverConnected ? 'detail.shareAiMessageNow' : 'detail.shareAiMessageLater')}
+          confirmLabel={t('detail.shareAiConfirm')}
         />
       )}
     </div>

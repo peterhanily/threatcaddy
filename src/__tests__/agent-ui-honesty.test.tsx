@@ -1,0 +1,242 @@
+/**
+ * B-UI: the agent inbox and policy editor say what the runtime does: where an
+ * action reaches, which agents still ask, who is paused, and what "Approve
+ * all" will and will not run.
+ */
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { db } from '../db';
+import { DEFAULT_AGENT_POLICY, type AgentAction, type AgentDeployment, type Folder, type Settings } from '../types';
+import { AgentActionCard } from '../components/Agent/AgentActionCard';
+import { AgentPanel } from '../components/Agent/AgentPanel';
+import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
+import { loadAgentPolicy } from '../lib/agent-profile-resolver';
+import { classifyToolCall } from '../lib/tool-reach';
+import { ids, seedAIWorkspace } from './helpers/ai-workspace';
+import i18n from '../i18n';
+import deAgent from '../../public/locales/de/agent.json';
+
+vi.mock('../components/Agent/AgentProfilePicker', () => ({ AgentProfilePicker: () => null }));
+vi.mock('../components/Agent/AgentMeetingPanel', () => ({ AgentMeetingPanel: () => null }));
+// The real reach check, recorded so a test can wait for every check a card started.
+vi.mock('../lib/tool-reach', async orig => {
+  const actual = await orig<typeof import('../lib/tool-reach')>();
+  return { ...actual, classifyToolCall: vi.fn(actual.classifyToolCall) };
+});
+const reachChecks = vi.mocked(classifyToolCall);
+/** Wait until every reach check the cards started has finished and rendered. */
+const reachSettled = () => act(async () => { await Promise.allSettled(reachChecks.mock.results.map(result => result.value)); });
+
+const settings = { llmLocalEndpoint: 'http://localhost:11434' } as Settings;
+const action = (values: Partial<AgentAction>): AgentAction => ({ id: `action-${values.toolName}`, investigationId: 'S', threadId: 't', toolName: 'create_note',
+  toolInput: {}, rationale: 'Proposed by the agent', status: 'pending', createdAt: 1, ...values });
+const deployment = (profileId: string, investigationId = 'S'): AgentDeployment => ({ id: `dep-${profileId}`, investigationId, profileId, status: 'idle', order: 0, createdAt: 1, updatedAt: 1 });
+const folder = async (id: string) => await db.folders.get(id) as Folder;
+const renderPanel = async (selected: Folder, deployments: AgentDeployment[]) => {
+  const view = render(<AgentPanel folder={selected} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={deployments} />);
+  await act(async () => {});
+  return view;
+};
+
+beforeEach(async () => { await seedAIWorkspace(); localStorage.clear(); });
+afterEach(cleanup);
+
+describe('B-UI-1 action cards name the action class and where it reaches', () => {
+  it('a fetch proposal is labelled Fetch with its destination host and the agent\'s reason', () => {
+    render(<AgentActionCard action={action({ toolName: 'fetch_url', toolInput: { url: 'https://collector.example/c?d=1' } })} />);
+    expect(screen.getByText('Fetch')).toBeInTheDocument();
+    expect(screen.getByText('Sends to: collector.example')).toBeInTheDocument();
+    expect(screen.getByText('Agent\'s reason:')).toBeInTheDocument();
+    expect(screen.getByText('Pending')).toBeInTheDocument();
+  });
+
+  const iocHostWarning = 'This site is an IOC in this investigation. Visiting it can alert the attacker.';
+
+  it('a pending fetch of a host that is an IOC in the investigation carries a warning, and stays approvable', async () => {
+    const onApprove = vi.fn();
+    const view = render(<AgentActionCard action={action({ toolName: 'fetch_url', toolInput: { url: 'https://canary-s.example/beacon' } })} onApprove={onApprove} />);
+    expect(await screen.findByText(iocHostWarning)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Approve fetch_url action' }));
+    expect(onApprove).toHaveBeenCalledOnce();
+    view.unmount();
+
+    reachChecks.mockClear();
+    render(<>
+      <AgentActionCard action={action({ id: 'other-host', toolName: 'fetch_url', toolInput: { url: 'https://collector.example/c' } })} />
+      <AgentActionCard action={action({ id: 'other-case', toolName: 'fetch_url', investigationId: 'P', toolInput: { url: 'https://canary-s.example/' } })} />
+      <AgentActionCard action={action({ id: 'done', toolName: 'fetch_url', status: 'executed', toolInput: { url: 'https://canary-s.example/' } })} />
+    </>);
+    await reachSettled();
+    // Both pending cards were checked, the executed one was not, and neither warns.
+    expect(reachChecks).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(iocHostWarning)).not.toBeInTheDocument();
+    expect(await db.agentActions.count()).toBe(0);
+  });
+
+  it('a refresh that returns the same pending fetch does not check its reach again', async () => {
+    reachChecks.mockClear();
+    const pendingFetch = () => action({ toolName: 'fetch_url', toolInput: { url: 'https://canary-s.example/beacon' } });
+    const view = render(<AgentActionCard action={pendingFetch()} />);
+    await reachSettled();
+    // The inbox poll returns new row objects with the same content.
+    view.rerender(<AgentActionCard action={pendingFetch()} />);
+    await reachSettled();
+    expect(reachChecks).toHaveBeenCalledOnce();
+    expect(screen.getByText(iocHostWarning)).toBeInTheDocument();
+  });
+
+  it('the warning goes once the fetch is no longer pending', async () => {
+    const fetchAction = (status: AgentAction['status']) => action({ toolName: 'fetch_url', status, toolInput: { url: 'https://canary-s.example/beacon' } });
+    const view = render(<AgentActionCard action={fetchAction('pending')} />);
+    expect(await screen.findByText(iocHostWarning)).toBeInTheDocument();
+    view.rerender(<AgentActionCard action={fetchAction('executed')} />);
+    await reachSettled();
+    expect(screen.queryByText(iocHostWarning)).not.toBeInTheDocument();
+  });
+
+  it('enrichment, skills and delegation say what they are', async () => {
+    render(<>
+      <AgentActionCard action={action({ toolName: 'enrich_ioc', toolInput: { iocId: ids('S').ioc } })} />
+      <AgentActionCard action={action({ toolName: 'host:soc1:scan', status: 'executed' })} />
+      <AgentActionCard action={action({ toolName: 'delegate_task', status: 'failed' })} />
+    </>);
+    // No lookup is installed in this workspace.
+    expect(await screen.findByText('Nothing is sent: no enabled lookup applies to canary-s.example.')).toBeInTheDocument();
+    expect(screen.getByText('Sends to: soc1')).toBeInTheDocument();
+    expect(screen.getByText('Delegate')).toBeInTheDocument();
+    expect(screen.getByText('Executed')).toBeInTheDocument();
+    expect(screen.getByText('Failed')).toBeInTheDocument();
+  });
+});
+
+describe('B-UI-2 the policy editor shows the ceiling and who still asks', () => {
+  it('renders translated, honest labels and the "asks before" line for Threat Hunter under a folder that turns creates off', async () => {
+    await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY, autoApproveCreate: false } });
+    await renderPanel(await folder('S'), [deployment('ap-threat-hunter')]);
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle agent settings' }));
+    expect(await screen.findByText('Threat Hunter asks before: Create, Modify')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /^Auto-approve Fetch: Reference sites only/ })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /^Auto-approve Enrich: .*vendor/i })).toBeInTheDocument();
+    expect(screen.getByText(/limit every agent in this investigation/)).toBeInTheDocument();
+  });
+
+  it('notifies once when a folder policy lowers a deployed builtin, and remembers the dismissal', async () => {
+    await db.folders.update('S', { agentPolicy: { ...DEFAULT_AGENT_POLICY, autoApproveCreate: false } });
+    const view = await renderPanel(await folder('S'), [deployment('ap-threat-hunter')]);
+    const notice = screen.getByText(/now limit/);
+    expect(notice).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss notice' }));
+    expect(screen.queryByText(/now limit/)).not.toBeInTheDocument();
+    view.unmount();
+    await renderPanel(await folder('S'), [deployment('ap-threat-hunter')]);
+    expect(screen.queryByText(/now limit/)).not.toBeInTheDocument();
+  });
+
+  it('shows no notice without an explicit folder policy', async () => {
+    await renderPanel(await folder('S'), [deployment('ap-threat-hunter')]);
+    expect(screen.queryByText(/now limit/)).not.toBeInTheDocument();
+  });
+
+  it('without a saved folder policy, the toggles are not presented as a limit until a change is saved', async () => {
+    const view = await renderPanel(await folder('S'), [deployment('ap-threat-hunter')]);
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle agent settings' }));
+    // Threat Hunter creates on its own: nothing limits it yet.
+    expect(await screen.findByText('Threat Hunter asks before: Modify')).toBeInTheDocument();
+    expect(screen.queryByText(/limit every agent in this investigation/)).not.toBeInTheDocument();
+    expect(screen.getByText(/No limit is saved for this investigation yet/)).toBeInTheDocument();
+    // The toggles show what an investigation without deployed agents uses.
+    const undeployed = await loadAgentPolicy('S');
+    for (const [key, label] of [['autoApproveReads', 'Reads'], ['autoApproveEnrich', 'Enrich'], ['autoApproveFetch', 'Fetch'], ['autoApproveCreate', 'Create'], ['autoApproveModify', 'Modify']] as const) {
+      expect(screen.getByRole('checkbox', { name: new RegExp(`^Auto-approve ${label}:`) })).toHaveAttribute('aria-checked', String(undeployed[key]));
+    }
+
+    await act(async () => { fireEvent.click(screen.getByRole('checkbox', { name: /^Auto-approve Reads:/ })); });
+    view.rerender(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={[deployment('ap-threat-hunter')]} />);
+    expect(await screen.findByText(/limit every agent in this investigation/)).toBeInTheDocument();
+    expect(screen.queryByText(/No limit is saved/)).not.toBeInTheDocument();
+  });
+});
+
+describe('agent panel review state', () => {
+  it('names the agent waiting for review and says the others keep working', async () => {
+    await db.agentActions.add(action({ toolName: 'fetch_url', agentConfigId: 'ap-threat-hunter', toolInput: { url: 'https://collector.example/' } }));
+    await renderPanel(await folder('S'), [deployment('ap-threat-hunter'), deployment('ap-lead-analyst')]);
+    expect(await screen.findByText('Threat Hunter is waiting for your review. Other agents keep working.')).toBeInTheDocument();
+    expect(screen.queryByText(/Lead Analyst is waiting/)).not.toBeInTheDocument();
+  });
+
+  it('approve all counts routine rows and reports the rest', async () => {
+    await db.agentActions.bulkAdd([
+      action({ id: 'routine', toolName: 'create_note', toolInput: { title: 'Summary', content: 'Done' } }),
+      action({ id: 'egress', toolName: 'fetch_url', toolInput: { url: 'https://collector.example/' } }),
+    ]);
+    await renderPanel(await folder('S'), []);
+    fireEvent.click(await screen.findByRole('button', { name: /approve all/i }));
+    expect(await screen.findByText('Execute 1?')).toBeInTheDocument();
+    expect(screen.getByText('Left for individual review: 1')).toBeInTheDocument();
+  });
+
+  describe('in the analyst’s language', () => {
+    beforeEach(async () => {
+      for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+      i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+      await i18n.changeLanguage('de');
+    });
+    afterEach(async () => { await act(async () => { await i18n.changeLanguage('en'); }); });
+
+    it.each([['running', 'panel.statusRunning'], ['waiting', 'panel.statusWaiting'], ['paused', 'panel.statusPaused'], ['error', 'panel.statusError']] as const)(
+      'the %s status badge', async (status, key) => {
+        await renderPanel({ ...await folder('S'), agentStatus: status }, []);
+        expect(screen.getByText(deAgent[key])).toBeInTheDocument();
+        expect(screen.queryByText(status)).not.toBeInTheDocument();
+      });
+
+    it('the inbox filters and the automatic model choice', async () => {
+      await renderPanel(await folder('S'), []);
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs.map(tab => tab.textContent)).toEqual(['Alle', 'Ausstehend', 'Ausgeführt', 'Abgelehnt']);
+      // CSS capitalize would title-case a multi-word label ('In Behandeling'): the translation sets the case.
+      for (const tab of tabs) expect(tab).not.toHaveClass('capitalize');
+      fireEvent.click(screen.getByRole('button', { name: deAgent['panel.toggleAgentSettings'] }));
+      expect(await screen.findByRole('option', { name: deAgent['panel.autoUseDefault'] })).toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: 'Auto (use default)' })).not.toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: deAgent['panel.model'] })).toBeInTheDocument();
+    });
+
+    it('an agent row names its status, its supervision and its remove button', async () => {
+      const paused: AgentDeployment = { ...deployment('ap-threat-hunter'), status: 'paused', supervisorDeploymentId: 'dep-ap-lead-analyst' };
+      render(<AgentPanel folder={await folder('S')} settings={settings} profiles={BUILTIN_AGENT_PROFILES}
+        deployments={[paused, deployment('ap-ioc-enricher')]} onRemoveDeployment={vi.fn()} />);
+      await act(async () => {});
+      fireEvent.click(screen.getByRole('button', { name: `${deAgent['panel.agents']}(2)` }));
+      expect(await screen.findByText(deAgent['panel.statusPaused'])).toBeInTheDocument();
+      expect(screen.getByText(deAgent['panel.statusIdle'])).toBeInTheDocument();
+      expect(screen.queryByText('paused')).not.toBeInTheDocument();
+      expect(screen.queryByText('idle')).not.toBeInTheDocument();
+      expect(screen.getByText(new RegExp(` · ${deAgent['panel.supervised']}$`))).toBeInTheDocument();
+      expect(screen.queryByText(/ · supervised$/)).not.toBeInTheDocument();
+      expect(screen.getAllByTitle(deAgent['panel.remove'])).toHaveLength(2);
+      expect(screen.queryByTitle('Remove')).not.toBeInTheDocument();
+    });
+
+    it.each([[1, 'pending', 'executed', 'Keine ausstehenden Aktionen.'], [2, 'executed', 'pending', 'Keine ausgeführten Aktionen.'], [3, 'rejected', 'executed', 'Keine abgelehnten Aktionen.']] as const)(
+      'an empty inbox under filter %i says so in a whole sentence', async (tab, filter, other, sentence) => {
+        await db.agentActions.add(action({ status: other }));
+        await renderPanel(await folder('S'), []);
+        fireEvent.click(screen.getAllByRole('tab')[tab]);
+        expect(await screen.findByText(sentence)).toBeInTheDocument();
+        expect(screen.queryByText(new RegExp(filter))).not.toBeInTheDocument();
+      });
+  });
+
+  it('a cross-case profile in a shareable investigation says its cross-case tools are off', async () => {
+    const view = await renderPanel(await folder('S'), [deployment('ap-pattern-hunter')]);
+    fireEvent.click(screen.getByRole('button', { name: /^Agents/ }));
+    expect(await screen.findByText(/Cross-investigation tools are off/)).toBeInTheDocument();
+    view.unmount();
+    await renderPanel(await folder('L2'), [deployment('ap-pattern-hunter', 'L2')]);
+    fireEvent.click(screen.getByRole('button', { name: /^Agents/ }));
+    await act(async () => {});
+    expect(screen.queryByText(/Cross-investigation tools are off/)).not.toBeInTheDocument();
+  });
+});

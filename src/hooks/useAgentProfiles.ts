@@ -8,9 +8,13 @@ import { nanoid } from 'nanoid';
 import { db } from '../db';
 import type { AgentProfile } from '../types';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
+import { listAgentProfiles } from '../lib/agent-profile-resolver';
+
+const BUILTIN_IDS = new Set(BUILTIN_AGENT_PROFILES.map(profile => profile.id));
 
 export function useAgentProfiles() {
-  const [userProfiles, setUserProfiles] = useState<AgentProfile[]>([]);
+  // Builtins (with stored souls) first, then user-created profiles.
+  const [profiles, setProfiles] = useState<AgentProfile[]>(BUILTIN_AGENT_PROFILES);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(false);
@@ -28,11 +32,13 @@ export function useAgentProfiles() {
     setLoading(true);
     setError(null);
     try {
-      // Names are encrypted at rest and cannot be sorted by an IndexedDB index.
-      const profiles = await db.agentProfiles.toArray();
+      // A stored builtin row contributes only its soul, so each builtin appears once.
+      const all = await listAgentProfiles();
       if (!current()) return;
-      profiles.sort((a, b) => a.name.localeCompare(b.name));
-      setUserProfiles(profiles);
+      const user = all.filter(profile => !BUILTIN_IDS.has(profile.id));
+      // Names are encrypted at rest and cannot be sorted by an IndexedDB index.
+      user.sort((a, b) => a.name.localeCompare(b.name));
+      setProfiles([...all.filter(profile => BUILTIN_IDS.has(profile.id)), ...user]);
     } catch (err) {
       if (!current()) return;
       setError(err instanceof Error ? err.message : 'Failed to load agent profiles');
@@ -57,8 +63,8 @@ export function useAgentProfiles() {
     return () => { clearTimeout(timer); window.removeEventListener('tc-folders-changed', handler); };
   }, [reload]);
 
-  /** All profiles: builtins first, then user-created (memoized). */
-  const profiles = useMemo(() => [...BUILTIN_AGENT_PROFILES, ...userProfiles], [userProfiles]);
+  const userProfiles = useMemo(() => profiles.filter(profile => !BUILTIN_IDS.has(profile.id)), [profiles]);
+  const builtinProfiles = useMemo(() => profiles.filter(profile => BUILTIN_IDS.has(profile.id)), [profiles]);
 
   const createProfile = useCallback(async (partial: Partial<AgentProfile> & { name: string; systemPrompt: string }) => {
     const profile: AgentProfile = {
@@ -122,7 +128,7 @@ export function useAgentProfiles() {
   return {
     profiles,
     userProfiles,
-    builtinProfiles: BUILTIN_AGENT_PROFILES,
+    builtinProfiles,
     loading,
     error,
     reload,

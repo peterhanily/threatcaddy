@@ -79,7 +79,7 @@
   <div class="container">
     <a href="https://threatcaddy.com" class="back">&larr; Back to ThreatCaddy</a>
     <h1>Privacy Policy</h1>
-    <p class="subtitle">Last updated: October 11, 2026</p>
+    <p class="subtitle">Last updated: November 18, 2026</p>
 
     <p>
       ThreatCaddy is a personal open-source project. It is <strong>not affiliated with any
@@ -88,7 +88,7 @@
 
     <h2>Data Storage</h2>
     <ul>
-      <li>Notes, tasks, timelines, and investigation data are stored locally in your browser using IndexedDB. Optional features described below can transmit selected content, identifiers, or requests to other services.</li>
+      <li>Notes, tasks, timelines, CaddyAI conversations and other investigation data are stored locally in your browser using IndexedDB. Optional features described below can transmit selected content, identifiers, or requests to other services.</li>
       <li>Extension clips are stored in <code>chrome.storage.local</code> on your device.</li>
       <li>The standalone HTML file and the default web app require no accounts and use no cookies.</li>
     </ul>
@@ -96,7 +96,7 @@
     <h2>Optional Team Server</h2>
     <ul>
       <li>You may optionally connect to a self-hosted team server for real-time sync and collaboration. This is entirely opt-in — no data is sent until you configure a server URL and sign in.</li>
-      <li>When connected, notes, tasks, timelines, IOCs, and other investigation entities are transmitted to the server you configure. Authentication tokens are stored in your browser.</li>
+      <li>When connected, notes, tasks, timelines, IOCs, and other investigation entities are transmitted to the server you configure. A CaddyAI conversation in an investigation that is not local-only is transmitted too; conversations outside any investigation and in local-only investigations are not synced. Authentication tokens are stored in your browser.</li>
       <li>Local workspace encryption protects covered browser fields at rest; it is not end-to-end encryption for team sync. The server receives readable entity values and may retain historical records. Removing a server record does not erase offline copies or exported files.</li>
       <li>The team server is open-source and self-hosted. This project does not provide a hosted team-server service; access and retention depend on the server operator you choose.</li>
     </ul>
@@ -104,7 +104,7 @@
     <h2>API Keys &amp; AI Features</h2>
     <ul>
       <li>API keys you configure for AI features (e.g., OpenAI, Anthropic, Google, or other LLM providers) are stored locally in your browser.</li>
-      <li>Depending on the selected route, AI requests travel through the extension, directly to a configured local-model endpoint, or through your team server. The extension receives client-configured credentials needed for its requests; a team server can use its own provider credentials.</li>
+      <li>Settings → AI → “Where AI data goes” shows the route AI requests take. A local model with a configured endpoint is called directly; only chat titles and conversation summaries reach it through the extension. Otherwise requests go through the browser extension or your team server: Browser Extension and Team Server routing use only that route, and Auto uses the team server while you are signed in to one, otherwise the extension. With no available route, nothing is sent. The extension receives client-configured credentials needed for its requests; a team server can use its own provider credentials, and its operator can read the prompts, investigation content and tool results that pass through it.</li>
       <li>Prompts, selected context, attachments and tool results may contain investigation data. They are sent to the configured service when you use these features. Custom endpoints and proxies are additional trust boundaries; review their operators and retention policies.</li>
     </ul>
 
@@ -125,9 +125,9 @@
     <p>Network activity depends on the features you use and the deployment configuration. These requests can reveal your IP address and request metadata to the receiving service. They include:</p>
     <ul>
       <li>CaddyAI requests sent to the LLM provider endpoint you configure (e.g., <code>api.openai.com</code>).</li>
-      <li>URL fetch requests you explicitly initiate through CaddyAI tools.</li>
+      <li>Web pages you open with <code>/fetch</code>, and pages the AI asks to open once you approve them. Agents, including the default agent that runs when none is deployed, also open a fixed list of reference sites (NVD, CVE, CWE, MITRE ATT&amp;CK, CISA and FIRST) without per-page approval when the investigation allows it, which it does by default. Private, local and literal-IP addresses are refused.</li>
       <li>Sync traffic to a self-hosted team server, if you choose to configure one.</li>
-      <li>IOC enrichment and enabled integration requests to their configured services; submitted indicators can themselves be sensitive.</li>
+      <li>IOC enrichment and enabled integration requests to their configured services; submitted indicators can themselves be sensitive. When built-in vendor lookups (such as VirusTotal, AbuseIPDB and Shodan) are enabled, agents (when the investigation allows enrichment, which it does by default) and CaddyAI in YOLO mode run them without per-lookup approval.</li>
       <li>Optional cloud-backup uploads, downloads and connection tests to the storage endpoint you configure. A connection test writes a small remote test object. Plain JSON exports are not encrypted; use the separate password-encrypted backup flow when needed.</li>
       <li>Community integration catalog downloads when you explicitly browse or refresh that catalog, and map-tile requests when you open map views. Tile providers can infer the viewed geographic area.</li>
       <li>App assets, update checks and any analytics enabled for the hosted build. Standalone offline operation does not require these hosted resources, but optional network features remain available when configured.</li>

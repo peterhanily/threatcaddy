@@ -60,7 +60,10 @@ pnpm exec playwright test --config playwright.standalone.config.ts
 ```
 
 This block is the required gate's non-Docker subset; the audits query the npm
-registry, as CI does. CI additionally builds, starts and scans the server image
+registry, as CI does. CI passes each audit's `--json` output and exit status to
+`node scripts/ci-dependency-audit.mjs PROJECT REPORT STATUS`, which accepts only
+reviewed exceptions, so while one is listed the plain root or server audit here
+exits 1. CI additionally builds, starts and scans the server image
 (see [Publication](#publication)). To repeat one browser locally after the
 build, add `--project=webkit` (or `chromium`, `firefox`) to `pnpm test:e2e`.
 
@@ -215,7 +218,9 @@ and server publishers; pull requests, scheduled audits and manual CI runs are
 verification-only. Explicit manual Pages/server deployment workflows remain
 available and each performs its own full verification before using those same
 publishers. All required jobs must succeed. High and critical advisories in any of the
-three complete dependency graphs also block publication; audit errors do not
+three complete dependency graphs also block publication, except reviewed exceptions in
+`scripts/dependency-audit-exceptions.json`, whose conditions CI checks on every run (see
+[the dependency review](dependency-security-review.md)). Audit and registry errors do not
 become successful checks. Scheduled audits retain their evidence.
 
 After its startup and restart acceptance, the server image job also audits the

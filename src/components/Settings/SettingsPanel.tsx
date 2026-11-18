@@ -1,5 +1,5 @@
 import { workspaceStorageKey } from '../../lib/workspace-profiles';
-import { useState, useCallback, useId, type KeyboardEvent } from 'react';
+import { useState, useCallback, useEffect, useId, useSyncExternalStore, type KeyboardEvent } from 'react';
 import DOMPurify from 'dompurify';
 import { CodeXml, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +10,11 @@ import { useCustomSlashCommands } from '../../hooks/useCustomSlashCommands';
 import { TemplateManager } from './TemplateManager';
 import { PlaybookManager } from './PlaybookManager';
 import { DEFAULT_SYSTEM_PROMPT } from '../../lib/llm-tools';
+import { hasGuardedBridgeFetch } from '../../lib/llm-tools-analysis';
+import { isHttpsOrLoopback } from '../../lib/agent-hosts';
 import { MODELS, MODEL_PROVIDER_MAP } from '../../lib/models';
+import { hasServerSession, resolveRoute } from '../../lib/llm-router';
+import { readStoredAuth } from '../../lib/auth-storage';
 import { ExportImport } from './ExportImport';
 import { useAgentProfiles } from '../../hooks/useAgentProfiles';
 import { AgentProfileManager } from '../Agent/AgentProfileManager';
@@ -24,6 +28,7 @@ import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { SyncRecoveryPanel } from './SyncRecoveryPanel';
 import { IntegrationPanel } from '../Integrations/IntegrationPanel';
 import { AppearanceSettings } from './AppearanceSettings';
+import { OfflineUseSetting } from '../Common/OfflineStatusNotice';
 
 function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
   const { t } = useTranslation('settings');
@@ -484,6 +489,8 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             </div>
           )}
 
+          <OfflineUseSetting />
+
           {/* About */}
           <div className="space-y-2">
             <h3 className="text-sm font-semibold text-gray-300">{t('general.about')}</h3>
@@ -491,6 +498,9 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               {t('general.aboutDesc')}
             </p>
             <p className="text-xs text-gray-600">{t('general.aboutLocalFirst')}</p>
+            {typeof __APP_VERSION__ === 'string' && (
+              <p className="text-xs text-gray-500">{t('general.version', { version: __APP_VERSION__ })}</p>
+            )}
             <div className="flex items-center gap-4 pt-2">
               <a
                 href="https://github.com/peterhanily/threatcaddy"
@@ -726,7 +736,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 <label htmlFor={`${fieldId}-routing`} className="text-xs text-gray-400">{t('ai.routing')}</label>
                 <select
                   id={`${fieldId}-routing`}
-                  value={settings.llmRoutingMode || 'extension'}
+                  value={settings.llmRoutingMode ?? 'auto'}
                   onChange={(e) => onUpdateSettings({ llmRoutingMode: e.target.value as 'extension' | 'server' | 'auto' })}
                   className={selectClass}
                 >
@@ -739,13 +749,15 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 {t('ai.routingHelp')}
               </p>
 
+              <AIDataFlow settings={settings} onUpdateSettings={onUpdateSettings} />
+
               <SystemPromptEditor
                 value={settings.llmSystemPrompt}
                 onChange={(v) => onUpdateSettings({ llmSystemPrompt: v })}
               />
 
               <p className="text-[10px] text-gray-600">
-                {t('ai.keysLocalNote')}
+                {t('ai.keysRouteNote')}
               </p>
               {(settings.llmAnthropicApiKey || settings.llmOpenAIApiKey || settings.llmGeminiApiKey || settings.llmMistralApiKey) && (
                 <p className="text-[10px] text-accent-green font-medium">{t('ai.apiKeySaved')}</p>
@@ -849,6 +861,110 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
       )}
     </div>
     </div>
+  );
+}
+
+// ── Where AI data goes ──────────────────────────────────────────────────
+
+const hostOf = (url?: string) => { try { return new URL(url ?? '').host; } catch { return url ?? ''; } };
+
+// The extension bridge publishes its capabilities once it has approved this page,
+// and withdraws them while it rechecks that approval.
+const subscribeBridgeCaps = (onChange: () => void) => {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-tc-bridge-caps'] });
+  return () => observer.disconnect();
+};
+const bridgeCapsSnapshot = () => document.documentElement.dataset.tcBridgeCaps ?? '';
+
+// Without a local endpoint every model takes the routing mode's route; with one, cloud models still do.
+const ROUTE_KEYS = {
+  all: { server: 'ai.dataFlow.routeServer', extension: 'ai.dataFlow.routeExtension', 'no-extension': 'ai.dataFlow.routeNoExtension', 'no-server': 'ai.dataFlow.routeNoServer', none: 'ai.dataFlow.routeNone' },
+  cloud: { server: 'ai.dataFlow.routeCloudServer', extension: 'ai.dataFlow.routeCloudExtension', 'no-extension': 'ai.dataFlow.routeCloudNoExtension', 'no-server': 'ai.dataFlow.routeCloudNoServer', none: 'ai.dataFlow.routeCloudNone' },
+} as const;
+
+/** Describes where requests go for every model the analyst can pick: a local model with an endpoint is
+ * called directly, and cloud models take the route resolveRoute picks for them. Chat, agent cycles,
+ * meetings and the supervisor route with the same resolver and session check. */
+function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpdateSettings: (updates: Partial<Settings>) => void }) {
+  const { t } = useTranslation('settings');
+  const headingId = useId();
+  const capsText = useSyncExternalStore(subscribeBridgeCaps, bridgeCapsSnapshot);
+  const caps = capsText.split(',').filter(Boolean);
+  const localEndpoint = settings.llmLocalEndpoint?.trim();
+  // Every cloud provider takes the same route.
+  const cloud = resolveRoute(settings, { extensionAvailable: caps.length > 0, serverSession: hasServerSession(), provider: 'anthropic' });
+  const keys = ROUTE_KEYS[localEndpoint ? 'cloud' : 'all'];
+  const cloudKey = keys[cloud.route === 'unavailable' ? cloud.reason : cloud.route === 'server' ? 'server' : 'extension'];
+  // Server-routed requests go to the signed-in session's server.
+  const routeLines = [
+    ...(localEndpoint ? [t('ai.dataFlow.routeLocal', { host: hostOf(localEndpoint) })] : []),
+    t(cloudKey, cloud.route === 'server' ? { host: hostOf(readStoredAuth()?.serverUrl) } : {}),
+  ];
+  // Web fetch asks the extension bridge at call time; show the same answer. A result lasts only as long as
+  // its check: the same capabilities published again, as after an approval refresh, start from no answer.
+  const [fetchCheck, setFetchCheck] = useState<{ caps: string; guarded: boolean }>();
+  useEffect(() => {
+    if (!capsText) return;
+    let current = true;
+    void hasGuardedBridgeFetch().then(guarded => { if (current) setFetchCheck({ caps: capsText, guarded }); });
+    return () => { current = false; setFetchCheck(undefined); };
+  }, [capsText]);
+  const fetchLine = !caps.length ? t('ai.dataFlow.fetchNoExtension')
+    : fetchCheck?.caps !== capsText ? null
+    : t(fetchCheck.guarded ? 'ai.dataFlow.fetchSupported' : 'ai.dataFlow.fetchUpdate');
+  const hosts = settings.agentHosts ?? [];
+  const bridgeOn = settings.agentBridgeEnabled === true;
+
+  return (
+    <section aria-labelledby={headingId} className="border border-gray-700 rounded-lg p-3 space-y-2">
+      <h4 id={headingId} className="text-sm text-gray-300 font-medium">{t('ai.dataFlow.title')}</h4>
+      {routeLines.map(line => <p key={line} className="text-xs text-gray-400">{line}</p>)}
+      {fetchLine && <p className="text-xs text-gray-400">{fetchLine}</p>}
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <div className="min-w-0">
+          <span id={`${headingId}-bridge`} className="text-xs text-gray-300">{t('ai.dataFlow.bridgeLabel')}</span>
+          <p id={`${headingId}-bridge-help`} className="text-[10px] text-gray-500">{t('ai.dataFlow.bridgeHelp')}</p>
+        </div>
+        <button
+          role="switch"
+          aria-checked={bridgeOn}
+          aria-labelledby={`${headingId}-bridge`}
+          aria-describedby={`${headingId}-bridge-help`}
+          onClick={() => onUpdateSettings({ agentBridgeEnabled: !bridgeOn })}
+          className="flex min-w-11 min-h-11 shrink-0 items-center justify-center rounded-lg focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          <span aria-hidden="true" className={`relative w-9 h-5 rounded-full transition-colors ${bridgeOn ? 'bg-accent' : 'bg-gray-700'}`}>
+            <span className={`absolute top-0.5 start-0.5 w-4 h-4 rounded-full bg-white transition-transform ${bridgeOn ? 'translate-x-4 rtl:-translate-x-4' : ''}`} />
+          </span>
+        </button>
+      </div>
+      {hosts.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-xs text-gray-300">{t('ai.dataFlow.hostsTitle')}</p>
+          <p className="text-[10px] text-gray-500">{t('ai.dataFlow.hostsHelp')}</p>
+          <ul className="space-y-1">
+            {hosts.map(host => (
+              <li key={host.id} className="flex min-w-0 items-center justify-between gap-2 text-xs">
+                <span className="min-w-0">
+                  {/* Aligned by the page's direction: rtl: would also match an Arabic name's own direction under dir="auto". */}
+                  <span dir="auto" className="block truncate text-left text-gray-300 [[dir=rtl]_&]:text-right">{host.displayName || host.name}</span>
+                  <span dir="ltr" className="block truncate text-gray-500 rtl:text-right">{host.url}</span>
+                  {!isHttpsOrLoopback(host.url) && <span className="block text-[10px] text-amber-400">{t('ai.dataFlow.hostNeedsHttps')}</span>}
+                </span>
+                <button
+                  onClick={() => onUpdateSettings({ agentHosts: hosts.filter(item => item.id !== host.id) })}
+                  aria-label={t('ai.dataFlow.removeHostLabel', { name: host.displayName || host.name })}
+                  className="shrink-0 rounded px-2 py-1 text-red-400 hover:bg-red-600/15 transition-colors"
+                >
+                  {t('ai.dataFlow.removeHost')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   );
 }
 

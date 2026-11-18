@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { isFolderLocalOnly, isShareableFolder } from './ai-scope';
 
 export interface MentionSuggestion {
   type: 'note' | 'ioc' | 'investigation';
@@ -16,6 +17,20 @@ export const MENTION_CATEGORIES = [
   { type: 'ioc' as const, get label() { return mentionCategoryLabel('ioc'); }, prefix: '@ioc:' },
   { type: 'investigation' as const, get label() { return mentionCategoryLabel('investigation'); }, prefix: '@investigation:' },
 ];
+
+/** Every token resolveMentions reads an entity for. */
+const MENTION_TOKEN = /@(note|ioc|investigation):([^\s]+)/;
+
+/** Model-written text must not carry one: a click would read the entity with no approval card. */
+export function hasMentionToken(text: string): boolean {
+  return MENTION_TOKEN.test(text);
+}
+
+/** The tool gate's `hidden` rule (tool-reach.ts): trashed, or in a local-only
+ * investigation while the conversation's investigation can sync. */
+async function isHidden(row: { folderId?: string; trashed?: boolean }, hideLocalOnly: boolean): Promise<boolean> {
+  return !!row.trashed || (hideLocalOnly && !!row.folderId && await isFolderLocalOnly(row.folderId));
+}
 
 /**
  * Search entities matching a partial query for the autocomplete dropdown.
@@ -71,6 +86,13 @@ export async function searchMentions(
 
   if (type === 'investigation') {
     let folders = await db.folders.toArray();
+    if (await isShareableFolder(folderId)) {
+      // isFolderLocalOnly for every folder, with the persisted markers (keys JSON.stringify(['localOnly', id])) read once:
+      // this runs on each keystroke.
+      const markers = await db.table('_syncMeta').where('key').startsWith('["localOnly",').toArray();
+      const marked = new Set(markers.filter(row => row.value === true).map(row => row.key as string));
+      folders = folders.filter(f => !f.localOnly && !marked.has(JSON.stringify(['localOnly', f.id])));
+    }
     if (q) folders = folders.filter(f => f.name.toLowerCase().includes(q));
     folders.sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
     return folders.slice(0, limit).map(f => ({
@@ -88,13 +110,14 @@ export async function searchMentions(
  * Parse @mention tokens from user text and resolve them to full entity data
  * that gets injected into the LLM context.
  * Returns the cleaned display text and the context injection string.
+ * An entity the conversation's investigation may not see stays an unresolved token.
  */
-export async function resolveMentions(text: string): Promise<{
+export async function resolveMentions(text: string, homeFolderId: string | undefined): Promise<{
   displayText: string;
   contextBlock: string;
   hasMentions: boolean;
 }> {
-  const mentionPattern = /@(note|ioc|investigation):([^\s]+)/g;
+  const mentionPattern = new RegExp(MENTION_TOKEN.source, 'g');
   const mentions: { full: string; type: string; id: string }[] = [];
   let match: RegExpExecArray | null;
 
@@ -108,17 +131,18 @@ export async function resolveMentions(text: string): Promise<{
 
   const contextParts: string[] = [];
   let displayText = text;
+  const hideLocalOnly = await isShareableFolder(homeFolderId);
 
   for (const m of mentions) {
     if (m.type === 'note') {
       const note = await db.notes.get(m.id);
-      if (note) {
+      if (note && !await isHidden(note, hideLocalOnly)) {
         contextParts.push(`[Referenced Note: "${note.title}"]\n${note.content.slice(0, 4000)}`);
         displayText = displayText.replace(m.full, `@${note.title}`);
       }
     } else if (m.type === 'ioc') {
       const ioc = await db.standaloneIOCs.get(m.id);
-      if (ioc) {
+      if (ioc && !await isHidden(ioc, hideLocalOnly)) {
         const details = [
           `Type: ${ioc.type}`,
           `Value: ${ioc.value}`,
@@ -132,7 +156,7 @@ export async function resolveMentions(text: string): Promise<{
       }
     } else if (m.type === 'investigation') {
       const folder = await db.folders.get(m.id);
-      if (folder) {
+      if (folder && !await isHidden({ folderId: folder.id }, hideLocalOnly)) {
         const [noteCount, taskCount, iocCount, eventCount] = await Promise.all([
           db.notes.where('folderId').equals(folder.id).and(n => !n.trashed).count(),
           db.tasks.where('folderId').equals(folder.id).and(t => !t.trashed).count(),

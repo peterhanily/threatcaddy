@@ -308,6 +308,8 @@ export interface Settings {
   llmLocalSkills?: AgentHostSkill[];
   /** Timestamp of last local skill discovery */
   llmLocalSkillsFetchedAt?: number;
+  /** Allow window.threatcaddy (agent bridge) to run tools. Device-local; off unless set. */
+  agentBridgeEnabled?: boolean;
   /** UI language code (e.g. 'en', 'de', 'zh-CN'). Defaults to 'en'. */
   language?: string;
 }

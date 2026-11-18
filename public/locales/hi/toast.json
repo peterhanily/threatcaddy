@@ -85,7 +85,6 @@
     "installedFromCatalog": "{{name}} कम्युनिटी कैटलॉग से इंस्टॉल हुआ",
     "installCatalogFailed": "कम्युनिटी टेम्पलेट इंस्टॉल करने में विफल",
     "templateExported": "{{name}} निर्यात हुआ",
-    "installedFromTeam": "{{name}} टीम से इंस्टॉल हुआ",
     "installTeamFailed": "टीम टेम्पलेट इंस्टॉल करने में विफल",
     "notFound": "इंटीग्रेशन नहीं मिला",
     "completed": "इंटीग्रेशन «{{name}}» सफलतापूर्वक पूर्ण हुआ",

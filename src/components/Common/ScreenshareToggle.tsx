@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { MonitorOff, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 
 interface ScreenshareToggleProps {
@@ -9,6 +10,7 @@ interface ScreenshareToggleProps {
 }
 
 export function ScreenshareToggle({ maxLevel, onChangeLevel, effectiveLevels }: ScreenshareToggleProps) {
+  const { t } = useTranslation('common');
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -34,14 +36,14 @@ export function ScreenshareToggle({ maxLevel, onChangeLevel, effectiveLevels }: 
               ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10'
               : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
           )}
-          title={active ? `Screenshare: ${maxLevel}` : 'Screenshare mode'}
-          aria-label="Toggle screenshare mode"
+          title={active ? t('screenshare.level', { level: maxLevel }) : t('screenshare.mode')}
+          aria-label={t('screenshare.toggle')}
         >
           <MonitorOff size={16} />
         </button>
         {active && (
           <span className="hidden sm:inline text-[10px] font-medium text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">
-            Screenshare: {maxLevel}
+            {t('screenshare.level', { level: maxLevel })}
           </span>
         )}
       </div>
@@ -52,8 +54,8 @@ export function ScreenshareToggle({ maxLevel, onChangeLevel, effectiveLevels }: 
             onClick={() => { onChangeLevel(null); setOpen(false); }}
             className="w-full flex items-center gap-2 min-h-11 md:min-h-0 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg"
           >
-            {!active && <Check size={12} />}
-            <span className={cn('whitespace-nowrap', !active ? '' : 'ms-5')}>Off</span>
+            {!active && <Check size={12} className="shrink-0" />}
+            <span className={cn('min-w-0 text-start', !active ? '' : 'ms-5')}>{t('screenshare.off')}</span>
           </button>
           {effectiveLevels.map((level, i) => (
             <button
@@ -64,8 +66,9 @@ export function ScreenshareToggle({ maxLevel, onChangeLevel, effectiveLevels }: 
                 i === effectiveLevels.length - 1 && 'rounded-b-lg'
               )}
             >
-              {maxLevel === level && <Check size={12} />}
-              <span className={cn('whitespace-nowrap', maxLevel === level ? '' : 'ms-5')}>Show up to {level}</span>
+              {maxLevel === level && <Check size={12} className="shrink-0" />}
+              {/* Translations such as Turkish are wider than the menu, so the label wraps. */}
+              <span className={cn('min-w-0 text-start', maxLevel === level ? '' : 'ms-5')}>{t('screenshare.showUpTo', { level })}</span>
             </button>
           ))}
         </div>

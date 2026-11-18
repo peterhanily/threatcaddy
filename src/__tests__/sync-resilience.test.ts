@@ -8,7 +8,7 @@ import { setSessionKey } from '../lib/encryptionMiddleware';
 import { SyncEngine } from '../lib/sync-engine';
 import { ensureSyncWorkspace } from '../lib/sync-workspace';
 import { evictSyncedFolder } from '../lib/sync-cache';
-import { executeTool } from '../lib/llm-tools';
+import { execTool } from './helpers/tool-exec';
 import { TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
 import { IntegrationExecutor } from '../lib/integration-executor';
 import { IOC_TYPE_LABELS } from '../types';
@@ -253,8 +253,8 @@ describe('agent delegation and the server user foreign key', () => {
 
   it('delegate_task records the agent on this device only and never uploads it as an assignee', async () => {
     await db.agentDeployments.add(deployment as never);
-    const result = await executeTool({ type: 'tool_use', id: 'call-1', name: 'delegate_task',
-      input: { title: 'Enrich the beacon IP', description: 'Look it up', assignToProfile: 'IOC Enricher' } }, 'f1', { profileId: 'ap-lead-analyst' });
+    const result = await execTool({ type: 'tool_use', id: 'call-1', name: 'delegate_task',
+      input: { title: 'Enrich the beacon IP', description: 'Look it up', assignToProfile: 'IOC Enricher' } }, 'f1', { surface: 'agent', agentContext: { profileId: 'ap-lead-analyst' } });
     const { taskId, found } = JSON.parse(result.result);
     expect(found).toBe(true);
     expect(await db.tasks.get(taskId)).toMatchObject({ assignedDeploymentId: 'dep-1' });
@@ -279,10 +279,10 @@ describe('agent delegation and the server user foreign key', () => {
 
   it('create_task and update_task refuse an agent deployment as the assignee', async () => {
     await db.agentDeployments.add(deployment as never);
-    const create = await executeTool({ type: 'tool_use', id: 'c', name: 'create_task', input: { title: 'X', assigneeId: 'dep-1' } }, 'f1');
+    const create = await execTool({ type: 'tool_use', id: 'c', name: 'create_task', input: { title: 'X', assigneeId: 'dep-1' } }, 'f1');
     expect(JSON.parse(create.result).error).toContain('delegate_task');
     await seed('tasks', task('t2'));
-    const update = await executeTool({ type: 'tool_use', id: 'u', name: 'update_task', input: { id: 't2', assigneeId: 'dep-1' } }, 'f1');
+    const update = await execTool({ type: 'tool_use', id: 'u', name: 'update_task', input: { id: 't2', assigneeId: 'dep-1' } }, 'f1');
     expect(JSON.parse(update.result).error).toContain('delegate_task');
     expect((await db.tasks.get('t2'))?.assigneeId).toBeUndefined();
   });
@@ -302,7 +302,7 @@ describe('IOC types every client can read', () => {
       throw new Error('Fixture run finished');
     });
     try {
-      await executeTool({ type: 'tool_use', id: 'e', name: 'enrich_ioc', input: { iocId: 'i1' } }, 'f1');
+      await execTool({ type: 'tool_use', id: 'e', name: 'enrich_ioc', input: { iocId: 'i1' } }, 'f1');
     } finally { run.mockRestore(); }
     expect(outputs.map(output => output.status === 'rejected' ? String(output.reason) : output.status)).toEqual([
       expect.stringContaining('unsupported IOC type'), expect.stringContaining('unsupported IOC type')]);

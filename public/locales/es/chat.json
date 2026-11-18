@@ -22,22 +22,19 @@
     "badgeMeeting": "reunión",
     "planMode": "Planificar",
     "actMode": "Actuar",
-    "planModeTitle": "Modo Planificación: la IA propone pero no ejecuta acciones de escritura",
-    "actModeTitle": "Modo Acción: la IA ejecuta acciones con aprobación",
+    "actModeTitleV2": "Modo Acción: CaddyAI puede hacer cambios y usar herramientas. El interruptor Preguntar/YOLO define qué necesita su aprobación.",
     "yoloLabel": "YOLO",
-    "safeLabel": "Seguro",
-    "yoloOnTitle": "Modo YOLO ACTIVADO — todas las llamadas a herramientas auto-aprobadas",
-    "yoloOffTitle": "Clic para habilitar el modo YOLO (auto-aprobar todas las acciones)",
     "tokSuffix": "tok",
     "tokenTotal": "Total de tokens: {{total}}",
     "tokenTotalBudget": "Total de tokens: {{total}} / {{budget}} presupuesto",
     "loopCount_one": "{{count}} bucle",
     "loopCount_other": "{{count}} bucles",
     "stopAllLoops": "Detener todos los bucles",
+    "loopRetrying": "Reintentando tras un error",
     "exportAsNote": "Exportar como nota",
     "shareChat": "Compartir conversación",
     "emptyTitle": "Iniciar una conversación",
-    "emptySubtitle": "Los mensajes se almacenan localmente y están cifrados en reposo",
+    "emptySubtitleV2": "Los mensajes se guardan en este navegador. Una conversación en una investigación que se sincroniza se comparte con su servidor del equipo, y cada solicitud va adonde indica Configuración → IA.",
     "emptyFolderContext": "La IA puede leer y crear entidades en \"{{name}}\"",
     "caddyAI": "CaddyAI",
     "selectThread": "Seleccionar un hilo para ver la conversación",
@@ -54,12 +51,10 @@
     "restoreDialog": "Restaurar punto de control",
     "restoreMessage": "Esto deshará los cambios de la IA — las entidades creadas serán eliminadas y las modificadas revertidas a su estado anterior. No se puede deshacer.",
     "restoreLabel": "Restaurar",
-    "approvalTitle": "¿Aprobar acción de escritura?",
     "approve": "Aprobar",
     "reject": "Rechazar",
-    "switchedToPlan": "Cambiado a modo Planificación — la IA propone sin ejecutar",
-    "switchedToAct": "Cambiado a modo Acción — la IA ejecuta con aprobación",
-    "switchedToActMessage": "Cambiado a **modo Acción**. Envíe \"ejecutar el plan\" para ejecutar las acciones propuestas con control de aprobación, o continúe la conversación.",
+    "switchedToActV2": "Cambiado a modo Acción. El interruptor Preguntar/YOLO define qué necesita su aprobación.",
+    "switchedToActMessageV2": "Cambiado a **modo Acción**. Envíe \"ejecutar el plan\" para ejecutar las acciones propuestas, o continúe la conversación. El interruptor Preguntar/YOLO define qué acciones necesitan su aprobación.",
     "errorCreateThread": "No se pudo crear el hilo de conversación. Intente recargar la página.",
     "settingsAiLlm": "Configuración → IA/LLM",
     "errorNoLocalEndpoint": "No hay punto de conexión LLM local configurado. Agréguelo en Configuración → IA/LLM.",
@@ -74,9 +69,50 @@
     "onboardingStep2Title": "2. Instalar la extensión de navegador",
     "onboardingStep2Desc": "CaddyAI requiere la extensión de navegador ThreatCaddy para hacer proxy de solicitudes API.",
     "onboardingStep3Title": "3. Habilitar permisos",
-    "onboardingStep3Desc": "En el popup de la extensión, habilite \"Permitir CaddyAI\" para acceso a proveedores de IA y \"Permitir obtención de URL\" para la herramienta /fetch.",
+    "onboardingStep3Desc": "En el popup de la extensión, habilite \"Permitir CaddyAI\" para acceso a proveedores de IA y \"Permitir obtención de URL\" para la herramienta <cmd>/fetch</cmd>.",
     "onboardingDismiss": "Entendido",
     "loopCount_many": "{{count}} bucles"
+  },
+  "mode": {
+    "planTitleV2": "Modo Planificación: CaddyAI solo lee y describe todo lo demás como un plan. En una investigación solo lee esa investigación; fuera de cualquier investigación puede leerlas todas.",
+    "switchedToPlanV2": "Cambiado a modo Planificación. CaddyAI solo lee y describe todo lo demás como un plan.",
+    "askLabel": "Preguntar",
+    "yoloOnTitleV2": "YOLO activado: la mayoría de los cambios y de las consultas integradas a proveedores se ejecutan sin preguntar. Las páginas web, las habilidades, otras integraciones y los cambios en otras investigaciones o en los agentes siguen necesitando su aprobación, igual que leer otras investigaciones desde una investigación que puede sincronizarse. Una consulta a proveedores omite otras integraciones en lugar de preguntar; desactive YOLO para aprobarlas.",
+    "yoloOffTitleV2": "CaddyAI pregunta antes de cada cambio, página web, consulta a proveedores, habilidad u otra integración, y antes de leer otras investigaciones desde una investigación que puede sincronizarse. Haga clic para activar YOLO: la mayoría de los cambios y de las consultas integradas a proveedores pasarán a ejecutarse sin preguntar, salvo los cambios en otras investigaciones o en los agentes.",
+    "yoloInPlanTitle": "En el modo Planificación, CaddyAI solo lee; el interruptor Preguntar/YOLO solo se aplica en el modo Acción. {{setting}}"
+  },
+  "approval": {
+    "position": "{{index}} de {{total}}",
+    "title": {
+      "write": "¿Aprobar un cambio en esta investigación?",
+      "writeUnfiled": "¿Aprobar un cambio fuera de cualquier investigación?",
+      "egress": "¿Enviar datos fuera de ThreatCaddy?",
+      "lookupNothingSent": "¿Aprobar el enriquecimiento de un IOC?",
+      "crossRead": "¿Leer otras investigaciones?",
+      "crossWrite": "¿Cambiar otra investigación?",
+      "agentControl": "¿Cambiar los agentes de IA?",
+      "harvested": "¿Ejecutar una llamada a herramienta encontrada en el texto de la respuesta?"
+    },
+    "opensPage": "Abre una página en {{host}}. El sitio recibe la dirección completa.",
+    "lookup": "Envía {{value}} a: {{vendors}}",
+    "lookupNone": "No se envía nada: ninguna consulta habilitada se aplica a {{value}}.",
+    "sendsTo": "Envía esta solicitud a {{destination}}.",
+    "agentChange": "Cambia los agentes de IA que trabajan en esta investigación.",
+    "readsOthers": "Lee otras investigaciones, no solo esta.",
+    "targetSynced": "{{name}}: se sincroniza con sus miembros",
+    "targetSyncsLater": "{{name}}: permanece en este dispositivo hasta que se conecte un servidor del equipo",
+    "targetLocal": "{{name}}: permanece en este dispositivo",
+    "unfiled": "Fuera de cualquier investigación: permanece en este dispositivo",
+    "conversationSyncs": "Lo que lea pasa a formar parte de esta conversación, que se sincroniza con los miembros de \"{{name}}\".",
+    "conversationSyncsLater": "Lo que lea pasa a formar parte de esta conversación, que se sincronizará con los miembros de \"{{name}}\" en cuanto se conecte un servidor del equipo.",
+    "flag": {
+      "untrustedHost": "No es uno de los sitios de referencia integrados.",
+      "urlCarriesData": "La dirección es lo bastante larga como para transportar datos de la investigación.",
+      "hostIsIoc": "Este sitio es un IOC de esta investigación. Visitarlo puede alertar al atacante.",
+      "harvested": "Esta llamada se tomó del texto de la respuesta en lugar de enviarse como llamada a herramienta, por lo que pudo generarla contenido inyectado.",
+      "readForeign": "Antes en esta respuesta, CaddyAI leyó otra investigación. Esta acción puede llevar esos datos."
+    },
+    "details": "Detalles"
   },
   "input": {
     "noApiKeys": "No hay claves API configuradas — agregue una en Configuración → IA/LLM",
@@ -163,9 +199,25 @@
   },
   "cti": {
     "invalidCommand": "No se pudo ejecutar ese comando de CTI:",
-    "noSources": "No hay configuradas fuentes de Agent Host de CTI. Añade un host de CTI en Ajustes → IA → Agent Hosts para usar este comando."
+    "noSourcesV2": "No hay fuentes de CTI disponibles. Los Agent Hosts con nombre ya no se pueden configurar en esta versión.",
+    "hostNeedsHttps": "No hay fuentes de CTI disponibles. El Agent Host de CTI no se usa porque requiere https (http sin cifrar solo funciona en este equipo). Consulte Configuración → IA."
+  },
+  "fetch": {
+    "createdNote": "Nota **{{title}}** creada a partir de {{url}}",
+    "failed": "No se pudo obtener la URL: {{error}}",
+    "unknownError": "Error desconocido"
+  },
+  "loop": {
+    "started": "Bucle en segundo plano `{{id}}` iniciado. Se ejecuta cada {{interval}}:",
+    "stopHint": "Use `/stoploop` para detenerlo.",
+    "stopped_one": "Se detuvo {{count}} bucle en segundo plano.",
+    "stopped_many": "Se detuvieron {{count}} bucles en segundo plano.",
+    "stopped_other": "Se detuvieron {{count}} bucles en segundo plano.",
+    "noneToStop": "No hay bucles activos que detener."
   },
   "input.serverStatus": "Ruta del servidor del equipo",
   "input.serverModelsHelp": "Los proveedores y modelos disponibles dependen de la configuración del servidor de su equipo.",
-  "input.modelLabel": "Modelo de IA"
+  "input.modelLabel": "Modelo de IA",
+  "input.localModels": "Local",
+  "input.localModel": "Local: {{name}}"
 }

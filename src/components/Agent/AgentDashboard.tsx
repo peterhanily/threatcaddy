@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import {
   Bot, ChevronRight, AlertTriangle, Check, Clock, X, Shield,
 } from 'lucide-react';
@@ -12,8 +12,9 @@ import type { AgentAction, Folder, Note } from '../../types';
 import { cn, formatDate } from '../../lib/utils';
 import { db } from '../../db';
 import { getToolActionClass } from '../../lib/caddy-agent-policy';
+import { findSupervisorFolder } from '../../lib/caddy-agent-supervisor';
+import { SUPERVISOR_ACTION_PROFILE } from '../../lib/supervisor-tool-policy';
 
-const SUPERVISOR_FOLDER_NAME = 'CaddyAgent Supervisor';
 const RECENT_LIMIT = 50;
 
 interface AgentDashboardProps {
@@ -48,11 +49,15 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
   const [recentGlobal, setRecentGlobal] = useState<(AgentAction & { folderName: string })[]>([]);
   const [supervisorNotes, setSupervisorNotes] = useState<Note[]>([]);
   const [supervisorFolderId, setSupervisorFolderId] = useState<string | null>(null);
+  const [supervisorPending, setSupervisorPending] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
+
+      // The supervisor's own local-only folder; an older synced one with its name is an ordinary investigation.
+      const supFolder = await findSupervisorFolder();
 
       // Find folders with agent activity
       const folderMap = new Map(folders.map(f => [f.id, f]));
@@ -76,7 +81,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
       const summaries: AgentFolderSummary[] = [];
       for (const [folderId, actions] of byFolder) {
         const folder = folderMap.get(folderId);
-        if (!folder || folder.name === SUPERVISOR_FOLDER_NAME) continue;
+        if (!folder || folder.id === supFolder?.id) continue;
         const pendingCount = actions.filter(a => a.status === 'pending').length;
         summaries.push({ folder, pendingCount, recentActions: actions.slice(0, 5) });
       }
@@ -94,14 +99,13 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
       const globalFeed = allActions
         .filter(a => {
           const f = folderMap.get(a.investigationId);
-          return f && f.name !== SUPERVISOR_FOLDER_NAME;
+          return f && f.id !== supFolder?.id;
         })
         .slice(0, 20)
         .map(a => ({ ...a, folderName: folderMap.get(a.investigationId)?.name || 'Unknown' }));
       setRecentGlobal(globalFeed);
 
       // Supervisor notes
-      const supFolder = folders.find(f => f.name === SUPERVISOR_FOLDER_NAME);
       if (supFolder) {
         setSupervisorFolderId(supFolder.id);
         const notes = await db.notes
@@ -112,13 +116,18 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
           .toArray();
         setSupervisorNotes(notes);
       }
+      // Its notes and tasks wait there for approval under the default agent settings.
+      // Only its own: another agent can be enabled or deployed in that investigation.
+      setSupervisorPending(supFolder ? await db.agentActions
+        .where('[investigationId+status]').equals([supFolder.id, 'pending'])
+        .filter(a => a.agentConfigId === SUPERVISOR_ACTION_PROFILE).count() : 0);
 
       setLoading(false);
     })();
   }, [folders]);
 
-  const totalPending = agentFolders.reduce((sum, f) => sum + f.pendingCount, 0);
-  const activeAgents = folders.filter(f => f.agentEnabled && f.name !== SUPERVISOR_FOLDER_NAME).length;
+  const totalPending = agentFolders.reduce((sum, f) => sum + f.pendingCount, supervisorPending);
+  const activeAgents = folders.filter(f => f.agentEnabled && f.id !== supervisorFolderId).length;
 
   if (loading) {
     return (
@@ -128,7 +137,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
     );
   }
 
-  const hasAnyActivity = agentFolders.length > 0 || supervisorNotes.length > 0;
+  const hasAnyActivity = agentFolders.length > 0 || supervisorNotes.length > 0 || supervisorPending > 0;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -140,7 +149,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
             <div>
               <h1 className="text-lg font-bold text-text-primary">{t('dashboard.agentCaddy')}</h1>
               <p className="text-xs text-text-muted">
-                {activeAgents > 0 ? t('dashboard.activeAgents', { count: activeAgents, suffix: activeAgents !== 1 ? 's' : '' }) : t('dashboard.noActiveAgents')}
+                {activeAgents > 0 ? t('dashboard.activeAgents', { count: activeAgents }) : t('dashboard.noActiveAgents')}
                 {totalPending > 0 && <span className="text-accent-amber ms-2">{t('dashboard.pendingCount', { count: totalPending })}</span>}
               </p>
             </div>
@@ -154,19 +163,19 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
             <div className="text-xs text-start space-y-2 max-w-xs">
               <div className="flex gap-2">
                 <span className="text-accent-blue font-bold shrink-0">1.</span>
-                <span>Open an investigation and go to the <strong>AgentCaddy</strong> tab</span>
+                <span><Trans i18nKey="dashboard.step1" ns="agent" components={{ strong: <strong /> }} /></span>
               </div>
               <div className="flex gap-2">
                 <span className="text-accent-blue font-bold shrink-0">2.</span>
-                <span><strong>Deploy agents</strong> — choose from 17 specialist profiles (CISO, IOC Enricher, Legal Counsel, etc.)</span>
+                <span><Trans i18nKey="dashboard.step2" ns="agent" components={{ strong: <strong /> }} /></span>
               </div>
               <div className="flex gap-2">
                 <span className="text-accent-blue font-bold shrink-0">3.</span>
-                <span>Click <strong>Run Agent</strong> or enable auto-mode — agents research, create notes, enrich IOCs, and build timelines</span>
+                <span><Trans i18nKey="dashboard.step3" ns="agent" components={{ strong: <strong /> }} /></span>
               </div>
               <div className="flex gap-2">
                 <span className="text-accent-blue font-bold shrink-0">4.</span>
-                <span>Start <strong>meetings</strong> for agents to discuss findings, or use <strong>shift handoffs</strong> for continuity</span>
+                <span><Trans i18nKey="dashboard.step4" ns="agent" components={{ strong: <strong /> }} /></span>
               </div>
             </div>
             {onOpenSettings && (
@@ -178,13 +187,28 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
         ) : (
           <div className="space-y-6">
             {/* Supervisor Section */}
-            {supervisorNotes.length > 0 && (
+            {(supervisorNotes.length > 0 || supervisorPending > 0) && (
               <section>
                 <div className="flex items-center gap-2 mb-3">
                   <Shield size={14} className="text-accent-blue" />
                   <h2 className="text-sm font-semibold text-text-primary">{t('dashboard.supervisorBriefings')}</h2>
                 </div>
                 <div className="space-y-2">
+                  {supervisorPending > 0 && supervisorFolderId && (
+                    <button
+                      onClick={() => onOpenInvestigation(supervisorFolderId)}
+                      className="w-full flex items-center justify-between gap-2 text-start rounded-lg border border-accent-amber/30 bg-accent-amber/5 hover:bg-accent-amber/10 transition-colors p-3"
+                    >
+                      <span className="flex items-center gap-1.5 min-w-0 text-xs text-accent-amber">
+                        <Clock size={12} className="shrink-0" />
+                        <span>{t('dashboard.supervisorPending', { count: supervisorPending })}</span>
+                      </span>
+                      <span className="flex items-center gap-0.5 shrink-0 text-[10px] text-accent-blue">
+                        {t('dashboard.reviewSupervisorProposals')}
+                        <ChevronRight size={12} className="rtl:rotate-180" />
+                      </span>
+                    </button>
+                  )}
                   {supervisorNotes.map(note => (
                     <button
                       key={note.id}
@@ -225,13 +249,13 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
                           )}
                           <span className="text-xs font-medium text-text-primary truncate">{folder.name}</span>
                           {folder.agentEnabled && (
-                            <span className="text-[9px] px-1 py-px rounded bg-accent-green/10 text-accent-green shrink-0">auto</span>
+                            <span className="text-[9px] px-1 py-px rounded bg-accent-green/10 text-accent-green shrink-0">{t('dashboard.auto')}</span>
                           )}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {pendingCount > 0 && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-amber/10 text-accent-amber">
-                              {pendingCount} pending
+                              {t('dashboard.pendingCount', { count: pendingCount })}
                             </span>
                           )}
                           <ChevronRight size={12} className="text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" />

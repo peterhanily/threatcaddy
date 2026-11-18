@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "Zdarzenia w tym tygodniu",
   "metrics.aiChats": "Czaty AI",
   "metrics.graphNodes": "Węzły grafu",
+  "dashboard.analystModeBanner": "Tryb analityka — zoptymalizowany pod komputery stacjonarne",
   "dashboard.backToExecView": "Powrót do Widoku kierownictwa",
   "dashboard.switchToLight": "Włącz jasny motyw",
   "dashboard.switchToDark": "Włącz ciemny motyw",

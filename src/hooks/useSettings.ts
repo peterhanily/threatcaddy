@@ -54,6 +54,15 @@ function loadSettings(): Settings {
   return DEFAULT_SETTINGS;
 }
 
+/** The agent bridge reads the stored switch at call time (agent-bridge.ts). */
+function storedAgentBridgeEnabled(): boolean {
+  try {
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}').agentBridgeEnabled === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Reads and persists user settings from localStorage. Returns the current settings object and an update function. */
 export function useSettings() {
   const [settings, setSettingsState] = useState<Settings>(loadSettings);
@@ -88,11 +97,26 @@ export function useSettings() {
     applyAppLanguage(settings.language);
   }, [settings.language]);
 
+  // The bridge in this tab follows a switch another tab saved, so this tab's switch shows that state too.
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== SETTINGS_KEY) return;
+      const bridge = storedAgentBridgeEnabled();
+      setSettingsState(prev => (!!prev.agentBridgeEnabled === bridge ? prev : { ...prev, agentBridgeEnabled: bridge }));
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   const updateSettings = useCallback((update: SettingsUpdate) => {
     setSettingsState((prev) => {
       const updates = typeof update === 'function' ? update(prev) : update;
       if (updates === null) return prev;
       const next = { ...prev, ...updates, ...('language' in updates ? { language: normalizeLanguage(updates.language) } : {}) };
+      // A tab loaded before another tab turned the bridge off must not write its old value back:
+      // only an update that sets the switch changes it.
+      const bridge = storedAgentBridgeEnabled();
+      if (!('agentBridgeEnabled' in updates) && !!next.agentBridgeEnabled !== bridge) next.agentBridgeEnabled = bridge;
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
       return next;
     });

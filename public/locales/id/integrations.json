@@ -1,6 +1,12 @@
 {
   "catalog.teamInvalid": "Beberapa templat tim tidak valid dan tidak dimuat.",
   "catalog.teamUnavailable": "Templat tim tidak dapat dimuat. Periksa koneksi Anda dan muat ulang.",
+  "team.installedDisabled": "{{name}} dipasang dalam keadaan nonaktif. Integrasi ini dapat mengirim data ke: {{domains}}. Tinjau terlebih dahulu, lalu aktifkan di tab Terpasang.",
+  "team.installedDisabledNoDomains": "{{name}} dipasang dalam keadaan nonaktif. Integrasi ini tidak membuat permintaan web. Tinjau terlebih dahulu, lalu aktifkan di tab Terpasang.",
+  "fetch.privateTarget": "Hanya alamat http(s) publik tanpa kredensial yang dapat diambil. Tujuan privat, lokal, dan alamat IP literal tidak diizinkan.",
+  "fetch.tooLong": "Alamat yang lebih panjang dari 2048 karakter tidak dapat diambil. Persingkat URL lalu coba lagi.",
+  "fetch.updateExtension": "Pengambilan web memerlukan ekstensi ThreatCaddy versi 1.1.3 atau yang lebih baru, yang disetujui untuk aplikasi ini. Jika toko ekstensi browser Anda tidak menawarkan pembaruan, pasang versi terbaru dari rilis ThreatCaddy di GitHub. Biarkan hanya ekstensi ThreatCaddy terbaru yang terpasang, lalu muat ulang halaman.",
+  "fetch.bridgeTimeout": "Waktu jembatan ekstensi habis. Pastikan ekstensi ThreatCaddy sudah terinstal dan halaman sudah dimuat ulang setelah penginstalan.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "Cari alamat IP di VirusTotal untuk mendapatkan reputasi, geolokasi, dan statistik analisis.",
   "builtin.vtIpLookup.config.apiKey.label": "API Key",

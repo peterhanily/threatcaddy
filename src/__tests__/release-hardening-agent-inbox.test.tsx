@@ -8,7 +8,8 @@ vi.mock('../db', () => ({ db: {
   agentActions: { where: () => ({ between: ([folder]: [string, number]) => ({ reverse: () => ({ limit: (limit: number) => ({ toArray: () => api.actions(folder, limit) }) }) }) }) },
   tasks: { where: () => ({ equals: (folder: string) => ({ toArray: () => api.tasks(folder) }) }) },
 } }));
-vi.mock('../lib/caddy-agent', () => ({ executeApprovedAction: vi.fn(), rejectAction: vi.fn(), bulkApproveActions: vi.fn() }));
+vi.mock('../lib/agent-action-approval', () => ({ executeApprovedAction: vi.fn(), rejectAction: vi.fn(), bulkApproveActions: vi.fn(),
+  previewBulkApprove: vi.fn(async () => ({ routine: 1, review: 0 })) }));
 vi.mock('../lib/agent-handoff', () => ({ acknowledgeReconciliation: vi.fn() }));
 vi.mock('../components/Agent/AgentActionCard', () => ({ AgentActionCard: ({ action }: { action: AgentAction }) => <article>{action.rationale}</article> }));
 vi.mock('../components/Agent/AgentProfilePicker', () => ({ AgentProfilePicker: () => null }));
@@ -44,7 +45,7 @@ describe('release hardening: investigation action inbox ownership', () => {
     const view = render(<AgentPanel folder={folder('a')} settings={settings} />);
     expect(await screen.findByText('Action for a')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /approve all/i }));
-    expect(screen.getByText('Execute 1?')).toBeInTheDocument();
+    expect(await screen.findByText('Execute 1?')).toBeInTheDocument();
     view.rerender(<AgentPanel folder={folder('b')} settings={settings} />);
     expect(screen.queryByText('Action for a')).not.toBeInTheDocument();
     expect(screen.queryByText('Execute 1?')).not.toBeInTheDocument();

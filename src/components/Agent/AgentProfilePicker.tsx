@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { X, Plus, Minus, Wrench, Users } from 'lucide-react';
 import type { AgentProfile, AgentDeployment } from '../../types';
 import { cn } from '../../lib/utils';
+import { ROLE_LABEL_KEYS } from '../../lib/builtin-agent-profiles';
 
 interface AgentProfilePickerProps {
   profiles: AgentProfile[];
@@ -101,12 +102,13 @@ export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, on
                   const selected = selections.has(profile.id);
                   const count = selections.get(profile.id) || 0;
                   const existing = deployedCounts.get(profile.id) || 0;
+                  const roleKey = ROLE_LABEL_KEYS.get(profile.role);
                   return (
                     <div key={profile.id} className={cn(
                       'flex items-center gap-2 p-2 rounded-lg border transition-colors cursor-pointer group',
                       selected ? 'border-accent-blue/40 bg-accent-blue/5' : 'border-border-subtle bg-surface hover:bg-surface-raised',
                     )} onClick={() => toggleProfile(profile.id)}
-                    title={`${profile.name} (${profile.role}): ${profile.description || profile.systemPrompt.substring(0, 120)}`}>
+                    title={`${profile.name} (${roleKey ? t(roleKey) : profile.role}): ${profile.description || profile.systemPrompt.substring(0, 120)}`}>
                       <span className="text-lg shrink-0">{profile.icon || '🤖'}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium text-text-primary">{profile.name}</div>

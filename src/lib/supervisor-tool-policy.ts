@@ -1,8 +1,9 @@
 import { db } from '../db';
 import { DEFAULT_AGENT_POLICY, type ToolUseBlock } from '../types';
-import { shouldAutoApprove } from './caddy-agent-policy';
+import { CROSS_CASE_READ_TOOLS, shouldAutoApprove } from './caddy-agent-policy';
 import { getToolExecutionError } from './llm-tool-execution';
 import { isWriteTool } from './llm-tool-defs';
+import { isFolderLocalOnly, isShareableFolder } from './ai-scope';
 
 /** The supervisor's existing advertised capabilities; enforced at dispatch too. */
 export const SUPERVISOR_TOOLS: ReadonlySet<string> = new Set([
@@ -21,15 +22,22 @@ export async function getSupervisorToolPermission(
   toolUse: ToolUseBlock,
   supervisorFolderId: string,
 ): Promise<SupervisorPermission> {
-  const inputError = getToolExecutionError(toolUse, { allowedTools: SUPERVISOR_TOOLS });
+  const inputError = getToolExecutionError(toolUse, { surface: 'supervisor', allowedTools: SUPERVISOR_TOOLS });
   if (inputError) return { kind: 'denied', error: inputError };
   if (!isWriteTool(toolUse.name)) {
     const supervisor = await db.folders.get(supervisorFolderId);
     if (!supervisor) return { kind: 'denied', error: 'Supervisor investigation no longer exists.' };
-    const crossInvestigationRead = ['list_investigations', 'get_investigation_details', 'search_across_investigations', 'compare_investigations'].includes(toolUse.name);
+    const crossInvestigationRead = CROSS_CASE_READ_TOOLS.has(toolUse.name);
     // Cross-case queries can reveal multiple investigations. Require approval if
     // any source disallows automatic reads, rather than relying on model scope.
-    const sources = crossInvestigationRead ? await db.folders.toArray() : [supervisor];
+    // From a shareable home the readers hide local-only investigations, so
+    // their policies do not count.
+    let sources = crossInvestigationRead ? await db.folders.toArray() : [supervisor];
+    if (crossInvestigationRead && await isShareableFolder(supervisorFolderId)) {
+      const visible = [];
+      for (const folder of sources) if (!await isFolderLocalOnly(folder)) visible.push(folder);
+      sources = visible;
+    }
     return {
       kind: sources.every(folder => shouldAutoApprove(toolUse.name, folder.agentPolicy ?? DEFAULT_AGENT_POLICY)) ? 'allowed' : 'approval-required',
       investigationId: supervisorFolderId,
@@ -68,11 +76,19 @@ export async function getSupervisorToolPermission(
     return { kind: 'denied', error: 'Supervisor write scope is not supported for this tool.' };
   }
 
-  let autoApprove = true;
+  // Only writes into the supervisor's own investigation may run by policy;
+  // a write anywhere else, or a call parsed out of model text, needs a person.
+  let autoApprove = !(typeof toolUse.id === 'string' && toolUse.id.startsWith('text_tc_'));
   for (const id of targetFolders) {
     const folder = await db.folders.get(id);
     if (!folder || folder.status === 'archived') return { kind: 'denied', error: 'Supervisor writes require an existing, non-archived investigation.' };
-    if (!shouldAutoApprove(toolUse.name, folder.agentPolicy ?? DEFAULT_AGENT_POLICY)) autoApprove = false;
+    // A note or task can quote any investigation, local-only ones included, so
+    // it is written only in a local-only home: never in one that can sync, such
+    // as 2.0.2's or one the analyst set to sync after the proposal.
+    if ((toolUse.name === 'create_note' || toolUse.name === 'create_task') && !await isFolderLocalOnly(folder)) {
+      return { kind: 'denied', error: 'Supervisor notes and tasks are written only in its own local-only investigation.' };
+    }
+    if (id !== supervisorFolderId || !shouldAutoApprove(toolUse.name, folder.agentPolicy ?? DEFAULT_AGENT_POLICY)) autoApprove = false;
   }
   return {
     kind: autoApprove ? 'allowed' : 'approval-required',

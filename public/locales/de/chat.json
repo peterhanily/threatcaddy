@@ -22,22 +22,19 @@
     "badgeMeeting": "meeting",
     "planMode": "Planen",
     "actMode": "Ausführen",
-    "planModeTitle": "Planmodus: KI schlägt vor, führt aber keine Schreibaktionen aus",
-    "actModeTitle": "Ausführungsmodus: KI führt Aktionen mit Genehmigung aus",
+    "actModeTitleV2": "Ausführungsmodus: CaddyAI kann Änderungen vornehmen und Tools verwenden. Der Schalter Fragen/YOLO legt fest, was Ihre Genehmigung braucht.",
     "yoloLabel": "YOLO",
-    "safeLabel": "Sicher",
-    "yoloOnTitle": "YOLO-Modus AN — alle Tool-Aufrufe automatisch genehmigt",
-    "yoloOffTitle": "Klicken, um YOLO-Modus zu aktivieren (alle Aktionen auto-genehmigen)",
     "tokSuffix": "Tok",
     "tokenTotal": "Tokens gesamt: {{total}}",
     "tokenTotalBudget": "Tokens gesamt: {{total}} / {{budget}} Budget",
     "loopCount_one": "{{count}} Schleife",
     "loopCount_other": "{{count}} Schleifen",
     "stopAllLoops": "Alle Schleifen stoppen",
+    "loopRetrying": "Neuer Versuch nach Fehler",
     "exportAsNote": "Als Notiz exportieren",
     "shareChat": "Chat teilen",
     "emptyTitle": "Gespräch starten",
-    "emptySubtitle": "Nachrichten werden lokal gespeichert und verschlüsselt abgelegt",
+    "emptySubtitleV2": "Nachrichten werden in diesem Browser gespeichert. Eine Unterhaltung in einer Untersuchung, die synchronisiert wird, wird mit deren Teamserver geteilt, und jede Anfrage geht an das Ziel, das Einstellungen → KI anzeigt.",
     "emptyFolderContext": "KI kann Entitäten in \"{{name}}\" lesen und erstellen",
     "caddyAI": "CaddyAI",
     "selectThread": "Thread auswählen, um das Gespräch anzuzeigen",
@@ -54,12 +51,10 @@
     "restoreDialog": "Prüfpunkt wiederherstellen",
     "restoreMessage": "Dadurch werden die Änderungen der KI rückgängig gemacht — erstellte Entitäten werden gelöscht und geänderte Entitäten in ihren vorherigen Zustand zurückversetzt. Dies kann nicht rückgängig gemacht werden.",
     "restoreLabel": "Wiederherstellen",
-    "approvalTitle": "Schreibaktion genehmigen?",
     "approve": "Genehmigen",
     "reject": "Ablehnen",
-    "switchedToPlan": "In den Planmodus gewechselt — KI schlägt vor, ohne auszuführen",
-    "switchedToAct": "In den Ausführungsmodus gewechselt — KI führt mit Genehmigung aus",
-    "switchedToActMessage": "In den **Ausführungsmodus** gewechselt. Senden Sie \"Plan ausführen\", um die vorgeschlagenen Aktionen mit Genehmigungsschranke auszuführen, oder führen Sie das Gespräch fort.",
+    "switchedToActV2": "In den Ausführungsmodus gewechselt. Der Schalter Fragen/YOLO legt fest, was Ihre Genehmigung braucht.",
+    "switchedToActMessageV2": "In den **Ausführungsmodus** gewechselt. Senden Sie \"Plan ausführen\", um die vorgeschlagenen Aktionen auszuführen, oder führen Sie das Gespräch fort. Der Schalter Fragen/YOLO legt fest, welche Aktionen Ihre Genehmigung brauchen.",
     "errorCreateThread": "Chat-Thread konnte nicht erstellt werden. Versuchen Sie, die Seite neu zu laden.",
     "settingsAiLlm": "Einstellungen → KI/LLM",
     "errorNoLocalEndpoint": "Kein lokaler LLM-Endpunkt konfiguriert. Fügen Sie einen in Einstellungen → KI/LLM hinzu.",
@@ -74,8 +69,49 @@
     "onboardingStep2Title": "2. Browser-Erweiterung installieren",
     "onboardingStep2Desc": "CaddyAI benötigt die ThreatCaddy-Browser-Erweiterung, um API-Anfragen zu proxyen.",
     "onboardingStep3Title": "3. Berechtigungen aktivieren",
-    "onboardingStep3Desc": "Aktivieren Sie im Erweiterungs-Popup \"CaddyAI zulassen\" für KI-Provider-Zugriff und \"URL-Abruf zulassen\" für das /fetch-Tool.",
+    "onboardingStep3Desc": "Aktivieren Sie im Erweiterungs-Popup \"CaddyAI zulassen\" für KI-Provider-Zugriff und \"URL-Abruf zulassen\" für das <cmd>/fetch</cmd>-Tool.",
     "onboardingDismiss": "Verstanden"
+  },
+  "mode": {
+    "planTitleV2": "Planmodus: CaddyAI liest nur und beschreibt alles andere als Plan. In einer Untersuchung liest es nur diese Untersuchung; außerhalb jeder Untersuchung kann es alle lesen.",
+    "switchedToPlanV2": "In den Planmodus gewechselt. CaddyAI liest nur und beschreibt alles andere als Plan.",
+    "askLabel": "Fragen",
+    "yoloOnTitleV2": "YOLO ist an: Die meisten Änderungen und integrierten Anbieterabfragen laufen ohne Nachfrage. Webseiten, Skills, andere Integrationen sowie Änderungen an anderen Untersuchungen oder an Agenten brauchen weiterhin Ihre Genehmigung, ebenso das Lesen anderer Untersuchungen aus einer synchronisierbaren Untersuchung. Eine Anbieterabfrage überspringt andere Integrationen, statt nachzufragen; schalten Sie YOLO aus, um sie zu genehmigen.",
+    "yoloOffTitleV2": "CaddyAI fragt vor jeder Änderung, Webseite und Anbieterabfrage, vor jedem Skill und jeder anderen Integration nach sowie vor dem Lesen anderer Untersuchungen aus einer synchronisierbaren Untersuchung. Klicken, um YOLO einzuschalten: Die meisten Änderungen und integrierten Anbieterabfragen laufen dann ohne Nachfrage, außer Änderungen an anderen Untersuchungen oder an Agenten.",
+    "yoloInPlanTitle": "Im Planmodus liest CaddyAI nur; der Schalter Fragen/YOLO gilt nur im Ausführungsmodus. {{setting}}"
+  },
+  "approval": {
+    "position": "{{index}} von {{total}}",
+    "title": {
+      "write": "Änderung an dieser Untersuchung genehmigen?",
+      "writeUnfiled": "Änderung außerhalb jeder Untersuchung genehmigen?",
+      "egress": "Daten aus ThreatCaddy heraus senden?",
+      "lookupNothingSent": "IOC-Anreicherung genehmigen?",
+      "crossRead": "Andere Untersuchungen lesen?",
+      "crossWrite": "Eine andere Untersuchung ändern?",
+      "agentControl": "KI-Agenten ändern?",
+      "harvested": "Einen im Antworttext gefundenen Tool-Aufruf ausführen?"
+    },
+    "opensPage": "Öffnet eine Seite auf {{host}}. Die Website erhält die vollständige Adresse.",
+    "lookup": "Sendet {{value}} an: {{vendors}}",
+    "lookupNone": "Es wird nichts gesendet: Für {{value}} gilt keine aktivierte Abfrage.",
+    "sendsTo": "Sendet diese Anfrage an {{destination}}.",
+    "agentChange": "Ändert die KI-Agenten, die in dieser Untersuchung arbeiten.",
+    "readsOthers": "Liest andere Untersuchungen, nicht nur diese.",
+    "targetSynced": "{{name}}: wird mit ihren Mitgliedern synchronisiert",
+    "targetSyncsLater": "{{name}}: bleibt auf diesem Gerät, bis ein Teamserver verbunden ist",
+    "targetLocal": "{{name}}: bleibt auf diesem Gerät",
+    "unfiled": "Außerhalb jeder Untersuchung: bleibt auf diesem Gerät",
+    "conversationSyncs": "Was es liest, wird Teil dieser Unterhaltung, die mit den Mitgliedern von \"{{name}}\" synchronisiert wird.",
+    "conversationSyncsLater": "Was es liest, wird Teil dieser Unterhaltung, die mit den Mitgliedern von \"{{name}}\" synchronisiert wird, sobald ein Teamserver verbunden ist.",
+    "flag": {
+      "untrustedHost": "Keine der integrierten Referenzseiten.",
+      "urlCarriesData": "Die Adresse ist lang genug, um Untersuchungsdaten zu transportieren.",
+      "hostIsIoc": "Diese Website ist ein IOC in dieser Untersuchung. Ein Besuch kann den Angreifer warnen.",
+      "harvested": "Dieser Aufruf wurde dem Antworttext entnommen statt als Tool-Aufruf gesendet; eingeschleuste Inhalte könnten ihn erzeugt haben.",
+      "readForeign": "Zuvor hat CaddyAI in dieser Antwort eine andere Untersuchung gelesen. Diese Aktion kann diese Daten enthalten."
+    },
+    "details": "Details"
   },
   "input": {
     "noApiKeys": "Keine API-Schlüssel konfiguriert — fügen Sie einen in Einstellungen → KI/LLM hinzu",
@@ -160,9 +196,24 @@
   },
   "cti": {
     "invalidCommand": "Dieser CTI-Befehl konnte nicht ausgeführt werden:",
-    "noSources": "Es sind keine CTI-Agent-Host-Quellen konfiguriert. Fügen Sie unter Einstellungen → AI → Agent Hosts einen CTI-Host hinzu, um diesen Befehl zu verwenden."
+    "noSourcesV2": "Keine CTI-Quellen verfügbar. Benannte Agent-Hosts können in dieser Version nicht mehr konfiguriert werden.",
+    "hostNeedsHttps": "Keine CTI-Quellen verfügbar. Der CTI-Agent-Host wird nicht verwendet, weil er https benötigt (einfaches http funktioniert nur auf diesem Computer). Siehe Einstellungen → KI."
+  },
+  "fetch": {
+    "createdNote": "Notiz **{{title}}** aus {{url}} erstellt",
+    "failed": "URL konnte nicht abgerufen werden: {{error}}",
+    "unknownError": "Unbekannter Fehler"
+  },
+  "loop": {
+    "started": "Hintergrundschleife `{{id}}` gestartet. Läuft alle {{interval}}:",
+    "stopHint": "Verwenden Sie `/stoploop`, um sie zu stoppen.",
+    "stopped_one": "{{count}} Hintergrundschleife gestoppt.",
+    "stopped_other": "{{count}} Hintergrundschleifen gestoppt.",
+    "noneToStop": "Keine aktiven Schleifen zum Stoppen."
   },
   "input.serverStatus": "Route über den Teamserver",
   "input.serverModelsHelp": "Verfügbare Anbieter und Modelle hängen von der Konfiguration Ihres Teamservers ab.",
-  "input.modelLabel": "KI-Modell"
+  "input.modelLabel": "KI-Modell",
+  "input.localModels": "Lokal",
+  "input.localModel": "Lokal: {{name}}"
 }

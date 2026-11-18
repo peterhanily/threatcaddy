@@ -9,8 +9,8 @@ import { nanoid } from 'nanoid';
 import type { AgentDeployment, AgentMeeting, AgentProfile, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider, MeetingPurpose, MeetingStructuredOutput } from '../types';
 import { TOOL_DEFINITIONS } from './llm-tool-defs';
 import { buildSystemPrompt } from './llm-tools';
-import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
-import { BUILTIN_AGENT_PROFILES } from './builtin-agent-profiles';
+import { agentRefusal, hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, unavailableRouteError } from './llm-router';
+import { resolveAgentProfile } from './agent-profile-resolver';
 
 export interface AgentMeetingResult {
   meetingId: string;
@@ -73,7 +73,8 @@ function callLLM(opts: {
       },
       onError: (error: string) => reject(new Error(error || 'LLM request failed')),
     };
-    if (opts.useServerProxy) sendViaServer(request, callbacks);
+    if (opts.provider === 'local' && opts.endpoint) sendDirectToLocal(request, callbacks);
+    else if (opts.useServerProxy) sendViaServer(request, callbacks);
     else sendViaExtension(request, callbacks);
   });
 
@@ -83,12 +84,6 @@ function callLLM(opts: {
   });
 
   return Promise.race([llmPromise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
-}
-
-async function resolveProfile(profileId: string): Promise<AgentProfile | undefined> {
-  const userProfile = await db.agentProfiles.get(profileId);
-  if (userProfile) return userProfile;
-  return BUILTIN_AGENT_PROFILES.find(p => p.id === profileId);
 }
 
 // ── Meeting Orchestrator ────────────────────────────────────────────────
@@ -207,16 +202,13 @@ export async function runAgentMeeting(
     ? Math.min(requestedRounds, 3)
     : Math.min(requestedRounds, DEFAULT_MAX_ROUNDS);
 
-  // Resolve provider (same fallback as agent cycle)
-  const serverConnected = !!settings.serverUrl;
-  const routingMode = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
-  const useServerProxy = routingMode === 'server';
-
+  // Resolve provider (same fallback as agent cycle) and route (local endpoint first, strict explicit modes)
+  const routeEnv = { extensionAvailable, serverSession: hasServerSession() };
   let provider = (settings.llmDefaultProvider || 'anthropic') as LLMProvider;
   let model = settings.llmDefaultModel || 'claude-sonnet-4-6';
 
   // Fallback to first provider with a key
-  if (!useServerProxy && !getApiKeyForProvider(provider, settings)) {
+  if (resolveRoute(settings, { ...routeEnv, provider }).route !== 'server' && !getApiKeyForProvider(provider, settings)) {
     const providers: { p: LLMProvider; key: keyof Settings }[] = [
       { p: 'anthropic', key: 'llmAnthropicApiKey' }, { p: 'openai', key: 'llmOpenAIApiKey' },
       { p: 'gemini', key: 'llmGeminiApiKey' }, { p: 'mistral', key: 'llmMistralApiKey' },
@@ -226,17 +218,20 @@ export async function runAgentMeeting(
     }
     if (settings.llmLocalEndpoint?.trim()) { provider = 'local'; model = settings.llmLocalModelName || 'llama3'; }
   }
+  const route = resolveRoute(settings, { ...routeEnv, provider });
+  if (route.route === 'unavailable') return { meetingId: '', threadId: '', roundsCompleted: 0, error: await unavailableRouteError(route.reason) };
+  const useServerProxy = route.route === 'server';
 
   const apiKey = useServerProxy ? 'server-proxy' : (getApiKeyForProvider(provider, settings) || '');
   if (!useServerProxy && !apiKey) {
-    return { meetingId: '', threadId: '', roundsCompleted: 0, error: `No API key configured for ${provider}` };
+    return { meetingId: '', threadId: '', roundsCompleted: 0, error: await agentRefusal('refusal.noApiKey', { provider }) };
   }
   const endpoint = provider === 'local' ? settings.llmLocalEndpoint : undefined;
 
   // Resolve profiles for each deployment
   const participants: { deployment: AgentDeployment; profile: AgentProfile }[] = [];
   for (const d of deployments) {
-    const profile = await resolveProfile(d.profileId);
+    const profile = await resolveAgentProfile(d.profileId);
     if (profile) participants.push({ deployment: d, profile });
   }
 
@@ -248,7 +243,7 @@ export async function runAgentMeeting(
   }
 
   if (participants.length < 2) {
-    return { meetingId: '', threadId: '', roundsCompleted: 0, error: 'Need at least 2 agents for a meeting' };
+    return { meetingId: '', threadId: '', roundsCompleted: 0, error: await agentRefusal('meeting.deploy2Plus') };
   }
 
   // Create meeting thread
@@ -455,7 +450,7 @@ ${PARTICIPANT_CONFIDENCE_INSTRUCTION}`;
       title: `${purpose === 'freeform' ? 'Meeting' : purpose}: ${agenda.substring(0, 60)}`,
       content: noteContent,
       folderId: folder.id,
-      tags: ['agent-meeting', 'meeting-minutes', `meeting-purpose:${purpose}`],
+      tags: ['agent-meeting', 'meeting-minutes', `meeting-purpose:${purpose}`, 'ai-generated'],
       pinned: false,
       archived: false,
       trashed: false,

@@ -78,6 +78,30 @@ test('copied HTML saves and reopens a note, and searches through its embedded wo
   await expect(reopened.getByRole('heading', { name: 'Standalone sentinel', exact: true })).toBeVisible();
 });
 
+test('a note cannot load remote images, audio or video in the copied file', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'WebKit does not apply a meta Content-Security-Policy to file:// pages.');
+  const beacons = ['img', 'poster', 'audio', 'video', 'source'].map(path => `https://collector.example/${path}`);
+  await navigateToView(page, 'Notes');
+  await createQuickNote(page);
+  await page.getByPlaceholder('Note title...').fill('Media sentinel');
+  await page.getByPlaceholder('Start writing in markdown...').fill([
+    `![x](${beacons[0]})`,
+    `<video poster="${beacons[1]}" preload="auto"></video>`,
+    `<audio src="${beacons[2]}" preload="auto"></audio>`,
+    `<video src="${beacons[3]}" preload="auto"></video>`,
+    `<video preload="auto"><source src="${beacons[4]}"></video>`,
+  ].join('\n\n'));
+  await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Preview mode', exact: true }).click();
+  await expect(page.locator('.markdown-preview audio')).toHaveCount(1);
+  // Chromium logs each load the policy refuses; a refused image also shows as a request that
+  // failed with "csp". A load that reached the network fails with ERR_INTERNET_DISCONNECTED instead.
+  const violation = (text: string, url: string) => text.includes(`'${url}'`) && text.includes('Content Security Policy');
+  await expect.poll(() => beacons.filter(url => failures.some(text => violation(text, url)))).toEqual(beacons);
+  const refused = (text: string) => beacons.some(url => violation(text, url) || text === `${url}: csp` || text === `Unexpected remote request: ${url}`);
+  expect(failures.filter(text => !refused(text))).toEqual([]);
+});
+
 test('simple and advanced search remain available if the browser disables workers', async ({ page }) => {
   await createSavedNote(page);
   await page.evaluate(() => { window.Worker = class { constructor() { throw new Error('Workers unavailable in this ordinary fixture'); } } as unknown as typeof Worker; });
@@ -90,6 +114,18 @@ test('simple and advanced search remain available if the browser disables worker
   await expect(search.getByText('Standalone sentinel', { exact: true })).toBeVisible();
   await search.getByRole('button', { name: 'Regex', exact: true }).click();
   await expect(search.getByText(/Regex search requires a working search worker/)).toBeVisible();
+  expect(failures).toEqual([]);
+});
+
+test('copied HTML shows none of the hosted offline notices, Settings row or backup note', async ({ page }) => {
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('tabpanel', { name: 'General', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Offline use', exact: true })).toHaveCount(0);
+  await page.getByRole('tab', { name: 'Data', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Export & Import', exact: true })).toBeVisible();
+  await expect(page.getByText(/^Offline use is not a backup\./)).toHaveCount(0);
+  await expect(page.getByTestId('offline-notice')).toHaveCount(0);
+  await expect(page.getByTestId('offline-status')).toHaveCount(0);
   expect(failures).toEqual([]);
 });
 

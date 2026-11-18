@@ -100,4 +100,33 @@ describe('integration installation validation', () => {
     expect(await db.integrationTemplates.get(definition.id)).toMatchObject({ name: 'First copy' });
     unmount();
   });
+  it('creates an installation disabled only when asked, and enabled by default', async () => {
+    await db.integrationTemplates.put(definition);
+    const { result, unmount } = renderHook(useIntegrations);
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    let disabledId = '', enabledId = '';
+    await act(async () => {
+      disabledId = (await result.current.createInstallation(definition.id, {}, { enabled: false })).id;
+      enabledId = (await result.current.createInstallation(definition.id, {})).id;
+    });
+    expect(await db.installedIntegrations.get(disabledId)).toMatchObject({ enabled: false });
+    expect(await db.installedIntegrations.get(enabledId)).toMatchObject({ enabled: true });
+    expect(result.current.installations.find(installation => installation.id === disabledId)?.enabled).toBe(false);
+    unmount();
+  });
+  it('matches IOC types only against installations whose scope includes a given investigation', async () => {
+    await db.integrationTemplates.put(definition);
+    const base = { templateId: definition.id, enabled: true, config: {}, runCount: 0, errorCount: 0, createdAt: 1, updatedAt: 1 };
+    await db.installedIntegrations.bulkPut([
+      { ...base, id: 'everywhere', name: 'Everywhere', scopeType: 'all', scopeFolderIds: [] },
+      { ...base, id: 'case-a-only', name: 'Case A only', scopeType: 'investigation', scopeFolderIds: ['case-a'] },
+    ]);
+    const { result, unmount } = renderHook(useIntegrations);
+    await waitFor(() => expect(result.current.installations).toHaveLength(2));
+    const ids = (folderId?: string) => result.current.getInstallationsForIOCType('ipv4', folderId).map(match => match.installation.id).sort();
+    expect(ids('case-b')).toEqual(['everywhere']);
+    expect(ids('case-a')).toEqual(['case-a-only', 'everywhere']);
+    expect(ids()).toEqual(['case-a-only', 'everywhere']);
+    unmount();
+  });
 });

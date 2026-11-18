@@ -2,6 +2,9 @@ import { nanoid } from 'nanoid';
 import type { LLMProvider, ChatMessage } from '../types';
 import { sendDirectToLocal, sendViaExtension, sendViaServer } from './llm-router';
 
+/** Where one run goes, or why it cannot be sent. */
+export type LoopTransport = { useServerProxy: boolean; apiKey: string; endpoint?: string } | { error: string };
+
 export interface ChatLoop {
   id: string;
   threadId: string;
@@ -13,6 +16,8 @@ export interface ChatLoop {
   systemPrompt: string;
   endpoint?: string;
   useServerProxy?: boolean;
+  /** Resolved before every run, so a schedule goes where Settings → AI shows now. */
+  transport?: () => Promise<LoopTransport>;
   status: 'running' | 'stopped';
   lastRunAt?: number;
   runCount: number;
@@ -76,7 +81,7 @@ function executeLoopPrompt(loop: ChatLoop): Promise<string> {
     const abort = () => finish('Loop request was cancelled or timed out.');
     const timer = setTimeout(() => controller.abort(), LOOP_TIMEOUT_MS);
     controller.signal.addEventListener('abort', abort, { once: true });
-    const send = loop.useServerProxy ? sendViaServer : loop.provider === 'local' && loop.endpoint ? sendDirectToLocal : sendViaExtension;
+    const send = loop.provider === 'local' && loop.endpoint ? sendDirectToLocal : loop.useServerProxy ? sendViaServer : sendViaExtension;
     send({ provider: loop.provider, model: loop.model, messages: [{ role: 'user', content: loop.prompt }], apiKey: loop.apiKey, systemPrompt: loop.systemPrompt, endpoint: loop.endpoint }, {
       onChunk: content => { accumulated += content; if (accumulated.length > 200_000) controller.abort(); },
       onDone: (_reason, blocks) => finish(undefined, blocks.filter((block): block is { type: 'text'; text: string } => !!block && typeof block === 'object' && 'type' in block && block.type === 'text' && 'text' in block && typeof block.text === 'string').map(block => block.text).join('\n\n')),
@@ -90,6 +95,19 @@ async function runOnce(loop: ChatLoop): Promise<void> {
   loop.inFlight = true;
   loop.controller = new AbortController();
   try {
+    if (loop.transport) {
+      const transport = await loop.transport();
+      if (loop.status !== 'running' || loop.controller.signal.aborted) return;
+      if ('error' in transport) {
+        // Nothing was sent, so there is nothing to back off from: try again one interval later.
+        loop.error = transport.error;
+        loop.failures = 0;
+        return;
+      }
+      loop.useServerProxy = transport.useServerProxy;
+      loop.apiKey = transport.apiKey;
+      loop.endpoint = transport.endpoint;
+    }
     const content = await executeLoopPrompt(loop);
     if (loop.status !== 'running' || loop.controller.signal.aborted) return;
     const msg: ChatMessage = {
@@ -143,6 +161,7 @@ export function startLoop(opts: {
   systemPrompt: string;
   endpoint?: string;
   useServerProxy?: boolean;
+  transport?: () => Promise<LoopTransport>;
   onMessage: (threadId: string, message: ChatMessage) => Promise<void>;
 }): string {
   const id = nanoid(8);
@@ -157,6 +176,7 @@ export function startLoop(opts: {
     systemPrompt: opts.systemPrompt,
     endpoint: opts.endpoint,
     useServerProxy: opts.useServerProxy,
+    transport: opts.transport,
     status: 'running',
     runCount: 0,
     onMessage: opts.onMessage,

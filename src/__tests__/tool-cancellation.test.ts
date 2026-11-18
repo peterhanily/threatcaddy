@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
-import { executeTool } from '../lib/llm-tools';
+import { execTool } from './helpers/tool-exec';
 import { IntegrationExecutor } from '../lib/integration-executor';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
 import type { ToolUseBlock } from '../types';
@@ -26,7 +26,7 @@ describe('integration tool cancellation boundaries', () => {
       await expect(callbacks.onUpdateEntity?.('ioc', 'ioc', { value: 'changed.test' }, writeSignal)).rejects.toThrow();
       throw new DOMException('Cancelled', 'AbortError');
     });
-    const result = await executeTool(call('enrich_ioc', { iocId: 'ioc' }), undefined, undefined, { signal: controller.signal, allowedTools: new Set(['enrich_ioc']) });
+    const result = await execTool(call('enrich_ioc', { iocId: 'ioc' }), undefined, { signal: controller.signal, allowedTools: new Set(['enrich_ioc']) });
     expect(result.isError).toBe(true); expect(result.result).toContain('cancelled');
     expect(await db.notes.count()).toBe(0); expect((await db.standaloneIOCs.get('ioc'))?.value).toBe('example.test');
     expect(await db.integrationRuns.count()).toBe(0);
@@ -40,7 +40,7 @@ describe('integration tool cancellation boundaries', () => {
       expect(options.signal?.aborted).toBe(true);
       throw new DOMException('Cancelled', 'AbortError');
     }));
-    const result = await executeTool(call('create_ticket', { title: 'Review', description: 'Prepared summary' }), undefined, undefined, { signal: controller.signal, allowedTools: new Set(['create_ticket']) });
+    const result = await execTool(call('create_ticket', { title: 'Review', description: 'Prepared summary' }), undefined, { signal: controller.signal, allowedTools: new Set(['create_ticket']) });
     expect(result.isError).toBe(true); expect(result.result).toContain('Remote completion is unknown');
     expect(await db.tasks.count()).toBe(0);
   });
@@ -48,18 +48,18 @@ describe('integration tool cancellation boundaries', () => {
   it('bounds SIEM responses and ignores a response returned after cancellation', async () => {
     localStorage.setItem(workspaceStorageKey('threatcaddy-settings'), JSON.stringify({ siemEndpoint: 'https://siem.example.test' }));
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('small fixture', { headers: { 'content-length': '3000000' } })));
-    expect((await executeTool(call('query_siem', { query: 'prepared query' }))).isError).toBe(true);
+    expect((await execTool(call('query_siem', { query: 'prepared query' }))).isError).toBe(true);
     const controller = new AbortController();
     vi.mocked(fetch).mockImplementation(async () => { controller.abort(); return new Response('late result'); });
-    const result = await executeTool(call('query_siem', { query: 'prepared query' }), undefined, undefined, { signal: controller.signal, allowedTools: new Set(['query_siem']) });
+    const result = await execTool(call('query_siem', { query: 'prepared query' }), undefined, { signal: controller.signal, allowedTools: new Set(['query_siem']) });
     expect(result.isError).toBe(true); expect(result.result).not.toContain('late result');
   });
 
   it('permits normal configured SIEM results and local ticket fallback', async () => {
     localStorage.setItem(workspaceStorageKey('threatcaddy-settings'), JSON.stringify({ siemEndpoint: 'https://siem.example.test' }));
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Prepared SIEM result')));
-    expect(await executeTool(call('query_siem', { query: 'prepared query' }))).toEqual({ result: 'Prepared SIEM result', isError: false });
-    const result = await executeTool(call('create_ticket', { title: 'Review', description: 'Prepared summary' }));
+    expect(await execTool(call('query_siem', { query: 'prepared query' }))).toEqual({ result: 'Prepared SIEM result', isError: false });
+    const result = await execTool(call('create_ticket', { title: 'Review', description: 'Prepared summary' }));
     expect(result.isError).toBe(false); expect(await db.tasks.count()).toBe(1);
   });
 });

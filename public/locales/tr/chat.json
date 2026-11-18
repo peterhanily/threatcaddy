@@ -22,22 +22,19 @@
     "badgeMeeting": "toplantı",
     "planMode": "Plan",
     "actMode": "Eylem",
-    "planModeTitle": "Plan modu: AI önerir ancak yazma işlemleri gerçekleştirmez",
-    "actModeTitle": "Eylem modu: AI işlemleri onay ile gerçekleştirir",
+    "actModeTitleV2": "Eylem modu: CaddyAI değişiklik yapabilir ve araçları kullanabilir. Sor/YOLO anahtarı neyin onayınızı gerektirdiğini belirler.",
     "yoloLabel": "YOLO",
-    "safeLabel": "Güvenli",
-    "yoloOnTitle": "YOLO modu AÇIK — tüm araç çağrıları otomatik onaylanır",
-    "yoloOffTitle": "YOLO modunu etkinleştirmek için tıklayın (tüm işlemleri otomatik onayla)",
     "tokSuffix": "tok",
     "tokenTotal": "Toplam token: {{total}}",
     "tokenTotalBudget": "Toplam token: {{total}} / {{budget}} bütçe",
     "loopCount_one": "{{count}} döngü",
     "loopCount_other": "{{count}} döngü",
     "stopAllLoops": "Tüm döngüleri durdur",
+    "loopRetrying": "Hatadan sonra yeniden deneniyor",
     "exportAsNote": "Not olarak dışa aktar",
     "shareChat": "Sohbeti paylaş",
     "emptyTitle": "Bir konuşma başlat",
-    "emptySubtitle": "Mesajlar yerel olarak saklanır ve beklemede şifrelenir",
+    "emptySubtitleV2": "Mesajlar bu tarayıcıya kaydedilir. Eşitlenen bir soruşturmadaki konuşma, o soruşturmanın ekip sunucusuyla paylaşılır ve her istek Ayarlar → AI bölümünde gösterilen yere gider.",
     "emptyFolderContext": "AI, \"{{name}}\" içinde varlıkları okuyabilir ve oluşturabilir",
     "caddyAI": "CaddyAI",
     "selectThread": "Konuşmayı görüntülemek için bir konu seçin",
@@ -54,12 +51,10 @@
     "restoreDialog": "Kontrol Noktasını Geri Yükle",
     "restoreMessage": "Bu işlem AI'nin değişikliklerini geri alır — oluşturulan varlıklar silinir ve değiştirilen varlıklar önceki durumlarına döner. Bu işlem geri alınamaz.",
     "restoreLabel": "Geri Yükle",
-    "approvalTitle": "Yazma işlemi onaylansın mı?",
     "approve": "Onayla",
     "reject": "Reddet",
-    "switchedToPlan": "Plan moduna geçildi — AI öneri sunar ancak işlem gerçekleştirmez",
-    "switchedToAct": "Eylem moduna geçildi — AI işlemleri onay ile gerçekleştirecek",
-    "switchedToActMessage": "**Eylem moduna** geçildi. Onay kapılı önerilen işlemleri çalıştırmak için \"planı uygula\" gönderin veya konuşmaya devam edin.",
+    "switchedToActV2": "Eylem moduna geçildi. Sor/YOLO anahtarı neyin onayınızı gerektirdiğini belirler.",
+    "switchedToActMessageV2": "**Eylem moduna** geçildi. Önerilen işlemleri çalıştırmak için \"planı uygula\" gönderin veya konuşmaya devam edin. Sor/YOLO anahtarı hangi işlemlerin onayınızı gerektirdiğini belirler.",
     "errorCreateThread": "Sohbet konusu oluşturulamadı. Sayfayı yenilemeyi deneyin.",
     "settingsAiLlm": "Ayarlar → AI/LLM",
     "errorNoLocalEndpoint": "Yerel LLM uç noktası yapılandırılmamış. Ayarlar → AI/LLM bölümüne ekleyin.",
@@ -74,8 +69,49 @@
     "onboardingStep2Title": "2. Tarayıcı uzantısını yükle",
     "onboardingStep2Desc": "CaddyAI, API isteklerini yönlendirmek için ThreatCaddy tarayıcı uzantısını gerektirir.",
     "onboardingStep3Title": "3. İzinleri etkinleştir",
-    "onboardingStep3Desc": "Uzantı açılır penceresinde AI sağlayıcı erişimi için \"CaddyAI'ye İzin Ver\" ve /fetch aracı için \"URL getirmeye İzin Ver\"i etkinleştirin.",
+    "onboardingStep3Desc": "Uzantı açılır penceresinde AI sağlayıcı erişimi için \"CaddyAI'ye İzin Ver\" ve <cmd>/fetch</cmd> aracı için \"URL getirmeye İzin Ver\"i etkinleştirin.",
     "onboardingDismiss": "Anladım"
+  },
+  "mode": {
+    "planTitleV2": "Plan modu: CaddyAI yalnızca okur ve diğer her şeyi bir plan olarak açıklar. Bir soruşturmada yalnızca o soruşturmayı okur; hiçbir soruşturmanın dışında hepsini okuyabilir.",
+    "switchedToPlanV2": "Plan moduna geçildi. CaddyAI yalnızca okur ve diğer her şeyi bir plan olarak açıklar.",
+    "askLabel": "Sor",
+    "yoloOnTitleV2": "YOLO açık: çoğu değişiklik ve yerleşik sağlayıcı sorgusu sormadan çalışır. Web sayfaları, beceriler, diğer entegrasyonlar ve diğer soruşturmalarda ya da ajanlarda yapılan değişiklikler yine onayınızı gerektirir; senkronize edilebilen bir soruşturmadan diğer soruşturmaları okumak da öyle. Bir sağlayıcı sorgusu diğer entegrasyonları sormak yerine atlar; onaylamak için YOLO'yu kapatın.",
+    "yoloOffTitleV2": "CaddyAI her değişiklikten, web sayfasından, sağlayıcı sorgusundan, beceriden veya diğer entegrasyondan önce sorar; senkronize edilebilen bir soruşturmadan diğer soruşturmaları okumadan önce de sorar. YOLO'yu açmak için tıklayın: çoğu değişiklik ve yerleşik sağlayıcı sorgusu artık sormadan çalışır; diğer soruşturmalarda ya da ajanlarda yapılan değişiklikler hariç.",
+    "yoloInPlanTitle": "Plan modunda CaddyAI yalnızca okur; Sor/YOLO anahtarı yalnızca Eylem modunda geçerlidir. {{setting}}"
+  },
+  "approval": {
+    "position": "{{index}} / {{total}}",
+    "title": {
+      "write": "Bu soruşturmadaki değişiklik onaylansın mı?",
+      "writeUnfiled": "Hiçbir soruşturmanın dışındaki değişiklik onaylansın mı?",
+      "egress": "Veriler ThreatCaddy dışına gönderilsin mi?",
+      "lookupNothingSent": "IOC zenginleştirmesi onaylansın mı?",
+      "crossRead": "Diğer soruşturmalar okunsun mu?",
+      "crossWrite": "Başka bir soruşturma değiştirilsin mi?",
+      "agentControl": "AI ajanları değiştirilsin mi?",
+      "harvested": "Yanıt metninde bulunan bir araç çağrısı çalıştırılsın mı?"
+    },
+    "opensPage": "{{host}} üzerinde bir sayfa açar. Site tam adresi alır.",
+    "lookup": "{{value}} değerini şuraya gönderir: {{vendors}}",
+    "lookupNone": "Hiçbir şey gönderilmez: {{value}} için geçerli etkin bir sorgu yok.",
+    "sendsTo": "Bu isteği {{destination}} adresine gönderir.",
+    "agentChange": "Bu soruşturmada çalışan AI ajanlarını değiştirir.",
+    "readsOthers": "Yalnızca bunu değil, diğer soruşturmaları da okur.",
+    "targetSynced": "{{name}}: üyeleriyle eşitlenir",
+    "targetSyncsLater": "{{name}}: bir ekip sunucusu bağlanana kadar bu cihazda kalır",
+    "targetLocal": "{{name}}: bu cihazda kalır",
+    "unfiled": "Hiçbir soruşturmanın dışında: bu cihazda kalır",
+    "conversationSyncs": "Okudukları bu konuşmanın parçası olur; bu konuşma \"{{name}}\" üyeleriyle eşitlenir.",
+    "conversationSyncsLater": "Okudukları bu konuşmanın parçası olur; bu konuşma, bir ekip sunucusu bağlandığında \"{{name}}\" üyeleriyle eşitlenir.",
+    "flag": {
+      "untrustedHost": "Yerleşik başvuru sitelerinden biri değil.",
+      "urlCarriesData": "Adres, soruşturma verisi taşıyabilecek kadar uzun.",
+      "hostIsIoc": "Bu site bu soruşturmada bir IOC. Ziyaret etmek saldırganı uyarabilir.",
+      "harvested": "Bu çağrı araç çağrısı olarak gönderilmek yerine yanıt metninden alındı; bu nedenle enjekte edilmiş içerik tarafından üretilmiş olabilir.",
+      "readForeign": "Bu yanıtın önceki kısmında CaddyAI başka bir soruşturmayı okudu. Bu işlem o verileri taşıyabilir."
+    },
+    "details": "Ayrıntılar"
   },
   "input": {
     "noApiKeys": "API anahtarı yapılandırılmamış — Ayarlar → AI/LLM bölümüne ekleyin",
@@ -161,9 +197,24 @@
   },
   "cti": {
     "invalidCommand": "Bu CTI komutu çalıştırılamadı:",
-    "noSources": "Yapılandırılmış CTI Agent Host kaynağı yok. Bu komutu kullanmak için Ayarlar → AI → Agent Hosts altına bir CTI host'u ekleyin."
+    "noSourcesV2": "Kullanılabilir CTI kaynağı yok. Adlandırılmış ajan host'ları bu sürümde artık yapılandırılamaz.",
+    "hostNeedsHttps": "Kullanılabilir CTI kaynağı yok. CTI ajan host'u https gerektirdiği için kullanılmıyor (düz http yalnızca bu bilgisayarda çalışır). Ayarlar → AI bölümüne bakın."
+  },
+  "fetch": {
+    "createdNote": "{{url}} adresinden **{{title}}** notu oluşturuldu",
+    "failed": "URL getirilemedi: {{error}}",
+    "unknownError": "Bilinmeyen hata"
+  },
+  "loop": {
+    "started": "Arka plan döngüsü `{{id}}` başlatıldı. Her {{interval}} çalışır:",
+    "stopHint": "Durdurmak için `/stoploop` kullanın.",
+    "stopped_one": "{{count}} arka plan döngüsü durduruldu.",
+    "stopped_other": "{{count}} arka plan döngüsü durduruldu.",
+    "noneToStop": "Durdurulacak etkin döngü yok."
   },
   "input.serverStatus": "Ekip sunucusu yolu",
   "input.serverModelsHelp": "Kullanılabilir sağlayıcılar ve modeller ekip sunucusunun yapılandırmasına bağlıdır.",
-  "input.modelLabel": "Yapay zekâ modeli"
+  "input.modelLabel": "Yapay zekâ modeli",
+  "input.localModels": "Yerel",
+  "input.localModel": "Yerel: {{name}}"
 }

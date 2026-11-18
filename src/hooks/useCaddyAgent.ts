@@ -16,11 +16,14 @@ import { runAgentCycle } from '../lib/caddy-agent';
 import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
 import { runSupervisorCycle, sendEscalationNotification } from '../lib/caddy-agent-supervisor';
 import { postMessageOrigin } from '../lib/utils';
+import i18n from '../i18n';
 
 interface UseCaddyAgentOptions {
   folder?: Folder;
   settings: Settings;
   onEntitiesChanged?: () => void;
+  /** A supervisor cycle could not run (for example, no AI route or no key); the message says why. */
+  onSupervisorError?: (message: string) => void;
 }
 
 interface UseCaddyAgentResult {
@@ -46,7 +49,7 @@ const MAX_WORKING_MEMORY_CHARS = 10_000;
 const ERROR_RETRY_BASE_MS = 60_000;
 const MAX_ERROR_RETRIES = 3;
 
-export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyAgentOptions): UseCaddyAgentResult {
+export function useCaddyAgent({ folder, settings, onEntitiesChanged, onSupervisorError }: UseCaddyAgentOptions): UseCaddyAgentResult {
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState('');
   const [streamingContent, setStreamingContent] = useState('');
@@ -77,7 +80,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
   const cycleController = useRef<AbortController | null>(null);
   const supervisorController = useRef<AbortController | null>(null);
   const supervisorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const callbacks = useRef({ extensionAvailable, onEntitiesChanged });
+  const callbacks = useRef({ extensionAvailable, onEntitiesChanged, onSupervisorError });
   const cycleScope = useMemo(() => ({ folderId: folder?.id, enabled: folder?.agentEnabled }), [folder?.id, folder?.agentEnabled]);
   const activeCycleScope = useRef<typeof cycleScope | null>(null);
 
@@ -85,8 +88,8 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
   useLayoutEffect(() => {
     folderRef.current = folder;
     settingsRef.current = settings;
-    callbacks.current = { extensionAvailable, onEntitiesChanged };
-  }, [folder, settings, extensionAvailable, onEntitiesChanged]);
+    callbacks.current = { extensionAvailable, onEntitiesChanged, onSupervisorError };
+  }, [folder, settings, extensionAvailable, onEntitiesChanged, onSupervisorError]);
   useLayoutEffect(() => {
     activeCycleScope.current = cycleScope;
     errorRetryCount.current = 0;
@@ -153,17 +156,20 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
       if (!current()) return;
 
       if (deploymentCount > 0) {
-        // Multi-agent mode
+        // Multi-agent mode. The timer skips agents waiting for review; a manual
+        // run (Run, or chat run_agent_cycle) runs them too.
         const multiResult = await runMultiAgentCycle(freshFolder, settingsRef.current, callbacks.current.extensionAvailable, (agentName, status) => {
           if (current()) setProgress(`${agentName}: ${status}`);
-        }, controller.signal);
+        }, controller.signal, { manual: !requireEnabled });
 
         if (!current()) return;
 
-        // Per-agent status: determine folder-level status from individual results
+        // Per-agent status: determine folder-level status from individual results.
+        // The manager lists who still awaits review when the cycle ends,
+        // including this cycle's proposals the analyst has not answered.
         const results = Array.from(multiResult.deploymentResults.values());
         const succeeded = results.filter(r => !r.error);
-        const anyWaiting = results.some(r => r.proposed.length > 0);
+        const anyWaiting = multiResult.waitingForReview.length > 0;
         const allFailed = results.length > 0 && succeeded.length === 0;
 
         if (multiResult.errors.length > 0) {
@@ -185,7 +191,18 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
           }
         }
       } else {
-        // Legacy single-agent mode
+        // On the timer, legacy single-agent mode pauses only for its own
+        // proposals: rows without an agent profile (deployed agents and the
+        // supervisor have one). A manual run still runs.
+        if (requireEnabled) {
+          const ownPending = await db.agentActions.where('[investigationId+status]').equals([freshFolder.id, 'pending'])
+            .filter(action => !action.agentConfigId).count();
+          if (!current()) return;
+          if (ownPending > 0) {
+            updateAgentStatus('waiting');
+            return;
+          }
+        }
         setStreamingContent('');
         const result = await runAgentCycle(freshFolder, settingsRef.current, callbacks.current.extensionAvailable, (status) => {
           if (current()) setProgress(status);
@@ -276,10 +293,10 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
     const scheduleNext = async () => {
       if (!current()) return;
-      // Adaptive: double interval when waiting for approvals (use ref to avoid stale closure)
+      // A waiting agent skips its own cycles, so waiting does not slow the
+      // others (use ref to avoid stale closure).
       const currentStatus = agentStatusRef.current;
-      const multiplier = currentStatus === 'waiting' ? 2 : 1;
-      let intervalMs = baseIntervalMs * multiplier;
+      let intervalMs = baseIntervalMs;
 
       // Error backoff: double interval for each consecutive error, up to max retries
       if (currentStatus === 'error') {
@@ -290,7 +307,8 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
         intervalMs = ERROR_RETRY_BASE_MS * Math.pow(2, errorRetryCount.current - 1);
       }
 
-      // Adaptive scheduling based on agent metrics (multi-agent mode)
+      // Adaptive scheduling based on agent metrics (multi-agent mode): agents
+      // whose actions mostly wait for review slow down. Nothing speeds up.
       try {
         const deployments = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
         if (!current()) return;
@@ -298,11 +316,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
           const totalProposed = deployments.reduce((s, d) => s + (d.metrics?.toolCallsProposed || 0), 0);
           const totalExecuted = deployments.reduce((s, d) => s + (d.metrics?.toolCallsExecuted || 0), 0);
           const total = totalProposed + totalExecuted;
-          if (total > 10) {
-            const successRate = totalExecuted / total;
-            if (successRate > 0.9) intervalMs = Math.max(60_000, intervalMs * 0.5); // boost
-            else if (successRate < 0.5) intervalMs *= 2; // throttle
-          }
+          if (total > 10 && totalExecuted / total < 0.5) intervalMs *= 2; // throttle
         }
       } catch { /* non-critical */ }
       if (!current()) return;
@@ -313,12 +327,11 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     const tick = async () => {
       if (!current()) return;
       try {
-        // Re-check persisted enablement and pending approvals after each wait.
+        // Re-check persisted enablement after each wait. Pending approvals pause
+        // only the agent that proposed them (runMultiAgentCycle, legacy branch).
         const freshFolder = await db.folders.get(folderId);
         if (!current() || !freshFolder?.agentEnabled) return;
-        const pendingCount = await db.agentActions.where('[investigationId+status]').equals([folderId, 'pending']).count();
-        if (!current()) return;
-        if (pendingCount === 0) await executeCycle(true);
+        await executeCycle(true);
       } catch (err) {
         if (current()) console.error('[AgentCaddy] cycle failed:', err);
       }
@@ -362,6 +375,11 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
       try {
         const result = await runSupervisorCycle(settingsRef.current, callbacks.current.extensionAvailable, undefined, controller.signal);
         if (!current() || controller.signal.aborted) return;
+        // A cycle that could not run (no AI route, no key) says why instead of failing silently.
+        if (result.error) {
+          await i18n.loadNamespaces('agent');
+          if (current() && !controller.signal.aborted) callbacks.current.onSupervisorError?.(i18n.t('supervisor.couldNotRun', { ns: 'agent', error: result.error }));
+        }
         // Fire desktop notifications for escalations
         for (const escalation of result.escalations) {
           sendEscalationNotification(escalation, controller.signal);

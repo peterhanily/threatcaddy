@@ -9,6 +9,7 @@ import {
   parseInterval,
   formatInterval,
   type ChatLoopInfo,
+  type LoopTransport,
 } from '../lib/chat-loop';
 import type { LLMProvider, ChatMessage } from '../types';
 
@@ -46,6 +47,7 @@ export function useChatLoops(threadId?: string) {
     systemPrompt: string;
     endpoint?: string;
     useServerProxy?: boolean;
+    transport?: () => Promise<LoopTransport>;
     onMessage: (threadId: string, message: ChatMessage) => Promise<void>;
   }) => {
     const intervalMs = parseInterval(opts.intervalStr);
@@ -59,6 +61,7 @@ export function useChatLoops(threadId?: string) {
       systemPrompt: opts.systemPrompt,
       endpoint: opts.endpoint,
       useServerProxy: opts.useServerProxy,
+      transport: opts.transport,
       onMessage: opts.onMessage,
     });
     return { id, intervalMs, formattedInterval: formatInterval(intervalMs) };

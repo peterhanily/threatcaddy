@@ -1,4 +1,10 @@
-export type OfflineStatus = 'checking' | 'installed' | 'unavailable';
+/** 'checking' looks for a registration; 'installing' means an expected worker
+ * is downloading or activating, so closing the tab can interrupt it.
+ * 'unconfirmed' found no expected worker in time, which a late or failed
+ * download looks like too; 'failed' means an expected worker became redundant
+ * (one failed download is enough) and the next page load registers it again;
+ * 'unavailable' is a browser limit: no worker support or a refused lookup. */
+export type OfflineStatus = 'checking' | 'installing' | 'installed' | 'unconfirmed' | 'failed' | 'unavailable';
 
 export interface ObservedOfflineWorker extends EventTarget {
   readonly state: ServiceWorkerState;
@@ -56,6 +62,7 @@ export function observeOfflineStatus({
   const workers = new Set<ObservedOfflineWorker>();
   let lookupVersion = 0;
   let timedOut = false;
+  let installFailed = false;
   let poll: ReturnType<typeof setInterval> | undefined;
   let deadline: ReturnType<typeof setTimeout> | undefined;
   const stopPolling = () => { clearInterval(poll); clearTimeout(deadline); poll = undefined; deadline = undefined; };
@@ -63,6 +70,9 @@ export function observeOfflineStatus({
 
   const evaluate = () => {
     if (disposed) return;
+    // Browsers drop a failed first install from the registration before its
+    // redundant event arrives, so check the workers watched until now.
+    if ([...workers].some(worker => worker.state === 'redundant')) installFailed = true;
     for (const worker of workers) worker.removeEventListener('statechange', evaluate);
     workers.clear();
     for (const worker of [registration?.active, registration?.waiting, registration?.installing]) {
@@ -74,13 +84,17 @@ export function observeOfflineStatus({
     if (isExpected(registration?.active) && registration?.active?.state === 'activated') {
       emit('installed');
       timedOut = true;
+      installFailed = false;
       stopPolling();
     } else if ([...workers].some(worker => ['installing', 'installed', 'activating'].includes(worker.state))) {
       // A legitimate large download can take minutes. Polling ends, but these
       // workers' events still report completion or redundancy without a reload.
-      emit('checking');
+      emit('installing');
+      installFailed = false;
+    } else if (installFailed || [...workers].some(worker => worker.state === 'redundant')) {
+      emit('failed');
     } else {
-      emit(timedOut || [...workers].some(worker => worker.state === 'redundant') ? 'unavailable' : 'checking');
+      emit(timedOut ? 'unconfirmed' : 'checking');
     }
   };
 

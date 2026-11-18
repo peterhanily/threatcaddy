@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/peterhanily/threatcaddy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/version-2.0.2-green.svg" alt="Version 2.0.2" />
+  <img src="https://img.shields.io/badge/version-2.0.3-green.svg" alt="Version 2.0.3" />
   <img src="https://img.shields.io/badge/TypeScript-6%20%2F%207-blue.svg?logo=typescript&logoColor=white" alt="TypeScript 6 (client) / 7 (server)" />
   <img src="https://img.shields.io/badge/React-19-61dafb.svg?logo=react&logoColor=white" alt="React 19" />
   <img src="https://img.shields.io/badge/Vite-7-646cff.svg?logo=vite&logoColor=white" alt="Vite 7" />
@@ -42,7 +42,7 @@ Most investigation tools lock your data in a cloud you don't control, cost per s
 
 **Try it now:** [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loads a sample investigation with a guided walkthrough.
 
-**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, checksums and source revision. Client and server 2.0.2 include the data-preservation, backup, session and evidence-import fixes missing from the historical 2.0.0 download. The extension has its own version, currently 1.1.3. Read the [2.0.2 upgrade and channel notes](docs/releases/v2.0.2.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
+**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, `release-manifest.json` (with the source revision) and `SHA256SUMS`. Client and server 2.0.3 add AI prompt-injection hardening to the data-preservation, backup, session and evidence-import fixes of 2.0.2. The extension has its own version, currently 1.1.4; web fetch needs 1.1.3 or later. Read the [2.0.3 upgrade and channel notes](docs/releases/v2.0.3.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
 
 **Self-host the client:**
 
@@ -100,6 +100,7 @@ Human-driven conversational AI assistant with a deep toolset for threat investig
 - **Slash commands** — `/fetch`, `/search`, `/note`, `/task`, `/iocs`, `/summary`, `/timeline`, `/report`, `/triage`, `/graph`, `/link`
 - **Customizable system prompt** — Editable in Settings with CTI/IR tradecraft baked into the default (MITRE ATT&CK, Diamond Model, Kill Chain, Pyramid of Pain, estimative language, TLP/PAP)
 - **Persistent threads** with auto-generated titles; stays active in the background when switching tabs
+- **Approvals and data flow** — CaddyAI asks before it opens a web page, uses a skill, changes agents, writes into another investigation, or reads other investigations from an investigation that can sync. YOLO covers only changes inside the conversation's investigation and built-in vendor lookups, and Plan mode only reads (inside an investigation, only that one). AI working in an investigation that can sync, including a team investigation viewed without syncing it, does not list, search or read local-only investigations, and turning off local-only (Cloud Sync or Keep on this device) for an investigation that holds AI-written content asks first. **Settings → AI → Where AI data goes** shows the route AI requests take (local model, browser extension or team server); a local model with an endpoint is called directly (chat titles and conversation summaries still go to it through the extension), and with no route nothing is sent
 
 ---
 
@@ -109,7 +110,7 @@ Deploy a team of AI analysts that run autonomously in the background, enriching 
 
 These agents run in the open client. Server-side AgentCaddy handoff and the legacy server integration runner are unavailable; saved definitions and history are retained. Client integration execution and team template sharing remain supported.
 
-#### The 17 Built-in Analyst Profiles
+#### The 18 Built-in Analyst Profiles
 
 | Role | Profile | Focus |
 |------|---------|-------|
@@ -128,31 +129,31 @@ These agents run in the open client. Server-side AgentCaddy handoff and the lega
 | 📜 Compliance Officer | Observer | GDPR, HIPAA, PCI-DSS, SOX, NIST framework mapping |
 | 📢 Communications Lead | Observer | Customer notification, press statements, PR messaging |
 | 🏢 Business Continuity | Observer | Operational impact, RTO/RPO, recovery actions |
-| 🔗 Pattern Hunter | Cross-case | Shared IOCs, TTPs, campaign connections across all investigations |
-| 📝 Reporter | Cross-case | Structured report generation, IOC stats, timeline coverage |
+| 🔗 Pattern Hunter | Cross-case | Shared IOCs, TTPs, campaign connections across investigations, when deployed in a local-only investigation |
+| 📝 Reporter | Specialist | Structured report generation, IOC stats, timeline coverage |
+| 🛡️ Forensicate Scanner | Specialist | Basic check of investigation content for common prompt-injection patterns; the check runs on this device, and like every agent it sends what it reads to your AI model |
 
-**Executives** can spawn and dismiss other agents. **Observers** have read-only access to technical entities. **Cross-case** agents see across all investigations.
+**Executives** can propose spawning, defining and dismissing agents; each proposal waits for your approval. **Observers** have read-only access to technical entities. **Pattern Hunter** compares investigations only from a local-only investigation; in one that can sync, its cross-investigation tools are off. No other built-in agent reads or changes other investigations; a custom profile that lists the cross-investigation tools, such as a duplicated Pattern Hunter, behaves like Pattern Hunter.
 
 #### How It Works
 
 - **Parallel execution** — Up to 5 deployments run concurrently via `Promise.allSettled`; falls back to serial for local LLMs. Each deployment has its own audit thread
-- **Policy controls** — 5 action classes (read / enrich / fetch / create / modify) with per-class auto-approve toggles and per-agent allowed tool lists
+- **Policy controls** — Auto-approve toggles for reads, enrichment, fetches, creates and changes, plus per-agent allowed tool lists. An investigation's saved toggles limit every agent deployed in it; an agent's own settings can only be stricter. Automatic fetches reach only fixed reference sites (NVD, CVE, CWE, MITRE ATT&CK, CISA, FIRST), and automatic enrichment runs only built-in vendor lookups. Other web pages, skills, agent changes, and writes or outbound calls taken from reply text always need approval, and calls into other investigations are refused (Pattern Hunter's comparisons aside), whatever the toggles. Lead and executive agents delegate and review tasks inside the investigation without approval, whatever the toggles. "Approve all" runs routine actions inside the investigation only
 - **Agent Meetings** — Trigger a round-robin discussion between deployed agents (`call_meeting`). Produces structured meeting minutes saved as a Note
-- **Supervisor** — Global cross-investigation agent running on a timer. Identifies shared IOCs, stale cases, and emerging patterns; writes findings to a dedicated system investigation
+- **Supervisor** — Global cross-investigation agent running on a timer. Identifies shared IOCs, stale cases, and emerging patterns; keeps its findings in a local-only "CaddyAgent Supervisor" investigation. Its writes into other investigations wait for approval as proposals that carry a fixed note rather than its reasoning, and it cannot reach the network or change agents
 - **Handoffs & Shift States** — Agents are either `active` or `resting`. Shift changes trigger a handoff call where the outgoing agent briefs the incoming one
-- **Adaptive scheduling** — High success rates shorten cycle intervals; persistent errors throttle and flag for review
-- **Agent Souls** — Executives can reflect on performance and accumulate persistent cross-investigation memory via `reflect_on_performance` and `read_soul`
+- **Adaptive scheduling** — An investigation whose agents' actions mostly wait for review runs its cycles half as often (no success-based speed-up); after an error, its agents retry after 1, 2 and 4 minutes (twice that while slowed down), then stop. Only the agent with a pending proposal pauses
+- **Agent Souls** — Executives accumulate persistent cross-investigation memory: `reflect_on_performance` proposes a lesson that waits for your approval, and `read_soul` reads them back. An approved dismissal adds a dated lesson, without the dismissal's text, to the dismissed agent's soul
 - **War Bridges** — Emergency all-hands meetings triggered by critical findings (`declare_war_bridge`); escalates to CISO immediately
 - **Agent Metrics** — Each deployment tracks cycles, tool calls, and token usage
 
 #### Agent Hosts — External Skills
 
-Connect any REST API as an agent skill source:
+REST endpoints that expose skills through `GET /skills` and `POST /execute` (see [agent hosts](docs/agent-hosts.md)):
 
-- Configure endpoints in **Settings > AI > Agent Hosts** with a name, URL, and optional bearer token
-- Agents discover available skills via `GET /skills` at startup
-- Skills are executed via `POST /execute` and appear as `host:<name>:<skill>` tools in agent prompts
-- Action class hints from the host API (`fetch`, `create`, `enrich`, `modify`) integrate with the policy system automatically
+- A local LLM endpoint can still offer skills: **Settings → AI → Discover Skills** lists them as `local:<skill>` tools
+- Named hosts (`host:<name>:<skill>`) can no longer be added or edited. Hosts configured in an earlier version are listed under **Settings → AI → Where AI data goes** with Remove; they must use https (plain http only on localhost)
+- Every skill call that CaddyAI or an agent makes needs approval, whatever action class the host declares. Plan mode, the supervisor and the agent bridge do not use skills
 
 ---
 
@@ -207,7 +208,7 @@ Connect any REST API as an agent skill source:
 
 ### Browser Extension
 
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or load the Firefox build manually — see [extension/README.md](extension/README.md).
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or load the Firefox build manually — see [extension/README.md](extension/README.md). At the time of the 2.0.3 release the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch (it needs 1.1.3 or later). For web fetch, install 1.1.4 manually from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest) with the [manual install steps](extension/README.md#install--chrome) (in Firefox it is a temporary add-on until a signed build is available), approve ThreatCaddy in its popup, and keep only that extension enabled.
 
 The extension connects to any ThreatCaddy instance: the hosted app, a self-hosted server, a local dev build, or a standalone `file://` HTML file.
 
@@ -234,7 +235,7 @@ Three optional permissions — each toggled from the popup:
 | Permission | What it enables |
 |------------|----------------|
 | **Allow CaddyAI** | Grants the extension access to LLM provider APIs (Anthropic, OpenAI, Google, Mistral) so the browser can proxy AI requests from the app |
-| **Allow URL fetching** | Enables the `/fetch` command and non-localhost local LLMs |
+| **Allow URL fetching** | Enables web fetch for `/fetch` and CaddyAI's `fetch_url` tool (public addresses only). The app sends chat, agent, meeting and supervisor requests to a configured local LLM endpoint directly, not through the extension; chat titles and conversation summaries still reach it through the extension, which needs that endpoint saved in its local-AI setting |
 | **Allow file URL access** | Required to send clips to `file://` standalone builds. Managed in `chrome://extensions` → ThreatCaddy — the toggle in the popup shows the current state |
 
 #### Standalone File Support
@@ -311,7 +312,7 @@ pnpm build:single     # Standalone HTML → dist-single/index.html
 
 ## Browser Extension
 
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or see [extension/README.md](extension/README.md) for Firefox and manual install instructions.
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or see [extension/README.md](extension/README.md) for Firefox and manual install instructions. At the time of the 2.0.3 release the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch; for web fetch, install 1.1.4 manually from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest) with the [manual install steps](extension/README.md#install--chrome).
 
 To build from source:
 

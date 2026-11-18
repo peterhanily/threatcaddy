@@ -1,6 +1,12 @@
 {
   "catalog.teamInvalid": "Einige Teamvorlagen sind ungültig und wurden nicht geladen.",
   "catalog.teamUnavailable": "Teamvorlagen konnten nicht geladen werden. Prüfe deine Verbindung und aktualisiere die Liste.",
+  "team.installedDisabled": "{{name}} wurde deaktiviert installiert. Es kann Daten senden an: {{domains}}. Prüfe es und aktiviere es dann im Tab „Installiert“.",
+  "team.installedDisabledNoDomains": "{{name}} wurde deaktiviert installiert. Es sendet keine Webanfragen. Prüfe es und aktiviere es dann im Tab „Installiert“.",
+  "fetch.privateTarget": "Nur öffentliche http(s)-Adressen ohne Zugangsdaten können abgerufen werden. Private, lokale und als IP-Adresse angegebene Ziele sind nicht erlaubt.",
+  "fetch.tooLong": "Adressen mit mehr als 2048 Zeichen können nicht abgerufen werden. Kürze die URL und versuche es erneut.",
+  "fetch.updateExtension": "Der Webabruf benötigt die ThreatCaddy-Erweiterung 1.1.3 oder neuer, freigegeben für diese App. Wenn der Erweiterungs-Store deines Browsers kein Update anbietet, installiere die neueste Version aus den ThreatCaddy-Releases auf GitHub. Lass nur die neueste ThreatCaddy-Erweiterung installiert und lade dann die Seite neu.",
+  "fetch.bridgeTimeout": "Zeitüberschreitung der Erweiterungsbrücke. Stelle sicher, dass die ThreatCaddy-Erweiterung installiert ist und die Seite nach der Installation neu geladen wurde.",
   "builtin.vtIpLookup.name": "VirusTotal IP-Abfrage",
   "builtin.vtIpLookup.description": "IP-Adresse bei VirusTotal abfragen, um Reputation, Geolokalisierung und Analysestatistiken abzurufen.",
   "builtin.vtIpLookup.config.apiKey.label": "API-Schlüssel",

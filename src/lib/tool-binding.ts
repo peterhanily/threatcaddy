@@ -2,11 +2,11 @@ import type { Settings, ToolUseBlock } from '../types';
 import { workspaceStorageKey } from './workspace-profiles';
 
 export const isDynamicTool = (name: string) => name.startsWith('host:') || name.startsWith('local:');
-function canonical(value: unknown): string {
+export function canonicalJSON(value: unknown): string {
   if (value === undefined) return 'null';
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-  return `{${Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, val]) => `${JSON.stringify(key)}:${canonical(val)}`).join(',')}}`;
+  if (Array.isArray(value)) return `[${value.map(canonicalJSON).join(',')}]`;
+  return `{${Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, val]) => `${JSON.stringify(key)}:${canonicalJSON(val)}`).join(',')}}`;
 }
 
 /** Persist only a digest, never host credentials or schema copies. A proposal
@@ -33,7 +33,7 @@ export async function getToolBinding(tool: ToolUseBlock, folderId?: string, mode
     skill = host?.skills?.find(item => item.name === parts.join(':'));
   }
   if (!endpoint || !skill) throw new Error('Tool configuration is missing or disabled. Refresh the available tools and request approval again.');
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical({
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalJSON({
     version: 1, tool: tool.name, input: tool.input, scope: folderId ?? null, mode, endpoint: new URL(endpoint).href,
     hostId, credential, skill,
   })));

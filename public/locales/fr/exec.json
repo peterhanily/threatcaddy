@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "Événements cette semaine",
   "metrics.aiChats": "Chats IA",
   "metrics.graphNodes": "Nœuds du graphe",
+  "dashboard.analystModeBanner": "Mode analyste — optimisé pour ordinateur",
   "dashboard.backToExecView": "Retour à la Vue direction",
   "dashboard.switchToLight": "Passer au thème clair",
   "dashboard.switchToDark": "Passer au thème sombre",

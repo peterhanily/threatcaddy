@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "Sự kiện tuần này",
   "metrics.aiChats": "Trò chuyện AI",
   "metrics.graphNodes": "Nút đồ thị",
+  "dashboard.analystModeBanner": "Chế độ phân tích viên — tối ưu cho máy tính",
   "dashboard.backToExecView": "Quay lại Chế độ điều hành",
   "dashboard.switchToLight": "Chuyển sang giao diện sáng",
   "dashboard.switchToDark": "Chuyển sang giao diện tối",

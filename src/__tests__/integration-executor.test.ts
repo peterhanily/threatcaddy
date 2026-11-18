@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { IntegrationExecutor } from '../lib/integration-executor';
-import type { ExecutionInput, ExecutionCallbacks } from '../lib/integration-executor';
+import type { ExecutionInput, ExecutionCallbacks, ExecutionOptions } from '../lib/integration-executor';
 import type {
   IntegrationTemplate,
   InstalledIntegration,
@@ -95,7 +95,7 @@ describe('IntegrationExecutor', () => {
   });
 
   describe('required configuration preflight', () => {
-    it.each(['direct', 'bridge', 'server'])('returns a failed run before any %s transport or step/output side effects', async transport => {
+    it.each(['direct', 'bridge'])('returns a failed run before any %s transport or step/output side effects', async transport => {
       const template = makeTemplate([
         { id: 'create', type: 'create-entity', label: 'Create', entityType: 'note', fields: { title: 'Must not run' } },
         { id: 'http', type: 'http', label: 'Fetch', method: 'GET', url: 'https://example.com/' },
@@ -112,18 +112,15 @@ describe('IntegrationExecutor', () => {
       const callbacks = makeCallbacks({ onCreateEntity: vi.fn(), onUpdateEntity: vi.fn(), onNotify: vi.fn() });
       const postMessage = vi.spyOn(window, 'postMessage').mockImplementation(() => {});
       const timer = vi.spyOn(globalThis, 'setTimeout');
-      const getAccessToken = vi.fn();
       if (transport === 'bridge') document.documentElement.dataset.tcBridgeCaps = 'proxy_fetch';
       try {
-        const result = await executor.run(template, makeInstallation({ apiKey: ' ', otherSecret: 'fictional-secret-value' }), makeInput(), callbacks, undefined,
-          transport === 'server' ? { useServerProxy: { serverUrl: 'https://team.example', getAccessToken } } : undefined);
+        const result = await executor.run(template, makeInstallation({ apiKey: ' ', otherSecret: 'fictional-secret-value' }), makeInput(), callbacks);
         expect(result).toMatchObject({ status: 'error', outputSummary: 'Failed', entitiesCreated: 0, entitiesUpdated: 0, apiCallsMade: 0, log: [] });
         expect(result.error).toBe('Configure valid integration settings before running: API key.');
         expect(result.displayResults).toBeUndefined();
         expect(JSON.stringify(result)).not.toContain('fictional-secret-value');
         expect(mockFetch).not.toHaveBeenCalled();
         expect(postMessage).not.toHaveBeenCalled();
-        expect(getAccessToken).not.toHaveBeenCalled();
         expect(timer).not.toHaveBeenCalled();
         for (const callback of Object.values(callbacks)) expect(callback).not.toHaveBeenCalled();
       } finally {
@@ -202,6 +199,20 @@ describe('IntegrationExecutor', () => {
       expect(result.apiCallsMade).toBe(1);
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(mockFetch.mock.calls[0][0]).toBe('https://api.example.com/ip/1.2.3.4');
+    });
+
+    it('never requests the team server /api/proxy-fetch route, which the server does not mount', async () => {
+      mockFetch.mockResolvedValueOnce(mockJsonResponse({ ok: true }));
+      const getAccessToken = vi.fn(async () => 'fictional-token');
+      const retiredOption = { useServerProxy: { serverUrl: 'https://team.example', getAccessToken } } as unknown as ExecutionOptions;
+      const template = makeTemplate([{ id: 'fetch', type: 'http', label: 'Fetch', method: 'GET', url: 'https://example.com/ip/1.2.3.4' }]);
+
+      const result = await executor.run(template, makeInstallation(), makeInput(), makeCallbacks(), undefined, retiredOption);
+
+      expect(result.status).toBe('success');
+      expect(mockFetch).toHaveBeenCalledExactlyOnceWith('https://example.com/ip/1.2.3.4', expect.any(Object));
+      expect(mockFetch.mock.calls.map(([url]) => String(url))).not.toContainEqual(expect.stringContaining('/api/proxy-fetch'));
+      expect(getAccessToken).not.toHaveBeenCalled();
     });
   });
 

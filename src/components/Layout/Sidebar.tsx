@@ -15,6 +15,13 @@ import { useNavigation } from '../../contexts/NavigationContext';
 import { useInvestigation } from '../../contexts/InvestigationContext';
 import { useUIModals } from '../../contexts/UIModalContext';
 
+/** The AgentCaddy row names every agent status but idle. */
+const AGENT_STATUS_KEYS = {
+  running: 'sidebar.agentStatusRunning', waiting: 'sidebar.agentStatusWaiting', paused: 'sidebar.agentStatusPaused', error: 'sidebar.agentStatusError',
+} as const;
+/** The selected investigation's status, named as its details dialog names it (singular, unlike the list's tabs). */
+const INVESTIGATION_STATUS_KEYS = { active: 'detail.active', closed: 'detail.closed', archived: 'detail.archived' } as const;
+
 interface SidebarProps {
   collapsed: boolean;
   onToggleCollapsed: () => void;
@@ -66,6 +73,7 @@ export function Sidebar({
   onToggleAgent,
 }: SidebarProps) {
   const { t } = useTranslation('common');
+  const { t: tInvestigations } = useTranslation('investigations');
 
   // Context hooks
   const { activeView, selectedTimelineId, setSelectedTimelineId, selectedWhiteboardId, setSelectedWhiteboardId, navigateTo } = useNavigation();
@@ -254,7 +262,8 @@ export function Sidebar({
               {!selectedFolder.color && (
                 <div className={cn('w-2 h-2 rounded-full shrink-0', statusColor)} />
               )}
-              <span className="text-sm font-medium text-text-primary truncate flex-1">{selectedFolder.name}</span>
+              {/* Its own direction, so a long Latin name is cut at its end in RTL; aligned by the page's direction. */}
+              <span dir="auto" className="text-sm font-medium text-text-primary truncate flex-1 text-left [[dir=rtl]_&]:text-right">{selectedFolder.name}</span>
               <SettingsIcon size={12} className="text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0" />
             </div>
             {investigationScopedCounts && (
@@ -267,7 +276,7 @@ export function Sidebar({
             )}
             <div className="flex items-center gap-2 mt-1">
               <span className={cn('text-[10px] font-medium uppercase tracking-wide', statusTextColor)}>
-                {selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
+                {tInvestigations(INVESTIGATION_STATUS_KEYS[selectedStatus])}
               </span>
             </div>
           </button>
@@ -284,7 +293,7 @@ export function Sidebar({
                   agentStatus === 'error' && 'bg-red-400/10 text-red-400',
                   agentStatus === 'paused' && 'bg-surface-raised text-text-muted',
                 )}>
-                  {agentStatus}
+                  {t(AGENT_STATUS_KEYS[agentStatus])}
                 </span>
               )}
             </div>

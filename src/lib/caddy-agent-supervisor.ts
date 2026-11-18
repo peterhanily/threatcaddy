@@ -11,11 +11,11 @@ import { nanoid } from 'nanoid';
 import type { Folder, Settings, ChatThread, ChatMessage, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
 import { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
 import { executeTool, buildSystemPrompt } from './llm-tools';
-import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
+import { agentRefusal, hasServerSession, resolveRoute, sendViaExtension, sendViaServer, sendDirectToLocal, unavailableRouteError } from './llm-router';
 import { notifyDesktop } from './desktop-notifications';
-import { parseToolCallsFromText } from './caddy-agent';
+import { isFolderLocalOnly } from './ai-scope';
 import { SUPERVISOR_TOOLS, SUPERVISOR_ACTION_PROFILE, getSupervisorToolPermission, validateSupervisorDispatch } from './supervisor-tool-policy';
-import { queueAgentAction } from './agent-action-approval';
+import { queueAgentAction } from './agent-action-queue';
 import { toolExecutionError, type ToolExecutionResult } from './llm-tool-execution';
 import { cancellableRequest } from './request-cancellation';
 
@@ -87,24 +87,21 @@ function callLLM(opts: {
       tools: opts.tools,
       endpoint: opts.endpoint,
     };
-    const toolNames = (opts.tools || []).map(t => t.name);
     const callbacks = {
       onChunk: (content: string) => { if (!lifecycle.signal.aborted) accumulated += content; },
       onDone: (_stopReason: string, contentBlocks: unknown[]) => {
         if (lifecycle.signal.aborted) return;
+        // Structured calls only: tool calls spelled out in model text never run.
         const blocks = contentBlocks as ContentBlock[];
-        let toolCalls = blocks.filter(
+        const toolCalls = blocks.filter(
           (b): b is ToolUseBlock => b.type === 'tool_use' && !!b.id && !!b.name && typeof b.input === 'object'
         );
-        // Fallback text parsing
-        if (toolCalls.length === 0 && accumulated) {
-          toolCalls = parseToolCallsFromText(accumulated, toolNames);
-        }
         resolve({ content: accumulated, toolCalls });
       },
       onError: (error: string) => reject(new Error(`Supervisor LLM failed (${opts.provider}/${opts.model}): ${error || 'unknown'}`)),
     };
-    if (opts.useServerProxy) sendViaServer(request, callbacks, lifecycle.signal);
+    if (opts.provider === 'local' && opts.endpoint) sendDirectToLocal(request, callbacks, lifecycle.signal);
+    else if (opts.useServerProxy) sendViaServer(request, callbacks, lifecycle.signal);
     else sendViaExtension(request, callbacks, lifecycle.signal);
   });
 
@@ -144,13 +141,28 @@ IMPORTANT: Use write tools judiciously. Only create tasks and links when finding
 
 // ── Main ────────────────────────────────────────────────────────────────
 
+/** The Supervisor system investigation, if it exists. Its findings come from
+ * every investigation, so it is local-only: a synced folder with this name
+ * (a teammate's, or one from an older version) is never it. */
+export async function findSupervisorFolder(): Promise<Folder | undefined> {
+  const named = await db.folders
+    .filter(folder => folder.name === SUPERVISOR_FOLDER_NAME)
+    .toArray();
+  for (const existing of named) {
+    if (await isFolderLocalOnly(existing)) return existing;
+  }
+}
+
+/** The reason stored on a supervisor proposal in another investigation: the
+ * supervisor's reasoning can quote any investigation, so it stays in its own. */
+export function supervisorProposalRationale(): Promise<string> {
+  return agentRefusal('supervisor.proposalRationale');
+}
+
 /** Get or create the Supervisor system investigation. */
 async function ensureSupervisorFolder(signal: AbortSignal): Promise<Folder> {
-  const existing = await db.folders
-    .filter(folder => folder.name === SUPERVISOR_FOLDER_NAME)
-    .first();
+  const existing = await findSupervisorFolder();
   signal.throwIfAborted();
-
   if (existing) return existing;
 
   const folder: Folder = {
@@ -161,8 +173,11 @@ async function ensureSupervisorFolder(signal: AbortSignal): Promise<Folder> {
     createdAt: Date.now(),
     description: 'Automated cross-investigation findings from CaddyAgent Supervisor',
     status: 'active',
+    localOnly: true,
   };
   await db.folders.add(folder);
+  // The investigations list loads at start; this lists the new one without a reload.
+  window.dispatchEvent(new CustomEvent('tc-folders-changed'));
   return folder;
 }
 
@@ -190,13 +205,14 @@ async function runSupervisorCycleInner(
   signal.throwIfAborted();
   const provider = (settings.llmDefaultProvider || 'anthropic') as LLMProvider;
   const model = settings.llmDefaultModel || 'claude-sonnet-4-6';
-  const serverConnected = !!settings.serverUrl;
-  const routingMode = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
-  const useServerProxy = routingMode === 'server';
+  // The route Settings → AI shows: local endpoint first, strict explicit modes, a signed-in session for the server.
+  const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(), provider });
+  if (route.route === 'unavailable') return { findings: [], escalations: [], error: await unavailableRouteError(route.reason) };
+  const useServerProxy = route.route === 'server';
 
   const apiKey = useServerProxy ? 'server-proxy' : getApiKeyForProvider(provider, settings);
   if (!useServerProxy && !apiKey) {
-    return { findings: [], escalations: [], error: `No API key configured for ${provider}` };
+    return { findings: [], escalations: [], error: await agentRefusal('refusal.noApiKey', { provider }) };
   }
 
   const endpoint = provider === 'local' ? settings.llmLocalEndpoint : undefined;
@@ -347,6 +363,10 @@ async function runSupervisorCycleInner(
         if (permission.kind === 'denied') {
           result = toolExecutionError(permission.error);
         } else if (permission.kind === 'approval-required') {
+          const rationale = permission.investigationId === supervisorFolder.id
+            ? response.content || 'Supervisor proposed action'
+            : await supervisorProposalRationale();
+          signal.throwIfAborted();
           await db.transaction('rw', db.agentActions, async () => {
             signal.throwIfAborted();
             await queueAgentAction({
@@ -355,7 +375,7 @@ async function runSupervisorCycleInner(
               agentConfigId: SUPERVISOR_ACTION_PROFILE,
               toolName: toolCall.name,
               toolInput: toolCall.input as Record<string, unknown>,
-              rationale: response.content || 'Supervisor proposed action',
+              rationale,
               severity: 'warning',
             });
             signal.throwIfAborted();
@@ -363,7 +383,7 @@ async function runSupervisorCycleInner(
           result = { result: JSON.stringify({ status: 'pending_approval', message: 'This action requires analyst approval and has been queued for review.' }), isError: false };
         } else {
           result = await executeTool(toolCall, supervisorFolder.id, undefined, {
-            allowedTools: SUPERVISOR_TOOLS,
+            surface: 'supervisor', allowedTools: SUPERVISOR_TOOLS,
             validateScope: call => validateSupervisorDispatch(call, supervisorFolder.id),
             signal,
           });

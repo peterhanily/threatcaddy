@@ -87,7 +87,6 @@
     "installedFromCatalog": "Встановлено {{name}} з каталогу спільноти",
     "installCatalogFailed": "Не вдалося встановити шаблон спільноти",
     "templateExported": "Експортовано {{name}}",
-    "installedFromTeam": "Встановлено {{name}} з команди",
     "installTeamFailed": "Не вдалося встановити шаблон команди",
     "notFound": "Інтеграцію не знайдено",
     "completed": "Інтеграція «{{name}}» виконана успішно",

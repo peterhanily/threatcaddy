@@ -1,6 +1,12 @@
 {
   "catalog.teamInvalid": "部分团队模板无效，未能加载。",
   "catalog.teamUnavailable": "无法加载团队模板。请检查网络连接并刷新。",
+  "team.installedDisabled": "{{name}} 已安装，但处于停用状态。它可能向以下地址发送数据：{{domains}}。请先审核，然后在“已安装”标签页中启用。",
+  "team.installedDisabledNoDomains": "{{name}} 已安装，但处于停用状态。它不会发出任何网络请求。请先审核，然后在“已安装”标签页中启用。",
+  "fetch.privateTarget": "只能获取不含凭据的公共 http(s) 地址。不允许私有、本地和直接使用 IP 地址的目标。",
+  "fetch.tooLong": "无法获取长度超过 2048 个字符的地址。请缩短 URL 后重试。",
+  "fetch.updateExtension": "网页获取需要已批准此应用的 ThreatCaddy 扩展 1.1.3 或更高版本。如果浏览器的扩展商店没有提供更新，请从 GitHub 上的 ThreatCaddy 发布版本安装最新版本。请只保留已安装的最新 ThreatCaddy 扩展，然后重新加载页面。",
+  "fetch.bridgeTimeout": "扩展桥接超时。请确认已安装 ThreatCaddy 扩展，并且在安装后已重新加载页面。",
   "builtin.vtIpLookup.name": "VirusTotal IP 查询",
   "builtin.vtIpLookup.description": "在 VirusTotal 上查询 IP 地址的信誉、地理位置和分析统计数据。",
   "builtin.vtIpLookup.config.apiKey.label": "API 密钥",

@@ -1,6 +1,12 @@
 {
   "catalog.teamInvalid": "Bazı ekip şablonları geçersiz ve yüklenmedi.",
   "catalog.teamUnavailable": "Ekip şablonları yüklenemedi. Bağlantınızı kontrol edip yenileyin.",
+  "team.installedDisabled": "{{name}} devre dışı olarak yüklendi. Şu adreslere veri gönderebilir: {{domains}}. İnceleyin, ardından Yüklenmiş sekmesinde etkinleştirin.",
+  "team.installedDisabledNoDomains": "{{name}} devre dışı olarak yüklendi. Hiçbir web isteği göndermez. İnceleyin, ardından Yüklenmiş sekmesinde etkinleştirin.",
+  "fetch.privateTarget": "Yalnızca kimlik bilgisi içermeyen herkese açık http(s) adresleri getirilebilir. Özel, yerel ve doğrudan IP adresiyle belirtilen hedeflere izin verilmez.",
+  "fetch.tooLong": "2048 karakterden uzun adresler getirilemez. URL'yi kısaltıp yeniden deneyin.",
+  "fetch.updateExtension": "Web getirme, bu uygulama için onaylanmış ThreatCaddy uzantısının 1.1.3 veya sonraki bir sürümünü gerektirir. Tarayıcınızın uzantı mağazası güncelleme sunmuyorsa, en son sürümü GitHub'daki ThreatCaddy sürümlerinden yükleyin. Yalnızca en yeni ThreatCaddy uzantısını yüklü tutun, ardından sayfayı yeniden yükleyin.",
+  "fetch.bridgeTimeout": "Uzantı köprüsü zaman aşımına uğradı. ThreatCaddy uzantısının yüklü olduğundan ve yüklemeden sonra sayfanın yeniden yüklendiğinden emin olun.",
   "builtin.vtIpLookup.name": "VirusTotal IP Sorgusu",
   "builtin.vtIpLookup.description": "İtibar, coğrafi konum ve analiz istatistiklerini almak için VirusTotal'da bir IP adresi sorgulayın.",
   "builtin.vtIpLookup.config.apiKey.label": "API Anahtarı",

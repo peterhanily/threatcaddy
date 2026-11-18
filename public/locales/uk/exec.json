@@ -167,6 +167,7 @@
   "metrics.eventsThisWeek": "Події цього тижня",
   "metrics.aiChats": "ІІ-чати",
   "metrics.graphNodes": "Вузли графу",
+  "dashboard.analystModeBanner": "Режим аналітика — оптимізовано для комп'ютера",
   "dashboard.backToExecView": "Назад до Огляду керівництва",
   "dashboard.switchToLight": "Увімкнути світлу тему",
   "dashboard.switchToDark": "Увімкнути темну тему",

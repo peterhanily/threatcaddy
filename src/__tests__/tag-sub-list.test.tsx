@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { TagSubList } from '../components/Layout/TagSubList';
 import { ScreenshareContext } from '../hooks/ScreenshareContext';
+import i18n from '../i18n';
+import deCommon from '../../public/locales/de/common.json';
 
 const tags = [{ id: 'first', name: 'phishing', color: '#123456' }, { id: 'second', name: 'malware', color: '#654321' }];
 function props() {
@@ -212,5 +214,27 @@ describe('accessible sidebar tag controls', () => {
     expect(screen.getByRole('textbox')).toBe(input);
     expect(input).toHaveValue('Private draft name');
     expect(actions.onRenameTag).not.toHaveBeenCalled();
+  });
+});
+
+describe('sidebar tag text', () => {
+  it('shows its heading, empty state and controls in the analyst\'s language', async () => {
+    const de = deCommon as Record<string, string>;
+    for (const key of ['sidebar.tags', 'sidebar.noTags', 'sidebar.tagRename', 'sidebar.tagDelete']) expect(de[key], key).toBeTruthy();
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'common', deCommon, true, true);
+    await act(async () => { await i18n.changeLanguage('de'); });
+    try {
+      const empty = render(<TagSubList {...props()} tags={[]} />);
+      expect(screen.getByRole('button', { name: de['sidebar.tags'] })).toBeInTheDocument();
+      expect(screen.getByText(de['sidebar.noTags'])).toBeInTheDocument();
+      expect(screen.queryByText('No tags yet')).toBeNull();
+      empty.unmount();
+      render(<TagSubList {...props()} />);
+      expect(screen.getByRole('button', { name: de['sidebar.tagRename'].replace('{{name}}', 'phishing') })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: de['sidebar.tagDelete'].replace('{{name}}', 'malware') })).toBeInTheDocument();
+    } finally {
+      await act(async () => { await i18n.changeLanguage('en'); });
+    }
   });
 });

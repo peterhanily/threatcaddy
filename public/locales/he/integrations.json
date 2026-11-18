@@ -1,6 +1,12 @@
 {
   "catalog.teamInvalid": "חלק מתבניות הצוות אינן תקינות ולא נטענו.",
   "catalog.teamUnavailable": "לא ניתן לטעון את תבניות הצוות. בדקו את החיבור ורעננו.",
+  "team.installedDisabled": "{{name}} הותקן במצב מושבת. הוא יכול לשלוח נתונים אל: {{domains}}. בדקו אותו, ואז הפעילו אותו בלשונית מותקן.",
+  "team.installedDisabledNoDomains": "{{name}} הותקן במצב מושבת. הוא אינו שולח בקשות אינטרנט. בדקו אותו, ואז הפעילו אותו בלשונית מותקן.",
+  "fetch.privateTarget": "ניתן לאחזר רק כתובות http(s) ציבוריות ללא פרטי התחברות. יעדים פרטיים, מקומיים וכתובות IP מפורשות אינם מותרים.",
+  "fetch.tooLong": "לא ניתן לאחזר כתובות שאורכן עולה על 2048 תווים. קצרו את כתובת ה-URL ונסו שוב.",
+  "fetch.updateExtension": "אחזור מהאינטרנט דורש את התוסף ThreatCaddy בגרסה 1.1.3 ומעלה, כשהאפליקציה הזו מאושרת בו. אם חנות התוספים של הדפדפן לא מציעה עדכון, התקינו את הגרסה העדכנית ביותר מגרסאות ThreatCaddy ב-GitHub. השאירו מותקן רק את תוסף ThreatCaddy החדש ביותר, ואז טענו מחדש את הדף.",
+  "fetch.bridgeTimeout": "תם הזמן הקצוב לגשר התוסף. ודאו שהתוסף ThreatCaddy מותקן ושהדף נטען מחדש לאחר ההתקנה.",
   "builtin.vtIpLookup.name": "בדיקת IP ב-VirusTotal",
   "builtin.vtIpLookup.description": "בדוק כתובת IP ב-VirusTotal לקבלת מוניטין, מיקום גיאוגרפי וסטטיסטיקות ניתוח.",
   "builtin.vtIpLookup.config.apiKey.label": "מפתח API",

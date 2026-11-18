@@ -9,6 +9,7 @@ import type { AgentDeployment, AgentMeeting, Folder, Note, Settings, MeetingPurp
 import { cn, formatDate } from '../../lib/utils';
 import { db } from '../../db';
 import { runAgentMeeting, runHandoffCall } from '../../lib/caddy-agent-meeting';
+import { useToast } from '../../contexts/ToastContext';
 
 /** Valid meeting purposes surfaced in the UI. Kept in sync with MeetingPurpose.
  *  Labels/hints resolved at render time via i18n so all 21 locales work. */
@@ -48,6 +49,7 @@ export function AgentMeetingPanel({
   onNavigateToChat, onNavigateToNote, onEntitiesChanged,
 }: AgentMeetingPanelProps) {
   const { t } = useTranslation('agent');
+  const { addToast } = useToast();
   const [meetings, setMeetings] = useState<AgentMeeting[]>([]);
   const [pendingRequests, setPendingRequests] = useState<Note[]>([]);
   const [running, setRunning] = useState(false);
@@ -85,7 +87,7 @@ export function AgentMeetingPanel({
     setRunning(true);
     setShowNewMeeting(false);
 
-    await runAgentMeeting(
+    const result = await runAgentMeeting(
       folder, deployments, settings, extensionAvailable,
       agenda.trim(), maxRounds,
       (speaker, status) => setProgress(`${speaker}: ${status}`),
@@ -94,7 +96,9 @@ export function AgentMeetingPanel({
 
     setRunning(false);
     setProgress('');
-    setAgenda('');
+    // A meeting that could not run (no LLM route, no key) keeps the typed agenda and says why.
+    if (result.error) addToast('error', t('meeting.couldNotRun', { error: result.error }));
+    else setAgenda('');
     onEntitiesChanged?.();
   };
 
@@ -104,12 +108,14 @@ export function AgentMeetingPanel({
     const reqAgenda = parseAgendaFromNote(req);
     setRunning(true);
     try {
-      await runAgentMeeting(
+      const result = await runAgentMeeting(
         folder, deployments, settings, extensionAvailable,
         reqAgenda, undefined,
         (speaker, status) => setProgress(`${speaker}: ${status}`),
         reqPurpose,
       );
+      // A meeting that could not run (no LLM route, no key) leaves the request pending and says why.
+      if (result.error) { addToast('error', t('meeting.couldNotRun', { error: result.error })); return; }
       // Trash the request note so it doesn't linger as pending.
       const trashedAt = Date.now();
       await db.notes.update(req.id, { trashed: true, trashedAt, updatedAt: trashedAt });
@@ -120,7 +126,7 @@ export function AgentMeetingPanel({
       setProgress('');
       onEntitiesChanged?.();
     }
-  }, [deployments, folder, settings, extensionAvailable, onEntitiesChanged]);
+  }, [deployments, folder, settings, extensionAvailable, onEntitiesChanged, addToast, t]);
 
   const handleDismissRequest = async (req: Note) => {
     await db.notes.update(req.id, { trashed: true, trashedAt: Date.now(), updatedAt: Date.now() });
@@ -145,8 +151,10 @@ export function AgentMeetingPanel({
                 const active = deployments.filter(d => d.shift !== 'resting');
                 const resting = deployments.filter(d => d.shift === 'resting');
                 if (active.length > 0 && resting.length > 0) {
-                  await runHandoffCall(folder, active, resting, settings, extensionAvailable, (s, st) => setProgress(`${s}: ${st}`));
+                  const result = await runHandoffCall(folder, active, resting, settings, extensionAvailable, (s, st) => setProgress(`${s}: ${st}`));
                   setRunning(false);
+                  // A handoff that could not run leaves shift states unchanged and says why.
+                  if (result.error) addToast('error', t('meeting.couldNotRun', { error: result.error }));
                   onEntitiesChanged?.();
                 } else {
                   setRunning(false);

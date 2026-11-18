@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import { db } from '../db';
-import { IntegrationExecutor, type ExecutionOptions } from './integration-executor';
+import { IntegrationExecutor } from './integration-executor';
 import type { StandaloneIOC } from '../types';
 import type { InstalledIntegration, IntegrationRun, IntegrationTemplate } from '../types/integration-types';
 import { persistIOCIntegrationUpdate } from './ioc-enrichment-persistence';
@@ -19,7 +19,6 @@ export interface AutoEnrichOptions {
   investigation?: { id: string; name: string };
   getInstallationsForIOCType: (type: string) => Array<{ installation: InstalledIntegration; template: IntegrationTemplate }>;
   addRun: (run: IntegrationRun) => Promise<void>;
-  executionOptions?: ExecutionOptions;
   onComplete?: (stats: { queued: number; enriched: number; errors: number; skipped: number; missingIntegration: number }) => void;
 }
 
@@ -143,7 +142,6 @@ export async function autoEnrichImportedIOCs(
             onNotify: () => {},
           },
           lifecycle.signal,
-          options.executionOptions,
         );
 
         lifecycle.signal.throwIfAborted();

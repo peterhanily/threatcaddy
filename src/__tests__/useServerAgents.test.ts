@@ -11,6 +11,7 @@ vi.mock('../lib/agent-handoff', () => ({
   markReclaimPending: mocks.reclaim, reconcileAfterHandoff: mocks.reconcile,
 }));
 import { useServerAgents } from '../hooks/useServerAgents';
+import { useAgentDeployments } from '../hooks/useAgentDeployments';
 
 const deployment = (id: string, values: Partial<AgentDeployment> = {}): AgentDeployment => ({
   id, investigationId: 'case-one', profileId: 'profile-one', status: 'running',
@@ -38,7 +39,10 @@ describe('unavailable server agent execution', () => {
     await waitFor(async () => expect((await db.agentDeployments.get('server-owned'))?.status).toBe('paused'));
     expect(result.current.serverRegistered).toBe(false);
     expect(result.current.serverRunning).toBe(false);
-    expect(result.current.error).toBe('Server execution is unavailable.');
+    expect(result.current.serverExecutionAvailable).toBe(false);
+    // The server's English reason is not an error; the panel names the paused deployment in the analyst's language.
+    expect(result.current.error).toBeNull();
+    await waitFor(() => expect(result.current.pausedDeploymentIds).toEqual(['server-owned']));
     expect(await db.agentDeployments.get('server-owned')).toMatchObject({ handoffState: 'server', serverSideEnabled: false });
     expect(await db.agentDeployments.get('browser-only')).toEqual(deployments[1]);
     expect(await db.agentDeployments.get('already-paused')).toEqual(deployments[2]);
@@ -82,6 +86,64 @@ describe('unavailable server agent execution', () => {
     expect(mocks.recover).not.toHaveBeenCalled();
     expect(mocks.reclaim).not.toHaveBeenCalled();
   });
+
+  it('checks again when the deployments arrive after the first status answer, and pauses server-owned work then', async () => {
+    const deployments = [deployment('server-owned')];
+    await db.agentDeployments.bulkAdd(deployments);
+    const fetch = vi.fn().mockImplementation(unavailable);
+    vi.stubGlobal('fetch', fetch);
+    // The investigation's deployments load from the database after the hook's first render.
+    const { result, rerender } = renderHook(({ rows }) => useServerAgents({ investigationId: 'case-one', deployments: rows, profiles: [], enabled: false }),
+      { initialProps: { rows: [] as AgentDeployment[] } });
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect((await db.agentDeployments.get('server-owned'))?.status).toBe('running');
+    await act(async () => { rerender({ rows: deployments }); });
+    await waitFor(async () => expect((await db.agentDeployments.get('server-owned'))?.status).toBe('paused'));
+    await waitFor(() => expect(result.current.pausedDeploymentIds).toEqual(['server-owned']));
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('the agents list shows a paused deployment as paused with the notice, not at its next poll', { timeout: 10_000 }, async () => {
+    await db.agentDeployments.add(deployment('server-owned'));
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(unavailable));
+    // Wired as App wires them: the panel's badge and notice read this list, which polls only every 10 s.
+    const { result } = renderHook(() => {
+      const list = useAgentDeployments('case-one');
+      const server = useServerAgents({ investigationId: 'case-one', deployments: list.deployments, profiles: [], enabled: list.deployments.some(d => d.serverSideEnabled) });
+      return { list, server };
+    });
+    await waitFor(() => expect(result.current.server.pausedDeploymentIds).toEqual(['server-owned']));
+    await waitFor(() => expect(result.current.list.deployments).toMatchObject([{ id: 'server-owned', status: 'paused', serverSideEnabled: false }]),
+      { timeout: 3_000 });
+  });
+
+  it('the routine status check of a 2.0.x server pauses nothing and reports no error', async () => {
+    const deployments = [deployment('browser-only', { serverSideEnabled: false, handoffState: 'client', status: 'idle' })];
+    await db.agentDeployments.bulkAdd(deployments);
+    // What every 2.0.x server answers to GET /status/:investigationId.
+    const fetch = vi.fn().mockImplementation(() => new Response(JSON.stringify({ registered: false, serverRunning: false, serverExecutionAvailable: false,
+      reason: 'Server-side AgentCaddy execution is unavailable until tool restrictions, read-only policies and durable approvals are enforced.',
+      heartbeatStale: false, botCount: 0, lastHeartbeat: null }), { headers: { 'Content-Type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetch);
+    const { result } = renderHook(() => useServerAgents({ investigationId: 'case-one', deployments, profiles: [], enabled: false }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect(result.current).toMatchObject({ serverExecutionAvailable: false, error: null, pausedDeploymentIds: [] });
+    expect(await db.agentDeployments.get('browser-only')).toEqual(deployments[0]);
+  });
+
+  it('only a server that reports execution available offers server-side mode', async () => {
+    const json = (body: unknown) => new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } });
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => json({ registered: false, serverRunning: false, serverExecutionAvailable: true })));
+    const { result } = renderHook(() => useServerAgents({ investigationId: 'case-one', deployments: [], profiles: [], enabled: false }));
+    await waitFor(() => expect(result.current.serverExecutionAvailable).toBe(true));
+    // A server that does not say so is not assumed to run agents.
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => json({ registered: true, serverRunning: false })));
+    const silent = renderHook(() => useServerAgents({ investigationId: 'case-two', deployments: [], profiles: [], enabled: false }));
+    await waitFor(() => expect(silent.result.current.serverRegistered).toBe(true));
+    expect(silent.result.current.serverExecutionAvailable).toBe(false);
+  });
 });
 
 describe('server action reconciliation (compatible servers)', () => {
@@ -97,9 +159,34 @@ describe('server action reconciliation (compatible servers)', () => {
         createdAt: '2026-11-01T00:00:00.000Z', executedAt: null, reviewedAt: null }] })
       : json({})));
     renderHook(() => useServerAgents({ investigationId: 'case-one', deployments, profiles: [], enabled: true }));
-    await waitFor(async () => expect(await db.agentActions.get('server-action')).toBeDefined());
-    const stored = await db.agentActions.get('server-action');
+    await waitFor(async () => expect(await db.agentActions.get('srv:server-action')).toBeDefined());
+    const stored = await db.agentActions.get('srv:server-action');
     expect(() => validatePortableRow('agentActions', stored)).not.toThrow();
     expect(stored).toMatchObject({ threadId: '', status: 'executed' });
+  });
+
+  it('B-SRV-1 stores server rows as terminal history under the requested investigation', async () => {
+    await db.agentActions.clear();
+    mocks.reclaim.mockResolvedValue(undefined); mocks.reconcile.mockResolvedValue(undefined);
+    const deployments = [deployment('server-owned')];
+    await db.agentDeployments.bulkAdd(deployments);
+    const json = (body: unknown) => new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } });
+    const row =(id: string, values: Record<string, unknown>) => ({ id, investigationId: 'case-one', threadId: null, botConfigId: null, toolName: 'create_note',
+      toolInput: {}, rationale: 'Server cycle', status: 'executed', resultSummary: null, severity: null, createdAt: '2026-11-01T00:00:00.000Z', executedAt: null, reviewedAt: null, ...values });
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => url.includes('/status/') ? json({ registered: true, serverRunning: false })
+      : url.includes('/heartbeat') ? json({ serverWasRunning: true })
+      : url.includes('/actions/') ? json({ actions: [
+        row('proposal', { status: 'pending', investigationId: 'other', toolName: 'fetch_url', toolInput: { url: 'https://collector.example/' } }),
+        row('dynamic', { toolName: 'host:remote:run' }),
+        row('undated', { createdAt: 'not a date' }),
+        row('done', { status: 'failed', investigationId: 'other' }),
+      ] })
+      : json({})));
+    renderHook(() => useServerAgents({ investigationId: 'case-one', deployments, profiles: [], enabled: true }));
+    await waitFor(async () => expect(await db.agentActions.get('srv:done')).toBeDefined());
+    expect(await db.agentActions.get('srv:proposal')).toMatchObject({ investigationId: 'case-one', toolName: 'fetch_url', status: 'rejected', resultSummary: 'Server proposal not imported' });
+    expect(await db.agentActions.get('srv:done')).toMatchObject({ investigationId: 'case-one', status: 'failed' });
+    expect((await db.agentActions.toArray()).map(action => action.id).sort()).toEqual(['srv:done', 'srv:proposal']);
+    await waitFor(() => expect(mocks.reconcile).toHaveBeenCalledWith('server-owned', { serverActionIds: ['srv:proposal', 'srv:done'] }));
   });
 });

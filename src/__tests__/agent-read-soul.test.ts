@@ -13,7 +13,7 @@ import 'fake-indexeddb/auto';
 import { db } from '../db';
 import type { ToolUseBlock } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
-import { executeTool } from '../lib/llm-tools';
+import { execTool } from './helpers/tool-exec';
 
 const CISO_ID = 'ap-ciso';
 const SPECIALIST_ID = 'ap-threat-hunter';
@@ -65,7 +65,7 @@ describe('read_soul peer-read', () => {
   });
 
   it('self-read with no agentName still works', async () => {
-    const r = await executeTool(readSoulCall(), 'fid', { profileId: PEER_TARGET_ID });
+    const r = await execTool(readSoulCall(), 'fid', { surface: 'agent', agentContext: { profileId: PEER_TARGET_ID } });
     const parsed = JSON.parse(r.result);
     expect(parsed.error).toBeUndefined();
     expect(parsed.profile).toBe('Malware Analyst');
@@ -74,7 +74,7 @@ describe('read_soul peer-read', () => {
   });
 
   it('executive can read another agent\'s soul by name', async () => {
-    const r = await executeTool(readSoulCall('Malware Analyst'), 'fid', { profileId: CISO_ID });
+    const r = await execTool(readSoulCall('Malware Analyst'), 'fid', { surface: 'agent', agentContext: { profileId: CISO_ID } });
     const parsed = JSON.parse(r.result);
     expect(parsed.error).toBeUndefined();
     expect(parsed.profile).toBe('Malware Analyst');
@@ -84,14 +84,14 @@ describe('read_soul peer-read', () => {
   });
 
   it('executive peer-read accepts a partial-name match', async () => {
-    const r = await executeTool(readSoulCall('malware'), 'fid', { profileId: CISO_ID });
+    const r = await execTool(readSoulCall('malware'), 'fid', { surface: 'agent', agentContext: { profileId: CISO_ID } });
     const parsed = JSON.parse(r.result);
     expect(parsed.error).toBeUndefined();
     expect(parsed.profile).toBe('Malware Analyst');
   });
 
   it('non-executive caller is rejected when peer-reading', async () => {
-    const r = await executeTool(readSoulCall('Malware Analyst'), 'fid', { profileId: SPECIALIST_ID });
+    const r = await execTool(readSoulCall('Malware Analyst'), 'fid', { surface: 'agent', agentContext: { profileId: SPECIALIST_ID } });
     const parsed = JSON.parse(r.result);
     expect(parsed.error).toBeDefined();
     expect(parsed.error).toMatch(/executive/i);
@@ -99,7 +99,7 @@ describe('read_soul peer-read', () => {
   });
 
   it('peer-read with unknown agentName returns a clear error', async () => {
-    const r = await executeTool(readSoulCall('Nonexistent Agent'), 'fid', { profileId: CISO_ID });
+    const r = await execTool(readSoulCall('Nonexistent Agent'), 'fid', { surface: 'agent', agentContext: { profileId: CISO_ID } });
     const parsed = JSON.parse(r.result);
     expect(parsed.error).toMatch(/not found/i);
   });

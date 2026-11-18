@@ -22,22 +22,19 @@
     "badgeMeeting": "spotkanie",
     "planMode": "Plan",
     "actMode": "Działaj",
-    "planModeTitle": "Tryb planowania: AI proponuje, ale nie wykonuje operacji zapisu",
-    "actModeTitle": "Tryb działania: AI wykonuje akcje po zatwierdzeniu",
+    "actModeTitleV2": "Tryb działania: CaddyAI może wprowadzać zmiany i używać narzędzi. Przełącznik Pytaj/YOLO określa, co wymaga Twojego zatwierdzenia.",
     "yoloLabel": "YOLO",
-    "safeLabel": "Bezpieczny",
-    "yoloOnTitle": "Tryb YOLO WŁĄCZONY — wszystkie wywołania narzędzi są automatycznie zatwierdzane",
-    "yoloOffTitle": "Kliknij, aby włączyć tryb YOLO (automatyczne zatwierdzanie wszystkich akcji)",
     "tokSuffix": "tok",
     "tokenTotal": "Łącznie tokenów: {{total}}",
     "tokenTotalBudget": "Łącznie tokenów: {{total}} / {{budget}} budżet",
     "loopCount_one": "{{count}} pętla",
     "loopCount_other": "{{count}} pętli",
     "stopAllLoops": "Zatrzymaj wszystkie pętle",
+    "loopRetrying": "Ponawianie po błędzie",
     "exportAsNote": "Eksportuj jako notatkę",
     "shareChat": "Udostępnij czat",
     "emptyTitle": "Rozpocznij rozmowę",
-    "emptySubtitle": "Wiadomości są przechowywane lokalnie i zaszyfrowane w stanie spoczynku",
+    "emptySubtitleV2": "Wiadomości są zapisywane w tej przeglądarce. Rozmowa w śledztwie, które jest synchronizowane, trafia na jego serwer zespołu, a każde żądanie jest wysyłane tam, gdzie wskazują Ustawienia → AI.",
     "emptyFolderContext": "AI może odczytywać i tworzyć obiekty w «{{name}}»",
     "caddyAI": "CaddyAI",
     "selectThread": "Wybierz wątek, aby wyświetlić rozmowę",
@@ -54,12 +51,10 @@
     "restoreDialog": "Przywróć punkt kontrolny",
     "restoreMessage": "Spowoduje to cofnięcie zmian AI — utworzone obiekty zostaną usunięte, a zmodyfikowane przywrócone do poprzedniego stanu. Tej operacji nie można cofnąć.",
     "restoreLabel": "Przywróć",
-    "approvalTitle": "Zatwierdzić operację zapisu?",
     "approve": "Zatwierdź",
     "reject": "Odrzuć",
-    "switchedToPlan": "Przełączono na tryb planowania — AI będzie proponować bez wykonywania",
-    "switchedToAct": "Przełączono na tryb działania — AI będzie wykonywać po zatwierdzeniu",
-    "switchedToActMessage": "Przełączono na **tryb działania**. Wyślij «wykonaj plan», aby uruchomić proponowane akcje z kontrolą zatwierdzania, lub kontynuuj rozmowę.",
+    "switchedToActV2": "Przełączono na tryb działania. Przełącznik Pytaj/YOLO określa, co wymaga Twojego zatwierdzenia.",
+    "switchedToActMessageV2": "Przełączono na **tryb działania**. Wyślij «wykonaj plan», aby uruchomić proponowane akcje, lub kontynuuj rozmowę. Przełącznik Pytaj/YOLO określa, które akcje wymagają Twojego zatwierdzenia.",
     "errorCreateThread": "Nie udało się utworzyć wątku czatu. Spróbuj odświeżyć stronę.",
     "settingsAiLlm": "Ustawienia → AI/LLM",
     "errorNoLocalEndpoint": "Brak skonfigurowanego punktu końcowego lokalnego LLM. Dodaj go w Ustawienia → AI/LLM.",
@@ -74,10 +69,51 @@
     "onboardingStep2Title": "2. Zainstaluj rozszerzenie przeglądarki",
     "onboardingStep2Desc": "CaddyAI wymaga rozszerzenia przeglądarki ThreatCaddy do proxy żądań API.",
     "onboardingStep3Title": "3. Włącz uprawnienia",
-    "onboardingStep3Desc": "W wyskakującym oknie rozszerzenia włącz «Zezwól CaddyAI» dla dostępu do dostawców AI i «Zezwól na pobieranie URL» dla narzędzia /fetch.",
+    "onboardingStep3Desc": "W wyskakującym oknie rozszerzenia włącz «Zezwól CaddyAI» dla dostępu do dostawców AI i «Zezwól na pobieranie URL» dla narzędzia <cmd>/fetch</cmd>.",
     "onboardingDismiss": "Rozumiem",
     "loopCount_few": "{{count}} pętle",
     "loopCount_many": "{{count}} pętli"
+  },
+  "mode": {
+    "planTitleV2": "Tryb planowania: CaddyAI tylko odczytuje dane, a wszystko inne opisuje jako plan. W śledztwie odczytuje tylko to śledztwo; poza jakimkolwiek śledztwem może odczytać wszystkie.",
+    "switchedToPlanV2": "Przełączono na tryb planowania. CaddyAI tylko odczytuje dane, a wszystko inne opisuje jako plan.",
+    "askLabel": "Pytaj",
+    "yoloOnTitleV2": "YOLO włączone: większość zmian i wbudowanych wyszukiwań u dostawców jest wykonywana bez pytania. Strony internetowe, umiejętności, inne integracje oraz zmiany w innych śledztwach lub w agentach nadal wymagają Twojego zatwierdzenia, podobnie jak odczyt innych śledztw ze śledztwa, które może być synchronizowane. Wyszukiwanie u dostawców pomija inne integracje zamiast pytać; wyłącz YOLO, aby je zatwierdzić.",
+    "yoloOffTitleV2": "CaddyAI pyta przed każdą zmianą, stroną internetową, wyszukiwaniem u dostawców, umiejętnością lub inną integracją oraz przed odczytem innych śledztw ze śledztwa, które może być synchronizowane. Kliknij, aby włączyć YOLO: większość zmian i wbudowanych wyszukiwań u dostawców będzie wtedy wykonywana bez pytania, z wyjątkiem zmian w innych śledztwach lub w agentach.",
+    "yoloInPlanTitle": "W trybie planowania CaddyAI tylko odczytuje dane; przełącznik Pytaj/YOLO działa tylko w trybie działania. {{setting}}"
+  },
+  "approval": {
+    "position": "{{index}} z {{total}}",
+    "title": {
+      "write": "Zatwierdzić zmianę w tym śledztwie?",
+      "writeUnfiled": "Zatwierdzić zmianę poza jakimkolwiek śledztwem?",
+      "egress": "Wysłać dane poza ThreatCaddy?",
+      "lookupNothingSent": "Zatwierdzić wzbogacanie IOC?",
+      "crossRead": "Odczytać inne śledztwa?",
+      "crossWrite": "Zmienić inne śledztwo?",
+      "agentControl": "Zmienić agentów AI?",
+      "harvested": "Uruchomić wywołanie narzędzia znalezione w tekście odpowiedzi?"
+    },
+    "opensPage": "Otwiera stronę w {{host}}. Witryna otrzymuje pełny adres.",
+    "lookup": "Wysyła {{value}} do: {{vendors}}",
+    "lookupNone": "Nic nie jest wysyłane: żadne włączone wyszukiwanie nie dotyczy {{value}}.",
+    "sendsTo": "Wysyła to żądanie do {{destination}}.",
+    "agentChange": "Zmienia agentów AI pracujących w tym śledztwie.",
+    "readsOthers": "Odczytuje inne śledztwa, nie tylko to.",
+    "targetSynced": "{{name}}: synchronizowane z członkami",
+    "targetSyncsLater": "{{name}}: pozostaje na tym urządzeniu do czasu połączenia serwera zespołu",
+    "targetLocal": "{{name}}: pozostaje na tym urządzeniu",
+    "unfiled": "Poza jakimkolwiek śledztwem: pozostaje na tym urządzeniu",
+    "conversationSyncs": "To, co odczyta, stanie się częścią tej rozmowy, która jest synchronizowana z członkami «{{name}}».",
+    "conversationSyncsLater": "To, co odczyta, stanie się częścią tej rozmowy, która zostanie zsynchronizowana z członkami «{{name}}» po połączeniu serwera zespołu.",
+    "flag": {
+      "untrustedHost": "To nie jest żadna z wbudowanych witryn referencyjnych.",
+      "urlCarriesData": "Adres jest na tyle długi, że może przenosić dane ze śledztwa.",
+      "hostIsIoc": "Ta witryna jest IOC w tym śledztwie. Jej odwiedzenie może zaalarmować atakującego.",
+      "harvested": "To wywołanie pochodzi z tekstu odpowiedzi, a nie zostało wysłane jako wywołanie narzędzia, więc mogła je wytworzyć wstrzyknięta treść.",
+      "readForeign": "Wcześniej w tej odpowiedzi CaddyAI odczytał inne śledztwo. Ta akcja może przenosić te dane."
+    },
+    "details": "Szczegóły"
   },
   "input": {
     "noApiKeys": "Brak skonfigurowanych kluczy API — dodaj jeden w Ustawienia → AI/LLM",
@@ -166,9 +202,26 @@
   },
   "cti": {
     "invalidCommand": "Nie udało się wykonać tego polecenia CTI:",
-    "noSources": "Nie skonfigurowano żadnych źródeł CTI Agent Host. Dodaj host CTI w Ustawienia → AI → Agent Hosts, aby użyć tego polecenia."
+    "noSourcesV2": "Brak dostępnych źródeł CTI. Nazwanych hostów agentów nie można już konfigurować w tej wersji.",
+    "hostNeedsHttps": "Brak dostępnych źródeł CTI. Host agenta CTI nie jest używany, ponieważ wymaga https (zwykłe http działa tylko na tym komputerze). Zobacz Ustawienia → AI."
+  },
+  "fetch": {
+    "createdNote": "Utworzono notatkę **{{title}}** z {{url}}",
+    "failed": "Nie udało się pobrać URL: {{error}}",
+    "unknownError": "Nieznany błąd"
+  },
+  "loop": {
+    "started": "Uruchomiono pętlę w tle `{{id}}`. Wykonywana co {{interval}}:",
+    "stopHint": "Użyj `/stoploop`, aby ją zatrzymać.",
+    "stopped_one": "Zatrzymano {{count}} pętlę w tle.",
+    "stopped_few": "Zatrzymano {{count}} pętle w tle.",
+    "stopped_many": "Zatrzymano {{count}} pętli w tle.",
+    "stopped_other": "Zatrzymano {{count}} pętli w tle.",
+    "noneToStop": "Brak aktywnych pętli do zatrzymania."
   },
   "input.serverStatus": "Trasa przez serwer zespołu",
   "input.serverModelsHelp": "Dostępni dostawcy i modele zależą od konfiguracji serwera zespołu.",
-  "input.modelLabel": "Model AI"
+  "input.modelLabel": "Model AI",
+  "input.localModels": "Lokalne",
+  "input.localModel": "Lokalny: {{name}}"
 }

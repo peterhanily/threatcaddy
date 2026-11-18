@@ -86,7 +86,6 @@
     "installedFromCatalog": "{{name}} הותקן מקטלוג הקהילה",
     "installCatalogFailed": "התקנת תבנית קהילה נכשלה",
     "templateExported": "{{name}} יוצא",
-    "installedFromTeam": "{{name}} הותקן מהצוות",
     "installTeamFailed": "התקנת תבנית צוות נכשלה",
     "notFound": "אינטגרציה לא נמצאה",
     "completed": "אינטגרציה \"{{name}}\" הושלמה בהצלחה",

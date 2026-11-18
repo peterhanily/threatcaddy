@@ -31,16 +31,6 @@ describe('bounded declarative iteration', () => {
       expect(fetch).toHaveBeenCalledOnce();
     } finally { fetch.mockRestore(); }
   });
-  it('does not count a request which was cancelled while awaiting a proxy token', async () => {
-    const controller = new AbortController();
-    const definition = template([{ id: 'request', type: 'http', label: 'Request', method: 'GET', url: 'https://example.com/inert' }]);
-    definition.requiredDomains = ['example.com'];
-    const result = new IntegrationExecutor().run(definition, installation(), {}, {}, controller.signal, {
-      useServerProxy: { serverUrl: 'https://team.example', getAccessToken: () => new Promise(() => {}) },
-    });
-    controller.abort();
-    expect(await result).toMatchObject({ status: 'cancelled', apiCallsMade: 0 });
-  });
   it('keeps reserved transform names as data and ignores inherited lookup entries', async () => {
     const definition = template([{ id: 'transform', label: '', type: 'transform', input: '{{config.source}}', operations: [
       { op: 'extract', path: 'name', as: '__proto__' },

@@ -1,35 +1,39 @@
 import { persistChatCompletion } from '../../lib/locked-chat-recovery';
-import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useId, useSyncExternalStore, type KeyboardEvent } from 'react';
 import { Virtuoso } from 'react-virtuoso';
-import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, Check, X, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, ToolUseBlock } from '../../types';
 import { ClsSelect } from '../Common/ClsSelect';
 import { ClsBadge } from '../Common/ClsBadge';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { ChatMessageBubble } from './ChatMessage';
+import { ChatApprovalCard, ChatApprovalStatus } from './ChatApprovalCard';
 import { AgentCycleSummaryCard } from '../Agent/AgentCycleSummaryCard';
 import { ChatInput } from './ChatInput';
 import { useLLM } from '../../hooks/useLLM';
 import { DEFAULT_MODEL_PER_PROVIDER } from '../../lib/models';
 import { cn, formatDate } from '../../lib/utils';
 import { nanoid } from 'nanoid';
-import { TOOL_DEFINITIONS, buildSystemPrompt, executeTool, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
-import { getHostToolDefinitions, executeHostSkill } from '../../lib/agent-hosts';
-import { getToolExecutionError, toolExecutionError, type ToolExecutionConstraints } from '../../lib/llm-tool-execution';
+import { TOOL_DEFINITIONS, buildSystemPrompt, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
+import { getHostToolDefinitions, executeHostSkill, isHttpsOrLoopback } from '../../lib/agent-hosts';
+import { mintHumanApproval, type HumanApproval } from '../../lib/human-approval';
+import { createChatToolExecutor, type ApprovalItem } from '../../lib/chat-tool-executor';
+import { isPlanModeTool } from '../../lib/tool-reach';
 import { parseCtiSlashCommand, planCtiSourceRequests, normalizeCtiSourceRunResult, renderCtiRunMarkdown } from '../../lib/cti-source-formatting';
 import { generateChatTitle } from '../../lib/chat-utils';
 import { truncateConversation, summarizeConversation, MAX_CONTEXT_MESSAGES } from '../../lib/chat-utils';
 import { db } from '../../db';
 import { useChatLoops } from '../../hooks/useChatLoops';
-import { hasLoopsForThread } from '../../lib/chat-loop';
-import { resolveMentions } from '../../lib/chat-mentions';
+import { hasLoopsForThread, type LoopTransport } from '../../lib/chat-loop';
+import { hasMentionToken, resolveMentions } from '../../lib/chat-mentions';
+import { isShareableFolder } from '../../lib/ai-scope';
+import { isSyncWorkspaceBound } from '../../lib/sync-workspace';
 import { executeCheckpointedTool, restoreCheckpoint } from '../../lib/checkpoints';
-import { getToolBinding } from '../../lib/tool-binding';
 import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCustomSlashCommands';
 import { useToast } from '../../contexts/ToastContext';
 import { supportsVision, describeImage } from '../../lib/image-ocr';
-import { resolveRoutingMode } from '../../lib/llm-router';
+import { hasServerSession, resolveRoute, unavailableRouteError } from '../../lib/llm-router';
 import { chatThreadGroups } from '../../lib/folder-tree';
 import { useImageAttachments } from '../../hooks/useImageAttachments';
 import { hasComposerDrafts, subscribeComposerDrafts, discardAllComposerDrafts } from '../../lib/chat-composer-drafts';
@@ -67,6 +71,14 @@ interface ChatViewProps {
   onOpenSettings?: (tab?: string) => void;
 }
 
+/** A queued approval card; resolve(null) rejects it. */
+interface PendingApproval {
+  id: string;
+  item: ApprovalItem;
+  threadId: string;
+  resolve: (approval: HumanApproval | null) => void;
+}
+
 export function ChatView({
   threads,
   onCreateThread,
@@ -85,11 +97,14 @@ export function ChatView({
   const { extensionAvailable, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
   const { t } = useTranslation('chat');
   const { addToast } = useToast();
-  const { serverUrl, user } = useAuth();
-  const serverConnected = !!serverUrl && !!user;
-  const effectiveRoute = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
+  // Re-render on sign-in and sign-out. The route reads the stored session, as Settings → AI does.
+  useAuth();
+  const serverSession = hasServerSession();
+  // Where cloud models go; a local model with an endpoint is always called directly.
+  const cloudRoute = resolveRoute(settings, { extensionAvailable, serverSession }).route;
+  const localRoute = resolveRoute(settings, { extensionAvailable, serverSession, provider: 'local' }).route;
   const hasLocalLLM = !!settings.llmLocalEndpoint?.trim();
-  const canChat = extensionAvailable || serverConnected || hasLocalLLM;
+  const canChat = extensionAvailable || serverSession || hasLocalLLM;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [threadSourceFilter, setThreadSourceFilter] = useState<'all' | 'human' | 'agent' | 'meeting'>('all');
@@ -135,20 +150,24 @@ export function ChatView({
   const hasDrafts = useSyncExternalStore(subscribeComposerDrafts, hasComposerDrafts);
   const [discardDraftsOpen, setDiscardDraftsOpen] = useState(false);
 
-  // ── YOLO mode — auto-approve all write tools without prompting
+  // ── YOLO mode — auto-approve in-scope changes and passive lookups; the decision table still asks for the rest
   const [yoloMode, setYoloMode] = useState(false);
+  const yoloDescriptionId = useId();
   // Track which thread is streaming so we don't show stale content on thread switch
   const streamingThreadRef = useRef<string | undefined>(undefined);
   const yoloModeRef = useRef(false);
   useEffect(() => { yoloModeRef.current = yoloMode; }, [yoloMode]);
 
-  // ── Write tool approval flow (state declared early so handleSend can reference it)
-  const [pendingApproval, setPendingApproval] = useState<{
-    toolName: string;
-    input: Record<string, unknown>;
-    threadId: string;
-    resolve: (approved: boolean) => void;
-  } | null>(null);
+  // ── Tool approval queue, one card at a time, oldest first (declared early so handleSend can reference it)
+  const approvalQueueRef = useRef<PendingApproval[]>([]);
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
+  const settleApproval = useCallback((id: string, approval: HumanApproval | null) => {
+    const entry = approvalQueueRef.current.find(pending => pending.id === id);
+    if (!entry) return;
+    approvalQueueRef.current = approvalQueueRef.current.filter(pending => pending !== entry);
+    setPendingApprovals(approvalQueueRef.current);
+    entry.resolve(approval);
+  }, []);
 
   // Auto-select first non-folder thread when none selected (or stale selection)
   useEffect(() => {
@@ -202,7 +221,7 @@ export function ChatView({
       let defaultModel = settings.llmDefaultModel || 'claude-sonnet-4-6';
       let defaultProvider: LLMProvider = (settings.llmDefaultProvider as LLMProvider) || 'anthropic';
       // If the default provider has no API key, pick the first configured provider
-      if (effectiveRoute !== 'server' && configuredProviders.size > 0 && !configuredProviders.has(defaultProvider)) {
+      if (cloudRoute !== 'server' && configuredProviders.size > 0 && !configuredProviders.has(defaultProvider)) {
         const first = configuredProviders.values().next().value!;
         defaultProvider = first as LLMProvider;
         // Pick a sensible model for that provider
@@ -218,7 +237,7 @@ export function ChatView({
       console.error('Failed to create chat thread:', err);
       setLocalError(t('view.errorCreateThread'));
     }
-  }, [onCreateThread, onSelectThread, settings, selectedFolderId, configuredProviders, threads, selectedThreadId, effectiveRoute, t]);
+  }, [onCreateThread, onSelectThread, settings, selectedFolderId, configuredProviders, threads, selectedThreadId, cloudRoute, t]);
 
   const getApiKeyForProvider = useCallback((provider: LLMProvider, s: Settings): string | undefined => {
     switch (provider) {
@@ -226,7 +245,7 @@ export function ChatView({
       case 'openai': return s.llmOpenAIApiKey?.trim();
       case 'gemini': return s.llmGeminiApiKey?.trim();
       case 'mistral': return s.llmMistralApiKey?.trim();
-      case 'local': return s.llmLocalApiKey?.trim() || 'none';
+      case 'local': return s.llmLocalApiKey?.trim() || 'local';
       default: return undefined;
     }
   }, []);
@@ -242,6 +261,21 @@ export function ChatView({
     }
   }, []);
 
+  // Where a prompt to this provider goes now (the route Settings → AI shows), or why it cannot be sent.
+  // Chat sends and every /loop run use it, so a schedule never keeps the route it started with.
+  const resolveTransport = useCallback(async (provider: LLMProvider): Promise<LoopTransport> => {
+    const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(), provider });
+    if (route.route === 'unavailable') return { error: await unavailableRouteError(route.reason) };
+    // The server has its own keys.
+    if (route.route === 'server') return { useServerProxy: true, apiKey: 'server-proxy' };
+    if (provider === 'local' && !settings.llmLocalEndpoint) return { error: t('view.errorNoLocalEndpoint') };
+    const apiKey = getApiKeyForProvider(provider, settings);
+    if (!apiKey) return { error: t('view.errorNoApiKey', { provider: getProviderLabel(provider) }) };
+    return { useServerProxy: false, apiKey, endpoint: provider === 'local' ? settings.llmLocalEndpoint : undefined };
+  }, [settings, extensionAvailable, getApiKeyForProvider, getProviderLabel, t]);
+  const resolveTransportRef = useRef(resolveTransport);
+  useEffect(() => { resolveTransportRef.current = resolveTransport; }, [resolveTransport]);
+
   const handleSend = useCallback(async (text: string, onCommitted?: () => void) => {
     if (!activeThread || readingImages) return;
     setLocalError(null);
@@ -249,36 +283,32 @@ export function ChatView({
 
     const provider = activeThread.provider;
     const currentTokenTotal = activeThread.messages.reduce((sum, message) => sum + (message.tokenCount ? message.tokenCount.input + message.tokenCount.output : 0), 0);
-    const useServerProxy = effectiveRoute === 'server';
 
     // CTI slash commands run allowlisted host tools directly (no LLM call), so they
-    // must NOT be gated behind the LLM API-key / token-budget checks below.
+    // must NOT be gated behind the LLM route / API-key / token-budget checks below.
     const isDirectCtiCommand = parseCtiSlashCommand(text) !== null;
+    // /fetch <url> saves a page through the extension and /stoploop stops schedules; neither calls a model,
+    // so the AI route, API key and token budget do not gate them.
+    const isFetchCommand = /^\/fetch\s+https?:\/\/\S+$/i.test(text);
+    const isStopLoopCommand = /^\/stoploop$/i.test(text);
 
-    // Validate API key (skip when routing through server — server has its own keys)
-    if (!useServerProxy && !isDirectCtiCommand) {
-      if (provider === 'local' && !settings.llmLocalEndpoint) {
-        setLocalError(t('view.errorNoLocalEndpoint'));
-        setErrorHasSettingsLink(true);
-        return;
-      }
-      const apiKey = getApiKeyForProvider(provider, settings);
-      if (!apiKey) {
-        setLocalError(t('view.errorNoApiKey', { provider: getProviderLabel(provider) }));
-        setErrorHasSettingsLink(true);
-        return;
-      }
+    // No route or no key: say why and send nothing.
+    const transport = isDirectCtiCommand || isFetchCommand || isStopLoopCommand ? { useServerProxy: false, apiKey: undefined } : await resolveTransport(provider);
+    if ('error' in transport) {
+      setLocalError(transport.error);
+      setErrorHasSettingsLink(true);
+      return;
     }
-    const apiKey = useServerProxy ? 'server-proxy' : getApiKeyForProvider(provider, settings);
+    const { useServerProxy, apiKey } = transport;
 
     // Hard token budget cap — prevent sending when over budget
-    if (!isDirectCtiCommand && settings.llmTokenBudget && currentTokenTotal > settings.llmTokenBudget) {
+    if (!isDirectCtiCommand && !isFetchCommand && !isStopLoopCommand && settings.llmTokenBudget && currentTokenTotal > settings.llmTokenBudget) {
       setLocalError(t('view.errorOverBudget', `Token budget exceeded (${currentTokenTotal.toLocaleString()} / ${settings.llmTokenBudget.toLocaleString()}). Start a new thread or increase the budget in Settings > AI.`));
       return;
     }
 
     // Resolve @-mentions: replace tokens with labels for display, inject entity data for LLM
-    const { displayText: mentionDisplayText, contextBlock: mentionContext } = await resolveMentions(text);
+    const { displayText: mentionDisplayText, contextBlock: mentionContext } = await resolveMentions(text, activeThread.folderId ?? selectedFolderId);
 
     // Retain the draft's images until the user message is actually saved.
     const images = pendingImages.length > 0 ? [...pendingImages] : undefined;
@@ -326,6 +356,9 @@ export function ChatView({
       }
     }
 
+    // The conversation's investigation: its tools, prompt and /fetch notes work where its messages sync.
+    const homeFolderId = activeThread.folderId ?? selectedFolderId ?? undefined;
+
     // Intercept /fetch <url> — fetch directly without LLM
     const fetchMatch = text.match(/^\/fetch\s+(https?:\/\/\S+)$/i);
     if (fetchMatch) {
@@ -339,7 +372,7 @@ export function ChatView({
             id: nanoid(),
             title,
             content: result.content || '',
-            folderId: selectedFolderId || undefined,
+            folderId: homeFolderId,
             tags: [],
             pinned: false,
             archived: false,
@@ -347,10 +380,15 @@ export function ChatView({
             createdAt: now,
             updatedAt: now,
           });
+          // Say where the note went: the sidebar may show another investigation, or none. Nothing syncs before a team server is connected.
+          const shareableKey = await isSyncWorkspaceBound() ? 'approval.targetSynced' : 'approval.targetSyncsLater';
+          const destination = homeFolderId
+            ? t(await isShareableFolder(homeFolderId) ? shareableKey : 'approval.targetLocal', { name: (await db.folders.get(homeFolderId))?.name ?? homeFolderId })
+            : t('approval.unfiled');
           const confirmMsg: ChatMessage = {
             id: nanoid(),
             role: 'assistant',
-            content: `Created note **${title}** from ${url}`,
+            content: `${t('fetch.createdNote', { title, url })}\n\n${destination}`,
             createdAt: Date.now(),
           };
           await onAddMessage(activeThread.id, confirmMsg);
@@ -359,7 +397,7 @@ export function ChatView({
           const errorMsg: ChatMessage = {
             id: nanoid(),
             role: 'assistant',
-            content: `Failed to fetch URL: ${result.error || 'Unknown error'}`,
+            content: t('fetch.failed', { error: result.error || t('fetch.unknownError') }),
             createdAt: Date.now(),
           };
           await onAddMessage(activeThread.id, errorMsg);
@@ -368,13 +406,15 @@ export function ChatView({
         const errorMsg: ChatMessage = {
           id: nanoid(),
           role: 'assistant',
-          content: `Failed to fetch URL: ${(err as Error).message || String(err)}`,
+          content: t('fetch.failed', { error: (err as Error).message || String(err) }),
           createdAt: Date.now(),
         };
         await onAddMessage(activeThread.id, errorMsg);
       }
       return;
     }
+
+    const homeFolder = homeFolderId === selectedFolderId ? selectedFolder : homeFolderId ? await db.folders.get(homeFolderId) : undefined;
 
     // Intercept /loop <interval> <prompt> — start a background scheduling loop
     const loopMatch = text.match(/^\/loop\s+(\d+[smh])\s+([\s\S]+)$/i);
@@ -387,15 +427,16 @@ export function ChatView({
         model: activeThread.model,
         provider: activeThread.provider,
         apiKey: apiKey!,
-        systemPrompt: await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, activeThread.provider),
+        systemPrompt: await buildSystemPrompt(homeFolder, settings.llmSystemPrompt, activeThread.provider),
         endpoint: activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined,
-        useServerProxy: effectiveRoute === 'server',
+        useServerProxy,
+        transport: () => resolveTransportRef.current(provider),
         onMessage: onAddMessage,
       });
       const confirmMsg: ChatMessage = {
         id: nanoid(),
         role: 'assistant',
-        content: `Started background loop \`${loopId}\`. Running every ${formattedInterval}:\n\n> ${prompt}\n\nUse \`/stoploop\` to stop.`,
+        content: `${t('loop.started', { id: loopId, interval: formattedInterval })}\n\n> ${prompt}\n\n${t('loop.stopHint')}`,
         createdAt: Date.now(),
       };
       await onAddMessage(activeThread.id, confirmMsg);
@@ -403,14 +444,12 @@ export function ChatView({
     }
 
     // Intercept /stoploop — stop all loops for this thread
-    if (text.match(/^\/stoploop$/i)) {
+    if (isStopLoopCommand) {
       const count = stopAllForThread(activeThread.id);
       const confirmMsg: ChatMessage = {
         id: nanoid(),
         role: 'assistant',
-        content: count > 0
-          ? `Stopped ${count} background loop${count > 1 ? 's' : ''}.`
-          : 'No active loops to stop.',
+        content: count > 0 ? t('loop.stopped', { count }) : t('loop.noneToStop'),
         createdAt: Date.now(),
       };
       await onAddMessage(activeThread.id, confirmMsg);
@@ -440,11 +479,13 @@ export function ChatView({
           return normalizeCtiSourceRunResult(plan, (err as Error).message || String(err));
         }
       }));
+      // A legacy 'cti' host on plain http to another computer is not offered: say so rather than that hosts are unconfigurable.
+      const ctiNeedsHttps = (settings.agentHosts ?? []).some(host => host.name === 'cti' && host.enabled && host.skills.length > 0 && !isHttpsOrLoopback(host.url));
       await onAddMessage(activeThread.id, {
         id: nanoid(),
         role: 'assistant',
-        content: planned.length === 0 && skipped.length === 0
-          ? t('cti.noSources')
+        content: !availableToolNames.some(name => name.startsWith('host:cti:'))
+          ? t(ctiNeedsHttps ? 'cti.hostNeedsHttps' : 'cti.noSourcesV2')
           : renderCtiRunMarkdown(ctiCommand.target, results, skipped),
         createdAt: Date.now(),
       });
@@ -453,7 +494,7 @@ export function ChatView({
 
     // Build for this submission's scope. A shared async cache can complete out
     // of order after an investigation switch and attach another case's context.
-    const systemPrompt = await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, activeThread.provider);
+    const systemPrompt = await buildSystemPrompt(homeFolder, settings.llmSystemPrompt, activeThread.provider);
 
     // Build text-only messages for truncation, then overlay multimodal content
     const allMessages = [...activeThread.messages, userMsg];
@@ -466,10 +507,15 @@ export function ChatView({
     const maxMessages = settings.llmMaxContextMessages || MAX_CONTEXT_MESSAGES;
     const truncatedTextMessages = truncateConversation(textMessages, maxMessages, activeThread.contextSummary);
 
-    // Trigger async summarization of truncated messages for future use
-    if (textMessages.length > maxMessages && !activeThread.contextSummary) {
+    // Title and summary requests go through the extension only, so they never run while chat goes through
+    // the team server. The extension sends any key it gets as a bearer token, so a local model without a
+    // key of its own gets none (chat's 'local' placeholder is for sendDirectToLocal, which drops it).
+    const extensionApiKey = provider === 'local' ? settings.llmLocalApiKey?.trim() || '' : apiKey!;
+
+    // Trigger async summarization of truncated messages for future use.
+    if (!useServerProxy && textMessages.length > maxMessages && !activeThread.contextSummary) {
       const truncatedPortion = textMessages.slice(2, -(maxMessages - 2));
-      summarizeConversation(truncatedPortion, activeThread.provider, activeThread.model, apiKey!, activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined)
+      summarizeConversation(truncatedPortion, activeThread.provider, activeThread.model, extensionApiKey, activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined)
         .then((summary) => {
           if (summary) onUpdateThread(activeThread.id, { contextSummary: summary });
         })
@@ -506,25 +552,43 @@ export function ChatView({
     const assistantMessageId = nanoid();
     const checkpointContext = { id: nanoid(), threadId: activeThread.id, messageId: assistantMessageId };
 
-    // In plan mode, filter out write tools so the LLM can only read/analyze
+    // In plan mode, offer only reads of this investigation
     const currentMode = activeThread.mode || 'act';
     const hostTools = getHostToolDefinitions(settings);
     const allTools = hostTools.length > 0 ? [...TOOL_DEFINITIONS, ...hostTools] : TOOL_DEFINITIONS;
     const tools = currentMode === 'plan'
-      ? allTools.filter(t => !isWriteTool(t.name))
+      ? allTools.filter(t => isPlanModeTool(t.name))
       : allTools;
-    const toolConstraints: ToolExecutionConstraints = {
-      allowedTools: new Set(tools.map(tool => tool.name)),
-      readOnly: currentMode === 'plan',
-    };
+    const allowedTools = new Set(tools.map(tool => tool.name));
 
-    // In plan mode, append instructions to the system prompt
+    // In plan mode, append instructions to the system prompt. With no investigation, Plan reads them all (tool-reach row 14).
     const finalSystemPrompt = currentMode === 'plan'
-      ? systemPrompt + '\n\nYou are in PLAN MODE. Do NOT create, update, or modify any entities. Instead, describe what you WOULD do: list the tools you would call, what data you would create, and what your analysis plan is. Present this as a structured plan the analyst can review before switching to Act mode.'
+      ? systemPrompt + `\n\nYou are in PLAN MODE. You can only read${homeFolderId ? ' this investigation' : ''}; describe anything else as a plan: list the tools you would call, what data you would create, and what your analysis plan is. Present this as a structured plan the analyst can review before switching to Act mode.`
       : systemPrompt;
 
     // Track which thread is streaming
     streamingThreadRef.current = activeThread.id;
+
+    const threadId = activeThread.id;
+    const executeChatTool = createChatToolExecutor({
+      homeFolderId,
+      mode: currentMode,
+      isYolo: () => yoloModeRef.current,
+      settings,
+      allowedTools,
+      requestApproval: (item, signal) => new Promise<HumanApproval | null>((resolve) => {
+        if (signal.aborted) { resolve(null); return; }
+        const id = nanoid();
+        const abortApproval = () => settleApproval(id, null);
+        signal.addEventListener('abort', abortApproval, { once: true });
+        approvalQueueRef.current = [...approvalQueueRef.current, {
+          id, item, threadId,
+          resolve: approval => { signal.removeEventListener('abort', abortApproval); resolve(approval); },
+        }];
+        setPendingApprovals(approvalQueueRef.current);
+      }),
+      runCheckpointed: (execute, signal, toolUse) => executeCheckpointedTool({ ...checkpointContext, signal }, toolUse, execute),
+    });
 
     // Send with agentic loop
     sendAgentRequest(
@@ -536,41 +600,10 @@ export function ChatView({
         systemPrompt: finalSystemPrompt,
         tools,
         endpoint: activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined,
-        useServerProxy: effectiveRoute === 'server',
+        useServerProxy,
       },
       async (toolUse: ToolUseBlock, signal: AbortSignal) => {
-        if (signal.aborted) return toolExecutionError('Tool execution was cancelled.');
-        const permissionError = getToolExecutionError(toolUse, toolConstraints);
-        if (permissionError) return toolExecutionError(permissionError);
-        let toolBinding: string | undefined;
-        try { toolBinding = await getToolBinding(toolUse, selectedFolderId, currentMode, settings); }
-        catch (error) { return toolExecutionError(error instanceof Error ? error.message : 'Tool configuration is unavailable.'); }
-        // Approval gate for write tools in Act mode (skip if yolo mode)
-        if (isWriteTool(toolUse.name) && !yoloModeRef.current) {
-          const threadAtRequest = activeThread.id;
-          const approved = await new Promise<boolean>((resolve) => {
-            const abortApproval = () => { setPendingApproval(null); resolve(false); };
-            signal.addEventListener('abort', abortApproval, { once: true });
-            setPendingApproval({
-              toolName: toolUse.name,
-              input: toolUse.input as Record<string, unknown>,
-              threadId: threadAtRequest,
-              resolve: value => { signal.removeEventListener('abort', abortApproval); resolve(value); },
-            });
-          });
-
-          if (!approved) {
-            return {
-              result: JSON.stringify({ error: 'Tool execution rejected by analyst' }),
-              isError: true,
-            };
-          }
-        }
-
-        if (signal.aborted) return toolExecutionError('Tool execution was cancelled.');
-
-        const result = await executeCheckpointedTool({ ...checkpointContext, signal }, toolUse,
-          () => executeTool(toolUse, selectedFolderId, undefined, { ...toolConstraints, signal, toolBinding }));
+        const result = await executeChatTool(toolUse, signal);
         if (isWriteTool(toolUse.name) && !result.isError) {
           usedWriteTool = true;
         }
@@ -598,12 +631,12 @@ export function ChatView({
           onEntitiesChanged();
         }
 
-        // Auto-generate a contextual title after first exchange
-        if (activeThread.messages.length <= 1 && content) {
+        // Auto-generate a contextual title after first exchange (through the extension only, like summaries)
+        if (activeThread.messages.length <= 1 && content && !useServerProxy) {
           const titleApiKey = getApiKeyForProvider(activeThread.provider, settings);
           if (titleApiKey) {
             const titleEndpoint = activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined;
-            generateChatTitle(text, content, activeThread.provider, activeThread.model, titleApiKey, titleEndpoint)
+            generateChatTitle(text, content, activeThread.provider, activeThread.model, extensionApiKey, titleEndpoint)
               .then((title) => {
                 if (title) onUpdateThread(activeThread.id, { title });
               })
@@ -613,7 +646,7 @@ export function ChatView({
       },
       { threadId: activeThread.id, messageId: assistantMessageId, model: activeThread.model, provider: activeThread.provider },
     );
-  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread, pendingImages, setPendingImages, readingImages, customCommands, effectiveRoute, t]);
+  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, resolveTransport, startLoop, stopAllForThread, pendingImages, setPendingImages, readingImages, customCommands, settleApproval, t]);
 
   const handleModelChange = useCallback((model: string, provider: LLMProvider) => {
     if (activeThread) {
@@ -641,7 +674,7 @@ export function ChatView({
       id: noteId,
       title: `Chat Export: ${activeThread.title}`,
       content,
-      folderId: selectedFolderId || undefined,
+      folderId: activeThread.folderId ?? (selectedFolderId || undefined),
       tags: ['chat-export'],
       pinned: false,
       archived: false,
@@ -654,38 +687,57 @@ export function ChatView({
     setTimeout(() => onNavigateToEntity?.('note', noteId), 100);
   }, [activeThread, selectedFolderId, onEntitiesChanged, onNavigateToEntity]);
 
+  // A chip is model-written text: it may ask a question, never run a slash command such as /fetch
+  // or read an entity through an @-mention.
   const handleSuggestionClick = useCallback((text: string) => {
+    if (text.trimStart().startsWith('/') || hasMentionToken(text)) return;
     handleSend(text);
   }, [handleSend]);
 
-  // ── Write tool approval handlers ────────────────────────────────────
+  // ── Tool approval handlers ──────────────────────────────────────────
+  const visibleApprovals = useMemo(() => pendingApprovals.filter(pending => pending.threadId === selectedThreadId), [pendingApprovals, selectedThreadId]);
+  const headApproval = visibleApprovals[0];
+
+  // The only place a chat approval is minted: the analyst approved this card.
   const handleApprove = useCallback(() => {
-    pendingApproval?.resolve(true);
-    setPendingApproval(null);
-  }, [pendingApproval]);
+    if (!headApproval) return;
+    const { toolUse, reach } = headApproval.item;
+    settleApproval(headApproval.id, mintHumanApproval(toolUse, reach.homeFolderId, 'chat-card'));
+  }, [headApproval, settleApproval]);
 
   const handleReject = useCallback(() => {
-    pendingApproval?.resolve(false);
-    setPendingApproval(null);
-  }, [pendingApproval]);
+    if (headApproval) settleApproval(headApproval.id, null);
+  }, [headApproval, settleApproval]);
 
-  // Clear pending approval when thread changes (prevents ghost from trashed threads)
+  // Focus stays in the composer after sending, so Escape there rejects the card too, when
+  // nothing is typed and no composer menu used the key.
+  const handleComposerKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Escape' || event.defaultPrevented || event.nativeEvent.isComposing || !headApproval) return;
+    if (!(event.target instanceof HTMLTextAreaElement) || event.target.value !== '') return;
+    event.preventDefault();
+    settleApproval(headApproval.id, null);
+  }, [headApproval, settleApproval]);
+
+  // Reject every queued card when the thread changes (prevents ghosts from trashed threads)
   useEffect(() => {
-    if (pendingApproval) {
-      pendingApproval.resolve(false);
-      setPendingApproval(null);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const queue = approvalQueueRef.current;
+    if (queue.length === 0) return;
+    approvalQueueRef.current = [];
+    setPendingApprovals([]);
+    for (const pending of queue) pending.resolve(null);
   }, [selectedThreadId]);
 
   // ── Plan/Act mode ──────────────────────────────────────────────────
   const threadMode = activeThread?.mode || 'act';
+  const yoloTitle = threadMode === 'plan'
+    ? t('mode.yoloInPlanTitle', { setting: yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2') })
+    : yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2');
 
   const toggleMode = useCallback(() => {
     if (!activeThread) return;
     const newMode = threadMode === 'act' ? 'plan' : 'act';
     onUpdateThread(activeThread.id, { mode: newMode });
-    addToast('success', newMode === 'plan' ? t('view.switchedToPlan') : t('view.switchedToAct'));
+    addToast('success', newMode === 'plan' ? t('mode.switchedToPlanV2') : t('view.switchedToActV2'));
 
     // When switching from Plan to Act, if the last assistant message exists,
     // prompt the user to execute the plan
@@ -696,7 +748,7 @@ export function ChatView({
         const executeMsg: ChatMessage = {
           id: nanoid(),
           role: 'assistant',
-          content: t('view.switchedToActMessage'),
+          content: t('view.switchedToActMessageV2'),
           createdAt: Date.now(),
         };
         onAddMessage(activeThread.id, executeMsg);
@@ -1084,24 +1136,30 @@ export function ChatView({
                       ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
                       : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
                   )}
-                  title={threadMode === 'plan' ? t('view.planModeTitle') : t('view.actModeTitle')}
+                  title={threadMode === 'plan' ? t('mode.planTitleV2') : t('view.actModeTitleV2')}
                 >
                   {threadMode === 'plan' ? <Eye size={10} /> : <Play size={10} />}
                   {threadMode === 'plan' ? t('view.planMode') : t('view.actMode')}
                 </button>
+                {/* No aria-pressed: the label names the current setting, and a toggle's label must not change with its state
+                    ('Ask, not pressed' would contradict it). The name and the description below carry the setting. */}
                 <button
                   onClick={() => setYoloMode(!yoloMode)}
+                  aria-describedby={yoloDescriptionId}
                   className={cn(
                     'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors me-1',
                     yoloMode
                       ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
                       : 'bg-surface-raised border-border-subtle text-text-muted hover:text-text-secondary'
                   )}
-                  title={yoloMode ? t('view.yoloOnTitle') : t('view.yoloOffTitle')}
+                  title={yoloTitle}
                 >
                   <Shield size={10} />
-                  {yoloMode ? t('view.yoloLabel') : t('view.safeLabel')}
+                  {yoloMode ? t('view.yoloLabel') : t('mode.askLabel')}
                 </button>
+                {/* The title reaches only mouse users; assistive technology reads the same text as the switch's description.
+                    Hidden, so it is read only through aria-describedby and not again as text after the switch. */}
+                <span id={yoloDescriptionId} hidden>{yoloTitle}</span>
                 {threadTokenTotal > 0 && (
                   <span className={cn(
                     'text-[10px] font-mono px-1.5 py-0.5 rounded border me-1',
@@ -1118,7 +1176,7 @@ export function ChatView({
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple/10 border border-purple/20 text-[10px] text-purple me-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-purple animate-pulse" />
                     {t('view.loopCount', { count: activeLoops.length })}
-                    {activeLoops.some(loop => loop.error) && <span role="status" className="text-amber-300" title={activeLoops.filter(loop => loop.error).map(loop => loop.error).join('\n')}>Retrying after error</span>}
+                    {activeLoops.some(loop => loop.error) && <span role="status" className="text-amber-300" title={activeLoops.filter(loop => loop.error).map(loop => loop.error).join('\n')}>{t('view.loopRetrying')}</span>}
                     <button
                       onClick={() => stopAllForThread(activeThread.id)}
                       className="ms-0.5 hover:text-red-400 transition-colors"
@@ -1160,7 +1218,7 @@ export function ChatView({
                 <div className="flex flex-col items-center justify-center h-full text-text-muted">
                   <MessageSquare size={40} className="mb-3 opacity-30" />
                   <p className="text-sm font-medium">{t('view.emptyTitle')}</p>
-                  <p className="text-xs mt-1">{t('view.emptySubtitle')}</p>
+                  <p className="text-xs mt-1 max-w-md px-4 text-center">{t('view.emptySubtitleV2')}</p>
                   {selectedFolder && (
                     <p className="text-xs mt-1 text-purple">
                       {t('view.emptyFolderContext', { name: selectedFolder.name })}
@@ -1231,37 +1289,6 @@ export function ChatView({
                           ))}
                         </div>
                       )}
-                      {/* Write tool approval card */}
-                      {pendingApproval && pendingApproval.threadId === selectedThreadId && (
-                        <div className="mx-auto max-w-md my-3 rounded-xl border border-amber-500/30 bg-amber-500/5 overflow-hidden">
-                          <div className="px-4 py-2.5 border-b border-amber-500/20 flex items-center gap-2">
-                            <Shield size={14} className="text-amber-400" />
-                            <span className="text-xs font-medium text-amber-400">{t('view.approvalTitle')}</span>
-                          </div>
-                          <div className="px-4 py-2.5 space-y-1.5">
-                            <div className="text-xs">
-                              <span className="font-mono font-medium text-purple">{pendingApproval.toolName}</span>
-                            </div>
-                            <pre className="text-[10px] font-mono text-text-secondary bg-bg-deep rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
-                              {JSON.stringify(pendingApproval.input, null, 2)}
-                            </pre>
-                            <div className="flex items-center gap-2 pt-1">
-                              <button
-                                onClick={handleApprove}
-                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors"
-                              >
-                                <Check size={12} /> {t('view.approve')}
-                              </button>
-                              <button
-                                onClick={handleReject}
-                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors"
-                              >
-                                <X size={12} /> {t('view.reject')}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                       <div ref={messagesEndRef} />
                     </div>
                   ),
@@ -1269,6 +1296,23 @@ export function ChatView({
               />
               )}
             </div>
+
+            {/* Tool approval card: the head of this thread's queue. Outside the list, whose
+                footer remounts on every render, so the card keeps its state and focus. On a short
+                window the card scrolls within itself, so the composer and its buttons stay reachable.
+                Keyed by the card, so the next queued card starts at its title, not where the last one was scrolled. */}
+            {headApproval && (
+              <div key={headApproval.id} className="px-4 min-h-0 max-h-[40vh] overflow-y-auto">
+                <ChatApprovalCard
+                  item={headApproval.item}
+                  index={1}
+                  total={visibleApprovals.length}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                />
+              </div>
+            )}
+            <ChatApprovalStatus item={headApproval?.item} total={visibleApprovals.length} />
 
             {/* Input */}
             {localError && (
@@ -1283,26 +1327,29 @@ export function ChatView({
                 ) : localError}
               </div>
             )}
-            <ChatInput
-              draftScope={selectedThreadId}
-              onSend={handleSend}
-              onStop={abort}
-              isStreaming={isStreaming}
-              extensionAvailable={extensionAvailable}
-              serverRoute={effectiveRoute === 'server' && serverConnected}
-              provider={activeThread.provider}
-              model={activeThread.model}
-              onModelChange={handleModelChange}
-              localModelName={settings.llmLocalModelName}
-              configuredProviders={configuredProviders}
-              onOpenSettings={onOpenSettings ? () => onOpenSettings('ai') : undefined}
-              folderId={selectedFolderId}
-              customCommands={customCommands.map(c => ({ command: `/${c.name}`, description: c.description }))}
-              onImageAttach={handleImageAttach}
-              readingImages={readingImages}
-              attachedImages={pendingImages.map(a => ({ name: a.name || 'Image' }))}
-              onClearImages={clearImages}
-            />
+            <div onKeyDown={handleComposerKeyDown}>
+              <ChatInput
+                draftScope={selectedThreadId}
+                onSend={handleSend}
+                onStop={abort}
+                isStreaming={isStreaming}
+                extensionAvailable={extensionAvailable}
+                serverRoute={cloudRoute === 'server'}
+                route={activeThread.provider === 'local' ? localRoute : cloudRoute}
+                provider={activeThread.provider}
+                model={activeThread.model}
+                onModelChange={handleModelChange}
+                localModelName={settings.llmLocalModelName}
+                configuredProviders={configuredProviders}
+                onOpenSettings={onOpenSettings ? () => onOpenSettings('ai') : undefined}
+                folderId={activeThread.folderId ?? selectedFolderId}
+                customCommands={customCommands.map(c => ({ command: `/${c.name}`, description: c.description }))}
+                onImageAttach={handleImageAttach}
+                readingImages={readingImages}
+                attachedImages={pendingImages.map(a => ({ name: a.name || 'Image' }))}
+                onClearImages={clearImages}
+              />
+            </div>
           </>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-text-muted">
@@ -1397,7 +1444,8 @@ export function ChatView({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[var(--text-primary)]">{t('view.onboardingStep3Title')}</p>
-                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{t('view.onboardingStep3Desc')}</p>
+                  {/* The command stays left to right, so a right-to-left language does not show its slash after it. */}
+                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5"><Trans i18nKey="view.onboardingStep3Desc" ns="chat" components={{ cmd: <bdi dir="ltr" /> }} /></p>
                 </div>
               </div>
             </div>

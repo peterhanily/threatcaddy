@@ -86,7 +86,6 @@
     "installedFromCatalog": "Installato {{name}} dal catalogo community",
     "installCatalogFailed": "Impossibile installare il template community",
     "templateExported": "Esportato {{name}}",
-    "installedFromTeam": "Installato {{name}} dal team",
     "installTeamFailed": "Impossibile installare il template team",
     "notFound": "Integrazione non trovata",
     "completed": "Integrazione \"{{name}}\" completata con successo",

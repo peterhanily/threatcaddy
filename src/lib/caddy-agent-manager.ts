@@ -4,28 +4,36 @@
  */
 
 import { db } from '../db';
+import i18n from '../i18n';
 import type { AgentCycleOutcome, AgentDeployment, AgentMetrics, AgentProfile, Folder, Settings } from '../types';
 import { runAgentCycle, type AgentCycleResult } from './caddy-agent';
-import { BUILTIN_AGENT_PROFILES } from './builtin-agent-profiles';
+import { listAgentProfiles } from './agent-profile-resolver';
 import { shouldBlockNewCycle } from './agent-handoff';
+import { agentRefusal } from './llm-router';
 import { cancellableRequest } from './request-cancellation';
 import { tokenCount } from './model-pricing';
 
 export interface MultiAgentCycleResult {
   deploymentResults: Map<string, AgentCycleResult>;
   errors: string[];
+  /** Profiles with a proposal awaiting review when the cycle ends. A timed cycle
+   * skips the ones waiting when it starts; a manual one runs them too. */
+  waitingForReview: string[];
 }
 
-/** Resolve a profile by ID from user DB or builtins. */
-async function resolveProfile(profileId: string): Promise<AgentProfile | undefined> {
-  const userProfile = await db.agentProfiles.get(profileId);
-  if (userProfile) return userProfile;
-  return BUILTIN_AGENT_PROFILES.find(p => p.id === profileId);
+/** Profiles of these deployments with a pending proposal. Legacy rows (no
+ * profile) and supervisor rows match no deployment, so they pause none. */
+async function profilesAwaitingReview(folderId: string, deployments: AgentDeployment[]): Promise<string[]> {
+  const pending = new Set((await db.agentActions
+    .where('[investigationId+status]').equals([folderId, 'pending'])
+    .toArray()).map(action => action.agentConfigId));
+  return [...new Set(deployments.filter(d => pending.has(d.profileId)).map(d => d.profileId))];
 }
 
 /**
  * Run a single cycle for all deployed agents in an investigation.
- * Agents run concurrently via Promise.allSettled.
+ * Agents run concurrently via Promise.allSettled. `manual` is a person's run
+ * (Run, or an approved chat run_agent_cycle).
  */
 export async function runMultiAgentCycle(
   folder: Folder,
@@ -33,10 +41,11 @@ export async function runMultiAgentCycle(
   extensionAvailable: boolean,
   onProgress?: (agentName: string, status: string) => void,
   signal?: AbortSignal,
+  options: { manual?: boolean } = {},
 ): Promise<MultiAgentCycleResult> {
   const lifecycle = cancellableRequest(signal);
   try {
-    return await runMultiAgentCycleInner(folder, settings, extensionAvailable, onProgress, lifecycle.signal);
+    return await runMultiAgentCycleInner(folder, settings, extensionAvailable, onProgress, lifecycle.signal, options.manual === true);
   } finally {
     lifecycle.dispose();
   }
@@ -48,7 +57,12 @@ async function runMultiAgentCycleInner(
   extensionAvailable: boolean,
   onProgress: ((agentName: string, status: string) => void) | undefined,
   signal: AbortSignal,
+  manual: boolean,
 ): Promise<MultiAgentCycleResult> {
+  signal.throwIfAborted();
+  // Builtin profile names come from this namespace, which the hosted build loads
+  // on demand; the loop can start before anything else has loaded it.
+  await i18n.loadNamespaces('agent');
   signal.throwIfAborted();
   // Load all active deployments
   const deployments = await db.agentDeployments
@@ -60,19 +74,31 @@ async function runMultiAgentCycleInner(
   // Skip deployments the server owns or that haven't finished reconciling after
   // a handoff — starting a cycle on those would race against the server or act
   // on stale local state.
-  const activeDeployments = deployments.filter(
+  const runnable = deployments.filter(
     d => d.status !== 'paused' && d.shift !== 'resting' && !shouldBlockNewCycle(d),
   );
+  // Only the agent whose proposal awaits review pauses.
+  const waitingForReview = await profilesAwaitingReview(folder.id, runnable);
+  signal.throwIfAborted();
+  // A manual run runs waiting agents too, as 2.0.2 did. queueAgentAction answers
+  // a repeat of a pending proposal with the pending row instead of a second one.
+  const activeDeployments = manual ? runnable : runnable.filter(d => !waitingForReview.includes(d.profileId));
 
   if (activeDeployments.length === 0) {
-    return { deploymentResults: new Map(), errors: ['No active agent deployments'] };
+    if (waitingForReview.length > 0) {
+      await db.folders.update(folder.id, { agentStatus: 'waiting' });
+      return { deploymentResults: new Map(), errors: [], waitingForReview };
+    }
+    return { deploymentResults: new Map(), errors: [await agentRefusal('refusal.noActiveDeployments')], waitingForReview };
   }
 
-  // Resolve profiles for all deployments
+  // Resolve profiles for all deployments. Builtins come from code; a stored
+  // builtin row contributes only its soul.
+  const profiles = new Map((await listAgentProfiles()).map(profile => [profile.id, profile]));
+  signal.throwIfAborted();
   const deploymentProfiles: { deployment: AgentDeployment; profile: AgentProfile }[] = [];
   for (const d of activeDeployments) {
-    const profile = await resolveProfile(d.profileId);
-    signal.throwIfAborted();
+    const profile = profiles.get(d.profileId);
     if (profile) {
       deploymentProfiles.push({ deployment: d, profile });
     }
@@ -81,7 +107,7 @@ async function runMultiAgentCycleInner(
   // Run agents with concurrency limit — use 1 for local LLMs (serial), 5 for cloud
   const isLocal = (settings.llmDefaultProvider === 'local') || (!settings.llmAnthropicApiKey && !settings.llmOpenAIApiKey && !settings.llmGeminiApiKey && !settings.llmMistralApiKey && settings.llmLocalEndpoint);
   const MAX_CONCURRENT = isLocal ? 1 : 5;
-  const allResults: PromiseSettledResult<{ deploymentId: string; result: AgentCycleResult }>[] = [];
+  const allResults: PromiseSettledResult<{ deploymentId: string; result: AgentCycleResult } | undefined>[] = [];
 
   for (let i = 0; i < deploymentProfiles.length; i += MAX_CONCURRENT) {
     signal.throwIfAborted();
@@ -89,8 +115,14 @@ async function runMultiAgentCycleInner(
     const chunkResults = await Promise.allSettled(
       chunk.map(async ({ deployment, profile }) => {
       signal.throwIfAborted();
-      // Mark running just before execution (not upfront) so failures revert cleanly
-      await db.agentDeployments.update(deployment.id, { status: 'running' });
+      // Mark running just before execution (not upfront) so failures revert cleanly.
+      // A pause written since this cycle began (useServerAgents) stays, and the agent does not start.
+      let pausedMeanwhile = false;
+      await db.agentDeployments.where('id').equals(deployment.id).modify(current => {
+        if (current.status === 'paused') pausedMeanwhile = true;
+        else current.status = 'running';
+      });
+      if (pausedMeanwhile) return undefined;
 
       let result: AgentCycleResult;
       try {
@@ -116,8 +148,11 @@ async function runMultiAgentCycleInner(
           });
           throw err;
         }
-        // Revert to error status on unexpected crash
-        await db.agentDeployments.update(deployment.id, { status: 'error', lastRunAt: Date.now() });
+        // Revert to error status on unexpected crash, keeping a pause written while it ran
+        await db.agentDeployments.where('id').equals(deployment.id).modify(current => {
+          if (current.status !== 'paused') current.status = 'error';
+          current.lastRunAt = Date.now();
+        });
         throw err;
       }
 
@@ -175,10 +210,11 @@ async function runMultiAgentCycleInner(
         cyclesByOutcome: prevByOutcome,
         tasksEscalated: (prev.tasksEscalated || 0) + (summary?.tasksEscalated || 0),
       };
-      await db.agentDeployments.update(deployment.id, {
-        status: newStatus,
-        lastRunAt: Date.now(),
-        metrics,
+      // A pause written while the cycle ran (useServerAgents) stays; the run is still recorded.
+      await db.agentDeployments.where('id').equals(deployment.id).modify(current => {
+        if (current.status !== 'paused') current.status = newStatus;
+        current.lastRunAt = Date.now();
+        current.metrics = metrics;
       });
 
       return { deploymentId: deployment.id, result };
@@ -198,6 +234,7 @@ async function runMultiAgentCycleInner(
   for (let idx = 0; idx < results.length; idx++) {
     const r = results[idx];
     if (r.status === 'fulfilled') {
+      if (!r.value) continue; // Paused before its turn: it did not run.
       deploymentResults.set(r.value.deploymentId, r.value.result);
       if (r.value.result.error) {
         const name = profileNames.get(r.value.deploymentId) || 'Unknown';
@@ -210,5 +247,16 @@ async function runMultiAgentCycleInner(
     }
   }
 
-  return { deploymentResults, errors };
+  // Each run wrote its own status, so the last one to finish could leave the
+  // investigation idle while a proposal waits. Use the hook's rule instead, on
+  // the pending rows read again: the analyst may have answered some meanwhile,
+  // and the runs' own proposals are pending rows too.
+  const stillWaiting = await profilesAwaitingReview(folder.id, runnable);
+  const ran = [...deploymentResults.values()];
+  const allFailed = ran.length > 0 && ran.every(result => result.error);
+  if (!allFailed && stillWaiting.length > 0) {
+    await db.folders.update(folder.id, { agentStatus: 'waiting' });
+  }
+
+  return { deploymentResults, errors, waitingForReview: stillWaiting };
 }
