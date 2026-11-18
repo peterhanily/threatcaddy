@@ -1,5 +1,6 @@
 {
   "syncStatus.screenshareHidden": "Synchronization needs attention. Turn off screensharing to review the details.",
+  "screenshare.viewHidden": "This view is hidden while screensharing.",
   "screenshare.browseVisible": "Browse visible investigations",
   "syncStatus.review": "Review sync settings",
   "syncStatus.pausedCapture": "Sync paused: older sync history may be missing edits made while signed out. Your local data is retained. Use Settings → General → Sync history recovery to download a verified archive and reconcile before resuming.",

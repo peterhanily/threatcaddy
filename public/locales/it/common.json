@@ -234,6 +234,7 @@
   "sidebar.evidence": "Evidence",
   "sidebar.products": "Products",
   "syncStatus.screenshareHidden": "La sincronizzazione richiede attenzione. Disattiva la condivisione dello schermo per vedere i dettagli.",
+  "screenshare.viewHidden": "Questa vista è nascosta durante la condivisione dello schermo.",
   "screenshare.browseVisible": "Sfoglia le indagini visibili",
   "syncStatus.review": "Controlla impostazioni di sincronizzazione",
   "syncStatus.pausedCapture": "Sincronizzazione in pausa: nella cronologia di sincronizzazione precedente potrebbero mancare modifiche fatte senza accesso. I tuoi dati locali sono conservati. Usa Impostazioni → Generale → Recupero della cronologia di sincronizzazione per scaricare un archivio verificato e riconciliare prima di riprendere.",

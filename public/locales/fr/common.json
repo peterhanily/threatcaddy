@@ -234,6 +234,7 @@
   "sidebar.evidence": "Preuves",
   "sidebar.products": "Produits",
   "syncStatus.screenshareHidden": "La synchronisation demande votre attention. Désactivez le partage d’écran pour consulter les détails.",
+  "screenshare.viewHidden": "Cette vue est masquée pendant le partage d’écran.",
   "screenshare.browseVisible": "Parcourir les enquêtes visibles",
   "syncStatus.review": "Vérifier les paramètres de synchronisation",
   "syncStatus.pausedCapture": "Synchronisation suspendue : il se peut que des modifications faites hors connexion manquent dans l’ancien historique de synchronisation. Vos données locales sont conservées. Utilisez Paramètres → Général → Récupération de l’historique de synchronisation pour télécharger une archive vérifiée et effectuer le rapprochement avant de reprendre.",

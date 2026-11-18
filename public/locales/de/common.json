@@ -234,6 +234,7 @@
   "sidebar.evidence": "Beweismittel",
   "sidebar.products": "Produkte",
   "syncStatus.screenshareHidden": "Die Synchronisierung erfordert Ihre Aufmerksamkeit. Beenden Sie die Bildschirmfreigabe, um die Details zu prüfen.",
+  "screenshare.viewHidden": "Diese Ansicht ist während der Bildschirmfreigabe ausgeblendet.",
   "screenshare.browseVisible": "Sichtbare Untersuchungen anzeigen",
   "syncStatus.review": "Synchronisierungseinstellungen prüfen",
   "syncStatus.pausedCapture": "Synchronisierung pausiert: Im älteren Synchronisierungsverlauf fehlen möglicherweise Änderungen, die im abgemeldeten Zustand vorgenommen wurden. Ihre lokalen Daten bleiben erhalten. Verwenden Sie Einstellungen → Allgemein → Wiederherstellung des Synchronisierungsverlaufs, um ein verifiziertes Archiv herunterzuladen und vor dem Fortsetzen abzugleichen.",

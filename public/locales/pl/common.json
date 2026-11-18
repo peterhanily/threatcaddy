@@ -234,6 +234,7 @@
   "sidebar.evidence": "Dowody",
   "sidebar.products": "Produkty",
   "syncStatus.screenshareHidden": "Synchronizacja wymaga uwagi. Wyłącz udostępnianie ekranu, aby zobaczyć szczegóły.",
+  "screenshare.viewHidden": "Ten widok jest ukryty podczas udostępniania ekranu.",
   "screenshare.browseVisible": "Przeglądaj widoczne dochodzenia",
   "syncStatus.review": "Sprawdź ustawienia synchronizacji",
   "syncStatus.pausedCapture": "Synchronizacja wstrzymana: w starszej historii synchronizacji może brakować zmian wprowadzonych po wylogowaniu. Twoje dane lokalne są zachowane. Użyj Ustawienia → Ogólne → Odzyskiwanie historii synchronizacji, aby pobrać zweryfikowane archiwum i przeprowadzić uzgadnianie przed wznowieniem.",

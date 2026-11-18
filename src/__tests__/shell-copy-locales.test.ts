@@ -9,7 +9,7 @@ const read = (locale: string, namespace: string) => JSON.parse(readFileSync(reso
 
 const KEYS: Record<string, string[]> = {
   settings: ['general.version', 'general.aboutLocalFirst', 'ai.routing.auto', 'ai.routingHelp', 'ai.dataFlow.fetchUpdate'],
-  common: ['offlineStatus.unavailableNotice', 'screenshare.browseVisible', 'sidebar.tags', 'sidebar.noTags', 'sidebar.tagNameRequired',
+  common: ['offlineStatus.unavailableNotice', 'screenshare.viewHidden', 'screenshare.browseVisible', 'sidebar.tags', 'sidebar.noTags', 'sidebar.tagNameRequired',
     'sidebar.tagNameExists', 'sidebar.tagRenameFailed', 'sidebar.tagDeleteFailed', 'sidebar.tagNewName', 'sidebar.tagSaveName',
     'sidebar.tagCancelRename', 'sidebar.tagRename', 'sidebar.tagDelete', 'sidebar.tagDeleteTitle', 'sidebar.tagDeleteMessage'],
   exec: ['dashboard.analystModeBanner'],

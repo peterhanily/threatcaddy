@@ -234,6 +234,7 @@
   "sidebar.evidence": "Evidências",
   "sidebar.products": "Produtos",
   "syncStatus.screenshareHidden": "A sincronização precisa de atenção. Desative o compartilhamento de tela para ver os detalhes.",
+  "screenshare.viewHidden": "Esta visualização fica oculta durante o compartilhamento de tela.",
   "screenshare.browseVisible": "Ver investigações visíveis",
   "syncStatus.review": "Revisar configurações de sincronização",
   "syncStatus.pausedCapture": "Sincronização pausada: o histórico de sincronização antigo pode não conter edições feitas sem login. Seus dados locais são mantidos. Use Configurações → Geral → Recuperação do histórico de sincronização para baixar um arquivo verificado e reconciliar antes de retomar.",

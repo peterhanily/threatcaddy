@@ -48,14 +48,17 @@ describe('app shell text', () => {
     expect(screen.queryByText('Analyst Mode — optimized for desktop')).toBeNull();
   }, 30_000);
 
-  it('offers the way back from a view hidden while screensharing in the analyst\'s language', async () => {
+  it('says a view is hidden while screensharing, and offers the way back, in the analyst\'s language', async () => {
     expect(de.common['screenshare.browseVisible']).toBeTruthy();
+    expect(de.common['screenshare.viewHidden']).toBeTruthy();
     stubWidth(false);
     render(<App />);
     fireEvent.click((await screen.findAllByRole('button', { name: 'Toggle screenshare mode' }))[0]);
     fireEvent.click(await screen.findByRole('button', { name: 'Show up to TLP:CLEAR' }));
     fireEvent.click((await screen.findAllByRole('button', { name: new RegExp(`^${de.common['sidebar.settings']}`) }))[0]);
     const back = await screen.findByRole('button', { name: de.common['screenshare.browseVisible'] });
+    expect(screen.getByText(de.common['screenshare.viewHidden'])).toBeInTheDocument();
+    expect(screen.queryByText('This view is hidden while screensharing.')).toBeNull();
     expect(screen.queryByText('Browse visible investigations')).toBeNull();
     fireEvent.click(back);
     expect(screen.queryByRole('button', { name: de.common['screenshare.browseVisible'] })).toBeNull();

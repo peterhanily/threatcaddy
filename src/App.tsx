@@ -1683,7 +1683,7 @@ const AppInner = memo(function AppInner({
         )}
         {screenshareViewHidden && (
           <div role="status" className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-text-secondary">
-            <p>This view is hidden while screensharing.</p>
+            <p>{tCommon('screenshare.viewHidden')}</p>
             <button className="rounded border border-border-medium px-3 py-2 hover:bg-bg-hover" onClick={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); closeSettings(); navigateTo('investigations'); }}>{tCommon('screenshare.browseVisible')}</button>
           </div>
         )}

@@ -234,6 +234,7 @@
   "sidebar.evidence": "Kanıt",
   "sidebar.products": "Ürünler",
   "syncStatus.screenshareHidden": "Eşitleme için işlem gerekiyor. Ayrıntıları görmek için ekran paylaşımını kapatın.",
+  "screenshare.viewHidden": "Bu görünüm ekran paylaşımı sırasında gizlenir.",
   "screenshare.browseVisible": "Görünür soruşturmalara göz at",
   "syncStatus.review": "Eşitleme ayarlarını incele",
   "syncStatus.pausedCapture": "Eşitleme duraklatıldı: eski eşitleme geçmişinde oturum kapalıyken yapılan düzenlemeler eksik olabilir. Yerel verileriniz korunur. Devam etmeden önce doğrulanmış bir arşiv indirip uzlaştırmak için Ayarlar → Genel → Eşitleme geçmişi kurtarma bölümünü kullanın.",

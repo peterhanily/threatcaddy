@@ -234,6 +234,7 @@
   "sidebar.evidence": "Bewijsmateriaal",
   "sidebar.products": "Producten",
   "syncStatus.screenshareHidden": "Synchronisatie vereist aandacht. Stop met schermdelen om de details te bekijken.",
+  "screenshare.viewHidden": "Deze weergave is verborgen tijdens schermdelen.",
   "screenshare.browseVisible": "Zichtbare onderzoeken bekijken",
   "syncStatus.review": "Synchronisatie-instellingen bekijken",
   "syncStatus.pausedCapture": "Synchronisatie gepauzeerd: in oudere synchronisatiegeschiedenis ontbreken mogelijk bewerkingen die zijn gemaakt terwijl je was afgemeld. Je lokale gegevens blijven behouden. Gebruik Instellingen → Algemeen → Herstel van synchronisatiegeschiedenis om een geverifieerd archief te downloaden en af te stemmen voordat je verdergaat.",

@@ -234,6 +234,7 @@
   "sidebar.evidence": "证据",
   "sidebar.products": "产物",
   "syncStatus.screenshareHidden": "同步需要处理。请关闭屏幕共享以查看详情。",
+  "screenshare.viewHidden": "屏幕共享期间此视图已隐藏。",
   "screenshare.browseVisible": "浏览可见的调查",
   "syncStatus.review": "检查同步设置",
   "syncStatus.pausedCapture": "同步已暂停：旧的同步历史可能缺少退出登录期间所做的编辑。您的本地数据已保留。请使用 设置 → 通用 → 同步历史恢复 下载已验证的归档，并在恢复同步前完成协调。",

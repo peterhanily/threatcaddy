@@ -234,6 +234,7 @@
   "sidebar.evidence": "Pruebas",
   "sidebar.products": "Productos",
   "syncStatus.screenshareHidden": "La sincronización requiere atención. Desactive el modo de pantalla compartida para revisar los detalles.",
+  "screenshare.viewHidden": "Esta vista está oculta en el modo de pantalla compartida.",
   "screenshare.browseVisible": "Ver investigaciones visibles",
   "syncStatus.review": "Revisar ajustes de sincronización",
   "syncStatus.pausedCapture": "Sincronización en pausa: es posible que al historial de sincronización anterior le falten ediciones realizadas sin sesión iniciada. Sus datos locales se conservan. Use Configuración → General → Recuperación del historial de sincronización para descargar un archivo verificado y conciliar antes de reanudar.",

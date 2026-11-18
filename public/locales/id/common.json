@@ -234,6 +234,7 @@
   "sidebar.evidence": "Bukti",
   "sidebar.products": "Produk",
   "syncStatus.screenshareHidden": "Sinkronisasi memerlukan perhatian. Matikan berbagi layar untuk melihat rinciannya.",
+  "screenshare.viewHidden": "Tampilan ini disembunyikan selama berbagi layar.",
   "screenshare.browseVisible": "Telusuri investigasi yang terlihat",
   "syncStatus.review": "Periksa pengaturan sinkronisasi",
   "syncStatus.pausedCapture": "Sinkronisasi dijeda: riwayat sinkronisasi lama mungkin tidak memuat suntingan yang dibuat saat keluar. Data lokal Anda tetap disimpan. Gunakan Pengaturan → Umum → Pemulihan riwayat sinkronisasi untuk mengunduh arsip terverifikasi dan melakukan rekonsiliasi sebelum melanjutkan.",
