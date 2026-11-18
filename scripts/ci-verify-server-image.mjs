@@ -88,8 +88,11 @@ async function assertReady(label, expectedInitializations) {
         signal: AbortSignal.timeout(5_000),
       });
       const health = await response.json();
-      if (initialized && response.status === 200 && health.status === 'ok'
-          && health.db === 'connected' && health.storage === 'accessible') {
+      if (initialized && response.status === 200 && health.status === 'ok') {
+        // The public endpoint reports readiness and the release version only.
+        if (Object.keys(health).sort().join() !== 'status,version') {
+          throw new Error(`Health exposes more than status and version: ${Object.keys(health).join(', ')}`);
+        }
         if (health.version !== expectedVersion) {
           throw new Error(`Health version ${health.version} differs from image package version ${expectedVersion}`);
         }
@@ -103,7 +106,6 @@ async function assertReady(label, expectedInitializations) {
         });
         const stableHealth = await stableResponse.json();
         if (!stableResponse.ok || stableHealth.status !== 'ok'
-            || stableHealth.db !== 'connected' || stableHealth.storage !== 'accessible'
             || stableHealth.version !== expectedVersion) {
           throw new Error('Image lost health or package identity during the startup stability check');
         }

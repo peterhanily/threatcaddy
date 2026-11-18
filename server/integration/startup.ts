@@ -101,13 +101,14 @@ export async function bootBuiltServer(database: ScratchDatabase, artifact: Stage
         if (response.ok) health = await response.json() as Record<string, unknown>;
       } catch { /* Poll until the startup deadline; errors are reported with process output below. */ }
       // Current health opens before async initialization. Require completion, then a stability period.
-      if (health?.status === 'ok' && health.db === 'connected' && health.storage === 'accessible'
-        && output.includes('BotManager initialized')) {
+      if (health?.status === 'ok' && output.includes('BotManager initialized')) {
+        // The public endpoint reports readiness and the release version only.
+        if (Object.keys(health).sort().join() !== 'status,version') throw new Error(`Compiled /health exposes more than status and version: ${Object.keys(health).join(', ')}`);
         await delay(500);
         if (child.exitCode !== null || child.signalCode !== null) throw new Error(`Compiled server exited immediately after health response.\n${output}`);
         const stableResponse = await fetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(750) });
         const stableHealth = await stableResponse.json() as Record<string, unknown>;
-        if (!stableResponse.ok || stableHealth.status !== 'ok' || stableHealth.db !== 'connected' || stableHealth.storage !== 'accessible') throw new Error(`Compiled server lost health during its startup stability check.\n${output}`);
+        if (!stableResponse.ok || stableHealth.status !== 'ok') throw new Error(`Compiled server lost health during its startup stability check.\n${output}`);
         const infoResponse = await fetch(`http://127.0.0.1:${port}/api/server/info`, { signal: AbortSignal.timeout(750) });
         const info = await infoResponse.json() as Record<string, unknown>;
         if (!infoResponse.ok || info.serverName !== artifact.serverName) throw new Error(`Compiled server identity did not match this test installation.\n${output}`);

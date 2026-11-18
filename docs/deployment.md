@@ -130,8 +130,8 @@ untrusted network.
 # Health check
 curl http://localhost:3001/health
 
-# Expected response (abridged):
-# {"status":"ok","db":"connected","storage":"accessible","version":"...","uptime":42,"memory":{...},"timestamp":"..."}
+# Expected response:
+# {"status":"ok","version":"..."}
 ```
 
 ### Retrieve Admin Bootstrap Secret
@@ -300,8 +300,8 @@ The server should sit behind a reverse proxy for TLS termination, WebSocket supp
 These examples publish only the API, WebSocket and SPA. They deliberately do
 not route the admin listener: reach administration through the SSH tunnel in
 [4.3 Admin Panel Access](#43-admin-panel-access). `/health` reports the server
-version, uptime and memory figures, so both examples answer it only for the
-proxy host itself; add your monitoring addresses explicitly.
+version, so both examples answer it only for the proxy host itself; add your
+monitoring addresses explicitly.
 
 ### Nginx
 
@@ -358,7 +358,7 @@ server {
         proxy_send_timeout 86400s;
     }
 
-    # Health check (no auth; reports version, uptime and memory)
+    # Health check (no auth; reports the server version)
     location = /health {
         allow 127.0.0.1;
         allow ::1;
@@ -408,7 +408,7 @@ your-domain.com {
         reverse_proxy 127.0.0.1:3001
     }
 
-    # Health check (no auth; reports version, uptime and memory)
+    # Health check (no auth; reports the server version)
     handle /health {
         # Add monitoring addresses or CIDRs after ::1
         @outside not remote_ip 127.0.0.1 ::1
@@ -675,7 +675,7 @@ server log.
 GET /health
 ```
 
-Returns HTTP 200 with `{"status":"ok"}` when healthy, or HTTP 503 with `{"status":"degraded"}` when checks fail.
+Returns HTTP 200 with `{"status":"ok","version":"<server version>"}` when healthy, or HTTP 503 with `{"status":"degraded","version":"<server version>"}` when checks fail. The response names no failing check and reports no uptime or memory figures; the server log records each new failure as a `Health check degraded` warning naming the check.
 
 Checks performed:
 - **Database connectivity**: `SELECT 1` query
@@ -827,7 +827,11 @@ Later images also differ in ways that affect custom deployments: since 2.0.1
 they have no npm, npx, Yarn or Corepack (use the packaged `node dist/...`
 commands), and since 2.0.2 they run on Node 24.22.3 with
 `NODE_ENV=production` (error responses no longer echo exception messages) and
-declare a `HEALTHCHECK` against `/health`. On Kubernetes, leave `ADMIN_HOST`
+declare a `HEALTHCHECK` against `/health`. Since 2.0.4, `/health` answers only
+`status` and `version` (monitoring that read `db`, `storage`, `uptime` or
+`memory` should alert on the status code and use container metrics), and the
+application code in `/app` is read-only to the runtime user, so keep
+`FILE_STORAGE_PATH` on a writable volume. On Kubernetes, leave `ADMIN_HOST`
 unset and reach administration with `kubectl port-forward`; do not expose port
 3002 through a Service.
 

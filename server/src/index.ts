@@ -6,11 +6,11 @@ import { bodyLimit } from 'hono/body-limit';
 import { compress } from 'hono/compress';
 import { serve } from '@hono/node-server';
 import { createNodeWebSocket } from '@hono/node-ws';
-import { sql as drizzleSql, lt } from 'drizzle-orm';
+import { lt } from 'drizzle-orm';
 import { migrateDatabase } from './db/migrate.js';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { access, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 
 import authRoutes from './routes/auth.js';
 import syncRoutes from './routes/sync.js';
@@ -29,6 +29,7 @@ import taxiiRoutes from './routes/taxii.js';
 import caddyAgentRoutes, { heartbeatManager } from './routes/caddy-agents.js';
 import webhookRoutes from './routes/webhooks.js';
 import adminRoutes from './routes/admin/index.js';
+import { healthRoutes } from './routes/health.js';
 import { botManager } from './bots/bot-manager.js';
 import { prePullSandboxImages } from './bots/sandbox.js';
 import { initAdminSecret, initRegistrationMode, initServerName, getServerName, initAdminSystemUser } from './services/admin-secret.js';
@@ -119,46 +120,8 @@ try {
   serverVersion = (JSON.parse(pkgRaw) as { version?: string }).version ?? 'unknown';
 } catch { /* leave as unknown */ }
 
-// Health check with DB connectivity, file storage, memory & uptime
-app.get('/health', async (c) => {
-  const checks: Record<string, string> = {};
-
-  // DB check with 5-second timeout
-  try {
-    const dbResult = await Promise.race([
-      db.execute(drizzleSql`SELECT 1`).then(() => 'connected' as const),
-      new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), 5000)),
-    ]);
-    checks.db = dbResult;
-  } catch {
-    checks.db = 'disconnected';
-  }
-
-  // File storage check
-  const storagePath = process.env.FILE_STORAGE_PATH || '/data/files';
-  try {
-    await access(storagePath);
-    checks.storage = 'accessible';
-  } catch {
-    checks.storage = 'inaccessible';
-  }
-
-  const ok = Object.values(checks).every(v => v === 'connected' || v === 'accessible');
-
-  const mem = process.memoryUsage();
-  return c.json({
-    status: ok ? 'ok' : 'degraded',
-    ...checks,
-    version: serverVersion,
-    uptime: Math.round(process.uptime()),
-    memory: {
-      rss: Math.round(mem.rss / 1024 / 1024),
-      heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
-      heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
-    },
-    timestamp: new Date().toISOString(),
-  }, ok ? 200 : 503);
-});
+// Health check with DB connectivity and file storage
+app.route('/', healthRoutes(serverVersion));
 
 // Public server info (no auth required — needed by CaddyShack)
 app.get('/api/server/info', async (c) => {
