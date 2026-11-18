@@ -327,7 +327,9 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
     };
   }, [enabled, serverRegistered, investigationId, serverUrl, apiCall, handleUnavailable]);
 
-  // Check initial status
+  // Check initial status, and again when the deployment list changes: the
+  // investigation's deployments load after the first answer can arrive.
+  const deploymentIds = deployments.map(d => d.id).join('\n');
   useEffect(() => {
     if (!investigationId || !serverUrl) return;
     apiCall(`/status/${investigationId}`, 'GET')
@@ -340,7 +342,7 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
         }
       })
       .catch(() => {});
-  }, [investigationId, serverUrl, apiCall, handleUnavailable]);
+  }, [investigationId, serverUrl, apiCall, handleUnavailable, deploymentIds]);
 
   return {
     serverRegistered,

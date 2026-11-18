@@ -86,6 +86,23 @@ describe('unavailable server agent execution', () => {
     expect(mocks.reclaim).not.toHaveBeenCalled();
   });
 
+  it('checks again when the deployments arrive after the first status answer, and pauses server-owned work then', async () => {
+    const deployments = [deployment('server-owned')];
+    await db.agentDeployments.bulkAdd(deployments);
+    const fetch = vi.fn().mockImplementation(unavailable);
+    vi.stubGlobal('fetch', fetch);
+    // The investigation's deployments load from the database after the hook's first render.
+    const { result, rerender } = renderHook(({ rows }) => useServerAgents({ investigationId: 'case-one', deployments: rows, profiles: [], enabled: false }),
+      { initialProps: { rows: [] as AgentDeployment[] } });
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect((await db.agentDeployments.get('server-owned'))?.status).toBe('running');
+    await act(async () => { rerender({ rows: deployments }); });
+    await waitFor(async () => expect((await db.agentDeployments.get('server-owned'))?.status).toBe('paused'));
+    await waitFor(() => expect(result.current.pausedDeploymentIds).toEqual(['server-owned']));
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   it('the routine status check of a 2.0.x server pauses nothing and reports no error', async () => {
     const deployments = [deployment('browser-only', { serverSideEnabled: false, handoffState: 'client', status: 'idle' })];
     await db.agentDeployments.bulkAdd(deployments);
