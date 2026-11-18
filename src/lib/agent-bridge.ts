@@ -101,11 +101,15 @@ const bridge: ThreatCaddyBridge = {
     // With no home, the bridge surface could not tell a cross-investigation read.
     const folderId = activeFolderId;
     if (!folderId) throw new Error('Select an investigation in ThreatCaddy first');
+    // One plain copy, read once: the scope check and the tool must see the same
+    // values, which a getter or Proxy in the caller's object could change.
+    let snapshot: Record<string, unknown>;
+    try { snapshot = JSON.parse(JSON.stringify(input)); } catch { throw new Error('Tool input must be plain JSON.'); }
     const toolUse: ToolUseBlock = {
       type: 'tool_use',
       id: `agent-${Date.now()}`,
       name: toolName,
-      input,
+      input: snapshot,
     };
     const { result, isError } = await executeTool(toolUse, folderId, undefined, { surface: 'bridge', allowedTools: BRIDGE_TOOLS });
     await logBridgeCall(toolName, folderId, isError);

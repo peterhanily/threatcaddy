@@ -236,6 +236,8 @@
   "meeting.meetingInProgress": "جلسه در حال برگزاری...",
   "meeting.couldNotRun": "جلسه برگزار نشد: {{error}}",
   "supervisor.couldNotRun": "عامل ناظر اجرا نشد: {{error}}",
+  "supervisor.proposalRationale": "پیشنهاد CaddyAgent Supervisor. استدلال آن در تحقیق CaddyAgent Supervisor باقی می‌ماند.",
+  "refusal.agentDismissed": "رد شد: عامل اخراج شد.",
   "refusal.noApiKey": "هیچ کلید API برای {{provider}} پیکربندی نشده است.",
   "refusal.configuredProviders": "ارائه‌دهندگان پیکربندی‌شده: {{providers}}. مدل عامل را در تنظیمات AgentCaddy تعیین کنید.",
   "refusal.noActiveDeployments": "هیچ عامل مستقری در این تحقیق فعال نیست.",

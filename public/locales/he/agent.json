@@ -236,6 +236,8 @@
   "meeting.meetingInProgress": "פגישה בעיצומה...",
   "meeting.couldNotRun": "לא ניתן היה לקיים את הפגישה: {{error}}",
   "supervisor.couldNotRun": "לא ניתן היה להפעיל את הסוכן המפקח: {{error}}",
+  "supervisor.proposalRationale": "הצעה של CaddyAgent Supervisor. הנימוק שלה נשאר בחקירה CaddyAgent Supervisor.",
+  "refusal.agentDismissed": "נדחה: הסוכן פוטר.",
   "refusal.noApiKey": "לא הוגדר מפתח API עבור {{provider}}.",
   "refusal.configuredProviders": "ספקים מוגדרים: {{providers}}. הגדר את מודל הסוכן בהגדרות AgentCaddy.",
   "refusal.noActiveDeployments": "אין סוכן פרוס פעיל בחקירה זו.",

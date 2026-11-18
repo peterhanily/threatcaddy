@@ -8,6 +8,7 @@ import { consumeHumanApproval } from './human-approval';
 import { listAgentProfiles, loadAgentPolicy, resolveAgentProfile } from './agent-profile-resolver';
 import { sanitizeSoulText } from './soul-text';
 import { MAX_ACTIVE_DEPLOYMENTS_PER_INVESTIGATION } from './caddy-agent-policy';
+import { SUPERVISOR_ACTION_PROFILE } from './supervisor-tool-policy';
 import { PASSIVE_LOOKUP_TEMPLATE_IDS } from './builtin-integrations';
 import { getReadOnlyEntityError } from './tool-entity-policy';
 import { withCreatorTags } from './tool-creator';
@@ -17,6 +18,7 @@ import { getToolBinding, isDynamicTool } from './tool-binding';
 import { cancellableRequest } from './request-cancellation';
 import { readBoundedText } from './bounded-response';
 import { assertConfiguredConnection } from './connection-policy';
+import { agentRefusal } from './llm-router';
 
 // Re-export definitions so existing consumers don't break
 export { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
@@ -314,9 +316,10 @@ async function dispatchTool(
     if (constraints.signal?.aborted) return toolExecutionError('Tool execution was cancelled.');
     const visibility = { homeFolderId: folderId, hideLocalOnly: reach.homeShareable };
 
-    // Escalated tasks are off-limits to all agents until a human intervenes.
+    // Escalated tasks are off-limits to all agents until a human intervenes:
+    // whatever is labelled an agent above, the supervisor and the bridge included.
     // Keeps stuck delegation loops from immediately re-opening an escalation.
-    if (agentContext && (name === 'update_task' || name === 'delete_task' || name === 'review_completed_task')) {
+    if (agentLabel && (name === 'update_task' || name === 'delete_task' || name === 'review_completed_task')) {
       const targetId = String((name === 'review_completed_task' ? inp.taskId : inp.id) || '');
       if (targetId) {
         const existing = await db.tasks.get(targetId);
@@ -682,10 +685,12 @@ async function executeListAgentActivity(inp: Record<string, unknown>, folderId?:
   const allProfiles = await getAllAgentProfiles();
   const profileMap = new Map(allProfiles.map(p => [p.id, p.name]));
 
+  // Leaves out the supervisor's rows, whose reasons can quote other investigations, and server history.
   let actions = await db.agentActions
     .where('[investigationId+createdAt]')
     .between([folderId, -Infinity], [folderId, Infinity])
     .reverse()
+    .filter(a => a.agentConfigId !== SUPERVISOR_ACTION_PROFILE && !a.id.startsWith('srv:'))
     .limit(limit * 2)
     .toArray();
 
@@ -1703,9 +1708,10 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
   for (const d of targetDeployments) {
     await db.agentDeployments.delete(d.id);
   }
+  const resultSummary = await agentRefusal('refusal.agentDismissed');
   await db.agentActions.where('[investigationId+status]').equals([folderId, 'pending'])
     .filter(action => action.agentConfigId === targetProfile.id)
-    .modify({ status: 'rejected', resultSummary: 'Agent dismissed' });
+    .modify({ status: 'rejected', resultSummary });
 
   // Create after-action dismissal note
   const noteId = nanoid();
@@ -1732,15 +1738,15 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
     updatedAt: now,
   });
 
-  // Update the dismissed agent's soul with the feedback
+  // Every investigation's copy of this agent reads its soul, so the soul gets no
+  // model text: the reason and evidence stay in the dismissal note above.
   const soul = targetProfile.soul || {
     identity: `I am ${targetProfile.name}, a ${targetProfile.role} agent.`,
     lessons: [], strengths: [], weaknesses: [],
     lifetimeMetrics: { investigationsWorked: 0, totalCycles: 0, totalToolCalls: 0, tasksCompleted: 0, tasksRejected: 0, meetingsAttended: 0, performanceScore: 50 },
     updatedAt: now,
   };
-  soul.lessons = [`DISMISSED: ${reason}. Evidence: ${evidence}`, ...soul.lessons].slice(0, 50);
-  soul.weaknesses = [...new Set([...evidence.split(/[,;.]/).map(s => s.trim()).filter(s => s.length > 5).slice(0, 3), ...soul.weaknesses])].slice(0, 20);
+  soul.lessons = [`Dismissed from an investigation on ${new Date(now).toISOString().slice(0, 10)}.`, ...soul.lessons].slice(0, 50);
   // Penalize performance score
   soul.lifetimeMetrics.performanceScore = Math.max(0, soul.lifetimeMetrics.performanceScore - 15);
   soul.updatedAt = now;

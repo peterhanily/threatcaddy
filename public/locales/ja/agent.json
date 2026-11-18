@@ -236,6 +236,8 @@
   "meeting.meetingInProgress": "ミーティング進行中...",
   "meeting.couldNotRun": "ミーティングを実行できませんでした: {{error}}",
   "supervisor.couldNotRun": "スーパーバイザーエージェントを実行できませんでした: {{error}}",
+  "supervisor.proposalRationale": "CaddyAgent Supervisor の提案です。その根拠は CaddyAgent Supervisor 調査内に残ります。",
+  "refusal.agentDismissed": "却下: エージェントは解雇されました。",
   "refusal.noApiKey": "{{provider}} のAPIキーが設定されていません。",
   "refusal.configuredProviders": "設定済みのプロバイダー: {{providers}}。AgentCaddy の設定でエージェントモデルを設定してください。",
   "refusal.noActiveDeployments": "この調査でアクティブなデプロイ済みエージェントはありません。",

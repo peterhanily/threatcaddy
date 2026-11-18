@@ -236,6 +236,8 @@
   "meeting.meetingInProgress": "मीटिंग चल रही है...",
   "meeting.couldNotRun": "मीटिंग नहीं चल सकी: {{error}}",
   "supervisor.couldNotRun": "सुपरवाइज़र एजेंट नहीं चल सका: {{error}}",
+  "supervisor.proposalRationale": "CaddyAgent Supervisor का प्रस्ताव। इसका तर्क CaddyAgent Supervisor जाँच में ही रहता है।",
+  "refusal.agentDismissed": "अस्वीकृत: एजेंट को खारिज कर दिया गया।",
   "refusal.noApiKey": "{{provider}} के लिए कोई API कुंजी कॉन्फ़िगर नहीं है।",
   "refusal.configuredProviders": "कॉन्फ़िगर किए गए प्रदाता: {{providers}}। AgentCaddy सेटिंग में एजेंट मॉडल सेट करें।",
   "refusal.noActiveDeployments": "इस जाँच में कोई भी तैनात एजेंट सक्रिय नहीं है।",

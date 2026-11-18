@@ -772,7 +772,7 @@ export const EXECUTIVE_TOOL_DEFINITIONS = [
   // ── Agent Override / Dismissal ───────────────────────────────────
   {
     name: 'dismiss_agent',
-    description: 'Dismiss a poorly performing agent from this investigation and optionally replace them. This is a serious action — requires strong evidence of poor performance (rejected tasks, repeated mistakes, failure to follow instructions). Creates a dismissal record and after-action note. The dismissed agent\'s soul is updated with the feedback.',
+    description: 'Dismiss a poorly performing agent from this investigation and optionally replace them. This is a serious action — requires strong evidence of poor performance (rejected tasks, repeated mistakes, failure to follow instructions). Creates a dismissal record and after-action note with the reason and evidence. The dismissed agent\'s soul records only the date and a lower score.',
     input_schema: {
       type: 'object' as const,
       properties: {

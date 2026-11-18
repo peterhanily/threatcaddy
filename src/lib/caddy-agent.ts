@@ -692,6 +692,8 @@ async function _runAgentCycleInner(
 
     for (let turn = 0; turn < MAX_AGENT_TURNS; turn++) {
       signal?.throwIfAborted();
+      // A dismissed or removed agent sends no further model request.
+      if (deployment && !await db.agentDeployments.get(deployment.id)) break;
       onProgress?.(`${agentName} thinking (turn ${turn + 1}/${MAX_AGENT_TURNS}, ${provider}/${model})...`);
 
       const response = await callLLM({

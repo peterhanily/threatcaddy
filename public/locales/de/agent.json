@@ -236,6 +236,8 @@
   "meeting.meetingInProgress": "Besprechung läuft...",
   "meeting.couldNotRun": "Die Besprechung konnte nicht stattfinden: {{error}}",
   "supervisor.couldNotRun": "Der Supervisor-Agent konnte nicht ausgeführt werden: {{error}}",
+  "supervisor.proposalRationale": "Vorschlag des CaddyAgent Supervisor. Seine Begründung bleibt in der Untersuchung CaddyAgent Supervisor.",
+  "refusal.agentDismissed": "Abgelehnt: Der Agent wurde abberufen.",
   "refusal.noApiKey": "Für {{provider}} ist kein API-Schlüssel konfiguriert.",
   "refusal.configuredProviders": "Konfigurierte Anbieter: {{providers}}. Legen Sie das Agentenmodell in den AgentCaddy-Einstellungen fest.",
   "refusal.noActiveDeployments": "In dieser Untersuchung ist kein eingesetzter Agent aktiv.",

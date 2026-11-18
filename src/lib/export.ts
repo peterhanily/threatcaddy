@@ -14,6 +14,8 @@ import { decodePortableBackup, INVESTIGATION_EXPORT_FORMAT, PORTABLE_BACKUP_FORM
 import i18n from '../i18n';
 import { previewRestore, restoreFullReplace, restoreMerge } from './backup-restore';
 import { nextTimelineOrder } from './sync-capture-policy';
+import { findSupervisorFolder, supervisorProposalRationale } from './caddy-agent-supervisor';
+import { SUPERVISOR_ACTION_PROFILE } from './supervisor-tool-policy';
 
 export async function exportJSON(): Promise<string> {
   const json = JSON.stringify(await portableSnapshot(false), null, 2);
@@ -1322,6 +1324,10 @@ export async function importJSON(json: string, password?: string): Promise<JSONI
 }
 
 export async function exportInvestigationJSON(folderId: string): Promise<string> {
+  // Supervisor rows written before 2.0.3 can hold its cross-investigation reasoning,
+  // and a proposal's input can quote any investigation; only the supervisor's own
+  // investigation keeps them. Elsewhere a proposal that never ran keeps no input.
+  const supervisorRationale = (await findSupervisorFolder())?.id === folderId ? undefined : await supervisorProposalRationale();
   return db.transaction('r', [...Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), db.tags], async () => {
   const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards, allIOCs, allEvidenceItems, allChats, allAgentActions, allAgentDeployments, allAgentMeetings, allAgentProfiles] = await Promise.all([
     db.folders.get(folderId),
@@ -1377,7 +1383,8 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     standaloneIOCs: allIOCs,
     evidenceItems: evidenceItems.length > 0 ? evidenceItems : undefined,
     chatThreads: allChats,
-    agentActions: allAgentActions.length > 0 ? allAgentActions : undefined,
+    agentActions: allAgentActions.length > 0 ? allAgentActions.map(action => supervisorRationale && action.agentConfigId === SUPERVISOR_ACTION_PROFILE
+      ? { ...action, rationale: supervisorRationale, ...(action.status === 'executed' ? {} : { toolInput: {} }) } : action) : undefined,
     agentDeployments: allAgentDeployments.length > 0 ? allAgentDeployments : undefined,
     agentMeetings: allAgentMeetings.length > 0 ? allAgentMeetings : undefined,
     agentProfiles: allAgentProfiles.filter(profile => allAgentDeployments.some(deployment => deployment.profileId === profile.id)),

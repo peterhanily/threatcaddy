@@ -236,6 +236,8 @@
   "meeting.meetingInProgress": "الاجتماع جارٍ...",
   "meeting.couldNotRun": "تعذّر عقد الاجتماع: {{error}}",
   "supervisor.couldNotRun": "تعذّر تشغيل وكيل المشرف: {{error}}",
+  "supervisor.proposalRationale": "اقتراح من CaddyAgent Supervisor. يبقى تعليله في تحقيق CaddyAgent Supervisor.",
+  "refusal.agentDismissed": "مرفوض: تمت إقالة الوكيل.",
   "refusal.noApiKey": "لم يتم تهيئة مفتاح API لـ {{provider}}.",
   "refusal.configuredProviders": "المزوّدون المهيّأون: {{providers}}. اضبط نموذج الوكيل في إعدادات AgentCaddy.",
   "refusal.noActiveDeployments": "لا يوجد وكيل منشور نشط في هذا التحقيق.",
