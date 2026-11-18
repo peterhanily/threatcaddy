@@ -152,7 +152,8 @@ describe('A-REACH-5 local-only facts, links and named investigations', () => {
     expect(await isFolderLocalOnly('L')).toBe(true);
     expect(await isShareableFolder(undefined)).toBe(false);
     // A missing row can still sync: a team investigation opened in remote mode, or an evicted
-    // synced folder, has no local row, yet the outbox queues and pushes rows filed under it.
+    // synced folder, has no local row, yet the outbox queues rows filed under it. Remote mode
+    // pushes them; an evicted folder holds them until it is cached again, then pushes them.
     // Only a known local-only id (flag or persisted marker) cannot sync.
     expect(await isShareableFolder('missing')).toBe(true);
     await db.table('_syncMeta').put({ key: JSON.stringify(['localOnly', 'missing']), value: true });
