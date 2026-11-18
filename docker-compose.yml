@@ -2,7 +2,9 @@ services:
   server:
     build: ./server
     ports:
-      - "3001:3001"
+      # Host loopback for a reverse proxy on this host. To serve clients without
+      # a proxy, set API_PUBLISH_ADDRESS (plain HTTP; see docs/deployment.md).
+      - "${API_PUBLISH_ADDRESS:-127.0.0.1}:3001:3001"
       - "127.0.0.1:3002:3002"
     environment:
       DATABASE_URL: postgres://tc:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/threatcaddy

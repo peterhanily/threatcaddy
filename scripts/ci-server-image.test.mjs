@@ -74,3 +74,16 @@ test('Compose bounds container logs for both services', () => {
     assert.match(logging.options['max-file'], /^\d+$/);
   }
 });
+
+test('Compose publishes the API on host loopback unless the operator opts in to another address', () => {
+  const ports = load(read('docker-compose.yml')).services.server.ports;
+  const effective = environment => ports.map(port => port.replace(/\$\{(\w+):-([^}]*)\}/g, (_, name, fallback) => environment[name] || fallback));
+  assert.deepEqual(effective({}), ['127.0.0.1:3001:3001', '127.0.0.1:3002:3002']);
+  // The opt-in moves only the API; administration stays on host loopback.
+  assert.deepEqual(effective({ API_PUBLISH_ADDRESS: '0.0.0.0' }), ['0.0.0.0:3001:3001', '127.0.0.1:3002:3002']);
+  const deployment = read('docs/deployment.md');
+  const reference = deployment.match(/### Docker Compose Reference\n\n```yaml\n([\s\S]*?)```/)?.[1];
+  assert.ok(reference, 'docs/deployment.md must keep its Compose reference');
+  assert.deepEqual(load(reference).services.server.ports, ports, 'The documented Compose file must publish the same ports');
+  assert.match(deployment, /API_PUBLISH_ADDRESS=0\.0\.0\.0/);
+});

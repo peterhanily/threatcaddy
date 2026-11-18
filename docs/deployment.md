@@ -107,13 +107,22 @@ docker compose up -d
 
 This starts:
 - **PostgreSQL 17** on internal network (not exposed to host)
-- **ThreatCaddy Server** with the API on port 3001 of every host interface and
-  the admin panel on host loopback only (`127.0.0.1:3002`)
+- **ThreatCaddy Server** with the API on host loopback (`127.0.0.1:3001`) for the
+  TLS reverse proxy in [3. Reverse Proxy Setup](#3-reverse-proxy-setup), and the
+  admin panel on host loopback only (`127.0.0.1:3002`)
+
+The API speaks plain HTTP. To serve clients without a proxy on this host, opt
+in explicitly in `.env`, either on every IPv4 interface or on one interface
+address (such as a VPN address):
+
+```env
+API_PUBLISH_ADDRESS=0.0.0.0
+```
 
 Docker-published ports bypass host firewalls such as ufw and firewalld, so a
-firewall rule does not hide port 3001. When a reverse proxy on the same host
-terminates TLS, publish the API as `127.0.0.1:3001:3001` instead; otherwise
-restrict it with provider security groups or `DOCKER-USER` rules.
+firewall rule does not hide port 3001. Restrict it with provider security groups
+or `DOCKER-USER` rules, and do not send passwords or tokens to it across an
+untrusted network.
 
 ### Verify
 
@@ -146,7 +155,7 @@ services:
   server:
     build: ./server
     ports:
-      - "3001:3001"    # API + WebSocket
+      - "${API_PUBLISH_ADDRESS:-127.0.0.1}:3001:3001" # API + WebSocket: host loopback unless you opt in
       - "127.0.0.1:3002:3002" # Admin panel: host loopback only
     environment:
       DATABASE_URL: postgres://tc:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/threatcaddy
@@ -214,7 +223,7 @@ The server Dockerfile (`server/Dockerfile`) uses a multi-stage build:
 2. **Runtime stage**: the same pinned Node 24.22.3 image, upgrades zlib to at least 1.4-r0, installs production dependencies only and copies compiled JS and migrations
 3. Runs as non-root user `app` with `NODE_ENV=production`, so error responses never echo exception messages (server errors were already generic)
 4. Declares a `HEALTHCHECK` that requests `/health` on `127.0.0.1:${PORT}` inside the container; Docker reports the result but does not restart the container
-5. Declares ports 3001 and 3002 for the two listeners; only the ports you publish are reachable from the host (the supplied Compose file publishes administration on host loopback only)
+5. Declares ports 3001 and 3002 for the two listeners; only the ports you publish are reachable from the host (the supplied Compose file publishes both on host loopback by default)
 
 ---
 
@@ -391,12 +400,12 @@ your-domain.com {
 
     # API
     handle /api/* {
-        reverse_proxy localhost:3001
+        reverse_proxy 127.0.0.1:3001
     }
 
     # WebSocket
     handle /ws {
-        reverse_proxy localhost:3001
+        reverse_proxy 127.0.0.1:3001
     }
 
     # Health check (no auth; reports version, uptime and memory)
@@ -404,7 +413,7 @@ your-domain.com {
         # Add monitoring addresses or CIDRs after ::1
         @outside not remote_ip 127.0.0.1 ::1
         respond @outside 403
-        reverse_proxy localhost:3001
+        reverse_proxy 127.0.0.1:3001
     }
 }
 ```
@@ -809,7 +818,10 @@ pending. Publishing an image or client does not establish server rollout.
   replaces a daemon-wide log driver; to keep shipping logs through yours, add
   the override in [4.8 Logging](#48-logging) before recreating the containers.
   Recreate the database container once (`docker compose up -d db`) to apply its
-  log rotation; the server-only command above does not.
+  log rotation; the server-only command above does not. From 2.0.4 it publishes
+  the API on host loopback only: if clients reach port 3001 directly rather than
+  through a proxy on the same host, set `API_PUBLISH_ADDRESS` first (see
+  [Start Services](#start-services)).
 
 Later images also differ in ways that affect custom deployments: since 2.0.1
 they have no npm, npx, Yarn or Corepack (use the packaged `node dist/...`

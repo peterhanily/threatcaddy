@@ -286,7 +286,7 @@ docker compose up --build -d
 ```
 
 This starts:
-- **server** on port 3001 (API) and host loopback port 3002 (Admin); Compose binds administration inside the private container network explicitly
+- **server** on host loopback ports 3001 (API, for a reverse proxy on the host; `API_PUBLISH_ADDRESS` publishes it elsewhere) and 3002 (Admin); Compose binds administration inside the private container network explicitly
 - **PostgreSQL 17** on port 5432
 
 Data is persisted in Docker volumes (`pg-data`, `file-data`).
