@@ -4,7 +4,7 @@ import { DrizzleQueryError } from 'drizzle-orm';
 const { bootstrap, sign } = vi.hoisted(() => ({ bootstrap: vi.fn(), sign: vi.fn() }));
 vi.mock('../services/admin-session-service.js', () => ({ bootstrapAdminUser: bootstrap }));
 vi.mock('../middleware/admin-auth.js', () => ({ signAdminToken: sign }));
-vi.mock('../lib/logger.js', () => ({ logger: { info: vi.fn() } }));
+vi.mock('../lib/logger.js', () => ({ logger: { info: vi.fn(), warn: vi.fn() } }));
 
 // Import the production handler and rate limiter, not a duplicated route.
 import app from '../routes/admin/bootstrap.js';

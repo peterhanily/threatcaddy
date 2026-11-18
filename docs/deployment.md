@@ -244,7 +244,7 @@ The server Dockerfile (`server/Dockerfile`) uses a multi-stage build:
 | `STORAGE_QUOTA_PER_USER_BYTES` | Combined retained file/backup quota per user; positive integer bytes | `2147483648` (2 GiB) |
 | `STORAGE_QUOTA_TOTAL_BYTES` | Combined retained file/backup quota across users; positive integer bytes | `21474836480` (20 GiB) |
 | `TRUST_PROXY` | `true`/`1` enables forwarding from trusted peers only; `false`/`0` disables it | `0` |
-| `TRUSTED_PROXY_IPS` | Comma-separated exact socket peer IPs allowed to supply forwarding headers; no hostnames or CIDRs | `127.0.0.1,::1` |
+| `TRUSTED_PROXY_IPS` | Comma-separated socket peer IPs or CIDR ranges (IPv4 or IPv6) allowed to supply forwarding headers; no hostnames or `/0`. See [Important Proxy Settings](#important-proxy-settings) | `127.0.0.1,::1` |
 | `SERVER_NAME` | Display name for the server instance | Auto-generated (e.g., "Alpha Hub") |
 | `ADMIN_SECRET` | Bootstrap secret for creating the first admin user. If not set, auto-generated on first launch and written to `${FILE_STORAGE_PATH}/.admin-secret`. Use at least 24 random characters; startup logs a warning for a shorter value. A configured value replaces a secret changed in the admin panel at every restart. | Auto-generated |
 
@@ -411,14 +411,44 @@ your-domain.com {
 
 ### Important Proxy Settings
 
-When running behind a reverse proxy, set in your `.env`:
+Behind a reverse proxy, the server must know which peers are your proxy.
+Otherwise every client shares the proxy's address, and one outsider can trip
+the login lockout and the rate limits for everyone. Set `TRUST_PROXY=1` and list
+in `TRUSTED_PROXY_IPS` the address your proxy's connections arrive from, as the
+server sees it: exact IPv4 or IPv6 addresses, or CIDR ranges such as
+`172.18.0.0/16`.
+
+With the supplied Compose file and nginx or Caddy on the host, as in the
+examples above, the proxy connects to the port Docker publishes, and the
+container sees the Compose network's gateway, not `127.0.0.1`. Look the gateway
+up (the network is named after your Compose project; `docker network ls` lists
+it):
+
+```bash
+docker network inspect threatcaddy_default --format '{{range .IPAM.Config}}{{.Gateway}} {{end}}'
+```
+
+Then set it in your `.env` and recreate the server with `docker compose up -d`:
 
 ```env
 TRUST_PROXY=1
-TRUSTED_PROXY_IPS=127.0.0.1,::1
+# The gateway printed above, for example:
+TRUSTED_PROXY_IPS=172.18.0.1
 ```
 
-Only connections from `TRUSTED_PROXY_IPS` may supply `X-Forwarded-For` (or `X-Real-IP` when absent). The server uses the nearest untrusted address in a valid IP chain. Other connections use their socket address. Set the actual proxy peer IPs for Docker/remote proxies; loopback defaults do not cover container bridge addresses. Your proxy must overwrite or correctly append forwarded addresses. Both variables are passed through by Compose. Without this configuration, requests share the proxy's rate limit.
+Removing the network (`docker compose down`) can give it another gateway on the
+next start, so check the address again afterwards. For a proxy and a Node
+server on the same host without containers, keep the default
+`TRUSTED_PROXY_IPS=127.0.0.1,::1`. For a proxy elsewhere, list its address, or a
+range that only your proxies use. A `/0` range is refused because it would
+trust every peer.
+
+When a peer that is not trusted sends `X-Forwarded-For`, the server logs one
+warning per process that names the peer (`docker compose logs server`). Trust
+that address only after confirming it is your proxy: anyone who can reach the
+server directly can send the header.
+
+Only connections from `TRUSTED_PROXY_IPS` may supply `X-Forwarded-For` (or `X-Real-IP` when absent). The server uses the nearest untrusted address in a valid IP chain. Other connections use their socket address. Your proxy must overwrite or correctly append forwarded addresses. Both variables are passed through by Compose.
 
 ---
 
