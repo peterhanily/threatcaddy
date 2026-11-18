@@ -49,6 +49,7 @@ Hardens CaddyAI chat, AgentCaddy agents, the supervisor and the agent bridge aga
 - Forensicate Scanner's check runs on this device and no longer contacts forensicate.ai. Like every agent, it sends what it reads to your AI model, and its description now says so.
 - When every deployed agent is paused or resting, Run says that no deployed agent is active in this investigation.
 - The AgentCaddy panel, its inbox and the sidebar's AgentCaddy status are in the analyst's language, including agent roles and statuses, counters with each language's plural forms, policy labels and the result of proposals rejected by a dismissal.
+- On the hosted site, enrichment and integration-list results name built-in lookups in the analyst's language instead of internal keys such as `builtin.vtIpLookup.name`, in what the AI reads and under an agent action's Result.
 
 ### AI routing and Settings
 
@@ -92,7 +93,8 @@ Hardens CaddyAI chat, AgentCaddy agents, the supervisor and the agent bridge aga
 ### Translation and layout
 
 - Investigation details show their item counts and dates instead of raw `{{count}}` and `{{date}}` placeholders.
-- The phone Analyst Mode banner, the screenshare menu and badge, the text shown in place of a view or a notification while screensharing, "Browse visible investigations", "No tags yet", the tag input, the loading text, the unsaved-draft and remote-investigation banners, and the investigation details dialog's labels are translated.
+- The phone Analyst Mode banner, the screenshare menu and badge, the text shown in place of a view or a notification while screensharing, "Browse visible investigations", "No tags yet", the tag input, the loading text, the unsaved-draft and remote-investigation banners, the standalone file's file:// warning, and the investigation details dialog's labels are translated.
+- The remote-investigation banner no longer says that data is not stored locally: it says that the investigation's contents come from the team server and are not saved on this device, and that items added while viewing it are. The standalone file's warning no longer says that the content security policy is not enforced: it says that the policy does not restrict scripts or network connections.
 - On phones, an agent proposal's header wraps instead of covering its status, the Approve all confirmation has its own row with larger buttons, and Settings → AI shows each configured agent host's URL on its own line. In right-to-left languages, a long Latin host name there is cut at its own end, so its start stays visible.
 
 ## v2.0.2 — 2026-11-16
