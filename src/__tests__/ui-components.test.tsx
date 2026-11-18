@@ -568,7 +568,7 @@ describe('ActiveFilterBar', () => {
     expect(screen.getByText('#urgent')).toBeInTheDocument();
   });
 
-  it('calls onClear when "Show All" button is clicked', () => {
+  it('calls onClear when "Show all" button is clicked', () => {
     const onClear = vi.fn();
     render(
       <ActiveFilterBar
@@ -576,11 +576,11 @@ describe('ActiveFilterBar', () => {
         onClear={onClear}
       />
     );
-    fireEvent.click(screen.getByText('Show All'));
+    fireEvent.click(screen.getByText('Show all'));
     expect(onClear).toHaveBeenCalledOnce();
   });
 
-  it('renders "Show All" button with correct aria-label', () => {
+  it('renders "Show all" button with correct aria-label', () => {
     render(
       <ActiveFilterBar
         folderName="Test"

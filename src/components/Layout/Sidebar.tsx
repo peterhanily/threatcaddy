@@ -19,6 +19,8 @@ import { useUIModals } from '../../contexts/UIModalContext';
 const AGENT_STATUS_KEYS = {
   running: 'sidebar.agentStatusRunning', waiting: 'sidebar.agentStatusWaiting', paused: 'sidebar.agentStatusPaused', error: 'sidebar.agentStatusError',
 } as const;
+/** The selected investigation's status, named as the filter bar names it. */
+const INVESTIGATION_STATUS_KEYS = { active: 'hub.active', closed: 'hub.closed', archived: 'hub.archived' } as const;
 
 interface SidebarProps {
   collapsed: boolean;
@@ -71,6 +73,7 @@ export function Sidebar({
   onToggleAgent,
 }: SidebarProps) {
   const { t } = useTranslation('common');
+  const { t: tInvestigations } = useTranslation('investigations');
 
   // Context hooks
   const { activeView, selectedTimelineId, setSelectedTimelineId, selectedWhiteboardId, setSelectedWhiteboardId, navigateTo } = useNavigation();
@@ -272,7 +275,7 @@ export function Sidebar({
             )}
             <div className="flex items-center gap-2 mt-1">
               <span className={cn('text-[10px] font-medium uppercase tracking-wide', statusTextColor)}>
-                {selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
+                {tInvestigations(INVESTIGATION_STATUS_KEYS[selectedStatus])}
               </span>
             </div>
           </button>

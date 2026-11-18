@@ -17,7 +17,7 @@ const KEYS: Record<string, string[]> = {
     'productDraft.retained', 'productDraft.resume', 'standaloneWarning.message', 'standaloneWarning.enableEncryption'],
   exec: ['dashboard.analystModeBanner'],
   integrations: ['fetch.updateExtension'],
-  investigations: ['remote.viewingBanner'],
+  investigations: ['remote.viewingBanner', 'filterBar.showAll', 'filterBar.viewDetails'],
 };
 
 // French writes "Version" and "Notifications" too.
@@ -40,6 +40,20 @@ describe('shell and settings text in every language', () => {
           if (key === 'sidebar.tags') expect(values[key], id).toBe(read(locale, 'investigations')['detail.tagsLabel']);
           else if (!SAME_AS_ENGLISH.has(`${locale} ${namespace}:${key}`)) expect(values[key], id).not.toBe(en[key]);
         }
+      }
+    }
+  });
+
+  it('translates every count form of the filter bar\'s playbook progress', () => {
+    const en = read('en', 'investigations');
+    const english = [en['filterBar.playbookProgress_one'], en['filterBar.playbookProgress_other']];
+    for (const text of english) expect(placeholders(text ?? '')).toEqual(['completed', 'count', 'name']);
+    for (const locale of locales) {
+      const values = read(locale, 'investigations');
+      for (const category of new Intl.PluralRules(locale).resolvedOptions().pluralCategories) {
+        const id = `${locale} investigations:filterBar.playbookProgress_${category}`;
+        expect(placeholders(values[`filterBar.playbookProgress_${category}`] ?? ''), id).toEqual(['completed', 'count', 'name']);
+        expect(english, id).not.toContain(values[`filterBar.playbookProgress_${category}`]);
       }
     }
   });
