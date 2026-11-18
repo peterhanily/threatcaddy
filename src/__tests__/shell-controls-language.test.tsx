@@ -56,6 +56,17 @@ describe('shell controls in the analyst\'s language', () => {
     }
   });
 
+  // Beside a wrapping label the check mark would shrink below 12 px; e2e/screenshare-menu-language.spec.ts measures it.
+  it.each([[null, 'screenshare.off'], ['TLP:AMBER+STRICT', 'screenshare.showUpTo']] as const)(
+    'keeps the check mark its full width with %s selected', (maxLevel, key) => {
+      render(<ScreenshareToggle maxLevel={maxLevel} onChangeLevel={vi.fn()} effectiveLevels={['TLP:CLEAR', 'TLP:AMBER+STRICT']} />);
+      fireEvent.click(screen.getByRole('button', { name: de['screenshare.toggle'] }));
+      const checks = screen.getAllByRole('button').flatMap(row => [...row.querySelectorAll('svg.lucide-check')]);
+      expect(checks).toHaveLength(1);
+      expect(checks[0].parentElement).toHaveTextContent(fill(de[key], { level: maxLevel ?? '' }));
+      expect(checks[0].getAttribute('class')).toMatch(/(^|\s)shrink-0(\s|$)/);
+    });
+
   it('labels notifications and hides their details while screensharing', () => {
     function Notify() {
       const { addToast } = useToast();
