@@ -146,7 +146,13 @@ docker compose exec server cat /data/files/.admin-secret
 # http://localhost:3002/admin
 ```
 
-**Important:** Delete the `.admin-secret` file after reading it, or set `ADMIN_SECRET` explicitly.
+The server deletes `.admin-secret` once an administrator exists: right after
+the first one is created, and at each startup while one exists. The secret only
+creates an administrator while none is active. It keeps working until it is
+rotated, so a copy in an older file-volume backup or snapshot still works; to
+retire it, set a new `ADMIN_SECRET` and restart, or use **Change Secret** in
+the admin panel. If every administrator is later lost, set `ADMIN_SECRET` and
+restart to create one again.
 
 ### Docker Compose Reference
 
@@ -255,7 +261,7 @@ The server Dockerfile (`server/Dockerfile`) uses a multi-stage build:
 | `TRUST_PROXY` | `true`/`1` enables forwarding from trusted peers only; `false`/`0` disables it | `0` |
 | `TRUSTED_PROXY_IPS` | Comma-separated socket peer IPs or CIDR ranges (IPv4 or IPv6) allowed to supply forwarding headers; no hostnames or `/0`. See [Important Proxy Settings](#important-proxy-settings) | `127.0.0.1,::1` |
 | `SERVER_NAME` | Display name for the server instance | Auto-generated (e.g., "Alpha Hub") |
-| `ADMIN_SECRET` | Bootstrap secret for creating the first admin user. If not set, auto-generated on first launch and written to `${FILE_STORAGE_PATH}/.admin-secret`. Use at least 24 random characters; startup logs a warning for a shorter value. A configured value replaces a secret changed in the admin panel at every restart. | Auto-generated |
+| `ADMIN_SECRET` | Bootstrap secret for creating the first admin user. If not set, auto-generated on first launch and written to `${FILE_STORAGE_PATH}/.admin-secret`. The generated file is deleted once an administrator exists. Use at least 24 random characters; startup logs a warning for a shorter value that explains how to rotate it. A configured value replaces a secret changed in the admin panel at every restart. | Auto-generated |
 
 ### LLM API Keys (Optional)
 
@@ -837,9 +843,11 @@ declare a `HEALTHCHECK` against `/health`. Since 2.0.4, `/health` answers only
 `status` and `version` (monitoring that read `db`, `storage`, `uptime` or
 `memory` should alert on the status code and use container metrics), and the
 application code in `/app` is read-only to the runtime user, so keep
-`FILE_STORAGE_PATH` on a writable volume. On Kubernetes, leave `ADMIN_HOST`
-unset and reach administration with `kubectl port-forward`; do not expose port
-3002 through a Service.
+`FILE_STORAGE_PATH` on a writable volume. The first 2.0.4 startup also deletes
+a generated `.admin-secret` file if an administrator exists (see
+[Retrieve Admin Bootstrap Secret](#retrieve-admin-bootstrap-secret)). On
+Kubernetes, leave `ADMIN_HOST` unset and reach administration with
+`kubectl port-forward`; do not expose port 3002 through a Service.
 
 Preserve the database, managed-file volumes, stable application keys and other
 deployment settings. Confirm the running image identity and OCI revision label

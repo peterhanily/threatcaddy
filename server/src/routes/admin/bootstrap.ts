@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { signAdminToken } from '../../middleware/admin-auth.js';
 import { rateLimiter } from '../../middleware/rate-limit.js';
 import { bootstrapAdminUser } from '../../services/admin-session-service.js';
+import { removeBootstrapSecretFile } from '../../services/bootstrap-secret-file.js';
 import { logger } from '../../lib/logger.js';
 import { isUniqueViolation } from '../../lib/db-errors.js';
 
@@ -40,6 +41,7 @@ app.post('/api/bootstrap', async (c) => {
     const { admin } = result;
     const token = await signAdminToken(admin.id, admin.username, result.passwordHash);
     logger.info('Admin account created via bootstrap', { username: admin.username });
+    await removeBootstrapSecretFile();
     return c.json({ token, admin: { id: admin.id, username: admin.username, displayName: admin.displayName } });
   } catch (err: unknown) {
     if (isUniqueViolation(err)) return c.json({ error: 'Username already exists' }, 409);

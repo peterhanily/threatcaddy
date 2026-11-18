@@ -2,11 +2,11 @@ import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
 import { eq, and, inArray } from 'drizzle-orm';
 import { writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { db } from '../db/index.js';
 import { serverSettings, folders, investigationMembers, users, adminUsers } from '../db/schema.js';
 import { logger } from '../lib/logger.js';
-import { revokeAdminSessions } from './admin-session-service.js';
+import { hasActiveAdmin, revokeAdminSessions } from './admin-session-service.js';
+import { bootstrapSecretFilePath, removeBootstrapSecretFile } from './bootstrap-secret-file.js';
 import { encryptSecret, decryptSecret } from '../bots/secret-store.js';
 
 export const ADMIN_SYSTEM_USER_ID = '__system_admin__';
@@ -15,12 +15,18 @@ const SETTINGS_KEY = 'admin_secret_hash';
 const RECOMMENDED_ADMIN_SECRET_LENGTH = 24;
 
 export async function initAdminSecret(): Promise<void> {
+  await storeAdminSecret();
+  // The generated plaintext has done its job once an administrator exists.
+  if (await hasActiveAdmin()) await removeBootstrapSecretFile();
+}
+
+async function storeAdminSecret(): Promise<void> {
   const envSecret = process.env.ADMIN_SECRET?.trim();
 
   if (envSecret) {
     // Warn only: refusing to start would break existing installations on upgrade.
     if (envSecret.length < RECOMMENDED_ADMIN_SECRET_LENGTH) {
-      logger.warn(`ADMIN_SECRET is shorter than ${RECOMMENDED_ADMIN_SECRET_LENGTH} characters; replace it with a long random value such as the output of: openssl rand -base64 32`);
+      logger.warn(`ADMIN_SECRET is shorter than ${RECOMMENDED_ADMIN_SECRET_LENGTH} characters. To rotate it, set ADMIN_SECRET in the server environment (.env for Docker Compose) to a long random value such as the output of: openssl rand -base64 32, then restart the server; the new value replaces the stored bootstrap secret`);
     }
     // Env var provided — hash and upsert
     const hash = await argon2.hash(envSecret, { type: argon2.argon2id });
@@ -50,10 +56,10 @@ export async function initAdminSecret(): Promise<void> {
   const inserted = await db.select().from(serverSettings).where(eq(serverSettings.key, SETTINGS_KEY)).limit(1);
   if (inserted.length > 0 && inserted[0].value === hash) {
     // Write to file instead of stdout to avoid log exposure
-    const secretFilePath = join(process.env.FILE_STORAGE_PATH || '/data/files', '.admin-secret');
+    const secretFilePath = bootstrapSecretFilePath();
     try {
       await writeFile(secretFilePath, secret, { mode: 0o600 });
-      logger.info(`Generated new admin bootstrap secret — written to ${secretFilePath} (read and delete it)`);
+      logger.info(`Generated new admin bootstrap secret — written to ${secretFilePath} (deleted once an administrator exists)`);
     } catch {
       // Fall back to stderr if file write fails (e.g. read-only FS) — never log the secret to structured logs
       logger.warn('Generated new admin bootstrap secret — could not write to file. Set ADMIN_SECRET env var or mount a writable volume at FILE_STORAGE_PATH');
