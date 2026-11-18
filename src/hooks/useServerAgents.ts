@@ -44,6 +44,9 @@ interface UseServerAgentsResult {
   serverExecutionAvailable: boolean;
   /** Deployments an unavailable answer paused, for the panel to name in the analyst's language. */
   pausedDeploymentIds: string[];
+  /** Paused deployments whose notice the analyst dismissed: kept here, so the dismissal outlasts the panel. */
+  dismissedPausedIds: string[];
+  dismissPausedNotice: (deploymentIds: string[]) => void;
   registering: boolean;
   error: string | null;
   registerServerAgents: () => Promise<void>;
@@ -56,6 +59,10 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
   const [serverRunning, setServerRunning] = useState(false);
   const [serverExecutionAvailable, setServerExecutionAvailable] = useState(false);
   const [pausedDeploymentIds, setPausedDeploymentIds] = useState<string[]>([]);
+  const [dismissedPausedIds, setDismissedPausedIds] = useState<string[]>([]);
+  const dismissPausedNotice = useCallback((deploymentIds: string[]) => {
+    setDismissedPausedIds(ids => [...new Set([...ids, ...deploymentIds])]);
+  }, []);
   const [registering, setRegistering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -351,6 +358,8 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
     serverRunning,
     serverExecutionAvailable,
     pausedDeploymentIds,
+    dismissedPausedIds,
+    dismissPausedNotice,
     registering,
     error,
     registerServerAgents,

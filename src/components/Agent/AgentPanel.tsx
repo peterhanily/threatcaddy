@@ -76,6 +76,9 @@ interface AgentPanelProps {
   serverExecutionAvailable?: boolean;
   /** Deployments the server's unavailable answer paused. */
   serverPausedDeploymentIds?: string[];
+  /** Paused deployments whose notice was dismissed; held by useServerAgents, so it outlasts this panel. */
+  serverPausedDismissedIds?: string[];
+  onDismissServerPaused?: (deploymentIds: string[]) => void;
   serverRegistered?: boolean;
   serverRunning?: boolean;
   onRegisterServer?: () => Promise<void>;
@@ -93,7 +96,8 @@ function InvestigationAgentPanel({
   agentRunning = false, agentProgress = '', agentStreamingContent = '', agentError = null, agentStatus,
   onRunOnce, onNavigateToChat, onNavigateToNote, onEntitiesChanged, onOpenSettings, onFolderChanged,
   profiles = [], deployments = [], onDeployProfile, onRemoveDeployment,
-  serverConnected, serverExecutionAvailable, serverPausedDeploymentIds, serverRegistered, serverRunning, onRegisterServer, onUnregisterServer,
+  serverConnected, serverExecutionAvailable, serverPausedDeploymentIds, serverPausedDismissedIds = [], onDismissServerPaused,
+  serverRegistered, serverRunning, onRegisterServer, onUnregisterServer,
 }: AgentPanelProps) {
   const { t } = useTranslation('agent');
   const { t: tSettings } = useTranslation('settings');
@@ -177,7 +181,6 @@ function InvestigationAgentPanel({
   const serverPaused = deployments.filter(d => serverPausedDeploymentIds?.includes(d.id) && d.status === 'paused' && !deployments.some(again =>
     again.profileId === d.profileId && again.status !== 'paused' && !serverPausedDeploymentIds.includes(again.id)
     && again.createdAt >= d.updatedAt)).map(d => d.id);
-  const [dismissedServerPaused, setDismissedServerPaused] = useState<string[]>([]);
   const profileFor = (id: string) => profiles.find(pr => pr.id === id) || BUILTIN_AGENT_PROFILES.find(pr => pr.id === id);
 
   // Check if LLM is configured
@@ -482,11 +485,13 @@ function InvestigationAgentPanel({
         </div>
       )}
 
-      {serverPaused.some(id => !dismissedServerPaused.includes(id)) && (
+      {serverPaused.some(id => !serverPausedDismissedIds.includes(id)) && (
         <div className="flex items-start gap-2 px-4 py-2 bg-accent-amber/10 text-accent-amber text-xs border-b border-accent-amber/20 shrink-0" role="status">
           <AlertTriangle size={12} className="shrink-0 mt-0.5" />
           <span className="flex-1">{t('panel.serverAgentsPaused', { count: serverPaused.length })}</span>
-          <button onClick={() => setDismissedServerPaused(serverPaused)} className="hover:text-text-primary shrink-0" aria-label={t('panel.dismissNotice')}><X size={12} /></button>
+          {onDismissServerPaused && (
+            <button onClick={() => onDismissServerPaused(serverPaused)} className="hover:text-text-primary shrink-0" aria-label={t('panel.dismissNotice')}><X size={12} /></button>
+          )}
         </div>
       )}
 

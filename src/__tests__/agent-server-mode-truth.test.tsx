@@ -4,6 +4,7 @@
  * status check, and says in the analyst's language when an unavailable answer
  * paused an agent that was set to run on the server.
  */
+import { useState } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
@@ -33,13 +34,16 @@ const answering = (body: Record<string, unknown>) => vi.fn(async () => new Respo
 const deployment = (values: Partial<AgentDeployment> = {}): AgentDeployment => ({ id: 'dep-hunter', investigationId: 'S', profileId: 'ap-threat-hunter',
   status: 'idle', order: 0, createdAt: 1, updatedAt: 1, ...values });
 
-/** The agent panel with the props App passes from useAgentDeployments and useServerAgents. */
-function Panel({ folder }: { folder: Folder }) {
+/** The agent panel with the props App passes from useAgentDeployments and useServerAgents. Like App, the
+ * hooks stay mounted while the AgentCaddy view is closed (open false) and the panel is not. */
+function Panel({ folder, open = true }: { folder: Folder; open?: boolean }) {
   const { deployments } = useAgentDeployments(folder.id);
   const serverAgents = useServerAgents({ investigationId: folder.id, deployments, profiles: BUILTIN_AGENT_PROFILES, enabled: deployments.some(d => d.serverSideEnabled) });
+  if (!open) return null;
   return (
     <AgentPanel folder={folder} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={deployments} agentError={serverAgents.error}
       serverConnected serverExecutionAvailable={serverAgents.serverExecutionAvailable} serverPausedDeploymentIds={serverAgents.pausedDeploymentIds}
+      serverPausedDismissedIds={serverAgents.dismissedPausedIds} onDismissServerPaused={serverAgents.dismissPausedNotice}
       serverRegistered={serverAgents.serverRegistered} serverRunning={serverAgents.serverRunning}
       onRegisterServer={serverAgents.registerServerAgents} onUnregisterServer={serverAgents.unregisterServerAgents} />
   );
@@ -98,11 +102,15 @@ describe('the paused notice', () => {
   const hunterAgain = deployment({ id: 'dep-hunter-2', order: 2 });
   const malwareAgain = malware({ id: 'dep-malware-2', order: 3 });
   const notice = (count: number) => i18n.t(STEM, { ns: 'agent', count });
+  /** The panel, with its dismissals held outside it, as useServerAgents holds them for App. */
+  function NoticePanel({ folder, ids, list }: { folder: Folder; ids: string[]; list: AgentDeployment[] }) {
+    const [dismissed, setDismissed] = useState<string[]>([]);
+    return <AgentPanel folder={folder} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={list} serverConnected serverPausedDeploymentIds={ids}
+      serverPausedDismissedIds={dismissed} onDismissServerPaused={more => setDismissed(previous => [...previous, ...more])} />;
+  }
   async function showNotice(pausedIds: string[], deployments: AgentDeployment[]) {
     const folder = await db.folders.get('S') as Folder;
-    const panel = (ids: string[], list: AgentDeployment[]) => (
-      <AgentPanel folder={folder} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={list} serverConnected serverPausedDeploymentIds={ids} />
-    );
+    const panel = (ids: string[], list: AgentDeployment[]) => <NoticePanel folder={folder} ids={ids} list={list} />;
     const view = render(panel(pausedIds, deployments));
     return (ids: string[], list: AgentDeployment[]) => view.rerender(panel(ids, list));
   }
@@ -134,6 +142,29 @@ describe('the paused notice', () => {
     show(['dep-hunter'], [deployment({ id: 'dep-hunter-0', createdAt: 1, updatedAt: 1 }),
       deployment({ status: 'paused', order: 1, createdAt: 2, updatedAt: 999 }), deployment({ id: 'dep-hunter-2', order: 2, createdAt: 1000, updatedAt: 1000 })]);
     await waitFor(() => expect(document.body.textContent).not.toContain('set to run there'));
+  });
+
+  it('a dismissal lasts while the AgentCaddy view is closed and opened again, and a later pause shows the notice again', async () => {
+    const serverCopy = (values: Partial<AgentDeployment>) => deployment({ serverSideEnabled: true, handoffState: 'client', ...values });
+    await db.agentDeployments.add(serverCopy({}));
+    vi.stubGlobal('fetch', answering(UNAVAILABLE));
+    const folder = await db.folders.get('S') as Folder;
+    const view = render(<Panel folder={folder} />);
+    expect(await screen.findByText(notice(1))).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: en['panel.dismissNotice'] }));
+    expect(document.body.textContent).not.toContain('set to run there');
+
+    // Notes, then AgentCaddy again: the panel mounts anew.
+    view.rerender(<Panel folder={folder} open={false} />);
+    view.rerender(<Panel folder={folder} />);
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 300)); });
+    expect(screen.getByRole('tablist')).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain('set to run there');
+
+    // Another agent set to run on the server is paused later.
+    await db.agentDeployments.add(serverCopy({ id: 'dep-malware', profileId: 'ap-malware-analyst', order: 1 }));
+    window.dispatchEvent(new CustomEvent('tc-folders-changed'));
+    expect(await screen.findByText(notice(2))).toBeInTheDocument();
   });
 
   it('a dismissed notice comes back when another agent is paused', async () => {
