@@ -1141,9 +1141,10 @@ export function ChatView({
                   {threadMode === 'plan' ? <Eye size={10} /> : <Play size={10} />}
                   {threadMode === 'plan' ? t('view.planMode') : t('view.actMode')}
                 </button>
+                {/* No aria-pressed: the label names the current setting, and a toggle's label must not change with its state
+                    ('Ask, not pressed' would contradict it). The name and the description below carry the setting. */}
                 <button
                   onClick={() => setYoloMode(!yoloMode)}
-                  aria-pressed={yoloMode}
                   aria-describedby={yoloDescriptionId}
                   className={cn(
                     'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors me-1',

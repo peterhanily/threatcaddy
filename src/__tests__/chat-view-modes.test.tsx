@@ -182,16 +182,19 @@ describe('mode copy', () => {
 
 // Assistive technology gets the switch's state and the description the tooltip gives mouse users.
 describe('the Ask/YOLO switch for assistive technology', () => {
-  it('says whether YOLO is on and describes the current setting', () => {
+  // The label names the current setting, so the switch is a plain button. aria-pressed with a label that changes
+  // would read 'Ask, toggle button, not pressed' while CaddyAI asks (WAI-ARIA APG button pattern).
+  it('names the current setting and describes it, with no pressed state that contradicts the label', () => {
     renderChat('act');
     const toggle = screen.getByRole('button', { name: 'Ask' });
-    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(toggle).not.toHaveAttribute('aria-pressed');
     expect(toggle).toHaveAccessibleDescription(ASK_TITLE);
     fireEvent.click(toggle);
     const on = screen.getByRole('button', { name: 'YOLO' });
-    expect(on).toHaveAttribute('aria-pressed', 'true');
+    expect(on).not.toHaveAttribute('aria-pressed');
     expect(on).toHaveAccessibleDescription(YOLO_TITLE);
     expect(on).toHaveAttribute('title', YOLO_TITLE);
+    expect(screen.queryByRole('button', { name: 'Ask' })).toBeNull();
   });
 
   it('in Plan mode, the description says the switch applies only in Act mode', () => {
