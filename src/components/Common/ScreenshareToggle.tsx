@@ -54,8 +54,8 @@ export function ScreenshareToggle({ maxLevel, onChangeLevel, effectiveLevels }: 
             onClick={() => { onChangeLevel(null); setOpen(false); }}
             className="w-full flex items-center gap-2 min-h-11 md:min-h-0 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg"
           >
-            {!active && <Check size={12} />}
-            <span className={cn('whitespace-nowrap', !active ? '' : 'ms-5')}>{t('screenshare.off')}</span>
+            {!active && <Check size={12} className="shrink-0" />}
+            <span className={cn('min-w-0 text-start', !active ? '' : 'ms-5')}>{t('screenshare.off')}</span>
           </button>
           {effectiveLevels.map((level, i) => (
             <button
@@ -66,8 +66,9 @@ export function ScreenshareToggle({ maxLevel, onChangeLevel, effectiveLevels }: 
                 i === effectiveLevels.length - 1 && 'rounded-b-lg'
               )}
             >
-              {maxLevel === level && <Check size={12} />}
-              <span className={cn('whitespace-nowrap', maxLevel === level ? '' : 'ms-5')}>{t('screenshare.showUpTo', { level })}</span>
+              {maxLevel === level && <Check size={12} className="shrink-0" />}
+              {/* Translations such as Turkish are wider than the menu, so the label wraps. */}
+              <span className={cn('min-w-0 text-start', maxLevel === level ? '' : 'ms-5')}>{t('screenshare.showUpTo', { level })}</span>
             </button>
           ))}
         </div>

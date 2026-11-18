@@ -40,6 +40,22 @@ describe('shell controls in the analyst\'s language', () => {
     expect(screen.queryByText(/Screenshare:/)).toBeNull();
   });
 
+  // Translated labels such as Turkish "TLP:AMBER+STRICT düzeyine kadar göster" are wider than the menu.
+  // Layout is checked in e2e/screenshare-menu-language.spec.ts.
+  it('lets each screenshare menu label wrap inside the menu', () => {
+    const levels = ['TLP:CLEAR', 'TLP:AMBER+STRICT'];
+    render(<ScreenshareToggle maxLevel="TLP:CLEAR" onChangeLevel={vi.fn()} effectiveLevels={levels} />);
+    fireEvent.click(screen.getByRole('button', { name: de['screenshare.toggle'] }));
+    const rows = [de['screenshare.off'], ...levels.map(level => fill(de['screenshare.showUpTo'], { level }))];
+    for (const name of rows) {
+      const label = screen.getByRole('button', { name }).querySelector('span');
+      expect(label, name).toHaveTextContent(name);
+      expect(label?.className, name).not.toMatch(/(^|\s)whitespace-nowrap(\s|$)/);
+      expect(label?.className, name).toMatch(/(^|\s)min-w-0(\s|$)/);
+      expect(label?.className, name).toMatch(/(^|\s)text-start(\s|$)/);
+    }
+  });
+
   it('labels notifications and hides their details while screensharing', () => {
     function Notify() {
       const { addToast } = useToast();
