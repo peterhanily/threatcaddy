@@ -67,6 +67,8 @@
   "panel.registered": "Registered",
   "panel.disable": "Disable",
   "panel.enable": "Enable",
+  "panel.serverAgentsPaused_one": "The team server cannot run agents, so {{count}} agent that was set to run there is paused. It does not run in this browser either; deploy it again to run it here.",
+  "panel.serverAgentsPaused_other": "The team server cannot run agents, so {{count}} agents that were set to run there are paused. They do not run in this browser either; deploy them again to run them here.",
   "panel.noAgentTasks": "No agent tasks. Agents create and consume tasks as they work.",
   "panel.taskSourceAgent": "agent",
   "panel.taskSourceDelegated": "delegated",

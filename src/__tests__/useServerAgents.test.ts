@@ -38,7 +38,10 @@ describe('unavailable server agent execution', () => {
     await waitFor(async () => expect((await db.agentDeployments.get('server-owned'))?.status).toBe('paused'));
     expect(result.current.serverRegistered).toBe(false);
     expect(result.current.serverRunning).toBe(false);
-    expect(result.current.error).toBe('Server execution is unavailable.');
+    expect(result.current.serverExecutionAvailable).toBe(false);
+    // The server's English reason is not an error; the panel names the paused deployment in the analyst's language.
+    expect(result.current.error).toBeNull();
+    await waitFor(() => expect(result.current.pausedDeploymentIds).toEqual(['server-owned']));
     expect(await db.agentDeployments.get('server-owned')).toMatchObject({ handoffState: 'server', serverSideEnabled: false });
     expect(await db.agentDeployments.get('browser-only')).toEqual(deployments[1]);
     expect(await db.agentDeployments.get('already-paused')).toEqual(deployments[2]);
@@ -81,6 +84,33 @@ describe('unavailable server agent execution', () => {
     expect(mocks.handoff).not.toHaveBeenCalled();
     expect(mocks.recover).not.toHaveBeenCalled();
     expect(mocks.reclaim).not.toHaveBeenCalled();
+  });
+
+  it('the routine status check of a 2.0.x server pauses nothing and reports no error', async () => {
+    const deployments = [deployment('browser-only', { serverSideEnabled: false, handoffState: 'client', status: 'idle' })];
+    await db.agentDeployments.bulkAdd(deployments);
+    // What every 2.0.x server answers to GET /status/:investigationId.
+    const fetch = vi.fn().mockImplementation(() => new Response(JSON.stringify({ registered: false, serverRunning: false, serverExecutionAvailable: false,
+      reason: 'Server-side AgentCaddy execution is unavailable until tool restrictions, read-only policies and durable approvals are enforced.',
+      heartbeatStale: false, botCount: 0, lastHeartbeat: null }), { headers: { 'Content-Type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetch);
+    const { result } = renderHook(() => useServerAgents({ investigationId: 'case-one', deployments, profiles: [], enabled: false }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect(result.current).toMatchObject({ serverExecutionAvailable: false, error: null, pausedDeploymentIds: [] });
+    expect(await db.agentDeployments.get('browser-only')).toEqual(deployments[0]);
+  });
+
+  it('only a server that reports execution available offers server-side mode', async () => {
+    const json = (body: unknown) => new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } });
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => json({ registered: false, serverRunning: false, serverExecutionAvailable: true })));
+    const { result } = renderHook(() => useServerAgents({ investigationId: 'case-one', deployments: [], profiles: [], enabled: false }));
+    await waitFor(() => expect(result.current.serverExecutionAvailable).toBe(true));
+    // A server that does not say so is not assumed to run agents.
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => json({ registered: true, serverRunning: false })));
+    const silent = renderHook(() => useServerAgents({ investigationId: 'case-two', deployments: [], profiles: [], enabled: false }));
+    await waitFor(() => expect(silent.result.current.serverRegistered).toBe(true));
+    expect(silent.result.current.serverExecutionAvailable).toBe(false);
   });
 });
 

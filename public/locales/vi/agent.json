@@ -67,6 +67,8 @@
   "panel.registered": "Đã đăng ký",
   "panel.disable": "Vô hiệu hóa",
   "panel.enable": "Kích hoạt",
+  "panel.serverAgentsPaused_one": "Máy chủ nhóm không thể chạy tác nhân, vì vậy {{count}} tác nhân được đặt để chạy ở đó đã bị tạm dừng. Tác nhân này cũng không chạy trong trình duyệt này; hãy triển khai lại để chạy tại đây.",
+  "panel.serverAgentsPaused_other": "Máy chủ nhóm không thể chạy tác nhân, vì vậy {{count}} tác nhân được đặt để chạy ở đó đã bị tạm dừng. Các tác nhân này cũng không chạy trong trình duyệt này; hãy triển khai lại để chạy chúng tại đây.",
   "panel.noAgentTasks": "Không có nhiệm vụ tác nhân. Tác nhân tạo và sử dụng nhiệm vụ khi làm việc.",
   "panel.taskSourceAgent": "tác nhân",
   "panel.taskSourceDelegated": "được ủy thác",

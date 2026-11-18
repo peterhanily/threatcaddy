@@ -72,6 +72,10 @@ interface AgentPanelProps {
   onRemoveDeployment?: (deploymentId: string) => void;
   /** Server-side agent support */
   serverConnected?: boolean;
+  /** The server said it can run agents; no 2.0.x server does. */
+  serverExecutionAvailable?: boolean;
+  /** Deployments the server's unavailable answer paused. */
+  serverPausedDeploymentIds?: string[];
   serverRegistered?: boolean;
   serverRunning?: boolean;
   onRegisterServer?: () => Promise<void>;
@@ -89,7 +93,7 @@ function InvestigationAgentPanel({
   agentRunning = false, agentProgress = '', agentStreamingContent = '', agentError = null, agentStatus,
   onRunOnce, onNavigateToChat, onNavigateToNote, onEntitiesChanged, onOpenSettings, onFolderChanged,
   profiles = [], deployments = [], onDeployProfile, onRemoveDeployment,
-  serverConnected, serverRegistered, serverRunning, onRegisterServer, onUnregisterServer,
+  serverConnected, serverExecutionAvailable, serverPausedDeploymentIds, serverRegistered, serverRunning, onRegisterServer, onUnregisterServer,
 }: AgentPanelProps) {
   const { t } = useTranslation('agent');
   const { t: tSettings } = useTranslation('settings');
@@ -167,6 +171,9 @@ function InvestigationAgentPanel({
     setCeilingNoticeDismissed(true);
     try { localStorage.setItem(ceilingNoticeKey, '1'); } catch { /* The notice shows again next time. */ }
   };
+  // This investigation's agents that the team server's unavailable answer paused.
+  const serverPaused = deployments.filter(d => serverPausedDeploymentIds?.includes(d.id)).length;
+  const [dismissedServerPaused, setDismissedServerPaused] = useState(0);
   const profileFor = (id: string) => profiles.find(pr => pr.id === id) || BUILTIN_AGENT_PROFILES.find(pr => pr.id === id);
 
   // Check if LLM is configured
@@ -471,6 +478,14 @@ function InvestigationAgentPanel({
         </div>
       )}
 
+      {serverPaused > dismissedServerPaused && (
+        <div className="flex items-start gap-2 px-4 py-2 bg-accent-amber/10 text-accent-amber text-xs border-b border-accent-amber/20 shrink-0" role="status">
+          <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+          <span className="flex-1">{t('panel.serverAgentsPaused', { count: serverPaused })}</span>
+          <button onClick={() => setDismissedServerPaused(serverPaused)} className="hover:text-text-primary shrink-0" aria-label={t('panel.dismissNotice')}><X size={12} /></button>
+        </div>
+      )}
+
       {/* Error banner */}
       {error && (
         <div className="flex items-start gap-2 px-4 py-2 bg-red-400/10 text-red-400 text-xs border-b border-red-400/20 shrink-0" role="alert">
@@ -699,8 +714,8 @@ function InvestigationAgentPanel({
             </div>
           )}
 
-          {/* Server-side mode */}
-          {serverConnected && deployments.length > 0 && (
+          {/* Server-side mode, offered only when the server says it can run agents */}
+          {serverConnected && serverExecutionAvailable && deployments.length > 0 && (
             <div className="px-4 py-3 border-t border-border-subtle">
               <div className="flex items-center justify-between">
                 <div>

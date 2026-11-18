@@ -1966,6 +1966,8 @@ const AppInner = memo(function AppInner({
               onDeployProfile={(profile) => agentDeploymentsHook.deployProfile(profile)}
               onRemoveDeployment={agentDeploymentsHook.removeDeployment}
               serverConnected={!!auth.connected}
+              serverExecutionAvailable={serverAgents.serverExecutionAvailable}
+              serverPausedDeploymentIds={serverAgents.pausedDeploymentIds}
               serverRegistered={serverAgents.serverRegistered}
               serverRunning={serverAgents.serverRunning}
               onRegisterServer={serverAgents.registerServerAgents}

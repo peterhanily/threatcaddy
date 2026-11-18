@@ -67,6 +67,8 @@
   "panel.registered": "Registriert",
   "panel.disable": "Deaktivieren",
   "panel.enable": "Aktivieren",
+  "panel.serverAgentsPaused_one": "Der Team-Server kann keine Agenten ausführen, daher wurde {{count}} Agent, der dort laufen sollte, pausiert. Er läuft auch nicht in diesem Browser; setzen Sie ihn erneut ein, um ihn hier auszuführen.",
+  "panel.serverAgentsPaused_other": "Der Team-Server kann keine Agenten ausführen, daher wurden {{count}} Agenten, die dort laufen sollten, pausiert. Sie laufen auch nicht in diesem Browser; setzen Sie sie erneut ein, um sie hier auszuführen.",
   "panel.noAgentTasks": "Keine Agentenaufgaben. Agenten erstellen und verarbeiten Aufgaben während ihrer Arbeit.",
   "panel.taskSourceAgent": "Agent",
   "panel.taskSourceDelegated": "delegiert",

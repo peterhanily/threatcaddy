@@ -67,6 +67,8 @@
   "panel.registered": "등록됨",
   "panel.disable": "비활성화",
   "panel.enable": "활성화",
+  "panel.serverAgentsPaused_one": "팀 서버는 에이전트를 실행할 수 없으므로 서버에서 실행하도록 설정된 에이전트 {{count}}개가 일시 중지되었습니다. 이 브라우저에서도 실행되지 않습니다. 여기서 실행하려면 다시 배포하세요.",
+  "panel.serverAgentsPaused_other": "팀 서버는 에이전트를 실행할 수 없으므로 서버에서 실행하도록 설정된 에이전트 {{count}}개가 일시 중지되었습니다. 이 브라우저에서도 실행되지 않습니다. 여기서 실행하려면 다시 배포하세요.",
   "panel.noAgentTasks": "에이전트 작업 없음. 에이전트는 작업 중 작업을 생성하고 소비합니다.",
   "panel.taskSourceAgent": "에이전트",
   "panel.taskSourceDelegated": "위임됨",

@@ -67,6 +67,8 @@
   "panel.registered": "Geregistreerd",
   "panel.disable": "Uitschakelen",
   "panel.enable": "Inschakelen",
+  "panel.serverAgentsPaused_one": "De teamserver kan geen agenten uitvoeren, dus {{count}} agent die daar zou draaien is gepauzeerd. Hij draait ook niet in deze browser; implementeer hem opnieuw om hem hier uit te voeren.",
+  "panel.serverAgentsPaused_other": "De teamserver kan geen agenten uitvoeren, dus {{count}} agenten die daar zouden draaien zijn gepauzeerd. Ze draaien ook niet in deze browser; implementeer ze opnieuw om ze hier uit te voeren.",
   "panel.noAgentTasks": "Geen agenttaken. Agenten maken en verwerken taken tijdens hun werk.",
   "panel.taskSourceAgent": "agent",
   "panel.taskSourceDelegated": "gedelegeerd",

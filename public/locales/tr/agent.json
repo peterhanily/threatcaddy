@@ -67,6 +67,8 @@
   "panel.registered": "Kayıtlı",
   "panel.disable": "Devre Dışı Bırak",
   "panel.enable": "Etkinleştir",
+  "panel.serverAgentsPaused_one": "Ekip sunucusu ajan çalıştıramıyor, bu yüzden orada çalışacak şekilde ayarlanmış {{count}} ajan duraklatıldı. Bu ajan bu tarayıcıda da çalışmaz; burada çalıştırmak için yeniden dağıtın.",
+  "panel.serverAgentsPaused_other": "Ekip sunucusu ajan çalıştıramıyor, bu yüzden orada çalışacak şekilde ayarlanmış {{count}} ajan duraklatıldı. Bu ajanlar bu tarayıcıda da çalışmaz; burada çalıştırmak için yeniden dağıtın.",
   "panel.noAgentTasks": "Ajan görevi yok. Ajanlar çalışırken görevler oluşturur ve tüketir.",
   "panel.taskSourceAgent": "ajan",
   "panel.taskSourceDelegated": "devredildi",
