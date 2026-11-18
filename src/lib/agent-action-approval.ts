@@ -19,6 +19,8 @@ import { mintHumanApproval } from './human-approval';
 import { toolExecutionError, type ToolExecutionConstraints, type ToolExecutionResult } from './llm-tool-execution';
 import { SUPERVISOR_ACTION_PROFILE, SUPERVISOR_TOOLS, getSupervisorToolPermission } from './supervisor-tool-policy';
 import { classifyToolCall, isRoutineReach } from './tool-reach';
+import { getToolBinding, isDynamicTool } from './tool-binding';
+import { getReadOnlyEntityError } from './tool-entity-policy';
 import { workspaceStorageKey } from './workspace-profiles';
 
 function storedSettings(): Settings {
@@ -33,6 +35,10 @@ async function proposerRemoved(action: AgentAction): Promise<boolean> {
   return !await db.agentDeployments.where('investigationId').equals(action.investigationId)
     .filter(deployment => deployment.profileId === action.agentConfigId).first();
 }
+
+/** These return what a remote system answered, which can read like any refusal
+ * below although the request was sent: their result is never reworded. */
+const passesRemoteAnswer = (tool: string) => isDynamicTool(tool) || tool === 'query_siem';
 
 /** Re-derive what the proposing agent may do today; the stored row is not trusted.
  * A refusal is the failed row's reason in the inbox, so it is in the analyst's language. */
@@ -57,12 +63,22 @@ async function approvalConstraints(action: AgentAction, toolUse: ToolUseBlock): 
 
   const profile = await resolveAgentProfile(action.agentConfigId);
   if (action.agentConfigId && !profile) return await agentRefusal('refusal.profileGone');
+  const settings = storedSettings();
   const { effectiveAllowedTools } = buildAgentToolset({
     profile, baseTools: TOOL_DEFINITIONS, delegationTools: DELEGATION_TOOL_DEFINITIONS, executiveTools: EXECUTIVE_TOOL_DEFINITIONS,
-    hostTools: getHostToolDefinitions(storedSettings()), getActionClass: getToolActionClass,
+    hostTools: getHostToolDefinitions(settings), getActionClass: getToolActionClass,
     homeShareable: await isShareableFolder(action.investigationId),
   });
   if (!effectiveAllowedTools.has(action.toolName)) return await agentRefusal('refusal.toolNotAllowed', { tool: action.toolName });
+  if (passesRemoteAnswer(action.toolName)) {
+    // Their failed result is the remote answer, so the dispatcher's checks before
+    // the request (llm-tools.ts) are made here too, and said in the analyst's language.
+    if (isDynamicTool(action.toolName)) {
+      const binding = await getToolBinding(toolUse, action.investigationId, 'act', settings).catch(() => undefined);
+      if (!action.toolBinding || action.toolBinding !== binding) return await agentRefusal('refusal.toolChanged', { tool: action.toolName });
+    }
+    if (getReadOnlyEntityError(toolUse, profile?.readOnlyEntityTypes)) return await agentRefusal('refusal.readOnlyEntity');
+  }
   return { surface: 'agent', allowedTools: effectiveAllowedTools, toolBinding: action.toolBinding, approval };
 }
 
@@ -73,15 +89,16 @@ const DISPATCH_REFUSALS: ReadonlyArray<readonly [RegExp, string]> = [
   [/^Agents cannot change another investigation\.$/, 'refusal.otherInvestigationChange'],
   [/^Agents cannot read other investigations from this investigation\.$/, 'refusal.otherInvestigationRead'],
   [/^Not found in this investigation\.$/, 'refusal.notInInvestigation'],
-  [/^Tool configuration, arguments, mode or scope changed\./, 'refusal.toolChanged'],
   [/^Cannot modify ".*" entities — read-only restriction\.$|^Tool ".*" cannot guarantee this agent's read-only entity restrictions\.$/, 'refusal.readOnlyEntity'],
 ];
+/** The dispatcher refuses these before running anything once their task is escalated. */
+const ESCALATION_GUARDED_TOOLS: ReadonlySet<string> = new Set(['update_task', 'delete_task', 'review_completed_task']);
 
 async function inAnalystLanguage(result: ToolExecutionResult, tool: string): Promise<ToolExecutionResult> {
-  if (!result.isError) return result;
+  if (!result.isError || passesRemoteAnswer(tool)) return result;
   let refusal: { error?: unknown; escalated?: unknown } | null;
   try { refusal = JSON.parse(result.result); } catch { return result; }
-  if (refusal?.escalated === true) return toolExecutionError(await agentRefusal('refusal.taskEscalated'));
+  if (refusal?.escalated === true && ESCALATION_GUARDED_TOOLS.has(tool)) return toolExecutionError(await agentRefusal('refusal.taskEscalated'));
   const error = typeof refusal?.error === 'string' ? refusal.error : '';
   const key = DISPATCH_REFUSALS.find(([pattern]) => pattern.test(error))?.[1];
   return key ? toolExecutionError(await agentRefusal(key, { tool })) : result;

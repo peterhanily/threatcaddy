@@ -2,7 +2,7 @@
  * A-APPR: approving a queued agent action re-derives what that agent may do
  * today instead of trusting the stored row.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import { DEFAULT_AGENT_POLICY, DEFAULT_SETTINGS, type AgentAction } from '../types';
 import { executeApprovedAction } from '../lib/agent-action-approval';
@@ -157,6 +157,63 @@ describe('A-APPR re-derivation on approval', () => {
       expect((await db.tasks.get(ids('S').task))?.status).toBe('todo');
       expect(await db.tasks.where('title').equals('From a read-only agent').count()).toBe(0);
       expect(egress.fetches).toEqual([]);
+    } finally {
+      localStorage.removeItem(workspaceStorageKey('threatcaddy-settings'));
+      await i18n.changeLanguage('en');
+    }
+  });
+
+  it('says in German that a read-only agent may not run a host skill or a call it cannot bound', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+    await i18n.changeLanguage('de');
+    const tool = 'host:reports:summary';
+    const host = { id: 'reports-id', name: 'reports', displayName: 'Reports', url: 'https://reports.example', enabled: true,
+      skills: [{ name: 'summary', description: 'Read a prepared report', parameters: { type: 'object', properties: { document: { type: 'string' } } }, actionClass: 'read' as const }] };
+    localStorage.setItem(workspaceStorageKey('threatcaddy-settings'), JSON.stringify({ ...DEFAULT_SETTINGS, agentHosts: [host] }));
+    try {
+      await db.agentProfiles.add({ id: 'up-reader', name: 'Reader', role: 'specialist', systemPrompt: 'Reads reports.', allowedTools: [tool, 'link_entities'],
+        readOnlyEntityTypes: ['task'], policy: DEFAULT_AGENT_POLICY, source: 'user', createdAt: 1, updatedAt: 1 });
+      await deploy('up-reader');
+      const input = { document: 'fixture' };
+      const remote = await queue({ agentConfigId: 'up-reader', toolName: tool, toolInput: input, toolBinding: await getToolBinding({ type: 'tool_use', id: 'c', name: tool, input }, 'S') });
+      // Links given as anything but a list could touch any entity type.
+      const unbounded = await queue({ agentConfigId: 'up-reader', toolName: 'link_entities', toolInput: { links: 'every note' } });
+      for (const row of [remote, unbounded]) expect(errorOf(await executeApprovedAction(row))).toBe(deAgent['refusal.readOnlyEntity']);
+      expect(egress.fetches).toEqual([]);
+    } finally {
+      localStorage.removeItem(workspaceStorageKey('threatcaddy-settings'));
+      await i18n.changeLanguage('en');
+    }
+  });
+
+  it('stores what a host or a SIEM answered as it came, even an answer that reads like a refusal', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+    await i18n.changeLanguage('de');
+    const tool = 'host:reports:summary';
+    const host = { id: 'reports-id', name: 'reports', displayName: 'Reports', url: 'https://reports.example', enabled: true,
+      skills: [{ name: 'summary', description: 'Read a prepared report', parameters: { type: 'object', properties: { document: { type: 'string' } } }, actionClass: 'read' as const }] };
+    localStorage.setItem(workspaceStorageKey('threatcaddy-settings'), JSON.stringify({ ...DEFAULT_SETTINGS, agentHosts: [host], siemEndpoint: 'https://siem.example/search' }));
+    try {
+      await db.agentProfiles.add({ id: 'up-siem', name: 'SIEM reader', role: 'specialist', systemPrompt: 'Queries the SIEM.', allowedTools: ['query_siem'],
+        policy: DEFAULT_AGENT_POLICY, source: 'user', createdAt: 1, updatedAt: 1 });
+      await deploy('up-siem');
+      const input = { document: 'fixture' };
+      const toolBinding = await getToolBinding({ type: 'tool_use', id: 'c', name: tool, input }, 'S');
+      // The request left this device, so the inbox must not say in ThreatCaddy's voice that nothing ran.
+      const bodies = [{ error: 'remote said no', escalated: true }, { error: 'Not found in this investigation.' }, { error: 'Agents cannot change another investigation.' }]
+        .map(body => JSON.stringify(body));
+      for (const body of bodies) {
+        vi.mocked(fetch).mockImplementation(async url => { egress.fetches.push(String(url)); return new Response(body, { status: 200 }); });
+        const remote = await queue({ toolName: tool, toolInput: input, toolBinding });
+        const siem = await queue({ agentConfigId: 'up-siem', toolName: 'query_siem', toolInput: { query: 'dns canary' } });
+        for (const row of [remote, siem]) {
+          expect((await executeApprovedAction(row)).result).toBe(body);
+          expect(await db.agentActions.get(row.id)).toMatchObject({ status: 'failed', resultSummary: body });
+        }
+      }
+      expect(egress.fetches).toEqual(bodies.flatMap(() => ['https://reports.example/execute', 'https://siem.example/search']));
     } finally {
       localStorage.removeItem(workspaceStorageKey('threatcaddy-settings'));
       await i18n.changeLanguage('en');
