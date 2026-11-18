@@ -587,9 +587,10 @@ async function _runAgentCycleInner(
     }
     await db.folders.update(folder.id, { agentStatus: 'running', agentLastRunAt: Date.now() });
   } else {
-    // Update title if it's stale (e.g. was "Agent: investigation name")
+    // Update title if it's stale (e.g. was "Agent: investigation name"), never
+    // from a builtin's unresolved i18n key (its namespace not loaded yet).
     const existingThread = await db.chatThreads.get(threadId);
-    if (existingThread && !existingThread.title.includes(agentName)) {
+    if (existingThread && !existingThread.title.includes(agentName) && !/^builtinProfile\.\w+\.name$/.test(agentName)) {
       await db.chatThreads.update(threadId, { title: `${agentIcon} ${agentName}` });
     }
     await db.folders.update(folder.id, { agentStatus: 'running', agentLastRunAt: Date.now() });

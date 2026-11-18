@@ -23,6 +23,8 @@ export interface ApprovalItem {
 
 /** Skill and agent-host results are capped before they reach the model and the saved thread. */
 const MAX_DYNAMIC_RESULT_CHARS = 50_000;
+/** Chat tools that find or name agent profiles by name (llm-tools.ts). */
+const PROFILE_NAME_TOOLS: ReadonlySet<string> = new Set(['deploy_agent', 'stop_agent', 'list_deployed_agents']);
 
 export function createChatToolExecutor(deps: {
   homeFolderId?: string;
@@ -49,6 +51,8 @@ export function createChatToolExecutor(deps: {
     let reach: ToolReach;
     // An enrichment card names builtin lookups from this namespace, which the hosted build loads on demand.
     if (toolUse.name === 'enrich_ioc') await i18n.loadNamespaces('integrations');
+    // These match builtin agent profiles by their names, which come from this namespace.
+    if (PROFILE_NAME_TOOLS.has(toolUse.name)) await i18n.loadNamespaces('agent');
     try { reach = await classifyToolCall(toolUse, { homeFolderId, settings }); }
     catch { return toolExecutionError('The reach of this tool call could not be checked, so it was not run.'); }
     const verdict = decideToolCall(reach, { surface });

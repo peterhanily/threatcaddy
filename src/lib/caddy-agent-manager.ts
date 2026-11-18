@@ -4,6 +4,7 @@
  */
 
 import { db } from '../db';
+import i18n from '../i18n';
 import type { AgentCycleOutcome, AgentDeployment, AgentMetrics, AgentProfile, Folder, Settings } from '../types';
 import { runAgentCycle, type AgentCycleResult } from './caddy-agent';
 import { listAgentProfiles } from './agent-profile-resolver';
@@ -58,6 +59,10 @@ async function runMultiAgentCycleInner(
   signal: AbortSignal,
   manual: boolean,
 ): Promise<MultiAgentCycleResult> {
+  signal.throwIfAborted();
+  // Builtin profile names come from this namespace, which the hosted build loads
+  // on demand; the loop can start before anything else has loaded it.
+  await i18n.loadNamespaces('agent');
   signal.throwIfAborted();
   // Load all active deployments
   const deployments = await db.agentDeployments
