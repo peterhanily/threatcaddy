@@ -103,8 +103,9 @@ const DISPATCH_REFUSALS: ReadonlyArray<readonly [RegExp, string]> = [
   [/^Not found in this investigation\.$/, 'refusal.notInInvestigation'],
   [/^Cannot modify ".*" entities — read-only restriction\.$|^Tool ".*" cannot guarantee this agent's read-only entity restrictions\.$/, 'refusal.readOnlyEntity'],
 ];
-/** The dispatcher refuses these before running anything once their task is escalated. */
-const ESCALATION_GUARDED_TOOLS: ReadonlySet<string> = new Set(['update_task', 'delete_task', 'review_completed_task']);
+/** The dispatcher refuses these before running anything once their task is escalated
+ * (for link_entities, a link whose source is that task). */
+const ESCALATION_GUARDED_TOOLS: ReadonlySet<string> = new Set(['update_task', 'delete_task', 'review_completed_task', 'link_entities']);
 
 async function inAnalystLanguage(result: ToolExecutionResult, tool: string): Promise<ToolExecutionResult> {
   if (!result.isError || passesRemoteAnswer(tool)) return result;

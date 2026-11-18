@@ -12,9 +12,9 @@ export async function isFolderLocalOnly(folderOrId: Folder | string): Promise<bo
 }
 
 /** Shareable means "not local-only", whether or not a team server is bound:
- * a later bind pushes every folder that is not local-only. */
+ * a later bind pushes every folder that is not local-only. Fails closed: an id
+ * with no local row (a team investigation in remote mode, an evicted folder)
+ * can sync, as the outbox queues its rows. Only no id at all is unfiled. */
 export async function isShareableFolder(id: string | undefined): Promise<boolean> {
-  if (!id) return false;
-  const folder = await db.folders.get(id);
-  return !!folder && !await isFolderLocalOnly(folder);
+  return !!id && !await isFolderLocalOnly(id);
 }

@@ -128,6 +128,15 @@ describe('C2-1 mentions follow the tool gate\'s visibility', () => {
     expect(resolved.contextBlock).toContain('[Referenced Investigation: "Private case"]');
   });
 
+  // A team investigation opened in remote mode has no local row; its conversations sync.
+  it('a conversation filed in an investigation with no local row resolves no local-only entity', async () => {
+    const text = `Compare @note:${L.note} @ioc:${L.ioc} @investigation:L @investigation:L2`;
+    const resolved = await resolveMentions(text, 'team-remote');
+    expect(resolved.displayText).toBe(text);
+    expect(resolved.contextBlock).toBe('');
+    expect((await resolveMentions(`@note:${P.note}`, 'team-remote')).contextBlock).toContain(canary('P'));
+  });
+
   it('a local-only or unfiled conversation can mention local-only entities, but never trashed ones', async () => {
     expect((await resolveMentions(`@note:${ids('L2').note}`, 'L')).contextBlock).toContain(canary('L2'));
     expect((await resolveMentions(`@note:${L.note} @investigation:L`, undefined)).contextBlock).toContain(canary('L'));
@@ -165,6 +174,10 @@ describe('C2-1 the composer suggests only what the conversation may see', () => 
   it('never offers a local-only investigation in a synced conversation', async () => {
     const names = async (folderId?: string) => (await searchMentions('investigation', '', folderId)).map(item => item.id).sort();
     expect(await names('S')).toEqual(['P', 'S']);
+    // A team investigation in remote mode has no local row, and it syncs.
+    expect(await names('team-remote')).toEqual(['P', 'S']);
+    expect(await searchMentions('note', '', 'team-remote')).toEqual([]);
+    expect(await searchMentions('ioc', '', 'team-remote')).toEqual([]);
     expect(await names('L')).toEqual(['L', 'L2', 'P', 'S']);
     expect(await names(undefined)).toEqual(['L', 'L2', 'P', 'S']);
     expect((await searchMentions('note', '', 'S')).map(item => item.id)).toEqual([S.note]);

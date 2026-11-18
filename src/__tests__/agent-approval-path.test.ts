@@ -244,6 +244,25 @@ describe('A-APPR re-derivation on approval', () => {
     } finally { await i18n.changeLanguage('en'); }
   });
 
+  it('says in German that an approved link from an escalated task did not run, for the supervisor and for an agent', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'agent', deAgent, true, true);
+    await i18n.changeLanguage('de');
+    try {
+      const toolInput = { links: [{ sourceType: 'task', sourceId: ids('S').task, targetType: 'note', targetId: ids('S').note }] };
+      await deploy('ap-ioc-enricher');
+      const supervisor = await queue({ agentConfigId: SUPERVISOR_ACTION_PROFILE, toolName: 'link_entities', toolInput });
+      const agent = await queue({ agentConfigId: 'ap-ioc-enricher', toolName: 'link_entities', toolInput });
+      await db.tasks.update(ids('S').task, { escalated: true, rejectionCount: 3 });
+      const before = await db.tasks.get(ids('S').task);
+      for (const row of [supervisor, agent]) {
+        expect(errorOf(await executeApprovedAction(row))).toBe(deAgent['refusal.taskEscalated']);
+        expect(await db.agentActions.get(row.id)).toMatchObject({ status: 'failed' });
+      }
+      expect(await db.tasks.get(ids('S').task)).toEqual(before);
+    } finally { await i18n.changeLanguage('en'); }
+  });
+
   it('keeps a refusal it cannot name, and an executor’s own error, as the dispatcher wrote them', async () => {
     const untranslated = await queue({ toolName: 'read_note', toolInput: [] as unknown as Record<string, unknown> });
     expect(errorOf(await executeApprovedAction(untranslated))).toBe('Tool input must be an object.');

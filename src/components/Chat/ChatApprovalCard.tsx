@@ -71,7 +71,8 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
       const iocId = toolUse.name === 'enrich_ioc' ? String(toolUse.input.iocId || '') : '';
       const iocValue = iocId ? (await db.standaloneIOCs.get(iocId))?.value ?? iocId : undefined;
       const bound = await isSyncWorkspaceBound();
-      if (current) setResolved({ homeName: home?.name, targets, iocValue, bound });
+      // A team investigation in remote mode has no local row, so its id stands in for its name.
+      if (current) setResolved({ homeName: home?.name ?? reach.homeFolderId, targets, iocValue, bound });
     })().catch(() => { /* The card still shows the reach and the raw input. */ });
     return () => { current = false; };
   }, [reach, toolUse]);

@@ -320,8 +320,16 @@ async function dispatchTool(
     // Escalated tasks are off-limits to all agents until a human intervenes:
     // whatever is labelled an agent above, the supervisor and the bridge included.
     // Keeps stuck delegation loops from immediately re-opening an escalation.
-    if (agentLabel && (name === 'update_task' || name === 'delete_task' || name === 'review_completed_task')) {
-      const targetId = String((name === 'review_completed_task' ? inp.taskId : inp.id) || '');
+    // A link writes its source row, so a link from a task changes that task.
+    const guardedTaskIds = !agentLabel ? []
+      : name === 'update_task' || name === 'delete_task' ? [inp.id]
+      : name === 'review_completed_task' ? [inp.taskId]
+      // Coerced as executeLinkEntities coerces them.
+      : name === 'link_entities' && Array.isArray(inp.links)
+        ? (inp.links as Array<Record<string, unknown> | null>).filter(link => String(link?.sourceType || '') === 'task').map(link => link?.sourceId)
+        : [];
+    for (const taskId of guardedTaskIds) {
+      const targetId = String(taskId || '');
       if (targetId) {
         const existing = await db.tasks.get(targetId);
         if (existing?.escalated) {

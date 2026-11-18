@@ -151,7 +151,27 @@ describe('A-REACH-5 local-only facts, links and named investigations', () => {
     expect(await isShareableFolder('M')).toBe(true);
     expect(await isFolderLocalOnly('L')).toBe(true);
     expect(await isShareableFolder(undefined)).toBe(false);
+    // A missing row can still sync: a team investigation opened in remote mode, or an evicted
+    // synced folder, has no local row, yet the outbox queues rows filed under it. Remote mode
+    // pushes them; an evicted folder holds them until it is cached again, then pushes them.
+    // Only a known local-only id (flag or persisted marker) cannot sync.
+    expect(await isShareableFolder('missing')).toBe(true);
+    await db.table('_syncMeta').put({ key: JSON.stringify(['localOnly', 'missing']), value: true });
     expect(await isShareableFolder('missing')).toBe(false);
+  });
+
+  it('a home with no local row (a team investigation in remote mode) hides local-only targets and asks before cross reads', async () => {
+    const remote = await reach('search_across_investigations', { query: 'x' }, 'team-remote');
+    expect(remote).toMatchObject({ homeShareable: true, crossRead: true });
+    expect(decideToolCall(remote, { surface: 'chat-act' })).toEqual({ kind: 'ask', reason: 'cross-read' });
+    expect(decideToolCall(remote, { surface: 'chat-yolo' })).toEqual({ kind: 'ask', reason: 'cross-read' });
+    const synced = await reach('read_note', { id: ids('P').note }, 'team-remote');
+    expect(synced).toMatchObject({ crossRead: true, hidden: false, targetFolderIds: ['P'] });
+    expect(decideToolCall(synced, { surface: 'chat-act' })).toEqual({ kind: 'ask', reason: 'cross-read' });
+    for (const [name, input] of [['read_note', { id: ids('L').note }], ['get_investigation_details', { id: 'L' }],
+      ['compare_investigations', { investigationIds: ['P', 'L2'] }]] as const) {
+      expect((await reach(name, input, 'team-remote')).hidden).toBe(true);
+    }
   });
 
   it('a marker-only local-only row is hidden from a shared home', async () => {

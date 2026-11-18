@@ -186,6 +186,57 @@ describe('C-CHAT-4 chat in a shared investigation', () => {
   });
 });
 
+// A team investigation opened in remote mode has no local folder row, yet a conversation filed
+// under its id is queued and pushed to the team server like any synced investigation's.
+describe('C-CHAT-4 chat filed in an investigation with no local row (remote mode)', () => {
+  const REMOTE = 'team-remote';
+  const LOCAL_ONLY = [canary('L'), canary('L2'), 'Local case', 'Hunting case'];
+
+  it('reads of other investigations ask, and once approved show no local-only investigation', async () => {
+    for (const yolo of [false, true]) {
+      const { run, requests } = chat({ home: REMOTE, yolo });
+      const search = await run(call('search_across_investigations', { query: 'CANARY' }));
+      const list = await run(call('list_investigations'));
+      const synced = await run(call('read_note', { id: ids('P').note }));
+      expect(requests.map(item => item.reason)).toEqual(['cross-read', 'cross-read', 'cross-read']);
+      expect(JSON.parse(search.result)).toMatchObject({ hiddenLocalOnly: 2 });
+      expect(JSON.parse(list.result)).toMatchObject({ hiddenLocalOnly: 2 });
+      expect(search.result).toContain(canary('P'));
+      expect(synced.result).toContain(canary('P'));
+      for (const leaked of LOCAL_ONLY) expect(search.result + list.result).not.toContain(leaked);
+    }
+  });
+
+  it('a local-only note or investigation is not found, and nobody is asked', async () => {
+    const { run, requestApproval } = chat({ home: REMOTE });
+    const results = [await run(call('read_note', { id: ids('L').note })), await run(call('get_investigation_details', { id: 'L' })),
+      await run(call('compare_investigations', { investigationIds: ['P', 'L2'] }))];
+    for (const result of results) {
+      expect(errorOf(result)).toMatch(/not found/i);
+      for (const leaked of LOCAL_ONLY) expect(result.result).not.toContain(leaked);
+    }
+    expect(requestApproval).not.toHaveBeenCalled();
+  });
+
+  it('a rejected cross read reads nothing', async () => {
+    const { run, requests } = chat({ home: REMOTE, answer: 'reject' });
+    const result = await run(call('search_across_investigations', { query: 'CANARY' }));
+    expect(requests).toHaveLength(1);
+    expect(errorOf(result)).toMatch(/rejected/i);
+    expect(result.result).not.toContain(canary('P'));
+  });
+
+  it('Plan mode still refuses reads of other investigations without asking', async () => {
+    const plan = chat({ home: REMOTE, mode: 'plan' });
+    for (const toolUse of [call('search_across_investigations', { query: 'CANARY' }), call('read_note', { id: ids('L').note })]) {
+      const result = await plan.run(toolUse);
+      expect(result.isError).toBe(true);
+      expect(result.result).not.toContain(canary('L'));
+    }
+    expect(plan.requestApproval).not.toHaveBeenCalled();
+  });
+});
+
 describe('C-CHAT-5 chat outside any investigation', () => {
   it('reads run, and a change to an investigation asks and names it', async () => {
     const { run, requests } = chat({ answer: 'reject' });

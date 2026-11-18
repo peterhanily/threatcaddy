@@ -248,6 +248,46 @@ describe('C4-2 without a team server, cards and /fetch do not claim that anythin
   });
 });
 
+// A team investigation opened in remote mode has no local folder row, and what is filed under it
+// syncs to the team server. Its name lives only in the remote view, so the lines name its id.
+describe('C2-2 a conversation filed in an investigation with no local row (remote mode)', () => {
+  const REMOTE = 'team-remote';
+
+  it('/fetch says its note syncs to the members', async () => {
+    const props = renderChat(REMOTE);
+    await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/advisory'); });
+    expect(await notesTitled('Fixture page')).toEqual([expect.objectContaining({ folderId: REMOTE })]);
+    expect(replies(props)).toEqual([`Created note **Fixture page** from https://www.cisa.gov/advisory\n\n${REMOTE}: syncs to its members`]);
+  });
+
+  it('/fetch says its note syncs once a team server is connected', async () => {
+    await db.table('_syncMeta').delete(SYNC_WORKSPACE_KEY);
+    const props = renderChat(REMOTE);
+    await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/advisory'); });
+    expect(replies(props)).toEqual(['Created note **Fixture page** from https://www.cisa.gov/advisory\n\n'
+      + `${REMOTE}: stays on this device until a team server is connected`]);
+  });
+
+  it('a cross-read card says the conversation syncs to the members of its investigation', async () => {
+    renderChat(REMOTE);
+    const handler = await sendAndGetHandler();
+    void start(handler, call('search_across_investigations', { query: 'CANARY' }));
+    const shown = await card();
+    expect(within(shown).getByText('Read other investigations?')).toBeInTheDocument();
+    expect(await within(shown).findByText(`What it reads becomes part of this conversation, which syncs to the members of "${REMOTE}".`))
+      .toBeInTheDocument();
+  });
+
+  it('a write card names the investigation and says it syncs', async () => {
+    renderChat(REMOTE);
+    const handler = await sendAndGetHandler();
+    void start(handler, call('create_note', { title: 'Remote note', content: 'x' }));
+    const shown = await card();
+    expect(await within(shown).findByText(`${REMOTE}: syncs to its members`)).toBeInTheDocument();
+    expect(within(shown).queryByText(/stays on this device/)).toBeNull();
+  });
+});
+
 describe('C2-2 /fetch says where its note goes', () => {
   it('names the thread\'s synced investigation from the global view', async () => {
     const props = renderChat('S');
