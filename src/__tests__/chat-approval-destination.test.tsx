@@ -161,6 +161,17 @@ describe('C2-2 a write card names the investigation that changes', () => {
     expect(await within(shown).findByText('Nothing is sent: no enabled lookup applies to canary-s.example.')).toBeInTheDocument();
     expect(within(shown).queryByText(/^Shared case:/)).toBeNull();
   });
+
+  // The fixture binds a team server, so the conversation's investigation syncs now.
+  it('a cross-read card says the conversation syncs to the members of its investigation', async () => {
+    renderChat('S');
+    const handler = await sendAndGetHandler();
+    void start(handler, call('search_across_investigations', { query: 'CANARY' }));
+    const shown = await card();
+    expect(await within(shown).findByText('What it reads becomes part of this conversation, which syncs to the members of "Shared case".'))
+      .toBeInTheDocument();
+    expect(within(shown).queryByText(/once a team server is connected/)).toBeNull();
+  });
 });
 
 // The card's title and its line agree: a lookup with no enabled vendor sends nothing.
