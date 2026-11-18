@@ -90,6 +90,49 @@ describe('a team server that cannot run agents', () => {
   });
 });
 
+describe('the paused notice', () => {
+  const malware = (values: Partial<AgentDeployment> = {}) => deployment({ id: 'dep-malware', profileId: 'ap-malware-analyst', order: 1, ...values });
+  const paused = [deployment({ status: 'paused' }), malware({ status: 'paused' })];
+  const hunterAgain = deployment({ id: 'dep-hunter-2', order: 2 });
+  const malwareAgain = malware({ id: 'dep-malware-2', order: 3 });
+  const notice = (count: number) => i18n.t(STEM, { ns: 'agent', count });
+  async function showNotice(pausedIds: string[], deployments: AgentDeployment[]) {
+    const folder = await db.folders.get('S') as Folder;
+    const panel = (ids: string[], list: AgentDeployment[]) => (
+      <AgentPanel folder={folder} settings={settings} profiles={BUILTIN_AGENT_PROFILES} deployments={list} serverConnected serverPausedDeploymentIds={ids} />
+    );
+    const view = render(panel(pausedIds, deployments));
+    return (ids: string[], list: AgentDeployment[]) => view.rerender(panel(ids, list));
+  }
+
+  it('counts only the paused agents not yet deployed again, and goes once each one is', async () => {
+    const show = await showNotice(['dep-hunter', 'dep-malware'], paused);
+    expect(await screen.findByText(notice(2))).toBeInTheDocument();
+    show(['dep-hunter', 'dep-malware'], [...paused, hunterAgain]);
+    expect(await screen.findByText(notice(1))).toBeInTheDocument();
+    show(['dep-hunter', 'dep-malware'], [...paused, hunterAgain, malwareAgain]);
+    expect(document.body.textContent).not.toContain('set to run there');
+  });
+
+  it('a copy that is paused, by the server or otherwise, does not count as deployed again', async () => {
+    // The list can still show the status from before the pause until it reloads.
+    await showNotice(['dep-hunter', 'dep-hunter-2'], [deployment({ status: 'running' }), deployment({ id: 'dep-hunter-2', status: 'running', order: 2 }),
+      deployment({ id: 'dep-hunter-3', status: 'paused', order: 3 })]);
+    expect(await screen.findByText(notice(2))).toBeInTheDocument();
+  });
+
+  it('a dismissed notice comes back when another agent is paused', async () => {
+    const show = await showNotice(['dep-hunter', 'dep-malware'], paused);
+    fireEvent.click(await screen.findByRole('button', { name: en['panel.dismissNotice'] }));
+    expect(document.body.textContent).not.toContain('set to run there');
+    show(['dep-hunter', 'dep-malware'], [...paused, hunterAgain]);
+    expect(document.body.textContent).not.toContain('set to run there');
+    const enricher = deployment({ id: 'dep-enricher', profileId: 'ap-ioc-enricher', status: 'paused', order: 4 });
+    show(['dep-hunter', 'dep-malware', 'dep-enricher'], [...paused, hunterAgain, enricher]);
+    expect(await screen.findByText(notice(2))).toBeInTheDocument();
+  });
+});
+
 it('a server that reports it can run agents offers Server-Side Mode', async () => {
   await showPanel([deployment()], answering({ registered: false, serverRunning: false, serverExecutionAvailable: true }));
   openAgentsTab(en['panel.agents']);

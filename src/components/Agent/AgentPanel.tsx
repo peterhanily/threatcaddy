@@ -171,9 +171,11 @@ function InvestigationAgentPanel({
     setCeilingNoticeDismissed(true);
     try { localStorage.setItem(ceilingNoticeKey, '1'); } catch { /* The notice shows again next time. */ }
   };
-  // This investigation's agents that the team server's unavailable answer paused.
-  const serverPaused = deployments.filter(d => serverPausedDeploymentIds?.includes(d.id)).length;
-  const [dismissedServerPaused, setDismissedServerPaused] = useState(0);
+  // This investigation's agents that the team server's unavailable answer paused, leaving out
+  // each one the analyst has deployed again here, as the notice asks: a copy of its profile that is not paused.
+  const serverPaused = deployments.filter(d => serverPausedDeploymentIds?.includes(d.id) && !deployments.some(again =>
+    again.profileId === d.profileId && again.status !== 'paused' && !serverPausedDeploymentIds.includes(again.id))).map(d => d.id);
+  const [dismissedServerPaused, setDismissedServerPaused] = useState<string[]>([]);
   const profileFor = (id: string) => profiles.find(pr => pr.id === id) || BUILTIN_AGENT_PROFILES.find(pr => pr.id === id);
 
   // Check if LLM is configured
@@ -478,10 +480,10 @@ function InvestigationAgentPanel({
         </div>
       )}
 
-      {serverPaused > dismissedServerPaused && (
+      {serverPaused.some(id => !dismissedServerPaused.includes(id)) && (
         <div className="flex items-start gap-2 px-4 py-2 bg-accent-amber/10 text-accent-amber text-xs border-b border-accent-amber/20 shrink-0" role="status">
           <AlertTriangle size={12} className="shrink-0 mt-0.5" />
-          <span className="flex-1">{t('panel.serverAgentsPaused', { count: serverPaused })}</span>
+          <span className="flex-1">{t('panel.serverAgentsPaused', { count: serverPaused.length })}</span>
           <button onClick={() => setDismissedServerPaused(serverPaused)} className="hover:text-text-primary shrink-0" aria-label={t('panel.dismissNotice')}><X size={12} /></button>
         </div>
       )}
