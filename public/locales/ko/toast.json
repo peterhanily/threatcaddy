@@ -82,8 +82,6 @@
     "nameRequired": "통합 이름이 필요합니다",
     "createdAndInstalled": "통합 \"{{name}}\" 만들어지고 설치됨",
     "saveFailed": "저장 실패: {{error}}",
-    "installedFromCatalog": "커뮤니티 카탈로그에서 {{name}} 설치됨",
-    "installCatalogFailed": "커뮤니티 템플릿 설치 실패",
     "templateExported": "{{name}} 내보내기됨",
     "installTeamFailed": "팀 템플릿 설치 실패",
     "notFound": "통합을 찾을 수 없습니다",

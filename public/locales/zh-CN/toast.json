@@ -82,8 +82,6 @@
     "nameRequired": "集成名称是必需的",
     "createdAndInstalled": "集成\"{{name}}\"已创建并安装",
     "saveFailed": "保存失败：{{error}}",
-    "installedFromCatalog": "已从社区目录安装 {{name}}",
-    "installCatalogFailed": "安装社区模板失败",
     "templateExported": "已导出 {{name}}",
     "installTeamFailed": "安装团队模板失败",
     "notFound": "集成未找到",

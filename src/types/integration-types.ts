@@ -191,27 +191,3 @@ export interface IntegrationRun {
   displayResults?: unknown;
   createdAt: number;
 }
-
-// === Community Catalog ===
-
-export interface CatalogEntry {
-  id: string;
-  name: string;
-  description: string;
-  author: string;
-  category: IntegrationCategory;
-  tags: string[];
-  icon: string;
-  color: string;
-  version: string;
-  downloads: number;
-  templateUrl: string;
-  sha256: string;
-  updatedAt: string;
-}
-
-export interface CommunityCatalog {
-  schemaVersion: '1.0';
-  generatedAt: string;
-  entries: CatalogEntry[];
-}

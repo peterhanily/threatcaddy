@@ -83,8 +83,6 @@
     "nameRequired": "Le nom de l'intégration est requis",
     "createdAndInstalled": "Intégration \"{{name}}\" créée et installée",
     "saveFailed": "Échec de l'enregistrement : {{error}}",
-    "installedFromCatalog": "{{name}} installé depuis le catalogue communautaire",
-    "installCatalogFailed": "Échec de l'installation du modèle communautaire",
     "templateExported": "{{name}} exporté",
     "installTeamFailed": "Échec de l'installation du modèle d'équipe",
     "notFound": "Intégration introuvable",

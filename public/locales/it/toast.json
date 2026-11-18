@@ -83,8 +83,6 @@
     "nameRequired": "Il nome dell'integrazione è obbligatorio",
     "createdAndInstalled": "Integrazione \"{{name}}\" creata e installata",
     "saveFailed": "Impossibile salvare: {{error}}",
-    "installedFromCatalog": "Installato {{name}} dal catalogo community",
-    "installCatalogFailed": "Impossibile installare il template community",
     "templateExported": "Esportato {{name}}",
     "installTeamFailed": "Impossibile installare il template team",
     "notFound": "Integrazione non trovata",
