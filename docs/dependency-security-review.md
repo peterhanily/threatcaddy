@@ -36,10 +36,15 @@ fails when the advisory reaches production by another path. For the server,
 every reported location must be `dev: true` in `server/package-lock.json`. For
 the root, the check walks `pnpm-lock.yaml`, because pnpm's report lists only
 the first path it finds, development paths first, and marks no path as
-development; only the Excalidraw path above is accepted. pnpm's own `auditConfig.ignoreGhsas` would hide the advisory
-before any of this is checked. `pnpm audit --ignore` does not audit at all: it
-writes the id into `auditConfig.ignoreCves`, which matches CVE ids only. npm 11
-has no per-advisory ignore.
+development; only the Excalidraw path above is accepted. pnpm's own
+`auditConfig.ignoreGhsas` would hide the advisory before any of this is
+checked, and a pnpmfile's `updateConfig` hook can set it. The CI contract test
+therefore forbids pnpm audit settings, pnpmfiles, and npm or pnpm settings in
+the workflow or audit job environment. An ignored advisory still counts in the
+registry's summary, which counts each finding path, so the root high and
+critical counts must equal the listed findings. `pnpm audit --ignore` does not
+audit at all: it writes the id into `auditConfig.ignoreCves`, which matches CVE
+ids only. npm 11 has no per-advisory ignore.
 
 The scheduled CI run audits all three lockfiles again every Monday. Maintainers
 also recheck the advisory and picomatch releases weekly and update the review
@@ -107,7 +112,6 @@ reported. These build-time packages remain under review:
 | --- | --- |
 | [minimatch / GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) | ESLint, TypeScript ESLint and Workbox consume repository-controlled patterns. The advisory concerns amplification with optimization level 2. Fixed 11.x is incompatible with several 3.x/5.x callers. Await compatible parent updates/backports; do not globally force 11.x. |
 | [glob / GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4) | Workbox enumerates local build files with glob 11.x. Cancellation may fail to stop traversal; fixed in 14.0.2. Latest Workbox 7.4.1 still requires 11.x. Await a supported parent update. |
-| [deepmerge / GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4) | Workbox's Rollup node-resolve plugin merges build configuration. Latest deepmerge 4.3.1 has no published patch. Await an upstream fix or reviewed parent replacement. |
 
 These packages are not imported by application/server request handlers. Build
 inputs/configuration must remain trusted; CI jobs retain their time limits.
