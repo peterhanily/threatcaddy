@@ -3,6 +3,7 @@ import { resolveVariables, resolveDataValue, evaluateCondition, resolveDeep } fr
 import { compileIntegrationPlan, INTEGRATION_LIMITS } from './integration-plan';
 import type { IntegrationPlan } from './integration-plan';
 import { postMessageOrigin } from './utils';
+import { extensionUpdateRequired, hasPairedBridge } from './extension-bridge';
 import { resolveIntegrationConfig, validateIntegrationConfig } from './integration-config';
 import { cancellableRequest } from './request-cancellation';
 import { integrationDelay } from './integration-cancellation';
@@ -205,14 +206,16 @@ export function syncProxyAllowedDomains(templates: IntegrationTemplate[]): void 
   } catch { /* extension not present */ }
 }
 
-/** Check if the extension bridge supports proxy_fetch */
-function hasBridgeProxyFetch(): boolean {
+/** Only a paired 1.1.3+ bridge relays requests. Store 1.1.1 advertises proxy_fetch too, but it gets
+ *  nothing ('refused'): the page fetches as it does without an extension. */
+async function bridgeProxyTransport(): Promise<'bridge' | 'refused' | 'none'> {
   try {
     const caps = document.documentElement.dataset.tcBridgeCaps || '';
-    return caps.split(',').includes('proxy_fetch');
+    if (!caps.split(',').includes('proxy_fetch')) return 'none';
   } catch {
-    return false;
+    return 'none';
   }
+  return await hasPairedBridge() ? 'bridge' : 'refused';
 }
 
 export class IntegrationExecutor {
@@ -637,7 +640,8 @@ export class IntegrationExecutor {
             ? fetchOptions.body
             : fetchOptions.body != null ? String(fetchOptions.body) : null;
 
-      if (hasBridgeProxyFetch()) {
+      const transport = await bridgeProxyTransport();
+      if (transport === 'bridge') {
         // Route through extension background script to bypass CSP/CORS
         const proxyHeaders = { ...(fetchOptions.headers as Record<string, string>) };
         if (fetchOptions.body instanceof URLSearchParams && !proxyHeaders['Content-Type'] && !proxyHeaders['content-type']) {
@@ -652,7 +656,14 @@ export class IntegrationExecutor {
       } else {
         // Direct fetch (standalone mode)
         onDispatch();
-        const response = await fetch(url.toString(), fetchOptions);
+        let response: Response;
+        try {
+          response = await fetch(url.toString(), fetchOptions);
+        } catch (error) {
+          // A request the old extension was not given: say how to get one the app uses.
+          if (transport === 'refused' && error instanceof TypeError) throw new Error(`${error.message}. ${await extensionUpdateRequired()}`);
+          throw error;
+        }
         responseStatus = response.status;
         responseStatusText = response.statusText;
         const text = await readIntegrationResponse(response, fetchOptions.signal);

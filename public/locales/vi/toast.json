@@ -5,6 +5,7 @@
     "openedAsNote": "Đã mở \"{{name}}\" dưới dạng ghi chú mới",
     "openFailed": "Mở \"{{name}}\" thất bại",
     "refreshFailed": "Đã lưu đoạn trích nhưng không thể làm mới giao diện. Tải lại không gian làm việc này để xem.",
+    "outdatedExtension": "Đã nhập đoạn trích. Chúng đến từ tiện ích ThreatCaddy cũ hơn 1.1.3, mà ThreatCaddy không còn dùng cho AI, tích hợp hay tải trang web nữa. Hãy cài phiên bản mới nhất từ các bản phát hành ThreatCaddy trên GitHub; phiên bản trên Cửa hàng Chrome trực tuyến cũ hơn.",
     "fileRefreshFailed": "Đã lưu tệp thành ghi chú nhưng không thể làm mới giao diện. Tải lại không gian làm việc này để xem.",
     "fileTitle": "{{name}} — {{size}} — sửa đổi {{modified}}",
     "fileError": {

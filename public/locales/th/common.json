@@ -153,6 +153,7 @@
   "standaloneWarning.message": "เวอร์ชันสแตนด์อโลนกำลังทำงานผ่าน file:// โดยไม่มีการเข้ารหัส ไฟล์ HTML ในเครื่องอื่นๆ สามารถเข้าถึงข้อมูลของคุณได้ ในโหมดสแตนด์อโลน Content Security Policy ไม่ได้จำกัดสคริปต์หรือการเชื่อมต่อเครือข่าย",
   "standaloneWarning.enableEncryption": "เปิดใช้การเข้ารหัสในการตั้งค่า",
   "header.chromeExtension": "ส่วนขยาย Chrome",
+  "extension.updateRequired": "ThreatCaddy ต้องใช้ส่วนขยายเบราว์เซอร์ของตนเวอร์ชัน 1.1.3 ขึ้นไปที่อนุมัติแอปนี้แล้ว Chrome เว็บสโตร์ยังมีเวอร์ชันที่เก่ากว่าอยู่ จึงให้ติดตั้งเวอร์ชันล่าสุดจากรุ่นเผยแพร่ของ ThreatCaddy บน GitHub ติดตั้งส่วนขยาย ThreatCaddy ไว้เฉพาะเวอร์ชันใหม่ที่สุด แล้วโหลดหน้านี้ใหม่",
   "header.privacy": "ความเป็นส่วนตัว",
   "header.saveBackup": "บันทึกข้อมูลสำรอง",
   "header.loadBackup": "โหลดข้อมูลสำรอง",

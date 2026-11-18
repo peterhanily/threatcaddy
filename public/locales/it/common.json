@@ -161,6 +161,7 @@
   "standaloneWarning.message": "La versione standalone è in esecuzione da file:// senza crittografia. Altri file HTML locali possono accedere ai tuoi dati. In modalità standalone la Content Security Policy non limita gli script né le connessioni di rete.",
   "standaloneWarning.enableEncryption": "Abilita la crittografia in Impostazioni",
   "header.chromeExtension": "Estensione Chrome",
+  "extension.updateRequired": "ThreatCaddy richiede la sua estensione del browser 1.1.3 o successiva, approvata per questa app. Il Chrome Web Store offre ancora una versione precedente, quindi installa l'ultima versione dalle release di ThreatCaddy su GitHub. Tieni installata solo l'estensione ThreatCaddy più recente, poi ricarica la pagina.",
   "header.privacy": "Privacy",
   "header.saveBackup": "Salva backup",
   "header.loadBackup": "Carica backup",

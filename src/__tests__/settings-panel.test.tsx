@@ -401,6 +401,15 @@ describe('SettingsPanel: where AI data goes', () => {
       'Requests to cloud models go from the browser extension straight to the provider, using the API key saved on this device.']);
   });
 
+  it('gives store 1.1.1, which has no app pairing, no extension route', () => {
+    document.documentElement.dataset.tcBridgeCaps = STORE_1_1_1_CAPS;
+    const auto = renderAI();
+    expect(lines()[0]).toBe('No route is available. Install the browser extension, sign in to a team server or set up a local model.');
+    auto.unmount();
+    renderAI({ llmRoutingMode: 'extension' });
+    expect(screen.getByText(/set to Browser Extension, but the extension is not available/)).toBeInTheDocument();
+  });
+
   it('keeps one route line when no local model endpoint is set, even with a local default model', () => {
     signIn();
     renderAI({ llmDefaultProvider: 'local', llmLocalEndpoint: '  ' });

@@ -208,6 +208,7 @@
   "standaloneWarning.message": "Running standalone on file:// without encryption. Other local HTML files can access your data. In standalone mode, the Content Security Policy does not restrict scripts or network connections.",
   "standaloneWarning.enableEncryption": "Enable encryption in Settings",
   "header.chromeExtension": "Chrome Extension",
+  "extension.updateRequired": "ThreatCaddy needs its browser extension 1.1.3 or later, approved for this app. The Chrome Web Store still offers an older version, so install the latest version from the ThreatCaddy releases on GitHub. Keep only the newest ThreatCaddy extension installed, then reload the page.",
   "header.privacy": "Privacy",
   "header.caddylabs": "CaddyLabs",
   "header.saveBackup": "Save Backup",

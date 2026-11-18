@@ -161,6 +161,7 @@
   "standaloneWarning.message": "Die Standalone-Version läuft über file:// ohne Verschlüsselung. Andere lokale HTML-Dateien können auf Ihre Daten zugreifen. Im Standalone-Modus schränkt die Content Security Policy weder Skripte noch Netzwerkverbindungen ein.",
   "standaloneWarning.enableEncryption": "Verschlüsselung in den Einstellungen aktivieren",
   "header.chromeExtension": "Chrome-Erweiterung",
+  "extension.updateRequired": "ThreatCaddy benötigt seine Browser-Erweiterung in Version 1.1.3 oder neuer, freigegeben für diese App. Der Chrome Web Store bietet noch eine ältere Version an, installieren Sie daher die neueste Version aus den ThreatCaddy-Releases auf GitHub. Lassen Sie nur die neueste ThreatCaddy-Erweiterung installiert und laden Sie dann die Seite neu.",
   "header.privacy": "Datenschutz",
   "header.saveBackup": "Sicherung speichern",
   "header.loadBackup": "Sicherung laden",

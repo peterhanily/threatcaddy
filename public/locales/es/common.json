@@ -161,6 +161,7 @@
   "standaloneWarning.message": "La versión independiente se ejecuta en file:// sin cifrado. Otros archivos HTML locales pueden acceder a sus datos. En el modo independiente, la Content Security Policy no restringe los scripts ni las conexiones de red.",
   "standaloneWarning.enableEncryption": "Activar el cifrado en Configuración",
   "header.chromeExtension": "Extensión de Chrome",
+  "extension.updateRequired": "ThreatCaddy requiere su extensión de navegador 1.1.3 o posterior, aprobada para esta aplicación. Chrome Web Store todavía ofrece una versión anterior, así que instala la versión más reciente desde las versiones de ThreatCaddy en GitHub. Conserva instalada solo la extensión de ThreatCaddy más reciente y luego recarga la página.",
   "header.privacy": "Privacidad",
   "header.saveBackup": "Guardar copia de seguridad",
   "header.loadBackup": "Cargar copia de seguridad",

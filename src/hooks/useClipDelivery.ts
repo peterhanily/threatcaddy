@@ -13,6 +13,8 @@ interface Options {
   onCommitted: (results: ClipImportResult[], signal: AbortSignal) => Promise<void>;
   onFailed: (count: number) => void;
   onRefreshFailed: () => void;
+  /** Legacy messages come only from extensions older than 1.1.3, which the app uses for nothing else. */
+  onOutdatedExtension?: () => void;
 }
 
 /** Own the channel for the mounted/unlocked App, not for each hook refresh. */
@@ -49,6 +51,9 @@ export function useClipDelivery(options: Options): void {
           sourceId: message.sourceId, attemptId: message.attemptId, workspaceId: getActiveWorkspaceId(), results },
         window.location.protocol === 'file:' ? '*' : window.location.origin);
         if (lifetime.signal.aborted) return;
+        // Store 1.1.1 marks clips sent without a receipt and the GitHub build keeps its own captures, so
+        // these are imported rather than stranded.
+        if (!modern) latest.current.onOutdatedExtension?.();
         const failed = results.filter(result => result.status === 'failed').length;
         if (failed) latest.current.onFailed(failed);
         const committed = results.filter(result => result.status !== 'failed');

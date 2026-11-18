@@ -161,6 +161,7 @@
   "standaloneWarning.message": "Versi mandiri berjalan di file:// tanpa enkripsi. File HTML lokal lain dapat mengakses data Anda. Dalam mode mandiri, Content Security Policy tidak membatasi skrip atau koneksi jaringan.",
   "standaloneWarning.enableEncryption": "Aktifkan enkripsi di Pengaturan",
   "header.chromeExtension": "Ekstensi Chrome",
+  "extension.updateRequired": "ThreatCaddy memerlukan ekstensi browsernya versi 1.1.3 atau yang lebih baru, yang disetujui untuk aplikasi ini. Chrome Web Store masih menawarkan versi yang lebih lama, jadi pasang versi terbaru dari rilis ThreatCaddy di GitHub. Biarkan hanya ekstensi ThreatCaddy terbaru yang terpasang, lalu muat ulang halaman.",
   "header.privacy": "Privasi",
   "header.saveBackup": "Simpan Cadangan",
   "header.loadBackup": "Muat Cadangan",

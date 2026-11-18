@@ -3,6 +3,7 @@
     "importWarning": "Imported with {{count}} failed clip(s)",
     "importFailed": "Failed to import clips from extension",
     "refreshFailed": "Clips were saved, but the view could not refresh. Reload this workspace to see them.",
+    "outdatedExtension": "Clips imported. They came from a ThreatCaddy extension older than 1.1.3, which ThreatCaddy no longer uses for AI, integrations or web fetch. Install the latest version from the ThreatCaddy releases on GitHub; the Chrome Web Store version is older.",
     "openedAsNote": "Opened \"{{name}}\" as a new note",
     "openFailed": "Failed to open \"{{name}}\"",
     "fileRefreshFailed": "The file was saved as a note, but the view could not refresh. Reload this workspace to see it.",

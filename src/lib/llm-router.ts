@@ -7,6 +7,7 @@ import { cancellableRequest } from './request-cancellation';
 import { decodeBlocks, encodeRequest } from './tool-name-alias';
 import { readStoredAuth } from './auth-storage';
 import { workspaceStorageKey } from './workspace-profiles';
+import { extensionUpdateRequired, hasPairedBridge } from './extension-bridge';
 import i18n from '../i18n';
 import type { LLMProvider, Settings } from '../types';
 
@@ -195,7 +196,14 @@ export function sendViaExtension(request: LLMRouteRequest, callbacks: LLMRouteCa
   if (lifecycle.signal.aborted) { cleanup(); return requestId; }
   window.addEventListener('message', handler);
   lifecycle.signal.addEventListener('abort', abort, { once: true });
-  window.postMessage({ type: 'TC_LLM_REQUEST', requestId, payload: encoded.req }, postMessageOrigin());
+  // Only a paired 1.1.3+ bridge gets the request and its API key; store 1.1.1 has no app pairing.
+  void hasPairedBridge().then(async paired => {
+    if (lifecycle.signal.aborted) return;
+    if (paired) { window.postMessage({ type: 'TC_LLM_REQUEST', requestId, payload: encoded.req }, postMessageOrigin()); return; }
+    const error = await extensionUpdateRequired();
+    if (lifecycle.signal.aborted) return;
+    cleanup(); callbacks.onError(error);
+  });
   return requestId;
 }
 

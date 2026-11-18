@@ -5,6 +5,7 @@
     "openedAsNote": "Aperto \"{{name}}\" come nuova nota",
     "openFailed": "Impossibile aprire \"{{name}}\"",
     "refreshFailed": "I ritagli sono stati salvati, ma la vista non si è aggiornata. Ricarica quest’area per vederli.",
+    "outdatedExtension": "Ritagli importati. Provengono da un'estensione ThreatCaddy precedente alla 1.1.3, che ThreatCaddy non usa più per IA, integrazioni o recupero web. Installa l'ultima versione dalle release di ThreatCaddy su GitHub; la versione del Chrome Web Store è precedente.",
     "fileRefreshFailed": "Il file è stato salvato come nota, ma la vista non si è aggiornata. Ricarica quest’area per vederla.",
     "fileTitle": "{{name}} — {{size}} — Modificato {{modified}}",
     "fileError": {

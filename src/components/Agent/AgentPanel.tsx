@@ -6,6 +6,7 @@ import {
 import type { AgentAction, AgentPolicy, AgentProfile, AgentDeployment, Folder, AgentStatus, Settings, Task } from '../../types';
 import { DEFAULT_AGENT_POLICY } from '../../types';
 import { cn, formatDate, postMessageOrigin } from '../../lib/utils';
+import { isPairedBridgeCaps } from '../../lib/extension-bridge';
 import { db } from '../../db';
 import { executeApprovedAction, rejectAction, bulkApproveActions, previewBulkApprove } from '../../lib/agent-action-approval';
 import { acknowledgeReconciliation } from '../../lib/agent-handoff';
@@ -140,7 +141,8 @@ function InvestigationAgentPanel({
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.source === window && event.data?.type === 'TC_EXTENSION_READY') {
-        setExtensionAvailable(true);
+        // Store 1.1.1 announces itself too, but the app sends it nothing.
+        setExtensionAvailable(isPairedBridgeCaps(event.data.capabilities));
       }
     };
     window.addEventListener('message', handler);

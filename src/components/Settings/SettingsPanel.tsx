@@ -10,7 +10,7 @@ import { useCustomSlashCommands } from '../../hooks/useCustomSlashCommands';
 import { TemplateManager } from './TemplateManager';
 import { PlaybookManager } from './PlaybookManager';
 import { DEFAULT_SYSTEM_PROMPT } from '../../lib/llm-tools';
-import { hasGuardedBridgeFetch } from '../../lib/llm-tools-analysis';
+import { hasPairedBridge, isPairedBridgeCaps } from '../../lib/extension-bridge';
 import { isHttpsOrLoopback } from '../../lib/agent-hosts';
 import { MODELS, MODEL_PROVIDER_MAP } from '../../lib/models';
 import { hasServerSession, resolveRoute } from '../../lib/llm-router';
@@ -893,7 +893,8 @@ function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpda
   const caps = capsText.split(',').filter(Boolean);
   const localEndpoint = settings.llmLocalEndpoint?.trim();
   // Every cloud provider takes the same route.
-  const cloud = resolveRoute(settings, { extensionAvailable: caps.length > 0, serverSession: hasServerSession(), provider: 'anthropic' });
+  // Store 1.1.1 publishes capabilities too, but the app sends it nothing.
+  const cloud = resolveRoute(settings, { extensionAvailable: isPairedBridgeCaps(caps), serverSession: hasServerSession(), provider: 'anthropic' });
   const keys = ROUTE_KEYS[localEndpoint ? 'cloud' : 'all'];
   const cloudKey = keys[cloud.route === 'unavailable' ? cloud.reason : cloud.route === 'server' ? 'server' : 'extension'];
   // Server-routed requests go to the signed-in session's server.
@@ -907,7 +908,7 @@ function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpda
   useEffect(() => {
     if (!capsText) return;
     let current = true;
-    void hasGuardedBridgeFetch().then(guarded => { if (current) setFetchCheck({ caps: capsText, guarded }); });
+    void hasPairedBridge().then(guarded => { if (current) setFetchCheck({ caps: capsText, guarded }); });
     return () => { current = false; setFetchCheck(undefined); };
   }, [capsText]);
   const fetchLine = !caps.length ? t('ai.dataFlow.fetchNoExtension')

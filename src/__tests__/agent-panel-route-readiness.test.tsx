@@ -9,6 +9,7 @@ import i18n from '../i18n';
 import enSettings from '../../public/locales/en/settings.json';
 import deAgent from '../../public/locales/de/agent.json';
 import deSettings from '../../public/locales/de/settings.json';
+import { PAIRED_BRIDGE_CAPS } from './helpers/paired-bridge';
 
 vi.mock('../components/Agent/AgentProfilePicker', () => ({ AgentProfilePicker: () => null }));
 vi.mock('../components/Agent/AgentMeetingPanel', () => ({ AgentMeetingPanel: () => null }));
@@ -23,8 +24,8 @@ const renderPanel = async (settings: Partial<Settings>, investigation = folder) 
   await act(async () => {});
 };
 const setupBanner = () => screen.queryByRole('heading', { name: 'Set up AgentCaddy' });
-const announceExtension = () => act(() => {
-  window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'TC_EXTENSION_READY', protocolVersion: 2, capabilities: [] } }));
+const announceExtension = (capabilities = PAIRED_BRIDGE_CAPS) => act(() => {
+  window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'TC_EXTENSION_READY', protocolVersion: 2, capabilities } }));
 });
 
 beforeEach(() => localStorage.clear());
@@ -61,6 +62,15 @@ describe('AgentCaddy readiness follows the route', () => {
     await renderPanel({ llmRoutingMode: 'extension', llmDefaultProvider: 'anthropic', llmAnthropicApiKey: 'synthetic-key', llmLocalEndpoint: 'http://localhost:11434/v1' });
     expect(setupBanner()).toBeInTheDocument();
     expect(screen.getByText('Install the browser extension')).toBeInTheDocument();
+  });
+
+  it('explicit Browser Extension routing with only store 1.1.1, which has no app pairing: the setup banner shows', async () => {
+    await renderPanel({ llmRoutingMode: 'extension', llmAnthropicApiKey: 'synthetic-key' });
+    announceExtension(['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch']);
+    expect(setupBanner()).toBeInTheDocument();
+    expect(screen.getByText('Install the browser extension')).toBeInTheDocument();
+    announceExtension();
+    expect(setupBanner()).not.toBeInTheDocument();
   });
 
   it('a local default model with an endpoint is called directly, so it needs no extension or server', async () => {

@@ -161,6 +161,7 @@
   "standaloneWarning.message": "Wersja samodzielna działa z file:// bez szyfrowania. Inne lokalne pliki HTML mogą uzyskać dostęp do Twoich danych. W trybie samodzielnym Content Security Policy nie ogranicza skryptów ani połączeń sieciowych.",
   "standaloneWarning.enableEncryption": "Włącz szyfrowanie w sekcji Ustawienia",
   "header.chromeExtension": "Rozszerzenie Chrome",
+  "extension.updateRequired": "ThreatCaddy wymaga swojego rozszerzenia przeglądarki w wersji 1.1.3 lub nowszej, zatwierdzonego dla tej aplikacji. Chrome Web Store nadal oferuje starszą wersję, więc zainstaluj najnowszą wersję z wydań ThreatCaddy na GitHubie. Zostaw zainstalowane tylko najnowsze rozszerzenie ThreatCaddy, a następnie załaduj stronę ponownie.",
   "header.privacy": "Prywatność",
   "header.saveBackup": "Zapisz kopię zapasową",
   "header.loadBackup": "Załaduj kopię zapasową",

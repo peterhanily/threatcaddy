@@ -161,6 +161,7 @@
   "standaloneWarning.message": "独立版正在通过 file:// 无加密运行。其他本地 HTML 文件可以访问您的数据。在独立模式下，Content Security Policy 不会限制脚本或网络连接。",
   "standaloneWarning.enableEncryption": "在设置中启用加密",
   "header.chromeExtension": "Chrome 扩展",
+  "extension.updateRequired": "ThreatCaddy 需要已批准此应用的浏览器扩展 1.1.3 或更高版本。Chrome 应用商店仍提供较旧的版本，请从 GitHub 上的 ThreatCaddy 发布版本安装最新版本。请只保留已安装的最新 ThreatCaddy 扩展，然后重新加载页面。",
   "header.privacy": "隐私",
   "header.saveBackup": "保存备份",
   "header.loadBackup": "加载备份",

@@ -95,6 +95,20 @@ describe('app clip delivery lifecycle', () => {
     expect(window.postMessage).not.toHaveBeenCalled();
   });
 
+  // Store 1.1.1 sends only legacy messages and marks clips sent without a receipt, and the GitHub build is a
+  // different extension with its own storage, so refusing them would strand captures. The app imports them
+  // and says the extension is outdated.
+  it('imports clips from an extension older than 1.1.3 and asks for the update', async () => {
+    const options = { ...callbacks(), onOutdatedExtension: vi.fn() };
+    renderHook(() => useClipDelivery(options));
+    await act(() => consume({ type: 'THREATCADDY_IMPORT_CLIPS', clips: [{ id: 'ordinary-fixture' }] }));
+    expect(mocks.importClips).toHaveBeenCalledWith([{ id: 'ordinary-fixture' }], expect.objectContaining({ sourceId: 'legacy-extension' }));
+    expect(options.onCommitted).toHaveBeenCalledWith([committed], expect.any(AbortSignal));
+    expect(options.onOutdatedExtension).toHaveBeenCalledOnce();
+    await act(() => consume(message()));
+    expect(options.onOutdatedExtension).toHaveBeenCalledOnce();
+  });
+
   it('does not claim success when the service throws before committing', async () => {
     mocks.importClips.mockRejectedValue(new Error('Rejected before writing'));
     const options = callbacks();

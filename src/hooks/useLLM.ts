@@ -7,6 +7,7 @@ import { nanoid } from 'nanoid';
 import { registerLockParticipant } from '../lib/workspace-lock';
 import { retainLockedChatResult, type ChatRecoveryTarget } from '../lib/locked-chat-recovery';
 import { postMessageOrigin } from '../lib/utils';
+import { extensionUpdateRequired, hasPairedBridge, isPairedBridgeCaps } from '../lib/extension-bridge';
 import i18n from '../i18n';
 
 interface ToolDef {
@@ -105,19 +106,28 @@ function dispatchLLMRequest(
     signal.addEventListener('abort', abort, { once: true });
     signal.addEventListener('abort', cleanup, { once: true });
     window.addEventListener('message', complete);
-    window.postMessage({
-      type: 'TC_LLM_REQUEST',
-      requestId,
-      payload: {
-        provider: opts.provider,
-        model: opts.model,
-        messages: encoded.req.messages,
-        apiKey: opts.apiKey,
-        systemPrompt: opts.systemPrompt,
-        tools: encoded.req.tools,
-        endpoint: opts.endpoint,
-      },
-    }, postMessageOrigin());
+    // Only a paired 1.1.3+ bridge gets the request and its API key; store 1.1.1 has no app pairing.
+    void hasPairedBridge().then(async paired => {
+      if (signal.aborted) return;
+      if (!paired) {
+        const error = await extensionUpdateRequired();
+        if (!signal.aborted) window.postMessage({ type: 'TC_LLM_ERROR', requestId, error }, postMessageOrigin());
+        return;
+      }
+      window.postMessage({
+        type: 'TC_LLM_REQUEST',
+        requestId,
+        payload: {
+          provider: opts.provider,
+          model: opts.model,
+          messages: encoded.req.messages,
+          apiKey: opts.apiKey,
+          systemPrompt: opts.systemPrompt,
+          tools: encoded.req.tools,
+          endpoint: opts.endpoint,
+        },
+      }, postMessageOrigin());
+    });
     return encoded.decode;
   }
 }
@@ -365,7 +375,8 @@ export function useLLM() {
       if (event.source !== window || !event.data) return;
 
       if (event.data.type === 'TC_EXTENSION_READY') {
-        setExtensionAvailable(true);
+        // Store 1.1.1 announces itself too, but the app sends it nothing.
+        setExtensionAvailable(isPairedBridgeCaps(event.data.capabilities));
         setExtensionInfo({
           protocolVersion: event.data.protocolVersion || 1,
           capabilities: event.data.capabilities || [],
