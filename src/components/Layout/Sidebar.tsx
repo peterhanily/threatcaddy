@@ -19,8 +19,8 @@ import { useUIModals } from '../../contexts/UIModalContext';
 const AGENT_STATUS_KEYS = {
   running: 'sidebar.agentStatusRunning', waiting: 'sidebar.agentStatusWaiting', paused: 'sidebar.agentStatusPaused', error: 'sidebar.agentStatusError',
 } as const;
-/** The selected investigation's status, named as the filter bar names it. */
-const INVESTIGATION_STATUS_KEYS = { active: 'hub.active', closed: 'hub.closed', archived: 'hub.archived' } as const;
+/** The selected investigation's status, named as its details dialog names it (singular, unlike the list's tabs). */
+const INVESTIGATION_STATUS_KEYS = { active: 'detail.active', closed: 'detail.closed', archived: 'detail.archived' } as const;
 
 interface SidebarProps {
   collapsed: boolean;

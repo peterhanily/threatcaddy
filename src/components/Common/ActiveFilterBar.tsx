@@ -19,7 +19,7 @@ interface ActiveFilterBarProps {
   playbookExecution?: PlaybookExecution;
 }
 
-const STATUS_KEYS: Record<InvestigationStatus, string> = { active: 'hub.active', closed: 'hub.closed', archived: 'hub.archived' };
+const STATUS_KEYS: Record<InvestigationStatus, string> = { active: 'detail.active', closed: 'detail.closed', archived: 'detail.archived' };
 
 export function ActiveFilterBar({ folderName, folderColor, folderStatus, tagName, tagColor, onClear, onEditFolder, playbookExecution }: ActiveFilterBarProps) {
   const { t } = useTranslation('investigations');

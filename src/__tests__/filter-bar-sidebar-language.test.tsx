@@ -1,4 +1,6 @@
 /** The investigation filter bar and the sidebar's investigation status, both always visible, in the analyst's language. */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ActiveFilterBar } from '../components/Common/ActiveFilterBar';
@@ -9,6 +11,13 @@ import deInvestigations from '../../public/locales/de/investigations.json';
 import type { InvestigationStatus } from '../types';
 
 const de = deInvestigations as Record<string, string>;
+const read = (locale: string, namespace: string) =>
+  JSON.parse(readFileSync(resolve(__dirname, '../../public/locales', locale, `${namespace}.json`), 'utf8')) as Record<string, string>;
+const switchLanguage = async (locale: string) => {
+  for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle(locale, namespace, values, true, false);
+  for (const namespace of ['common', 'investigations']) i18n.addResourceBundle(locale, namespace, read(locale, namespace), true, true);
+  await act(async () => { await i18n.changeLanguage(locale); });
+};
 const fill = (text: string, values: Record<string, string | number>) => text.replace(/\{\{(\w+)\}\}/g, (_, name: string) => String(values[name]));
 const selected = vi.hoisted(() => ({ status: undefined as InvestigationStatus | undefined }));
 
@@ -55,13 +64,40 @@ describe('investigation filter bar in the analyst\'s language', () => {
   });
 });
 
+const renderSidebar = () =>
+  render(<Sidebar collapsed={false} onToggleCollapsed={vi.fn()} noteCounts={{ total: 0, archived: 0, trashed: 0 }} taskCounts={{ todo: 0, 'in-progress': 0, done: 0, total: 0 }} />);
+
 describe('sidebar investigation status in the analyst\'s language', () => {
-  it.each([[undefined, 'hub.active'], ['active', 'hub.active'], ['closed', 'hub.closed'], ['archived', 'hub.archived']] as const)(
+  it.each([[undefined, 'detail.active'], ['active', 'detail.active'], ['closed', 'detail.closed'], ['archived', 'detail.archived']] as const)(
     'status %s', (status, key) => {
       selected.status = status;
-      render(<Sidebar collapsed={false} onToggleCollapsed={vi.fn()} noteCounts={{ total: 0, archived: 0, trashed: 0 }} taskCounts={{ todo: 0, 'in-progress': 0, done: 0, total: 0 }} />);
+      renderSidebar();
       const card = screen.getByTitle((deCommon as Record<string, string>)['sidebar.investigationSettings']);
       expect(card).toHaveTextContent(de[key]);
       expect(card).not.toHaveTextContent(/Active|Closed|Archived/);
     });
+});
+
+// One investigation's status takes the singular form the details dialog uses, not the plural of the
+// investigation list's tabs ('Активные', 'active ones'). These languages tell the two apart.
+describe.each(['ru', 'uk', 'it'])('one investigation\'s status in %s', (locale) => {
+  const values = read(locale, 'investigations');
+  it.each(['active', 'closed', 'archived'] as const)('%s', async (status) => {
+    const [one, list] = [values[`detail.${status}`], values[`hub.${status}`]];
+    expect(one).toBeTruthy();
+    expect(list).toBeTruthy();
+    expect(one).not.toBe(list);
+    await switchLanguage(locale);
+
+    selected.status = status;
+    renderSidebar();
+    const card = screen.getByTitle(read(locale, 'common')['sidebar.investigationSettings']);
+    expect(card).toHaveTextContent(one);
+    expect(card).not.toHaveTextContent(list);
+    cleanup();
+
+    const view = render(<ActiveFilterBar folderName="Fictional Case Alpha" folderStatus={status} onClear={vi.fn()} />);
+    expect(view.container).toHaveTextContent(one);
+    expect(view.container).not.toHaveTextContent(list);
+  });
 });
