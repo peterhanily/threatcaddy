@@ -337,6 +337,48 @@ describe('A-GATE-6 review and escalation scope', () => {
     expect((await db.tasks.get(ids('S').task))?.status).toBe('todo');
   });
 
+  describe('links from an escalated task', () => {
+    const link = (...links: Array<[string, string, string, string]>) => call('link_entities',
+      { links: links.map(([sourceType, sourceId, targetType, targetId]) => ({ sourceType, sourceId, targetType, targetId })) });
+    const S = ids('S');
+    const enricher = { profileId: 'ap-ioc-enricher' };
+
+    it('refuses an agent whose policy allows creates, and a legacy agent with approval; the task row is unchanged', async () => {
+      await db.tasks.update(S.task, { escalated: true, rejectionCount: 3 });
+      const before = await db.tasks.get(S.task);
+      const fromTask = link(['task', S.task, 'note', S.note]);
+      for (const result of [await dispatch(fromTask, 'S', 'agent', undefined, enricher),
+        await dispatch(fromTask, 'S', 'agent', mintHumanApproval(fromTask, 'S', 'action-queue'), {})]) {
+        expect(result.isError).toBe(true);
+        expect(JSON.parse(result.result)).toMatchObject({ escalated: true });
+        expect(errorOf(result)).toMatch(/escalated to a human/);
+      }
+      // One escalated source refuses the whole call, with ids coerced as the executor coerces them:
+      // nothing is linked, even from the note.
+      const mixed = link(['note', S.note, 'task', S.task], [['task'] as unknown as string, [S.task] as unknown as string, 'note', S.note]);
+      expect((await dispatch(mixed, 'S', 'agent', undefined, enricher)).isError).toBe(true);
+      expect(await db.tasks.get(S.task)).toEqual(before);
+      expect((await db.notes.get(S.note))?.linkedTaskIds).toBeUndefined();
+    });
+
+    it('still links from a task that is not escalated, and to an escalated task without changing it', async () => {
+      await db.tasks.add({ id: 'S-escalated', folderId: 'S', title: 'Escalated task', completed: false, priority: 'none', status: 'todo', order: 1, tags: [],
+        trashed: false, archived: false, escalated: true, rejectionCount: 3, createdAt: 1, updatedAt: 1 });
+      const before = await db.tasks.get('S-escalated');
+      expect((await dispatch(link(['task', S.task, 'note', S.note]), 'S', 'agent', undefined, enricher)).isError).toBe(false);
+      expect((await db.tasks.get(S.task))?.linkedNoteIds).toEqual([S.note]);
+      expect((await dispatch(link(['note', S.note, 'task', 'S-escalated']), 'S', 'agent', undefined, enricher)).isError).toBe(false);
+      expect((await db.notes.get(S.note))?.linkedTaskIds).toEqual(['S-escalated']);
+      expect(await db.tasks.get('S-escalated')).toEqual(before);
+    });
+
+    it('chat, which no agent label covers, still links from an escalated task', async () => {
+      await db.tasks.update(S.task, { escalated: true, rejectionCount: 3 });
+      expect((await execTool(link(['task', S.task, 'note', S.note]), 'S')).isError).toBe(false);
+      expect(await db.tasks.get(S.task)).toMatchObject({ escalated: true, linkedNoteIds: [S.note] });
+    });
+  });
+
   it('sends a rejection to the working memory of the agent the task was delegated to', async () => {
     const thread = (id: string, folderId: string) => db.chatThreads.add({ id, title: id, messages: [], model: '', provider: 'anthropic', folderId, tags: [], archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
     await thread('th-thread', 'S'); await thread('p-thread', 'P');

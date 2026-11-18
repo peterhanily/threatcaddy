@@ -113,6 +113,17 @@ describe('A-BRIDGE-1 with the bridge on and the shared investigation selected', 
     expect(await db.tasks.get(ids('S').task)).toMatchObject({ status: 'todo', escalated: true });
   });
 
+  it('cannot link from an escalated task, and still links from one that is not', async () => {
+    const fromTask = { links: [{ sourceType: 'task', sourceId: ids('S').task, targetType: 'note', targetId: ids('S').note }] };
+    await db.tasks.update(ids('S').task, { escalated: true, rejectionCount: 3 });
+    const before = await db.tasks.get(ids('S').task);
+    await expect(bridge().exec(nonce, 'link_entities', fromTask)).rejects.toThrow(/escalated to a human/);
+    expect(await db.tasks.get(ids('S').task)).toEqual(before);
+    await db.tasks.update(ids('S').task, { escalated: false });
+    expect(JSON.parse(await bridge().exec(nonce, 'link_entities', fromTask))).toMatchObject({ success: true, linked: 1 });
+    expect((await db.tasks.get(ids('S').task))?.linkedNoteIds).toEqual([ids('S').note]);
+  });
+
   it('marks what it creates as AI-made, for the operator', async () => {
     const note = JSON.parse(await bridge().exec(nonce, 'create_note', { title: 'Bridge note' }));
     const folder = JSON.parse(await bridge().exec(nonce, 'create_note_folder', { name: 'Bridge folder' }));
