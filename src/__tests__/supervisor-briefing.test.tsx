@@ -133,6 +133,25 @@ describe('the AgentCaddy dashboard', () => {
       expect(screen.getAllByText('1 pending')).toHaveLength(2);
     });
 
+    it('counts only the supervisor\'s proposals, not another agent\'s that waits in its investigation', async () => {
+      await db.folders.add({ id: 'Z-new', name: NAME, order: 9999, createdAt: 1, status: 'active', localOnly: true, agentEnabled: true });
+      const legacy: AgentAction = { ...action('legacy', 'Z-new', 'create_note'), status: 'pending' };
+      await db.agentActions.bulkAdd([pendingIn('p1', 'Z-new'), legacy, { ...pendingIn('deployed', 'Z-new'), agentConfigId: 'ap-lead-analyst' }]);
+      render(<AgentDashboard folders={await db.folders.toArray()} onOpenInvestigation={vi.fn()} />);
+      expect(await screen.findByText('1 supervisor proposal waits for your approval')).toBeInTheDocument();
+      expect(screen.getByText('1 pending')).toBeInTheDocument();
+    });
+
+    it('shows no supervisor line when only another agent\'s proposal waits there', async () => {
+      await db.folders.add({ id: 'Z-new', name: NAME, order: 9999, createdAt: 1, status: 'active', localOnly: true, agentEnabled: true });
+      await db.agentActions.add({ ...pendingIn('deployed', 'Z-new'), agentConfigId: 'ap-lead-analyst' });
+      render(<AgentDashboard folders={await db.folders.toArray()} onOpenInvestigation={vi.fn()} />);
+      expect(await screen.findByText('Get started with AgentCaddy')).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Supervisor Briefings' })).not.toBeInTheDocument();
+      expect(screen.queryByText(/supervisor proposals? waits? for your approval/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/pending/)).not.toBeInTheDocument();
+    });
+
     it.each([['ru', 5], ['ar', 2], ['de', 1]])('reads in %s with that language\'s plural form for %s', async (lng, count) => {
       const values = agentCatalogs[`../../public/locales/${lng}/agent.json`].default;
       for (const [namespace, bundle] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle(lng, namespace, bundle, true, false);

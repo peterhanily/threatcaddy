@@ -13,6 +13,7 @@ import { cn, formatDate } from '../../lib/utils';
 import { db } from '../../db';
 import { getToolActionClass } from '../../lib/caddy-agent-policy';
 import { findSupervisorFolder } from '../../lib/caddy-agent-supervisor';
+import { SUPERVISOR_ACTION_PROFILE } from '../../lib/supervisor-tool-policy';
 
 const RECENT_LIMIT = 50;
 
@@ -116,8 +117,10 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
         setSupervisorNotes(notes);
       }
       // Its notes and tasks wait there for approval under the default agent settings.
+      // Only its own: another agent can be enabled or deployed in that investigation.
       setSupervisorPending(supFolder ? await db.agentActions
-        .where('[investigationId+status]').equals([supFolder.id, 'pending']).count() : 0);
+        .where('[investigationId+status]').equals([supFolder.id, 'pending'])
+        .filter(a => a.agentConfigId === SUPERVISOR_ACTION_PROFILE).count() : 0);
 
       setLoading(false);
     })();
