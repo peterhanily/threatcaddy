@@ -144,6 +144,13 @@ describe('the paused notice', () => {
     await waitFor(() => expect(document.body.textContent).not.toContain('set to run there'));
   });
 
+  it('a copy deployed after the paused copy but before the pause does not count as deployed again', async () => {
+    // The other order: an older version deployed the server copy first and the browser copy later, both before the pause.
+    await showNotice(['dep-hunter'], [deployment({ status: 'paused', createdAt: 10, updatedAt: 999 }),
+      deployment({ id: 'dep-hunter-2', order: 1, createdAt: 20, updatedAt: 20 })]);
+    expect(await screen.findByText(notice(1))).toBeInTheDocument();
+  });
+
   it('a dismissal lasts while the AgentCaddy view is closed and opened again, and a later pause shows the notice again', async () => {
     const serverCopy = (values: Partial<AgentDeployment>) => deployment({ serverSideEnabled: true, handoffState: 'client', ...values });
     await db.agentDeployments.add(serverCopy({}));
