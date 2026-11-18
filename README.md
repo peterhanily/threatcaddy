@@ -100,7 +100,7 @@ Human-driven conversational AI assistant with a deep toolset for threat investig
 - **Slash commands** — `/fetch`, `/search`, `/note`, `/task`, `/iocs`, `/summary`, `/timeline`, `/report`, `/triage`, `/graph`, `/link`
 - **Customizable system prompt** — Editable in Settings with CTI/IR tradecraft baked into the default (MITRE ATT&CK, Diamond Model, Kill Chain, Pyramid of Pain, estimative language, TLP/PAP)
 - **Persistent threads** with auto-generated titles; stays active in the background when switching tabs
-- **Approvals and data flow** — CaddyAI asks before it opens a web page, uses a skill, changes agents, writes into another investigation, or reads other investigations from an investigation that can sync. YOLO covers only changes inside the conversation's investigation and built-in vendor lookups, and Plan mode only reads (inside an investigation, only that one). Local-only investigations are invisible to AI working in an investigation that can sync. **Settings → AI → Where AI data goes** shows the route AI requests take (local model, browser extension or team server); a local model with an endpoint is called directly (chat titles and conversation summaries still go to it through the extension), and with no route nothing is sent
+- **Approvals and data flow** — CaddyAI asks before it opens a web page, uses a skill, changes agents, writes into another investigation, or reads other investigations from an investigation that can sync. YOLO covers only changes inside the conversation's investigation and built-in vendor lookups, and Plan mode only reads (inside an investigation, only that one). AI working in an investigation that can sync, including a team investigation viewed without syncing it, does not list, search or read local-only investigations, and turning off local-only (Cloud Sync or Keep on this device) for an investigation that holds AI-written content asks first. **Settings → AI → Where AI data goes** shows the route AI requests take (local model, browser extension or team server); a local model with an endpoint is called directly (chat titles and conversation summaries still go to it through the extension), and with no route nothing is sent
 
 ---
 
@@ -133,7 +133,7 @@ These agents run in the open client. Server-side AgentCaddy handoff and the lega
 | 📝 Reporter | Specialist | Structured report generation, IOC stats, timeline coverage |
 | 🛡️ Forensicate Scanner | Specialist | Basic check of investigation content for common prompt-injection patterns; the check runs on this device, and like every agent it sends what it reads to your AI model |
 
-**Executives** can propose spawning, defining and dismissing agents; each proposal waits for your approval. **Observers** have read-only access to technical entities. **Pattern Hunter** compares investigations only from a local-only investigation; in one that can sync, its cross-investigation tools are off. No other agent reads or changes other investigations.
+**Executives** can propose spawning, defining and dismissing agents; each proposal waits for your approval. **Observers** have read-only access to technical entities. **Pattern Hunter** compares investigations only from a local-only investigation; in one that can sync, its cross-investigation tools are off. No other built-in agent reads or changes other investigations; a custom profile that lists the cross-investigation tools, such as a duplicated Pattern Hunter, behaves like Pattern Hunter.
 
 #### How It Works
 
