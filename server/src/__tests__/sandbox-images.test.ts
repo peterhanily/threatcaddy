@@ -24,7 +24,7 @@ async function imageFor(language: keyof typeof LANGUAGES): Promise<string> {
   const { executeCode } = await sandbox();
   fixture.create.mockRejectedValueOnce(new Error('synthetic: no container'));
   await expect(executeCode(language, 'true')).rejects.toThrow('synthetic');
-  return fixture.create.mock.calls.at(-1)![0].Image as string;
+  return (fixture.create.mock.calls.at(-1)?.[0] as { Image: string } | undefined)?.Image ?? '';
 }
 
 beforeEach(() => {
@@ -39,7 +39,7 @@ describe('default sandbox images', () => {
     const defaults: Record<string, string> = {};
     for (const language of Object.keys(LANGUAGES)) defaults[language] = await imageFor(language as keyof typeof LANGUAGES);
     for (const image of Object.values(defaults)) expect(image).toMatch(PINNED);
-    const [, , alpineMajor, alpineMinor] = PINNED.exec(defaults.bash)!;
+    const [, , alpineMajor, alpineMinor] = PINNED.exec(defaults.bash) ?? [];
     // Alpine 3.19 left support in November 2025; 3.22 is the oldest release supported through 2026.
     expect(defaults.bash.startsWith('alpine:')).toBe(true);
     expect(Number(alpineMajor) * 100 + Number(alpineMinor)).toBeGreaterThanOrEqual(322);
