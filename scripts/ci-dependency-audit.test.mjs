@@ -177,6 +177,9 @@ test('malformed or partly hidden reports fail instead of passing', () => {
     ['root', report => { delete report.metadata; }],
     ['root', report => { report.advisories['1247710'].severity = 'High'; }],
     ['root', report => { delete report.advisories['1247710'].patched_versions; }],
+    ['root', report => { delete report.advisories['1247710'].findings; }],
+    ['root', report => { report.advisories['1247710'].findings = []; }],
+    ['root', report => { report.advisories['1247710'].findings[0].paths = []; }],
     ['server', report => { report.auditReportVersion = 1; }],
     ['server', report => { report.vulnerabilities.picomatch.via[0].severity = 'severe'; }],
     ['server', report => { report.vulnerabilities.fdir.via = ['unlisted-package']; }],
@@ -190,6 +193,22 @@ test('malformed or partly hidden reports fail instead of passing', () => {
   const hidden = fixture('root');
   hidden.advisories = {};
   assert.throws(() => audit('root', hidden, { status: 0 }), /summary and its list of high or critical advisories disagree/);
+  // Hiding a second advisory while the excepted one stays listed also leaves its count behind.
+  for (const severity of ['high', 'critical']) {
+    const second = fixture('root');
+    second.metadata.vulnerabilities[severity] += 1;
+    assert.throws(() => audit('root', second), /summary and its list of high or critical advisories disagree/);
+  }
+});
+
+test('the root summary counts each finding path, as the registry does', () => {
+  // Observed 18 November 2026: two vulnerable picomatch versions are two findings and count 2.
+  const twoVersions = fixture('root');
+  twoVersions.advisories['1247710'].findings.push({ version: '4.0.6', paths: ['.>tinyglobby>picomatch'] });
+  twoVersions.metadata.vulnerabilities.high = 2;
+  assert.deepEqual(audit('root', twoVersions).map(advisory => advisory.id), [GHSA]);
+  twoVersions.metadata.vulnerabilities.high = 1;
+  assert.throws(() => audit('root', twoVersions), /summary and its list of high or critical advisories disagree/);
 });
 
 test('a patched version ends the exception', () => {

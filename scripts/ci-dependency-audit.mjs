@@ -122,9 +122,12 @@ function pnpmAdvisories(report) {
   check(object(report.advisories) && object(report.metadata?.vulnerabilities), 'not a pnpm audit report');
   const advisories = Object.values(report.advisories).map(advisory => {
     check(object(advisory) && nonempty(advisory.module_name) && SEVERITIES.has(advisory.severity)
-      && nonempty(advisory.vulnerable_versions) && nonempty(advisory.patched_versions), 'malformed pnpm advisory');
+      && nonempty(advisory.vulnerable_versions) && nonempty(advisory.patched_versions) && Array.isArray(advisory.findings)
+      && advisory.findings.length > 0 && advisory.findings.every(finding => object(finding) && nonempty(finding.version)
+        && Array.isArray(finding.paths) && finding.paths.length > 0 && finding.paths.every(nonempty)), 'malformed pnpm advisory');
     return { id: GHSA.test(advisory.github_advisory_id) ? advisory.github_advisory_id : undefined, package: advisory.module_name,
-      severity: advisory.severity, range: advisory.vulnerable_versions, fixed: advisory.patched_versions !== '<0.0.0' };
+      severity: advisory.severity, range: advisory.vulnerable_versions, fixed: advisory.patched_versions !== '<0.0.0',
+      findingPaths: advisory.findings.reduce((sum, finding) => sum + finding.paths.length, 0) };
   });
   return advisories.filter(advisory => BLOCKING.has(advisory.severity));
 }
@@ -160,7 +163,12 @@ export function evaluateAudit({ project, report, status, exceptions, lockfile })
   check(report.error === undefined, `the audit reported an error: ${JSON.stringify(report).slice(0, 500)}`);
   const advisories = project === 'root' ? pnpmAdvisories(report) : npmAdvisories(report);
   const { high, critical } = report.metadata.vulnerabilities;
-  check(Number.isInteger(high) && Number.isInteger(critical) && (high + critical > 0) === (advisories.length > 0),
+  // pnpm's ignore settings drop advisories but keep their counts, and the registry counts each
+  // finding path (observed 18 November 2026), so the root counts must match exactly.
+  const counted = severity => advisories.filter(advisory => advisory.severity === severity).reduce((sum, advisory) => sum + advisory.findingPaths, 0);
+  check(Number.isInteger(high) && Number.isInteger(critical) && (project === 'root'
+    ? high === counted('high') && critical === counted('critical')
+    : (high + critical > 0) === (advisories.length > 0)),
     'the audit summary and its list of high or critical advisories disagree');
   check((String(status) === '1') === (advisories.length > 0), `the audit exited ${status} but lists ${advisories.length} high or critical advisories`);
 
