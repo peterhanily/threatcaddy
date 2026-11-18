@@ -1,10 +1,13 @@
 import { readFileSync } from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { goToApp } from './fixtures';
 import { seedRows } from './client-lifecycle-fixtures';
 
 const catalog = (namespace: string) => JSON.parse(readFileSync(new URL(`../public/locales/en/${namespace}.json`, import.meta.url), 'utf8'));
 const chat = catalog('chat');
+const common = catalog('common');
+const RELEASES = 'https://github.com/peterhanily/threatcaddy/releases/latest';
+const STEPS = 'https://github.com/peterhanily/threatcaddy/blob/main/extension/README.md#install--chrome';
 
 test.use({ serviceWorkers: 'block' });
 
@@ -14,7 +17,7 @@ const CAPS_1_1_4 = ['llm_streaming', 'fetch_url', 'fetch_url_public_v1', 'clip_i
 
 /** One installed bridge, as bridge.js behaves: it publishes its capabilities, answers pings from its
  *  listener, and records every request the page gives it. */
-async function openChatWithBridge(page: Page, baseURL: string | undefined, caps: string[]) {
+async function openChatWithBridge(page: Page, baseURL: string | undefined, caps: string[], onboarded = true) {
   const origin = new URL(String(baseURL)).origin;
   await page.context().route(/^https?:\/\//, route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
   await page.context().routeWebSocket(/.*/, socket => socket.close());
@@ -29,7 +32,7 @@ async function openChatWithBridge(page: Page, baseURL: string | undefined, caps:
       else if (['TC_LLM_REQUEST', 'TC_PROXY_FETCH', 'TC_FETCH_URL'].includes(event.data.type)) requests.push(event.data.type);
     });
   }, caps);
-  await page.addInitScript(() => localStorage.setItem('caddyai-onboarded', '1'));
+  if (onboarded) await page.addInitScript(() => localStorage.setItem('caddyai-onboarded', '1'));
   await goToApp(page);
   const now = Date.now();
   await seedRows(page, { folders: [{ id: 'pairing-case', name: 'Fictional pairing case', order: 0, status: 'active', tags: [], createdAt: now, updatedAt: now }],
@@ -46,11 +49,32 @@ async function openChatWithBridge(page: Page, baseURL: string | undefined, caps:
 }
 const stubRequests = (page: Page) => page.evaluate(() => (window as unknown as { tcStubRequests: string[] }).tcStubRequests);
 
-test('store 1.1.1, which has no app pairing, gets no chat request', async ({ page, baseURL }) => {
+/** The release link and its install steps, with the note that the store version is older. */
+async function expectInstallLinks(place: Locator, releaseName: string) {
+  await expect(place.getByRole('link', { name: releaseName, exact: true })).toHaveAttribute('href', RELEASES);
+  await expect(place.getByRole('link', { name: common['extension.installSteps'], exact: true })).toHaveAttribute('href', STEPS);
+  await expect(place.getByText(common['extension.storeOlder'])).toBeVisible();
+  await expect(place.locator('a[href*="chromewebstore"]')).toHaveCount(0);
+}
+
+test('store 1.1.1, which has no app pairing, gets no chat request, and chat names the version and where to get it', async ({ page, baseURL }) => {
   const input = await openChatWithBridge(page, baseURL, STORE_1_1_1_CAPS);
-  await expect(page.getByText(chat.input.extensionRequiredTitle, { exact: true })).toBeVisible();
+  const banner = page.getByText(chat.input.extensionRequiredTitle, { exact: true }).locator('..');
+  await expect(banner).toBeVisible();
+  await expect(banner).toContainText(chat.input.extensionRequiredVersion);
+  await expectInstallLinks(banner, common['extension.githubRelease']);
   await expect(input).toBeDisabled();
   expect(await stubRequests(page)).toEqual([]);
+});
+
+test('the onboarding and the help menu link the GitHub release, not the store', async ({ page, baseURL }) => {
+  await openChatWithBridge(page, baseURL, STORE_1_1_1_CAPS, false);
+  const onboarding = page.getByText(chat.view.onboardingStep2Title, { exact: true }).locator('..');
+  await expectInstallLinks(onboarding, common['extension.githubRelease']);
+  await page.getByRole('button', { name: chat.view.onboardingDismiss, exact: true }).click();
+  await page.getByRole('button', { name: common['header.helpMenu'], exact: true }).click();
+  const menu = page.getByRole('link', { name: common['extension.menuLink'], exact: true }).locator('..');
+  await expectInstallLinks(menu, common['extension.menuLink']);
 });
 
 test('a paired 1.1.4 bridge gets the chat request', async ({ page, baseURL }) => {

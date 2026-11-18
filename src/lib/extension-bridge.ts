@@ -2,6 +2,10 @@
 import i18n from '../i18n';
 import { postMessageOrigin } from './utils';
 
+/** Where the in-app install links go. The Chrome Web Store still serves 1.1.1, which the app does not use. */
+export const EXTENSION_RELEASES_URL = 'https://github.com/peterhanily/threatcaddy/releases/latest';
+export const EXTENSION_INSTALL_STEPS_URL = 'https://github.com/peterhanily/threatcaddy/blob/main/extension/README.md#install--chrome';
+
 /** Extension 1.1.3 and later answer only an app approved in their popup, and advertise one of these
  *  capabilities. Store 1.1.1 advertises neither: it has no app pairing, follows redirects and has no
  *  private-address filter, so the app sends it no AI request, integration request or web fetch. */

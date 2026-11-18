@@ -14,6 +14,7 @@ import { ChatInput } from './ChatInput';
 import { useLLM } from '../../hooks/useLLM';
 import { DEFAULT_MODEL_PER_PROVIDER } from '../../lib/models';
 import { cn, formatDate } from '../../lib/utils';
+import { EXTENSION_INSTALL_STEPS_URL, EXTENSION_RELEASES_URL } from '../../lib/extension-bridge';
 import { nanoid } from 'nanoid';
 import { TOOL_DEFINITIONS, buildSystemPrompt, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
 import { getHostToolDefinitions, executeHostSkill, isHttpsOrLoopback } from '../../lib/agent-hosts';
@@ -1435,7 +1436,12 @@ export function ChatView({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[var(--text-primary)]">{t('view.onboardingStep2Title')}</p>
-                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{t('view.onboardingStep2Desc')} (<a href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Chrome Web Store</a>)</p>
+                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{t('view.onboardingStep2Desc')} {t('extension.storeOlder', { ns: 'common' })}</p>
+                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
+                    <a href={EXTENSION_RELEASES_URL} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{t('extension.githubRelease', { ns: 'common' })}</a>
+                    {' · '}
+                    <a href={EXTENSION_INSTALL_STEPS_URL} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{t('extension.installSteps', { ns: 'common' })}</a>
+                  </p>
                 </div>
               </div>
               <div className="flex gap-3">
