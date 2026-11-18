@@ -122,6 +122,8 @@ describe('ErrorBoundary: a view whose chunk the update removed', () => {
   });
 
   it('never reloads twice in a session, even after the guard has finished its boot check', async () => {
+    // The guard must name this build exactly as the boundary's claim does.
+    loadBuild('./assets/index-2Hq1aB3c.js');
     const first = renderView(new TypeError(CHROMIUM));
     await waitFor(() => expect(replace).toHaveBeenCalledOnce());
     first.unmount();
