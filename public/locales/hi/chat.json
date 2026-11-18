@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. ब्राउज़र एक्सटेंशन इंस्टॉल करें",
     "onboardingStep2Desc": "CaddyAI को API अनुरोधों को प्रॉक्सी करने के लिए ThreatCaddy ब्राउज़र एक्सटेंशन की आवश्यकता है।",
     "onboardingStep3Title": "3. अनुमतियाँ सक्षम करें",
-    "onboardingStep3Desc": "एक्सटेंशन पॉपअप में, AI प्रदाता पहुँच के लिए «CaddyAI अनुमति दें» और /fetch टूल के लिए «URL प्राप्त करने की अनुमति दें» सक्षम करें।",
+    "onboardingStep3Desc": "एक्सटेंशन पॉपअप में, AI प्रदाता पहुँच के लिए «CaddyAI अनुमति दें» और <cmd>/fetch</cmd> टूल के लिए «URL प्राप्त करने की अनुमति दें» सक्षम करें।",
     "onboardingDismiss": "समझ गया"
   },
   "mode": {

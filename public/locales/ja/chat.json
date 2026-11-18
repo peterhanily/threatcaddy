@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. ブラウザ拡張機能をインストール",
     "onboardingStep2Desc": "CaddyAI は API リクエストのプロキシに ThreatCaddy ブラウザ拡張機能が必要です。",
     "onboardingStep3Title": "3. 権限を有効化",
-    "onboardingStep3Desc": "拡張機能のポップアップで、AIプロバイダーアクセスのための「CaddyAIを許可」と、/fetchツールのための「URLフェッチを許可」を有効にします。",
+    "onboardingStep3Desc": "拡張機能のポップアップで、AIプロバイダーアクセスのための「CaddyAIを許可」と、<cmd>/fetch</cmd>ツールのための「URLフェッチを許可」を有効にします。",
     "onboardingDismiss": "了解"
   },
   "mode": {

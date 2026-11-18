@@ -69,7 +69,7 @@
     "onboardingStep2Title": "۲. نصب افزونه مرورگر",
     "onboardingStep2Desc": "CaddyAI برای پروکسی کردن درخواست‌های API به افزونه مرورگر ThreatCaddy نیاز دارد.",
     "onboardingStep3Title": "۳. فعال کردن مجوزها",
-    "onboardingStep3Desc": "در پنجره‌ی بازشو افزونه، «اجازه دادن CaddyAI» را برای دسترسی به ارائه‌دهنده AI و «اجازه دادن دریافت URL» برای ابزار /fetch فعال کنید.",
+    "onboardingStep3Desc": "در پنجره‌ی بازشو افزونه، «اجازه دادن CaddyAI» را برای دسترسی به ارائه‌دهنده AI و «اجازه دادن دریافت URL» برای ابزار <cmd>/fetch</cmd> فعال کنید.",
     "onboardingDismiss": "متوجه شدم"
   },
   "mode": {

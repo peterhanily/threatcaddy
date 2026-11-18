@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. Installeer de browserextensie",
     "onboardingStep2Desc": "CaddyAI vereist de ThreatCaddy browserextensie om API-verzoeken te proxyen.",
     "onboardingStep3Title": "3. Rechten inschakelen",
-    "onboardingStep3Desc": "Schakel in het extensiepopup «CaddyAI toestaan» in voor toegang tot AI-providers en «URL ophalen toestaan» voor het /fetch-gereedschap.",
+    "onboardingStep3Desc": "Schakel in het extensiepopup «CaddyAI toestaan» in voor toegang tot AI-providers en «URL ophalen toestaan» voor het <cmd>/fetch</cmd>-gereedschap.",
     "onboardingDismiss": "Begrepen"
   },
   "mode": {

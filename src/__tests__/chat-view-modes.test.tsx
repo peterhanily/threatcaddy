@@ -105,12 +105,13 @@ const YOLO_TITLE = 'YOLO is on: most changes and built-in vendor lookups run wit
 // Plan refuses every change and every call that leaves ThreatCaddy, whatever the switch says (decision table row 2).
 const IN_PLAN = 'In Plan mode CaddyAI only reads; the Ask/YOLO switch applies only in Act mode. ';
 
-async function inGerman(run: () => void) {
-  for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
-  i18n.addResourceBundle('de', 'chat', deChat, true, true);
-  await act(async () => { await i18n.changeLanguage('de'); });
+async function inLanguage(language: string, chat: object, run: () => void) {
+  for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle(language, namespace, values, true, false);
+  i18n.addResourceBundle(language, 'chat', chat, true, true);
+  await act(async () => { await i18n.changeLanguage(language); });
   try { run(); } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
 }
+const inGerman = (run: () => void) => inLanguage('de', deChat, run);
 
 describe('mode copy', () => {
   it('describes Plan on its pill and when switching to it', () => {
@@ -232,7 +233,7 @@ const valueOf = (catalog: Record<string, unknown>, key: string): unknown => key 
   : key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], catalog);
 describe('the chat copy this round changed is translated', () => {
   const KEYS = ['view.emptySubtitleV2', 'mode.yoloOnTitleV2', 'mode.yoloOffTitleV2', 'approval.title.lookupNothingSent', 'approval.lookupNone',
-    'approval.targetSyncsLater', 'approval.conversationSyncsLater'];
+    'approval.targetSyncsLater', 'approval.conversationSyncsLater', 'view.onboardingStep3Desc'];
   const english = chatCatalogs['../../public/locales/en/chat.json'].default;
   const others = Object.entries(chatCatalogs).filter(([path]) => !path.endsWith('/en/chat.json'));
   it('has 20 other locales', () => expect(others).toHaveLength(20));
@@ -244,5 +245,24 @@ describe('the chat copy this round changed is translated', () => {
     }
     // The superseded empty-state line is gone.
     expect(valueOf(catalog, 'view.emptySubtitle')).toBeUndefined();
+  });
+});
+
+// C4-5: in a right-to-left language, '/fetch' in the first-run steps keeps its slash in front of the command.
+describe('first-run onboarding', () => {
+  const chatOf = (language: string) => chatCatalogs[`../../public/locales/${language}/chat.json`].default;
+  it.each(['ar', 'he', 'fa', 'en'])('shows the /fetch command left to right in %s', language => inLanguage(language, chatOf(language), () => {
+    localStorage.removeItem('caddyai-onboarded');
+    renderChat('act');
+    const command = screen.getByText('/fetch');
+    expect(command.tagName).toBe('BDI');
+    expect(command).toHaveAttribute('dir', 'ltr');
+    expect(command.parentElement?.textContent).toBe((valueOf(chatOf(language), 'view.onboardingStep3Desc') as string).replace(/<\/?cmd>/g, ''));
+  }));
+
+  it('marks the command once in every locale', () => {
+    for (const [path, catalog] of Object.entries(chatCatalogs)) {
+      expect((valueOf(catalog.default, 'view.onboardingStep3Desc') as string).match(/<cmd>\/fetch<\/cmd>/g), path).toHaveLength(1);
+    }
   });
 });

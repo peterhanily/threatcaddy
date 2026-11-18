@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. Pasang ekstensi browser",
     "onboardingStep2Desc": "CaddyAI memerlukan ekstensi browser ThreatCaddy untuk meneruskan permintaan API.",
     "onboardingStep3Title": "3. Aktifkan izin",
-    "onboardingStep3Desc": "Di popup ekstensi, aktifkan \"Izinkan CaddyAI\" untuk akses penyedia AI dan \"Izinkan pengambilan URL\" untuk alat /fetch.",
+    "onboardingStep3Desc": "Di popup ekstensi, aktifkan \"Izinkan CaddyAI\" untuk akses penyedia AI dan \"Izinkan pengambilan URL\" untuk alat <cmd>/fetch</cmd>.",
     "onboardingDismiss": "Mengerti"
   },
   "mode": {

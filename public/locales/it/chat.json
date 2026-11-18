@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. Installa l'estensione browser",
     "onboardingStep2Desc": "CaddyAI richiede l'estensione browser ThreatCaddy per inoltrare le richieste API.",
     "onboardingStep3Title": "3. Abilita i permessi",
-    "onboardingStep3Desc": "Nel popup dell'estensione, abilita \"Consenti CaddyAI\" per l'accesso ai provider AI e \"Consenti recupero URL\" per lo strumento /fetch.",
+    "onboardingStep3Desc": "Nel popup dell'estensione, abilita \"Consenti CaddyAI\" per l'accesso ai provider AI e \"Consenti recupero URL\" per lo strumento <cmd>/fetch</cmd>.",
     "onboardingDismiss": "Capito",
     "loopCount_many": "{{count}} loop"
   },

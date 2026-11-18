@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. Browser-Erweiterung installieren",
     "onboardingStep2Desc": "CaddyAI benötigt die ThreatCaddy-Browser-Erweiterung, um API-Anfragen zu proxyen.",
     "onboardingStep3Title": "3. Berechtigungen aktivieren",
-    "onboardingStep3Desc": "Aktivieren Sie im Erweiterungs-Popup \"CaddyAI zulassen\" für KI-Provider-Zugriff und \"URL-Abruf zulassen\" für das /fetch-Tool.",
+    "onboardingStep3Desc": "Aktivieren Sie im Erweiterungs-Popup \"CaddyAI zulassen\" für KI-Provider-Zugriff und \"URL-Abruf zulassen\" für das <cmd>/fetch</cmd>-Tool.",
     "onboardingDismiss": "Verstanden"
   },
   "mode": {

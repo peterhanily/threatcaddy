@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. تثبيت إضافة المتصفح",
     "onboardingStep2Desc": "يتطلب CaddyAI إضافة المتصفح ThreatCaddy لتوجيه طلبات API.",
     "onboardingStep3Title": "3. تمكين الأذونات",
-    "onboardingStep3Desc": "في نافذة الإضافة، فعّل \"السماح لـ CaddyAI\" للوصول إلى مزود الذكاء الاصطناعي و\"السماح بجلب URL\" لأداة /fetch.",
+    "onboardingStep3Desc": "في نافذة الإضافة، فعّل \"السماح لـ CaddyAI\" للوصول إلى مزود الذكاء الاصطناعي و\"السماح بجلب URL\" لأداة <cmd>/fetch</cmd>.",
     "onboardingDismiss": "حسنًا",
     "loopCount_zero": "عدد الدورات: {{count}}",
     "loopCount_two": "دورتان ({{count}})",

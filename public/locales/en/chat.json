@@ -89,7 +89,7 @@
     "onboardingStep2Title": "2. Install the browser extension",
     "onboardingStep2Desc": "CaddyAI requires the ThreatCaddy browser extension to proxy API requests.",
     "onboardingStep3Title": "3. Enable permissions",
-    "onboardingStep3Desc": "In the extension popup, enable \"Allow CaddyAI\" for AI provider access and \"Allow URL fetching\" for the /fetch tool.",
+    "onboardingStep3Desc": "In the extension popup, enable \"Allow CaddyAI\" for AI provider access and \"Allow URL fetching\" for the <cmd>/fetch</cmd> tool.",
     "onboardingDismiss": "Got it"
   },
   "mode": {

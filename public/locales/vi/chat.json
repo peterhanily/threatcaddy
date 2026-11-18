@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. Cài đặt tiện ích mở rộng trình duyệt",
     "onboardingStep2Desc": "CaddyAI cần tiện ích mở rộng trình duyệt ThreatCaddy để chuyển tiếp yêu cầu API.",
     "onboardingStep3Title": "3. Kích hoạt quyền",
-    "onboardingStep3Desc": "Trong popup tiện ích mở rộng, bật \"Cho phép CaddyAI\" để truy cập nhà cung cấp AI và \"Cho phép lấy URL\" cho công cụ /fetch.",
+    "onboardingStep3Desc": "Trong popup tiện ích mở rộng, bật \"Cho phép CaddyAI\" để truy cập nhà cung cấp AI và \"Cho phép lấy URL\" cho công cụ <cmd>/fetch</cmd>.",
     "onboardingDismiss": "Đã hiểu"
   },
   "mode": {

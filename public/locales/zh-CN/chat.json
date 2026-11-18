@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. 安装浏览器扩展",
     "onboardingStep2Desc": "CaddyAI 需要 ThreatCaddy 浏览器扩展来代理 API 请求。",
     "onboardingStep3Title": "3. 启用权限",
-    "onboardingStep3Desc": "在扩展弹出窗口中，启用\"允许 CaddyAI\"以访问 AI 提供商，以及\"允许 URL 获取\"以使用 /fetch 工具。",
+    "onboardingStep3Desc": "在扩展弹出窗口中，启用\"允许 CaddyAI\"以访问 AI 提供商，以及\"允许 URL 获取\"以使用 <cmd>/fetch</cmd> 工具。",
     "onboardingDismiss": "明白了"
   },
   "mode": {

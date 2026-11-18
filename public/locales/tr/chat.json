@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. Tarayıcı uzantısını yükle",
     "onboardingStep2Desc": "CaddyAI, API isteklerini yönlendirmek için ThreatCaddy tarayıcı uzantısını gerektirir.",
     "onboardingStep3Title": "3. İzinleri etkinleştir",
-    "onboardingStep3Desc": "Uzantı açılır penceresinde AI sağlayıcı erişimi için \"CaddyAI'ye İzin Ver\" ve /fetch aracı için \"URL getirmeye İzin Ver\"i etkinleştirin.",
+    "onboardingStep3Desc": "Uzantı açılır penceresinde AI sağlayıcı erişimi için \"CaddyAI'ye İzin Ver\" ve <cmd>/fetch</cmd> aracı için \"URL getirmeye İzin Ver\"i etkinleştirin.",
     "onboardingDismiss": "Anladım"
   },
   "mode": {

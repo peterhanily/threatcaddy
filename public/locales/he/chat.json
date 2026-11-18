@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. התקן תוסף דפדפן",
     "onboardingStep2Desc": "CaddyAI דורש תוסף הדפדפן ThreatCaddy לניתוב בקשות API.",
     "onboardingStep3Title": "3. הפעל הרשאות",
-    "onboardingStep3Desc": "בחלון הקופץ של התוסף, הפעל \"אפשר CaddyAI\" לגישה לספק AI ו\"אפשר שליפת URL\" לכלי /fetch.",
+    "onboardingStep3Desc": "בחלון הקופץ של התוסף, הפעל \"אפשר CaddyAI\" לגישה לספק AI ו\"אפשר שליפת URL\" לכלי <cmd>/fetch</cmd>.",
     "onboardingDismiss": "הבנתי",
     "loopCount_two": "{{count}} לולאות"
   },

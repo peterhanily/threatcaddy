@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. Instalar la extensión de navegador",
     "onboardingStep2Desc": "CaddyAI requiere la extensión de navegador ThreatCaddy para hacer proxy de solicitudes API.",
     "onboardingStep3Title": "3. Habilitar permisos",
-    "onboardingStep3Desc": "En el popup de la extensión, habilite \"Permitir CaddyAI\" para acceso a proveedores de IA y \"Permitir obtención de URL\" para la herramienta /fetch.",
+    "onboardingStep3Desc": "En el popup de la extensión, habilite \"Permitir CaddyAI\" para acceso a proveedores de IA y \"Permitir obtención de URL\" para la herramienta <cmd>/fetch</cmd>.",
     "onboardingDismiss": "Entendido",
     "loopCount_many": "{{count}} bucles"
   },

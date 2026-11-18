@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. Zainstaluj rozszerzenie przeglądarki",
     "onboardingStep2Desc": "CaddyAI wymaga rozszerzenia przeglądarki ThreatCaddy do proxy żądań API.",
     "onboardingStep3Title": "3. Włącz uprawnienia",
-    "onboardingStep3Desc": "W wyskakującym oknie rozszerzenia włącz «Zezwól CaddyAI» dla dostępu do dostawców AI i «Zezwól na pobieranie URL» dla narzędzia /fetch.",
+    "onboardingStep3Desc": "W wyskakującym oknie rozszerzenia włącz «Zezwól CaddyAI» dla dostępu do dostawców AI i «Zezwól na pobieranie URL» dla narzędzia <cmd>/fetch</cmd>.",
     "onboardingDismiss": "Rozumiem",
     "loopCount_few": "{{count}} pętle",
     "loopCount_many": "{{count}} pętli"

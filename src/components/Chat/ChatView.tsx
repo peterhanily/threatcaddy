@@ -2,7 +2,7 @@ import { persistChatCompletion } from '../../lib/locked-chat-recovery';
 import { useState, useEffect, useRef, useCallback, useMemo, useId, useSyncExternalStore, type KeyboardEvent } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, ToolUseBlock } from '../../types';
 import { ClsSelect } from '../Common/ClsSelect';
 import { ClsBadge } from '../Common/ClsBadge';
@@ -1443,7 +1443,8 @@ export function ChatView({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[var(--text-primary)]">{t('view.onboardingStep3Title')}</p>
-                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{t('view.onboardingStep3Desc')}</p>
+                  {/* The command stays left to right, so a right-to-left language does not show its slash after it. */}
+                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5"><Trans i18nKey="view.onboardingStep3Desc" ns="chat" components={{ cmd: <bdi dir="ltr" /> }} /></p>
                 </div>
               </div>
             </div>

@@ -155,7 +155,7 @@
   "view.onboardingStep2Title": "2. ติดตั้งส่วนขยายเบราว์เซอร์",
   "view.onboardingStep2Desc": "CaddyAI ต้องการส่วนขยายเบราว์เซอร์ ThreatCaddy เพื่อพร็อกซีคำขอ API",
   "view.onboardingStep3Title": "3. เปิดใช้งานสิทธิ์",
-  "view.onboardingStep3Desc": "ในป๊อปอัพส่วนขยาย เปิด \"อนุญาต CaddyAI\" สำหรับการเข้าถึงผู้ให้บริการ AI และ \"อนุญาตการดึง URL\" สำหรับเครื่องมือ /fetch",
+  "view.onboardingStep3Desc": "ในป๊อปอัพส่วนขยาย เปิด \"อนุญาต CaddyAI\" สำหรับการเข้าถึงผู้ให้บริการ AI และ \"อนุญาตการดึง URL\" สำหรับเครื่องมือ <cmd>/fetch</cmd>",
   "view.onboardingDismiss": "เข้าใจแล้ว",
   "input.noApiKeys": "ไม่ได้กำหนดค่า API keys — เพิ่มในการตั้งค่า → AI/LLM",
   "input.extensionStatus": "ส่วนขยาย",

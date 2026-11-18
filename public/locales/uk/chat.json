@@ -69,7 +69,7 @@
     "onboardingStep2Title": "2. Встановіть розширення браузера",
     "onboardingStep2Desc": "CaddyAI потребує розширення браузера ThreatCaddy для проксування API-запитів.",
     "onboardingStep3Title": "3. Увімкніть дозволи",
-    "onboardingStep3Desc": "У спливаючому вікні розширення увімкніть «Дозволити CaddyAI» для доступу до провайдерів ШІ і «Дозволити отримання URL» для інструменту /fetch.",
+    "onboardingStep3Desc": "У спливаючому вікні розширення увімкніть «Дозволити CaddyAI» для доступу до провайдерів ШІ і «Дозволити отримання URL» для інструменту <cmd>/fetch</cmd>.",
     "onboardingDismiss": "Зрозуміло",
     "loopCount_few": "{{count}} цикли",
     "loopCount_many": "{{count}} циклів"
