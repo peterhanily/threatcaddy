@@ -19,6 +19,7 @@ import { AGENT_NEVER_TOOLS, EXPLICIT_ONLY_TOOLS, isEgressToolName } from './cadd
 import { isFolderLocalOnly, isShareableFolder } from './ai-scope';
 import { workspaceStorageKey } from './workspace-profiles';
 import { db } from '../db';
+import i18n from '../i18n';
 import type { Settings, ToolUseBlock } from '../types';
 import { isEncryptionEnabled, getEncryptionMeta } from './encryptionStore';
 import { ENCRYPTION_COVERAGE_VERSION, getSessionKey } from './encryptionMiddleware';
@@ -111,6 +112,8 @@ const bridge: ThreatCaddyBridge = {
       name: toolName,
       input: snapshot,
     };
+    // Builtin agent names come from the 'agent' namespace, which the hosted build loads on demand.
+    if (toolName === 'list_deployed_agents') await i18n.loadNamespaces('agent');
     const { result, isError } = await executeTool(toolUse, folderId, undefined, { surface: 'bridge', allowedTools: BRIDGE_TOOLS });
     await logBridgeCall(toolName, folderId, isError);
     if (isError) throw new Error(result);
