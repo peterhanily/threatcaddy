@@ -91,7 +91,7 @@ function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
         <span dir="ltr" className="font-mono font-medium text-purple shrink-0">{tc.name}</span>
         <span className="text-text-muted truncate flex-1 min-w-0">{summarizeInput(tc.input, t('tool.noInput'))}</span>
         <span className={cn(
-          'shrink-0 ms-1 max-w-[200px] truncate',
+          'min-w-0 ms-1 max-w-[200px] truncate',
           tc.isError ? 'text-red-400' : 'text-emerald-400'
         )}>
           {resultPreview}
