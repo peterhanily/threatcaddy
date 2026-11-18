@@ -213,5 +213,7 @@
   },
   "input.serverStatus": "مسیر سرور تیم",
   "input.serverModelsHelp": "ارائه‌دهندگان و مدل‌های در دسترس به پیکربندی سرور تیم شما بستگی دارند.",
-  "input.modelLabel": "مدل هوش مصنوعی"
+  "input.modelLabel": "مدل هوش مصنوعی",
+  "input.localModels": "محلی",
+  "input.localModel": "محلی: {{name}}"
 }

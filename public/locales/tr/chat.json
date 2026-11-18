@@ -214,5 +214,7 @@
   },
   "input.serverStatus": "Ekip sunucusu yolu",
   "input.serverModelsHelp": "Kullanılabilir sağlayıcılar ve modeller ekip sunucusunun yapılandırmasına bağlıdır.",
-  "input.modelLabel": "Yapay zekâ modeli"
+  "input.modelLabel": "Yapay zekâ modeli",
+  "input.localModels": "Yerel",
+  "input.localModel": "Yerel: {{name}}"
 }

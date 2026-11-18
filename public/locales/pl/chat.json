@@ -221,5 +221,7 @@
   },
   "input.serverStatus": "Trasa przez serwer zespołu",
   "input.serverModelsHelp": "Dostępni dostawcy i modele zależą od konfiguracji serwera zespołu.",
-  "input.modelLabel": "Model AI"
+  "input.modelLabel": "Model AI",
+  "input.localModels": "Lokalne",
+  "input.localModel": "Lokalny: {{name}}"
 }

@@ -217,5 +217,7 @@
   },
   "input.serverStatus": "Ruta del servidor del equipo",
   "input.serverModelsHelp": "Los proveedores y modelos disponibles dependen de la configuración del servidor de su equipo.",
-  "input.modelLabel": "Modelo de IA"
+  "input.modelLabel": "Modelo de IA",
+  "input.localModels": "Local",
+  "input.localModel": "Local: {{name}}"
 }

@@ -217,5 +217,7 @@
   },
   "input.serverStatus": "Routage par le serveur d’équipe",
   "input.serverModelsHelp": "Les fournisseurs et modèles disponibles dépendent de la configuration du serveur de votre équipe.",
-  "input.modelLabel": "Modèle d’IA"
+  "input.modelLabel": "Modèle d’IA",
+  "input.localModels": "Local",
+  "input.localModel": "Local : {{name}}"
 }

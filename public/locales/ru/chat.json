@@ -221,5 +221,7 @@
   },
   "input.serverStatus": "Маршрут через сервер команды",
   "input.serverModelsHelp": "Доступные провайдеры и модели зависят от настроек сервера команды.",
-  "input.modelLabel": "Модель ИИ"
+  "input.modelLabel": "Модель ИИ",
+  "input.localModels": "Локальные",
+  "input.localModel": "Локальная: {{name}}"
 }

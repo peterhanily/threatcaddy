@@ -213,5 +213,7 @@
   },
   "input.serverStatus": "टीम सर्वर मार्ग",
   "input.serverModelsHelp": "उपलब्ध प्रदाता और मॉडल टीम सर्वर के कॉन्फ़िगरेशन पर निर्भर करते हैं।",
-  "input.modelLabel": "AI मॉडल"
+  "input.modelLabel": "AI मॉडल",
+  "input.localModels": "स्थानीय",
+  "input.localModel": "स्थानीय: {{name}}"
 }

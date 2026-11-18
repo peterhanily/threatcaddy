@@ -66,7 +66,8 @@ describe('investigation privacy copy', () => {
     render(panel({ serverConnected: false, onToggleSync }));
     fireEvent.click(await screen.findByRole('switch', { name: /Keep on this device/ }));
     expect(screen.getByText(/AI working in investigations that can sync cannot see it/)).toBeInTheDocument();
-    expect(onToggleSync).toHaveBeenCalledExactlyOnceWith('case', true);
+    // Sharing first checks for AI-written content (local-only-share-confirm.test.tsx).
+    await waitFor(() => expect(onToggleSync).toHaveBeenCalledExactlyOnceWith('case', true));
   });
 
   it('says AI requests with its content still follow the AI route, which may be the team server', async () => {

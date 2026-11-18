@@ -217,5 +217,7 @@
   },
   "input.serverStatus": "Rota pelo servidor da equipe",
   "input.serverModelsHelp": "Os provedores e modelos disponíveis dependem da configuração do servidor da equipe.",
-  "input.modelLabel": "Modelo de IA"
+  "input.modelLabel": "Modelo de IA",
+  "input.localModels": "Local",
+  "input.localModel": "Local: {{name}}"
 }
