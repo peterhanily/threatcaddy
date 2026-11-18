@@ -110,7 +110,7 @@ Deploy a team of AI analysts that run autonomously in the background, enriching 
 
 These agents run in the open client. Server-side AgentCaddy handoff and the legacy server integration runner are unavailable; saved definitions and history are retained. Client integration execution and team template sharing remain supported.
 
-#### The 17 Built-in Analyst Profiles
+#### The 18 Built-in Analyst Profiles
 
 | Role | Profile | Focus |
 |------|---------|-------|
@@ -131,6 +131,7 @@ These agents run in the open client. Server-side AgentCaddy handoff and the lega
 | 🏢 Business Continuity | Observer | Operational impact, RTO/RPO, recovery actions |
 | 🔗 Pattern Hunter | Cross-case | Shared IOCs, TTPs, campaign connections across investigations, when deployed in a local-only investigation |
 | 📝 Reporter | Specialist | Structured report generation, IOC stats, timeline coverage |
+| 🛡️ Forensicate Scanner | Specialist | Basic check of investigation content for common prompt-injection patterns; the check runs on this device, and like every agent it sends what it reads to your AI model |
 
 **Executives** can propose spawning, defining and dismissing agents; each proposal waits for your approval. **Observers** have read-only access to technical entities. **Pattern Hunter** compares investigations only from a local-only investigation; in one that can sync, its cross-investigation tools are off. No other agent reads or changes other investigations.
 
@@ -207,7 +208,7 @@ REST endpoints that expose skills through `GET /skills` and `POST /execute` (see
 
 ### Browser Extension
 
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or load the Firefox build manually — see [extension/README.md](extension/README.md). At the time of the 2.0.3 release the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch (it needs 1.1.3 or later). For web fetch, install 1.1.4 manually from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest), approve ThreatCaddy in its popup, and keep only that extension enabled.
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or load the Firefox build manually — see [extension/README.md](extension/README.md). At the time of the 2.0.3 release the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch (it needs 1.1.3 or later). For web fetch, install 1.1.4 manually from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest) with the [manual install steps](extension/README.md#install--chrome) (in Firefox it is a temporary add-on until a signed build is available), approve ThreatCaddy in its popup, and keep only that extension enabled.
 
 The extension connects to any ThreatCaddy instance: the hosted app, a self-hosted server, a local dev build, or a standalone `file://` HTML file.
 
@@ -311,7 +312,7 @@ pnpm build:single     # Standalone HTML → dist-single/index.html
 
 ## Browser Extension
 
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or see [extension/README.md](extension/README.md) for Firefox and manual install instructions. At the time of the 2.0.3 release the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch; for web fetch, install 1.1.4 manually from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest).
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or see [extension/README.md](extension/README.md) for Firefox and manual install instructions. At the time of the 2.0.3 release the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch; for web fetch, install 1.1.4 manually from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest) with the [manual install steps](extension/README.md#install--chrome).
 
 To build from source:
 
