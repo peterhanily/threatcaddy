@@ -17,6 +17,7 @@ import enInvestigations from '../../public/locales/en/investigations.json';
 import jaAgent from '../../public/locales/ja/agent.json';
 
 const NAME = 'CaddyAgent Supervisor';
+const agentCatalogs = import.meta.glob<{ default: Record<string, string> }>('../../public/locales/*/agent.json', { eager: true });
 
 async function folderWithNote(id: string, finding: string, extra: Partial<Folder> = {}) {
   await db.folders.add({ id, name: NAME, icon: '🤖', order: 9999, createdAt: 1, status: 'active', ...extra });
@@ -102,6 +103,84 @@ describe('the AgentCaddy dashboard', () => {
     expect(screen.getByText('1 active agent')).toBeInTheDocument();
     fireEvent.click(screen.getByText('NEW-FINDING'));
     expect(open).toHaveBeenLastCalledWith('Z-new');
+  });
+
+  describe('the supervisor\'s own proposals', () => {
+    const pendingIn = (id: string, investigationId: string): AgentAction =>
+      ({ ...action(id, investigationId, 'create_note'), agentConfigId: 'caddy-supervisor', status: 'pending' });
+
+    it('says how many wait for approval, counts them, and opens its investigation, before it has any notes', async () => {
+      await db.folders.add({ id: 'Z-new', name: NAME, icon: '🤖', order: 9999, createdAt: 1, status: 'active', localOnly: true });
+      await db.agentActions.bulkAdd([pendingIn('p1', 'Z-new'), pendingIn('p2', 'Z-new'), { ...pendingIn('done', 'Z-new'), status: 'executed' }]);
+      const open = vi.fn();
+      render(<AgentDashboard folders={await db.folders.toArray()} onOpenInvestigation={open} />);
+      const section = (await screen.findByRole('heading', { name: 'Supervisor Briefings' })).closest('section') as HTMLElement;
+      const review = within(section).getByRole('button', { name: /2 supervisor proposals wait for your approval/ });
+      expect(review).toHaveTextContent('Review');
+      expect(screen.getByText('2 pending')).toBeInTheDocument();
+      expect(screen.queryByText('Get started with AgentCaddy')).not.toBeInTheDocument();
+      fireEvent.click(review);
+      expect(open).toHaveBeenCalledWith('Z-new');
+    });
+
+    it('leaves out an older synced folder\'s, which its own card counts, and says nothing when none wait', async () => {
+      await folderWithNote('A-old', 'OLD-FINDING');
+      await folderWithNote('Z-new', 'NEW-FINDING', { localOnly: true });
+      await db.agentActions.add(pendingIn('old', 'A-old'));
+      render(<AgentDashboard folders={await db.folders.toArray()} onOpenInvestigation={vi.fn()} />);
+      expect(await screen.findByText('NEW-FINDING')).toBeInTheDocument();
+      expect(screen.queryByText(/supervisor proposals? waits? for your approval/)).not.toBeInTheDocument();
+      expect(screen.getAllByText('1 pending')).toHaveLength(2);
+    });
+
+    it('counts only the supervisor\'s proposals, not another agent\'s that waits in its investigation', async () => {
+      await db.folders.add({ id: 'Z-new', name: NAME, order: 9999, createdAt: 1, status: 'active', localOnly: true, agentEnabled: true });
+      const legacy: AgentAction = { ...action('legacy', 'Z-new', 'create_note'), status: 'pending' };
+      await db.agentActions.bulkAdd([pendingIn('p1', 'Z-new'), legacy, { ...pendingIn('deployed', 'Z-new'), agentConfigId: 'ap-lead-analyst' }]);
+      render(<AgentDashboard folders={await db.folders.toArray()} onOpenInvestigation={vi.fn()} />);
+      expect(await screen.findByText('1 supervisor proposal waits for your approval')).toBeInTheDocument();
+      expect(screen.getByText('1 pending')).toBeInTheDocument();
+    });
+
+    it('shows no supervisor line when only another agent\'s proposal waits there', async () => {
+      await db.folders.add({ id: 'Z-new', name: NAME, order: 9999, createdAt: 1, status: 'active', localOnly: true, agentEnabled: true });
+      await db.agentActions.add({ ...pendingIn('deployed', 'Z-new'), agentConfigId: 'ap-lead-analyst' });
+      render(<AgentDashboard folders={await db.folders.toArray()} onOpenInvestigation={vi.fn()} />);
+      expect(await screen.findByText('Get started with AgentCaddy')).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Supervisor Briefings' })).not.toBeInTheDocument();
+      expect(screen.queryByText(/supervisor proposals? waits? for your approval/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/pending/)).not.toBeInTheDocument();
+    });
+
+    it.each([['ru', 5], ['ar', 2], ['de', 1]])('reads in %s with that language\'s plural form for %s', async (lng, count) => {
+      const values = agentCatalogs[`../../public/locales/${lng}/agent.json`].default;
+      for (const [namespace, bundle] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle(lng, namespace, bundle, true, false);
+      i18n.addResourceBundle(lng, 'agent', values, true, true);
+      await act(async () => { await i18n.changeLanguage(lng); });
+      await db.folders.add({ id: 'Z-new', name: NAME, order: 9999, createdAt: 1, status: 'active', localOnly: true });
+      await db.agentActions.bulkAdd(Array.from({ length: count }, (_, i) => pendingIn(`p${i}`, 'Z-new')));
+      render(<AgentDashboard folders={await db.folders.toArray()} onOpenInvestigation={vi.fn()} />);
+      const form = new Intl.PluralRules(lng).select(count);
+      expect(await screen.findByText(values[`dashboard.supervisorPending_${form}`].replace('{{count}}', String(count)))).toBeInTheDocument();
+      expect(screen.getByText(values['dashboard.reviewSupervisorProposals'])).toBeInTheDocument();
+    });
+
+    it('every language has each plural form its rules need, and German translates every string', () => {
+      expect(Object.keys(agentCatalogs)).toHaveLength(21);
+      for (const [path, { default: values }] of Object.entries(agentCatalogs)) {
+        const lng = path.split('/').at(-2) as string;
+        for (const form of new Set(['one', 'other', ...new Intl.PluralRules(lng).resolvedOptions().pluralCategories])) {
+          expect(values[`dashboard.supervisorPending_${form}`], `${lng} ${form}`).toContain('{{count}}');
+        }
+        expect(values['dashboard.reviewSupervisorProposals'], lng).toBeTruthy();
+      }
+      const de = agentCatalogs['../../public/locales/de/agent.json'].default;
+      const en = agentCatalogs['../../public/locales/en/agent.json'].default;
+      for (const key of ['dashboard.supervisorPending_one', 'dashboard.supervisorPending_other', 'dashboard.reviewSupervisorProposals']) {
+        expect(de[key], key).toBeTruthy();
+        expect(de[key], key).not.toBe(en[key]);
+      }
+    });
   });
 
   describe('in the analyst\'s language', () => {

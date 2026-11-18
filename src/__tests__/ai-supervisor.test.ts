@@ -76,6 +76,19 @@ describe('B-SUP-3 the supervisor investigation is local-only', () => {
     expect(await isFolderLocalOnly(folder)).toBe(true);
   });
 
+  it('announces a new investigation, so the hub lists it without a reload, and not one it reuses', async () => {
+    const announced = vi.fn();
+    window.addEventListener('tc-folders-changed', announced);
+    try {
+      await runSupervisorCycle(settings, true);
+      expect(announced).toHaveBeenCalledOnce();
+      await runSupervisorCycle(settings, true);
+      expect(announced).toHaveBeenCalledOnce();
+    } finally {
+      window.removeEventListener('tc-folders-changed', announced);
+    }
+  });
+
   it('does not adopt a synced investigation with the supervisor\'s name', async () => {
     await db.folders.add({ id: 'OLD', name: SUPERVISOR, order: 9, createdAt: 1, status: 'active' });
     const old = await db.folders.get('OLD');

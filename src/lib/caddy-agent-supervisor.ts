@@ -176,6 +176,8 @@ async function ensureSupervisorFolder(signal: AbortSignal): Promise<Folder> {
     localOnly: true,
   };
   await db.folders.add(folder);
+  // The investigations list loads at start; this lists the new one without a reload.
+  window.dispatchEvent(new CustomEvent('tc-folders-changed'));
   return folder;
 }
 

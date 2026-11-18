@@ -41,12 +41,15 @@ async function proposerRemoved(action: AgentAction): Promise<boolean> {
 const passesRemoteAnswer = (tool: string) => isDynamicTool(tool) || tool === 'query_siem';
 
 /** The supervisor's refusals (supervisor-tool-policy.ts) that an approval meets
- * when its target changed after the proposal. approvalConstraints refuses a
- * missing or archived home first, and every supervisor write tool has a scope. */
+ * when its target changed after the proposal, or when a note or task waits in
+ * an investigation that can sync: 2.0.2's own, or a local-only home the analyst
+ * later set to sync. approvalConstraints refuses a missing or archived home
+ * first, and every supervisor write tool has a scope. */
 const SUPERVISOR_REFUSALS: ReadonlyMap<string, string> = new Map([
   ['Supervisor IOC updates require an existing IOC in an investigation.', 'refusal.supervisorIocGone'],
   ['Supervisor links require existing note, task or timeline entities in investigations.', 'refusal.supervisorLinkGone'],
   ['Supervisor writes require an existing, non-archived investigation.', 'refusal.targetInvestigationUnavailable'],
+  ['Supervisor notes and tasks are written only in its own local-only investigation.', 'refusal.supervisorHomeSyncable'],
 ]);
 
 /** Re-derive what the proposing agent may do today; the stored row is not trusted.
