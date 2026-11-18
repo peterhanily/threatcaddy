@@ -2,6 +2,7 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { goToApp } from './fixtures';
 const execAr: Record<string, string> = JSON.parse(readFileSync(new URL('../public/locales/ar/exec.json', import.meta.url), 'utf8'));
+const commonAr: Record<string, string> = JSON.parse(readFileSync(new URL('../public/locales/ar/common.json', import.meta.url), 'utf8'));
 
 async function expectWithinViewport(page: Page, control: Locator, minimumSize = 0) {
   await expect(control).toBeVisible();
@@ -88,7 +89,7 @@ for (const scenario of [
     const create = header.locator('[data-tour="new-note"]');
     const saveBackup = header.getByRole('button', { name: scenario.language === 'ar' ? 'حفظ نسخة احتياطية' : 'Save Backup', exact: true });
     const loadBackup = header.getByRole('button', { name: scenario.language === 'ar' ? 'تحميل نسخة احتياطية' : 'Load Backup', exact: true });
-    const screenshare = header.getByRole('button', { name: 'Toggle screenshare mode', exact: true });
+    const screenshare = header.getByRole('button', { name: scenario.language === 'ar' ? commonAr['screenshare.toggle'] : 'Toggle screenshare mode', exact: true });
     for (const control of [create, saveBackup, loadBackup, screenshare]) {
       await expectWithinViewport(page, control, narrow ? 44 : 0);
     }
@@ -120,9 +121,9 @@ for (const scenario of [
 
     // The active label consumes extra width at the 768px desktop breakpoint.
     await screenshare.click();
-    const off = page.getByRole('button', { name: 'Off', exact: true });
+    const off = page.getByRole('button', { name: scenario.language === 'ar' ? commonAr['screenshare.off'] : 'Off', exact: true });
     await expectWithinViewport(page, off.locator('..'));
-    await page.getByRole('button', { name: 'Show up to TLP:CLEAR', exact: true }).click();
+    await page.getByRole('button', { name: scenario.language === 'ar' ? commonAr['screenshare.showUpTo'].replace('{{level}}', 'TLP:CLEAR') : 'Show up to TLP:CLEAR', exact: true }).click();
     for (const control of [create, saveBackup, loadBackup, screenshare]) await expectWithinViewport(page, control, narrow ? 44 : 0);
     await expectNoHorizontalOverflow(page);
     await screenshare.click();
