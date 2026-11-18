@@ -733,9 +733,11 @@ describe('A-GATE-9 Forensicate scan is local', () => {
     expect(JSON.parse(result.result)).toMatchObject({ local: true, detected: true });
   });
 
-  it('the profile description reads descriptionV2, which says the check is local', () => {
+  it('the profile description reads descriptionV2: the check runs here, and the agent sends what it reads to the model', () => {
     expect(FORENSICATE_AGENT_PROFILE.description).toBe(i18n.t('builtinProfile.forensicateScanner.descriptionV2', { ns: 'agent' }));
-    expect(FORENSICATE_AGENT_PROFILE.description).toMatch(/local/);
+    expect(FORENSICATE_AGENT_PROFILE.description).toMatch(/runs on this device/);
+    expect(FORENSICATE_AGENT_PROFILE.description).toMatch(/sends what it reads to your AI model/);
+    expect(FORENSICATE_AGENT_PROFILE.description).not.toMatch(/Nothing leaves/);
     expect(FORENSICATE_AGENT_PROFILE.description).not.toMatch(/Forensicate\.ai/);
   });
 });
