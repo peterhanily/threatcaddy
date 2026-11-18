@@ -12,11 +12,14 @@ import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
 import { runAgentCycle } from '../lib/caddy-agent';
 import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 import { createChatToolExecutor } from '../lib/chat-tool-executor';
+import { installAgentBridge, syncBridgeFolderId } from '../lib/agent-bridge';
+import { workspaceStorageKey } from '../lib/workspace-profiles';
 import { mintHumanApproval } from '../lib/human-approval';
 import { TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
 import { scriptedLLM } from './helpers/scripted-llm';
 import { seedAIWorkspace } from './helpers/ai-workspace';
 
+vi.mock('../lib/workspace-initialization', () => ({ isWorkspaceInitialized: () => true }));
 vi.mock('../lib/llm-router', async orig => (await import('./helpers/scripted-llm')).scriptedRouter(await orig()));
 
 const settings: Settings = { ...DEFAULT_SETTINGS, llmAnthropicApiKey: 'test-key', llmRoutingMode: 'extension' };
@@ -96,5 +99,19 @@ describe('chat\'s deploy_agent soon after load', () => {
     expect(result.isError).toBe(false);
     expect(JSON.parse(result.result)).toMatchObject({ success: true });
     expect(await db.agentDeployments.where('investigationId').equals('S').toArray()).toEqual([expect.objectContaining({ profileId: 'ap-lead-analyst' })]);
+  });
+});
+
+describe('the agent bridge\'s list_deployed_agents soon after load', () => {
+  it('names builtin agents, not their unresolved keys', async () => {
+    unloadAgentNamespace();
+    localStorage.setItem(workspaceStorageKey('threatcaddy-settings'), JSON.stringify({ agentBridgeEnabled: true }));
+    const nonce = installAgentBridge();
+    syncBridgeFolderId('S');
+    const bridge = (window as unknown as { threatcaddy: { exec(nonce: string, name: string, input: Record<string, unknown>): Promise<string> } }).threatcaddy;
+    const result = await bridge.exec(nonce, 'list_deployed_agents', {});
+    expect(load).toHaveBeenCalledWith('agent');
+    expect(result).toContain('Lead Analyst');
+    expect(result).not.toContain('builtinProfile.');
   });
 });
