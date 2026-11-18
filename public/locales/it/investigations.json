@@ -115,7 +115,7 @@
   "card.unsync": "Annulla sincronizzazione",
   "card.syncing": "Sincronizzazione in corso…",
   "card.syncLocally": "Sincronizza localmente",
-  "remote.viewingBanner": "Stai visualizzando un’indagine remota: il suo contenuto viene caricato dal server del team e non viene salvato su questo dispositivo. Gli elementi che aggiungi durante la visualizzazione vengono salvati su questo dispositivo.",
+  "remote.viewingBanner": "Stai visualizzando un’indagine remota: il suo contenuto viene caricato dal server del team e non viene salvato su questo dispositivo. Gli elementi che aggiungi durante la visualizzazione vengono salvati su questo dispositivo e messi in coda per la sincronizzazione con questa indagine sul server del team.",
   "card.removeLocalCopy": "Rimuovi copia locale",
   "card.members_one": "{{count}} membro",
   "card.members_other": "{{count}} membri",

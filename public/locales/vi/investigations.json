@@ -108,7 +108,7 @@
   "card.unsync": "Hủy đồng bộ",
   "card.syncing": "Đang đồng bộ…",
   "card.syncLocally": "Đồng bộ cục bộ",
-  "remote.viewingBanner": "Bạn đang xem một cuộc điều tra từ xa: nội dung được tải từ máy chủ nhóm và không được lưu trên thiết bị này. Các mục bạn thêm trong khi xem sẽ được lưu trên thiết bị này.",
+  "remote.viewingBanner": "Bạn đang xem một cuộc điều tra từ xa: nội dung được tải từ máy chủ nhóm và không được lưu trên thiết bị này. Các mục bạn thêm trong khi xem sẽ được lưu trên thiết bị này và được đưa vào hàng đợi để đồng bộ với cuộc điều tra này trên máy chủ nhóm.",
   "card.removeLocalCopy": "Xóa bản sao cục bộ",
   "card.members_one": "{{count}} thành viên",
   "card.members_other": "{{count}} thành viên",

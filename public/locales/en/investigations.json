@@ -32,7 +32,7 @@
   "card.unsync": "Unsync",
   "card.syncing": "Syncing\u2026",
   "card.syncLocally": "Sync locally",
-  "remote.viewingBanner": "Viewing a remote investigation: its contents come from the team server and are not saved on this device. Items you add while viewing it are saved on this device.",
+  "remote.viewingBanner": "Viewing a remote investigation: its contents come from the team server and are not saved on this device. Items you add while viewing it are saved on this device and queued to sync to this investigation on the team server.",
   "card.removeLocalCopy": "Remove local copy",
   "card.members_one": "{{count}} member",
   "card.members_other": "{{count}} members",

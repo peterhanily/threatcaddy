@@ -58,6 +58,13 @@ describe('shell and settings text in every language', () => {
     }
   });
 
+  // Items added there join the sync queue under the investigation's id. Push sends them, or holds them
+  // until Sync locally if the analyst removed this device's copy of the investigation.
+  it('says that items added to a remote investigation go to the team server', () => {
+    expect(read('en', 'investigations')['remote.viewingBanner'])
+      .toContain('Items you add while viewing it are saved on this device and queued to sync to this investigation on the team server.');
+  });
+
   it('names file:// and the Settings tab in the standalone warning in every language', () => {
     for (const locale of ['en', ...locales]) {
       const common = read(locale, 'common');

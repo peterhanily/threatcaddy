@@ -108,7 +108,7 @@
   "card.unsync": "Synchronisatie opheffen",
   "card.syncing": "Synchroniseren…",
   "card.syncLocally": "Lokaal synchroniseren",
-  "remote.viewingBanner": "Je bekijkt een extern onderzoek: de inhoud wordt van de teamserver geladen en niet op dit apparaat opgeslagen. Items die je tijdens het bekijken toevoegt, worden op dit apparaat opgeslagen.",
+  "remote.viewingBanner": "Je bekijkt een extern onderzoek: de inhoud wordt van de teamserver geladen en niet op dit apparaat opgeslagen. Items die je tijdens het bekijken toevoegt, worden op dit apparaat opgeslagen en in de wachtrij gezet om met dit onderzoek op de teamserver te synchroniseren.",
   "card.removeLocalCopy": "Lokale kopie verwijderen",
   "card.members_one": "{{count}} lid",
   "card.members_other": "{{count}} leden",
