@@ -11,6 +11,7 @@ import type { ChatThread, Folder, Settings, ToolUseBlock } from '../types';
 import type { ToolExecutionResult } from '../lib/llm-tool-execution';
 import { ChatView } from '../components/Chat/ChatView';
 import { discardAllComposerDrafts } from '../lib/chat-composer-drafts';
+import { SYNC_WORKSPACE_KEY } from '../lib/sync-capture-policy';
 import { seedAIWorkspace } from './helpers/ai-workspace';
 import { installEgressSpy, type EgressSpy } from './helpers/egress-spy';
 
@@ -157,8 +158,93 @@ describe('C2-2 a write card names the investigation that changes', () => {
     void start(handler, call('enrich_ioc', { iocId: 'S-ioc' }));
     const shown = await card();
     // The looked-up value loads together with the conversation's name.
-    expect(await within(shown).findByText('No enabled lookup applies to canary-s.example.')).toBeInTheDocument();
+    expect(await within(shown).findByText('Nothing is sent: no enabled lookup applies to canary-s.example.')).toBeInTheDocument();
     expect(within(shown).queryByText(/^Shared case:/)).toBeNull();
+  });
+
+  // The fixture binds a team server, so the conversation's investigation syncs now.
+  it('a cross-read card says the conversation syncs to the members of its investigation', async () => {
+    renderChat('S');
+    const handler = await sendAndGetHandler();
+    void start(handler, call('search_across_investigations', { query: 'CANARY' }));
+    const shown = await card();
+    expect(await within(shown).findByText('What it reads becomes part of this conversation, which syncs to the members of "Shared case".'))
+      .toBeInTheDocument();
+    expect(within(shown).queryByText(/once a team server is connected/)).toBeNull();
+  });
+});
+
+// The card's title and its line agree: a lookup with no enabled vendor sends nothing.
+describe('C4-3 an enrichment card that sends nothing does not ask to send data', () => {
+  it('titles the card as an enrichment and says nothing is sent, on the card and in the announcement', async () => {
+    renderChat('S');
+    const handler = await sendAndGetHandler();
+    void start(handler, call('enrich_ioc', { iocId: 'S-ioc' }));
+    const shown = await card();
+    expect(within(shown).getByText('Approve an IOC enrichment?')).toBeInTheDocument();
+    expect(within(shown).queryByText('Send data outside ThreatCaddy?')).toBeNull();
+    expect(await within(shown).findByText('Nothing is sent: no enabled lookup applies to canary-s.example.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Approve an IOC enrichment? enrich_ioc');
+  });
+
+  it('keeps asking to send data when an enabled lookup applies', async () => {
+    await db.installedIntegrations.add({ id: 'vt', templateId: 'vt-domain-lookup', name: 'VT', enabled: true, config: {}, scopeType: 'all',
+      scopeFolderIds: [], runCount: 0, errorCount: 0, createdAt: 1, updatedAt: 1 });
+    renderChat('S');
+    const handler = await sendAndGetHandler();
+    void start(handler, call('enrich_ioc', { iocId: 'S-ioc' }));
+    const shown = await card();
+    expect(within(shown).getByText('Send data outside ThreatCaddy?')).toBeInTheDocument();
+    expect(await within(shown).findByText(/^Sends canary-s\.example to: .*www\.virustotal\.com/)).toBeInTheDocument();
+    expect(within(shown).queryByText(/Nothing is sent/)).toBeNull();
+  });
+});
+
+// With no team server bound, nothing syncs yet: the lines say when it would.
+describe('C4-2 without a team server, cards and /fetch do not claim that anything syncs', () => {
+  beforeEach(async () => { await db.table('_syncMeta').delete(SYNC_WORKSPACE_KEY); });
+  const LATER = /syncs to its members|which syncs to the members of "[^"]+"\.$/;
+
+  it('a write card says the conversation\'s investigation stays on this device until a team server is connected', async () => {
+    renderChat('S');
+    const handler = await sendAndGetHandler();
+    void start(handler, call('create_note', { title: 'Unbound note', content: 'x' }));
+    const shown = await card();
+    expect(await within(shown).findByText('Shared case: stays on this device until a team server is connected')).toBeInTheDocument();
+    expect(within(shown).queryByText(LATER)).toBeNull();
+  });
+
+  it('a change to another investigation says the same of that investigation', async () => {
+    renderChat('S');
+    const handler = await sendAndGetHandler();
+    void start(handler, call('update_note', { id: 'P-note', content: 'Changed' }));
+    const shown = await card();
+    expect(await within(shown).findByText('Private case: stays on this device until a team server is connected')).toBeInTheDocument();
+    expect(within(shown).queryByText(LATER)).toBeNull();
+  });
+
+  it('a cross-read card says the conversation syncs once a team server is connected', async () => {
+    renderChat('S');
+    const handler = await sendAndGetHandler();
+    void start(handler, call('search_across_investigations', { query: 'CANARY' }));
+    const shown = await card();
+    expect(await within(shown).findByText('What it reads becomes part of this conversation, which syncs to the members of "Shared case" '
+      + 'once a team server is connected.')).toBeInTheDocument();
+    expect(within(shown).queryByText(LATER)).toBeNull();
+  });
+
+  it('a local-only investigation still stays on this device', async () => {
+    renderChat('L2');
+    const handler = await sendAndGetHandler();
+    void start(handler, call('update_note', { id: 'L2-note', content: 'Changed' }));
+    expect(await within(await card()).findByText('Hunting case: stays on this device')).toBeInTheDocument();
+  });
+
+  it('/fetch says its note stays on this device until a team server is connected', async () => {
+    const props = renderChat('S');
+    await act(async () => { await state.input.onSend('/fetch https://www.cisa.gov/advisory'); });
+    expect(replies(props)).toEqual(['Created note **Fixture page** from https://www.cisa.gov/advisory\n\n'
+      + 'Shared case: stays on this device until a team server is connected']);
   });
 });
 

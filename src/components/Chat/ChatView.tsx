@@ -1,8 +1,8 @@
 import { persistChatCompletion } from '../../lib/locked-chat-recovery';
-import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore, type KeyboardEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useId, useSyncExternalStore, type KeyboardEvent } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, ToolUseBlock } from '../../types';
 import { ClsSelect } from '../Common/ClsSelect';
 import { ClsBadge } from '../Common/ClsBadge';
@@ -28,6 +28,7 @@ import { useChatLoops } from '../../hooks/useChatLoops';
 import { hasLoopsForThread, type LoopTransport } from '../../lib/chat-loop';
 import { hasMentionToken, resolveMentions } from '../../lib/chat-mentions';
 import { isShareableFolder } from '../../lib/ai-scope';
+import { isSyncWorkspaceBound } from '../../lib/sync-workspace';
 import { executeCheckpointedTool, restoreCheckpoint } from '../../lib/checkpoints';
 import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCustomSlashCommands';
 import { useToast } from '../../contexts/ToastContext';
@@ -151,6 +152,7 @@ export function ChatView({
 
   // ── YOLO mode — auto-approve in-scope changes and passive lookups; the decision table still asks for the rest
   const [yoloMode, setYoloMode] = useState(false);
+  const yoloDescriptionId = useId();
   // Track which thread is streaming so we don't show stale content on thread switch
   const streamingThreadRef = useRef<string | undefined>(undefined);
   const yoloModeRef = useRef(false);
@@ -378,9 +380,10 @@ export function ChatView({
             createdAt: now,
             updatedAt: now,
           });
-          // Say where the note went: the sidebar may show another investigation, or none.
+          // Say where the note went: the sidebar may show another investigation, or none. Nothing syncs before a team server is connected.
+          const shareableKey = await isSyncWorkspaceBound() ? 'approval.targetSynced' : 'approval.targetSyncsLater';
           const destination = homeFolderId
-            ? t(await isShareableFolder(homeFolderId) ? 'approval.targetSynced' : 'approval.targetLocal', { name: (await db.folders.get(homeFolderId))?.name ?? homeFolderId })
+            ? t(await isShareableFolder(homeFolderId) ? shareableKey : 'approval.targetLocal', { name: (await db.folders.get(homeFolderId))?.name ?? homeFolderId })
             : t('approval.unfiled');
           const confirmMsg: ChatMessage = {
             id: nanoid(),
@@ -558,9 +561,9 @@ export function ChatView({
       : allTools;
     const allowedTools = new Set(tools.map(tool => tool.name));
 
-    // In plan mode, append instructions to the system prompt
+    // In plan mode, append instructions to the system prompt. With no investigation, Plan reads them all (tool-reach row 14).
     const finalSystemPrompt = currentMode === 'plan'
-      ? systemPrompt + '\n\nYou are in PLAN MODE. You can only read this investigation; describe anything else as a plan: list the tools you would call, what data you would create, and what your analysis plan is. Present this as a structured plan the analyst can review before switching to Act mode.'
+      ? systemPrompt + `\n\nYou are in PLAN MODE. You can only read${homeFolderId ? ' this investigation' : ''}; describe anything else as a plan: list the tools you would call, what data you would create, and what your analysis plan is. Present this as a structured plan the analyst can review before switching to Act mode.`
       : systemPrompt;
 
     // Track which thread is streaming
@@ -726,6 +729,9 @@ export function ChatView({
 
   // ── Plan/Act mode ──────────────────────────────────────────────────
   const threadMode = activeThread?.mode || 'act';
+  const yoloTitle = threadMode === 'plan'
+    ? t('mode.yoloInPlanTitle', { setting: yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2') })
+    : yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2');
 
   const toggleMode = useCallback(() => {
     if (!activeThread) return;
@@ -1135,21 +1141,25 @@ export function ChatView({
                   {threadMode === 'plan' ? <Eye size={10} /> : <Play size={10} />}
                   {threadMode === 'plan' ? t('view.planMode') : t('view.actMode')}
                 </button>
+                {/* No aria-pressed: the label names the current setting, and a toggle's label must not change with its state
+                    ('Ask, not pressed' would contradict it). The name and the description below carry the setting. */}
                 <button
                   onClick={() => setYoloMode(!yoloMode)}
+                  aria-describedby={yoloDescriptionId}
                   className={cn(
                     'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors me-1',
                     yoloMode
                       ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
                       : 'bg-surface-raised border-border-subtle text-text-muted hover:text-text-secondary'
                   )}
-                  title={threadMode === 'plan'
-                    ? t('mode.yoloInPlanTitle', { setting: yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2') })
-                    : yoloMode ? t('mode.yoloOnTitleV2') : t('mode.yoloOffTitleV2')}
+                  title={yoloTitle}
                 >
                   <Shield size={10} />
                   {yoloMode ? t('view.yoloLabel') : t('mode.askLabel')}
                 </button>
+                {/* The title reaches only mouse users; assistive technology reads the same text as the switch's description.
+                    Hidden, so it is read only through aria-describedby and not again as text after the switch. */}
+                <span id={yoloDescriptionId} hidden>{yoloTitle}</span>
                 {threadTokenTotal > 0 && (
                   <span className={cn(
                     'text-[10px] font-mono px-1.5 py-0.5 rounded border me-1',
@@ -1208,7 +1218,7 @@ export function ChatView({
                 <div className="flex flex-col items-center justify-center h-full text-text-muted">
                   <MessageSquare size={40} className="mb-3 opacity-30" />
                   <p className="text-sm font-medium">{t('view.emptyTitle')}</p>
-                  <p className="text-xs mt-1">{t('view.emptySubtitle')}</p>
+                  <p className="text-xs mt-1 max-w-md px-4 text-center">{t('view.emptySubtitleV2')}</p>
                   {selectedFolder && (
                     <p className="text-xs mt-1 text-purple">
                       {t('view.emptyFolderContext', { name: selectedFolder.name })}
@@ -1434,7 +1444,8 @@ export function ChatView({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[var(--text-primary)]">{t('view.onboardingStep3Title')}</p>
-                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{t('view.onboardingStep3Desc')}</p>
+                  {/* The command stays left to right, so a right-to-left language does not show its slash after it. */}
+                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5"><Trans i18nKey="view.onboardingStep3Desc" ns="chat" components={{ cmd: <bdi dir="ltr" /> }} /></p>
                 </div>
               </div>
             </div>

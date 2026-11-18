@@ -88,10 +88,10 @@ function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
           size={12}
           className={cn('shrink-0 text-text-muted transition-transform', expanded && 'rotate-90')}
         />
-        <span className="font-mono font-medium text-purple shrink-0">{tc.name}</span>
+        <span dir="ltr" className="font-mono font-medium text-purple shrink-0">{tc.name}</span>
         <span className="text-text-muted truncate flex-1 min-w-0">{summarizeInput(tc.input, t('tool.noInput'))}</span>
         <span className={cn(
-          'shrink-0 ms-1 max-w-[200px] truncate',
+          'min-w-0 ms-1 max-w-[200px] truncate',
           tc.isError ? 'text-red-400' : 'text-emerald-400'
         )}>
           {resultPreview}
@@ -101,13 +101,13 @@ function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
         <div className="px-2.5 pb-2 border-t border-border-subtle mt-0.5 pt-1.5">
           <div className="mb-1">
             <span className="text-text-muted">{t('tool.inputLabel')}</span>
-            <pre className="mt-0.5 p-1.5 rounded bg-bg-deep text-[10px] font-mono overflow-x-auto whitespace-pre-wrap">
+            <pre dir="ltr" className="mt-0.5 p-1.5 rounded bg-bg-deep text-[10px] font-mono overflow-x-auto whitespace-pre-wrap">
               {JSON.stringify(tc.input, null, 2)}
             </pre>
           </div>
           <div>
             <span className="text-text-muted">{t('tool.resultLabel')}</span>
-            <pre className="mt-0.5 p-1.5 rounded bg-bg-deep text-[10px] font-mono overflow-x-auto whitespace-pre-wrap max-h-48 overflow-y-auto">
+            <pre dir="ltr" className="mt-0.5 p-1.5 rounded bg-bg-deep text-[10px] font-mono overflow-x-auto whitespace-pre-wrap max-h-48 overflow-y-auto">
               {(() => { try { return JSON.stringify(JSON.parse(tc.result), null, 2); } catch { return tc.result; } })()}
             </pre>
           </div>
@@ -344,7 +344,8 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({ role, content
                 ))}
               </div>
             )}
-            <p className="whitespace-pre-wrap">{content}</p>
+            {/* A sent '/fetch https://…' reads left to right in a right-to-left language. */}
+            <p dir="auto" className="whitespace-pre-wrap">{content}</p>
           </>
         ) : (
           <>
@@ -365,8 +366,9 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({ role, content
             {displayContent && (
               // No remote media: model output (chat, agent audit, meeting turns) must not beacon when displayed.
               // Entity links are spliced into the rendered HTML, so the final pass forbids media too.
+              // Code reads left to right in a right-to-left language: '/stoploop', not 'stoploop/'.
               <div
-                className="markdown-preview text-sm"
+                className="markdown-preview text-sm [&_code]:[direction:ltr] [&_code]:[unicode-bidi:isolate]"
                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(processEntityLinks(renderMarkdown(meetingSpeaker ? meetingSpeaker.contentWithout : displayContent, undefined, { disableMedia: true }), onEntityClick), { disableMedia: true }) }}
                 onClick={(e) => {
                   const target = (e.target as HTMLElement).closest('.tc-entity-link') as HTMLElement;

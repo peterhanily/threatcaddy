@@ -169,4 +169,39 @@ describe('C2-1 the composer suggests only what the conversation may see', () => 
     expect(await names(undefined)).toEqual(['L', 'L2', 'P', 'S']);
     expect((await searchMentions('note', '', 'S')).map(item => item.id)).toEqual([S.note]);
   });
+
+  // The search runs on every keystroke after '@investigation:'.
+  it('reads the local-only markers once per search, however many investigations there are', async () => {
+    const meta = db.table('_syncMeta');
+    const marker = (id: string, value: unknown) => meta.put({ key: JSON.stringify(['localOnly', id]), value });
+    // A marker hides an investigation whose flag is missing; only a true marker counts.
+    await db.folders.update('L', { localOnly: undefined });
+    await marker('L', true);
+    const gets = vi.spyOn(meta, 'get');
+    const wheres = vi.spyOn(meta, 'where');
+    const search = async () => {
+      gets.mockClear();
+      wheres.mockClear();
+      const found = (await searchMentions('investigation', 'case', 'S', 1000)).map(item => item.id).sort();
+      return { found, reads: gets.mock.calls.length + wheres.mock.calls.length };
+    };
+    try {
+      const few = await search();
+      expect(few.found).toEqual(['P', 'S']);
+
+      await db.folders.bulkAdd(Array.from({ length: 300 }, (_, i) => ({ id: `extra-${i}`, name: `Extra case ${i}`, order: 10 + i, createdAt: 2 + i })));
+      await db.folders.update('extra-0', { localOnly: true });
+      await marker('extra-1', true);
+      await marker('extra-2', false);
+      const many = await search();
+      expect(many.found).toEqual(['P', 'S', ...Array.from({ length: 298 }, (_, i) => `extra-${i + 2}`)].sort());
+      expect(many.reads).toBe(few.reads);
+      expect(many.reads).toBeLessThanOrEqual(2);
+      // A conversation that cannot sync still sees every investigation.
+      expect((await searchMentions('investigation', 'case', 'L2', 1000)).length).toBe(304);
+    } finally {
+      gets.mockRestore();
+      wheres.mockRestore();
+    }
+  });
 });

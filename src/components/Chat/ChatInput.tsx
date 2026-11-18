@@ -372,10 +372,11 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
                   )}
                 >
                   <Icon size={14} className="shrink-0 text-text-muted" />
-                  <span className="text-xs font-mono text-text-primary">{cmd.command}</span>
+                  {/* Command syntax reads left to right in every language. */}
+                  <span dir="ltr" className="text-xs font-mono text-text-primary">{cmd.command}</span>
                   <span className="text-xs text-text-secondary">{cmd.description}</span>
                   {cmd.placeholder && (
-                    <span className="text-xs text-text-muted ms-auto">{cmd.placeholder}</span>
+                    <span dir="ltr" className="text-xs text-text-muted ms-auto">{cmd.placeholder}</span>
                   )}
                 </button>
               );
@@ -401,7 +402,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
                     i === mentionIndex ? 'bg-purple/20' : 'hover:bg-bg-hover'
                   )}
                 >
-                  <span className="text-xs font-mono text-purple">{cat.prefix}</span>
+                  <span dir="ltr" className="text-xs font-mono text-purple">{cat.prefix}</span>
                   <span className="text-xs text-text-secondary">{cat.label}</span>
                 </button>
               ))
@@ -461,8 +462,11 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
               <span>{t('input.thinking')}</span>
             </div>
           )}
+          {/* A typed command such as /fetch reads left to right, and text in a right-to-left language right to left. Empty, it
+              keeps the page's direction for its placeholder: browsers lay out an empty dir="auto" field left to right. */}
           <textarea
             ref={textareaRef}
+            dir={text ? 'auto' : undefined}
             aria-label={t('input.messageAria')}
             value={text}
             onChange={(e) => setText(e.target.value)}

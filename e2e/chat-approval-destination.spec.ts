@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import { goToApp } from './fixtures';
 import { readRows, seedRows } from './client-lifecycle-fixtures';
@@ -6,7 +7,7 @@ test.use({ serviceWorkers: 'block' });
 
 // In the All Investigations view (nothing selected), CaddyAI asks to write a note in the thread's
 // investigation. Only the local model is a fixture: it calls create_note once, then answers.
-async function openWriteCard(page: Page, context: BrowserContext, baseURL: string | undefined, options: { theme?: 'dark' | 'light'; language?: string; unfiled?: boolean } = {}) {
+async function openWriteCard(page: Page, context: BrowserContext, baseURL: string | undefined, options: { theme?: 'dark' | 'light'; language?: string; unfiled?: boolean; phone?: boolean } = {}) {
   const origin = new URL('/', baseURL).origin;
   const external: string[] = [];
   const errors: string[] = [];
@@ -43,7 +44,13 @@ async function openWriteCard(page: Page, context: BrowserContext, baseURL: strin
     sessionStorage.setItem('threatcaddy-nav-state', JSON.stringify({ view: 'chat' }));
     sessionStorage.setItem('tc-chat-thread', 'fictional-thread');
   }, { theme: options.theme ?? 'dark', language: options.language ?? 'en' });
+  if (options.phone) await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
+  if (options.phone) {
+    // A phone opens on the executive dashboard.
+    const exec = JSON.parse(readFileSync(new URL(`../public/locales/${options.language ?? 'en'}/exec.json`, import.meta.url), 'utf8'));
+    await page.getByRole('button', { name: exec['dashboard.switchToAnalyst'], exact: true }).click();
+  }
 
   // The composer's name ends with the product name in English and Arabic.
   const composer = page.getByRole('textbox', { name: /CaddyAI$/ });
@@ -85,10 +92,12 @@ function contrastOf(locator: Locator) {
   });
 }
 
-test('in the global view, a write card names the investigation it changes and that it syncs', async ({ page, context, baseURL }) => {
+// No team server is connected here, so the card does not claim that the investigation syncs.
+test('in the global view, a write card names the investigation it changes and that it stays on this device', async ({ page, context, baseURL }) => {
   const { card, external, errors } = await openWriteCard(page, context, baseURL);
   await expect(card.getByText('Approve a change to this investigation?', { exact: true })).toBeVisible();
-  await expect(card.getByRole('listitem').filter({ hasText: 'Fictional Case Alpha: syncs to its members' })).toHaveCount(1);
+  await expect(card.getByRole('listitem').filter({ hasText: 'Fictional Case Alpha: stays on this device until a team server is connected' })).toHaveCount(1);
+  await expect(card.getByText(/syncs to its members/)).toHaveCount(0);
   await card.getByRole('button', { name: 'Approve', exact: true }).click();
   await expect(page.getByText('Fictional answer.')).toBeVisible();
   const rows = await readRows(page, ['notes']);
@@ -115,8 +124,13 @@ test('an unfiled thread\'s write card says the change lands outside any investig
 test('the light theme\'s Approve label is readable at rest and on hover', async ({ page, context, baseURL }) => {
   const { card, external, errors } = await openWriteCard(page, context, baseURL, { theme: 'light' });
   const approve = card.getByRole('button', { name: 'Approve', exact: true });
+  const background = () => approve.evaluate(element => getComputedStyle(element).backgroundColor);
   expect(await contrastOf(approve)).toBeGreaterThanOrEqual(4.5);
+  const atRest = await background();
   await approve.hover();
+  // The hover colour arrives through a 150 ms transition: measure it once the transition has finished.
+  await approve.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
+  expect(await background()).not.toBe(atRest);
   expect(await contrastOf(approve)).toBeGreaterThanOrEqual(4.5);
   expect(external).toEqual([]);
   expect(errors).toEqual([]);
@@ -135,3 +149,23 @@ test('in Arabic, the tool name and the Details JSON read left to right', async (
   expect(external).toEqual([]);
   expect(errors).toEqual([]);
 });
+
+// On a phone, a rejected call's status (up to 200 px wide) used to run past its row and the message.
+for (const language of ['en', 'ar']) {
+  test(`on a phone in ${language}, a rejected call's status stays inside its row`, async ({ page, context, baseURL }) => {
+    const { card, external, errors } = await openWriteCard(page, context, baseURL, { language, phone: true });
+    const chat = JSON.parse(readFileSync(new URL(`../public/locales/${language}/chat.json`, import.meta.url), 'utf8'));
+    await card.getByRole('button', { name: chat.view.reject, exact: true }).click();
+    const row = page.getByRole('button').filter({ has: page.getByText('create_note', { exact: true }) });
+    const status = row.getByText('Tool execution rejected by analyst');
+    await expect(status).toBeVisible();
+    const [rowBox, statusBox] = [await row.boundingBox(), await status.boundingBox()];
+    if (!rowBox || !statusBox) throw new Error('The tool call row is not laid out');
+    expect(statusBox.x).toBeGreaterThanOrEqual(rowBox.x - 1);
+    expect(statusBox.x + statusBox.width).toBeLessThanOrEqual(rowBox.x + rowBox.width + 1);
+    expect(rowBox.x).toBeGreaterThanOrEqual(-1);
+    expect(rowBox.x + rowBox.width).toBeLessThanOrEqual(390 + 1);
+    expect(external).toEqual([]);
+    expect(errors).toEqual([]);
+  });
+}
