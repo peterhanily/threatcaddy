@@ -220,8 +220,8 @@ volumes:
 The server Dockerfile (`server/Dockerfile`) uses a multi-stage build:
 
 1. **Build stage**: the official `node:24.22.3-alpine` image pinned by digest in the Dockerfile, installs all dependencies and compiles TypeScript
-2. **Runtime stage**: the same pinned Node 24.22.3 image, upgrades zlib to at least 1.4-r0, installs production dependencies only and copies compiled JS and migrations
-3. Runs as non-root user `app` with `NODE_ENV=production`, so error responses never echo exception messages (server errors were already generic)
+2. **Runtime stage**: the same pinned Node 24.22.3 image, upgrades zlib to at least 1.4-r0, installs production dependencies only, drops the `ssh2` test suite (third-party test private keys) and npm's build-time compile cache, and copies compiled JS and migrations
+3. Runs as non-root user `app` with `NODE_ENV=production`, so error responses never echo exception messages (server errors were already generic). The application code in `/app` is root-owned and read-only to `app`, which can write only `/data/files`
 4. Declares a `HEALTHCHECK` that requests `/health` on `127.0.0.1:${PORT}` inside the container; Docker reports the result but does not restart the container
 5. Declares ports 3001 and 3002 for the two listeners; only the ports you publish are reachable from the host (the supplied Compose file publishes both on host loopback by default)
 
