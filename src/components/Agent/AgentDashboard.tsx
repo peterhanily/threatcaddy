@@ -48,6 +48,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
   const [recentGlobal, setRecentGlobal] = useState<(AgentAction & { folderName: string })[]>([]);
   const [supervisorNotes, setSupervisorNotes] = useState<Note[]>([]);
   const [supervisorFolderId, setSupervisorFolderId] = useState<string | null>(null);
+  const [supervisorPending, setSupervisorPending] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -114,12 +115,15 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
           .toArray();
         setSupervisorNotes(notes);
       }
+      // Its notes and tasks wait there for approval under the default agent settings.
+      setSupervisorPending(supFolder ? await db.agentActions
+        .where('[investigationId+status]').equals([supFolder.id, 'pending']).count() : 0);
 
       setLoading(false);
     })();
   }, [folders]);
 
-  const totalPending = agentFolders.reduce((sum, f) => sum + f.pendingCount, 0);
+  const totalPending = agentFolders.reduce((sum, f) => sum + f.pendingCount, supervisorPending);
   const activeAgents = folders.filter(f => f.agentEnabled && f.id !== supervisorFolderId).length;
 
   if (loading) {
@@ -130,7 +134,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
     );
   }
 
-  const hasAnyActivity = agentFolders.length > 0 || supervisorNotes.length > 0;
+  const hasAnyActivity = agentFolders.length > 0 || supervisorNotes.length > 0 || supervisorPending > 0;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -180,13 +184,28 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
         ) : (
           <div className="space-y-6">
             {/* Supervisor Section */}
-            {supervisorNotes.length > 0 && (
+            {(supervisorNotes.length > 0 || supervisorPending > 0) && (
               <section>
                 <div className="flex items-center gap-2 mb-3">
                   <Shield size={14} className="text-accent-blue" />
                   <h2 className="text-sm font-semibold text-text-primary">{t('dashboard.supervisorBriefings')}</h2>
                 </div>
                 <div className="space-y-2">
+                  {supervisorPending > 0 && supervisorFolderId && (
+                    <button
+                      onClick={() => onOpenInvestigation(supervisorFolderId)}
+                      className="w-full flex items-center justify-between gap-2 text-start rounded-lg border border-accent-amber/30 bg-accent-amber/5 hover:bg-accent-amber/10 transition-colors p-3"
+                    >
+                      <span className="flex items-center gap-1.5 min-w-0 text-xs text-accent-amber">
+                        <Clock size={12} className="shrink-0" />
+                        <span>{t('dashboard.supervisorPending', { count: supervisorPending })}</span>
+                      </span>
+                      <span className="flex items-center gap-0.5 shrink-0 text-[10px] text-accent-blue">
+                        {t('dashboard.reviewSupervisorProposals')}
+                        <ChevronRight size={12} className="rtl:rotate-180" />
+                      </span>
+                    </button>
+                  )}
                   {supervisorNotes.map(note => (
                     <button
                       key={note.id}
