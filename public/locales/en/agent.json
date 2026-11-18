@@ -178,7 +178,8 @@
   "builtinProfile.patternHunter.descriptionV2": "Cross-investigation pattern detection — shared IOCs, common infrastructure, campaign correlation. Compares cases only when deployed in a local-only investigation.",
 
   "dashboard.agentCaddy": "AgentCaddy",
-  "dashboard.activeAgents": "{{count}} active agent{{suffix}}",
+  "dashboard.activeAgents_one": "{{count}} active agent",
+  "dashboard.activeAgents_other": "{{count}} active agents",
   "dashboard.noActiveAgents": "No active agents",
   "dashboard.pendingCount": "{{count}} pending",
   "dashboard.getStarted": "Get started with AgentCaddy",
