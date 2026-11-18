@@ -20,6 +20,7 @@ import i18n from '../i18n';
 import enAgent from '../../public/locales/en/agent.json';
 import deAgent from '../../public/locales/de/agent.json';
 import deTasks from '../../public/locales/de/tasks.json';
+import deIntegrations from '../../public/locales/de/integrations.json';
 
 vi.mock('../components/Agent/AgentMeetingPanel', () => ({ AgentMeetingPanel: () => null }));
 
@@ -139,6 +140,60 @@ describe('A4-2 an enrichment proposal names each destination and the IOC value',
     view.rerender(<AgentActionCard action={{ ...proposal(), status: 'executed' }} />);
     await act(async () => {});
     expect(screen.queryByText(/^Sends |^Nothing is sent|^Checking/)).not.toBeInTheDocument();
+  });
+
+  it('a trashed IOC is not sent', async () => {
+    await db.installedIntegrations.add(install('vt', 'vt-domain-lookup', { apiKey: 'fixture-key' }));
+    await db.standaloneIOCs.update(ids('S').ioc, { trashed: true });
+    const row = proposal();
+    await db.agentActions.add(row);
+    render(<AgentActionCard action={row} />);
+    expect(await screen.findByText('Nothing is sent: no enabled lookup applies to canary-s.example.')).toBeInTheDocument();
+    await executeApprovedAction(row);
+    expect(egress.fetches).toEqual([]);
+  });
+
+  it('names builtin lookups when their translations load on demand, as in the hosted build', async () => {
+    // The hosted build bundles the integrations namespace in no language: it arrives when loaded.
+    const bundle = i18n.getResourceBundle('en', 'integrations') as Record<string, unknown>;
+    i18n.removeResourceBundle('en', 'integrations');
+    const load = vi.spyOn(i18n, 'loadNamespaces').mockImplementation(async namespaces => {
+      if ([namespaces].flat().includes('integrations')) i18n.addResourceBundle('en', 'integrations', bundle);
+    });
+    try {
+      await db.installedIntegrations.bulkAdd([
+        install('vt', 'vt-domain-lookup', { apiKey: 'fixture-key' }),
+        install('slack', 'slack-webhook-notify', { webhookUrl: 'https://hooks.slack.com/services/T0/B0/X0', channel: '#soc' }),
+      ]);
+      render(<AgentActionCard action={proposal()} />);
+      const line = await screen.findByText(/^Sends canary-s\.example to: /);
+      expect(line.textContent).not.toContain('builtin.');
+      expect(line.textContent).toContain('VirusTotal Domain Lookup (www.virustotal.com)');
+      expect(line.textContent).toContain('Slack Webhook Notification (hooks.slack.com)');
+    } finally {
+      load.mockRestore();
+      i18n.addResourceBundle('en', 'integrations', bundle, true, true);
+    }
+  });
+
+  it('names the lookups again in the language the analyst switches to', async () => {
+    await db.installedIntegrations.add(install('vt', 'vt-domain-lookup', { apiKey: 'fixture-key' }));
+    render(<AgentActionCard action={proposal()} />);
+    expect(await screen.findByText('Sends canary-s.example to: VirusTotal Domain Lookup (www.virustotal.com)')).toBeInTheDocument();
+    i18n.addResourceBundle('de', 'integrations', deIntegrations, true, true);
+    try {
+      await act(inGerman);
+      expect(await screen.findByText(deText('action.lookupDestinations', { value: 'canary-s.example', vendors: 'VirusTotal Domain-Abfrage (www.virustotal.com)' })))
+        .toBeInTheDocument();
+    } finally { i18n.removeResourceBundle('de', 'integrations'); }
+  });
+
+  it('a value with bidi controls cannot reorder the line', async () => {
+    await db.installedIntegrations.add(install('vt', 'vt-domain-lookup', { apiKey: 'fixture-key' }));
+    await db.standaloneIOCs.update(ids('S').ioc, { value: 'canary-s.example\u202E\u2066' });
+    render(<AgentActionCard action={proposal()} />);
+    const line = await screen.findByText(/^Sends canary-s\.example/);
+    expect(line.textContent).toBe('Sends canary-s.example to: VirusTotal Domain Lookup (www.virustotal.com)');
   });
 
   it('shows a neutral line only while the lookup is loading, and says it in German', async () => {

@@ -40,6 +40,9 @@ function destinationHost(action: AgentAction): string | undefined {
   if (action.toolName.startsWith('host:')) return action.toolName.split(':')[1];
 }
 
+/** Bidi controls in a stored value could reorder the sentence around it. */
+const BIDI_CONTROLS = /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/g;
+
 /** A failed row stores toolExecutionError's {"error": ...} wrapper (older rows too): show its text. */
 function failureReason(summary: string): string {
   try {
@@ -50,7 +53,7 @@ function failureReason(summary: string): string {
 }
 
 export function AgentActionCard({ action, onApprove, onEditApprove, onReject, onViewReasoning }: AgentActionCardProps) {
-  const { t } = useTranslation('agent');
+  const { t, i18n } = useTranslation('agent');
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editJson, setEditJson] = useState('');
@@ -85,16 +88,20 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
         .catch(() => { /* The card still shows the destination. */ });
     } else {
       (async () => {
+        // Builtin lookups take their names from this namespace, which the hosted build loads on demand.
+        await i18n.loadNamespaces('integrations');
         // An enrichment's reach reads only the IOC and the enabled integrations, and no settings.
         const reach = await classifyToolCall({ type: 'tool_use', id, name: toolName, input: { iocId } }, { homeFolderId: investigationId, settings: DEFAULT_SETTINGS });
         const ioc = iocId ? await db.standaloneIOCs.get(iocId) : undefined;
         // Approval runs no lookup for an IOC that is gone or filed in another investigation.
         const runs = !!ioc && !ioc.trashed && ioc.folderId === investigationId;
-        if (current) setLookup({ actionId: id, iocId, value: String(ioc?.value ?? iocId), vendors: runs ? reach.destinations : [] });
+        const value = String(ioc?.value ?? iocId).replace(BIDI_CONTROLS, '');
+        if (current) setLookup({ actionId: id, iocId, value, vendors: runs ? reach.destinations : [] });
       })().catch(() => { /* The card keeps its neutral line. */ });
     }
     return () => { current = false; };
-  }, [isPending, id, toolName, url, iocId, investigationId]);
+    // react-i18next hands a new i18n for each language, so a new language renames the builtin lookups.
+  }, [isPending, id, toolName, url, iocId, investigationId, i18n]);
   const hostIsIoc = isPending && toolName === 'fetch_url' && iocHostActionId === id;
   const lookupLine = !isPending || toolName !== 'enrich_ioc' ? undefined
     : lookup?.actionId !== id || lookup.iocId !== iocId ? t('action.lookupChecking')
