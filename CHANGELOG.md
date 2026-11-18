@@ -80,7 +80,7 @@ Hardens CaddyAI chat, AgentCaddy agents, the supervisor and the agent bridge aga
 
 - The hosted app no longer shows a permanent offline strip. A notice appears only while a slow first offline install runs ("Keep this tab open") or, dismissibly, when saving for offline use failed or is not possible in this browser. The notice for a browser that cannot keep ThreatCaddy offline says to export a JSON backup from Settings → Data.
 - Settings → General has an "Offline use" row with the current status, and Settings → Data says that offline use is not a backup. The standalone file shows none of this.
-- After an update, a view that can no longer load its code from the version the tab started with reloads the page once by itself, instead of staying on "Something went wrong". If it fails again, the error panel shows.
+- After an update, a view that can no longer load its code from the version the tab started with reloads the page by itself, instead of staying on "Something went wrong": once for each version, so a later update in the same tab recovers too, and also offline when the installed app's service worker serves the page. If the view fails again, or the reload cannot happen (offline with no service worker in control, or a "Leave site?" prompt answered with Stay), the error panel shows.
 
 ### Accessibility
 
