@@ -169,9 +169,10 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
           {action.resultSummary && (
             <div>
               <span className="text-[10px] text-text-muted uppercase tracking-wide">{t('action.result')}</span>
-              {action.status === 'failed' ? (
+              {/* A reason or an acknowledgement is a sentence in the analyst's language; data stays left to right. */}
+              {action.status === 'failed' || !/^\s*[[{]/.test(action.resultSummary) ? (
                 <p dir="auto" className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32 whitespace-pre-wrap break-words">
-                  {failureReason(action.resultSummary)}
+                  {action.status === 'failed' ? failureReason(action.resultSummary) : action.resultSummary}
                 </p>
               ) : (
                 <pre dir="ltr" className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32">

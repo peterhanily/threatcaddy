@@ -250,7 +250,14 @@ describe('A4-4 a refused approval says why, in plain text and in the analyst’s
   it('an executed row keeps its result as the tool returned it', () => {
     render(<AgentActionCard action={action({ status: 'executed', resultSummary: '{"id":"n1"}' })} />);
     expand();
-    expect(screen.getByText('{"id":"n1"}')).toBeInTheDocument();
+    expect(screen.getByText('{"id":"n1"}')).toHaveAttribute('dir', 'ltr');
+  });
+
+  it('an acknowledged question reads in the direction of its language', () => {
+    const acknowledged = agentCatalogs['../../public/locales/ar/agent.json'].default['action.questionAcknowledged'];
+    render(<AgentActionCard action={action({ toolName: 'ask_human', status: 'executed', resultSummary: acknowledged })} />);
+    expand();
+    expect(screen.getByText(acknowledged)).toHaveAttribute('dir', 'auto');
   });
 });
 
