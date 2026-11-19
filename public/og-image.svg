@@ -16,7 +16,7 @@
   <!-- Tagline -->
   <text x="600" y="400" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#9ca3af">Threat Investigation Workspace</text>
   <!-- Features -->
-  <text x="600" y="470" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#6366f1">Notes · IOCs · Timelines · Graphs · No server · No tracking</text>
+  <text x="600" y="470" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#6366f1">Notes · IOCs · Timelines · Graphs · Local-first</text>
   <!-- Bottom accent bar -->
   <rect x="0" y="626" width="1200" height="4" fill="#6366f1" />
 </svg>
