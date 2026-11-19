@@ -473,6 +473,32 @@ server on the same host without containers, keep the default
 range that only your proxies use. A `/0` range is refused because it would
 trust every peer.
 
+A proxy in a container of its own, such as Traefik or Nginx Proxy Manager in
+another Compose project, cannot reach the API's loopback publication through
+the host's IP address or the Docker gateway. Either join it to the server's
+Compose network and proxy to `http://server:3001` (the API listens on every
+interface inside its container), for example in the proxy's Compose file:
+
+```yaml
+services:
+  proxy:
+    networks: [default, threatcaddy]
+networks:
+  threatcaddy:
+    name: threatcaddy_default
+    external: true
+```
+
+or set `API_PUBLISH_ADDRESS` to the address the proxy connects to (see
+[Start Services](#start-services)). On the shared network the server sees the
+proxy container's address on that network, which can change when the container
+is recreated: trust it, or that network's subnet (`{{.Subnet}}` in place of
+`{{.Gateway}}` in the command above) if only the proxy and ThreatCaddy's own
+containers use that network. A container on that network can also reach the
+admin panel on port 3002 (see [4.3 Admin Panel Access](#43-admin-panel-access)),
+so route only port 3001 to the server. Through `API_PUBLISH_ADDRESS`, trust the
+peer that the warning below names.
+
 The first time a peer that is not trusted sends `X-Forwarded-For` to a route
 that uses the client address, such as sign-in, the server logs one warning that
 names the peer (`docker compose logs server`). Trust that address only after
@@ -853,8 +879,12 @@ pending. Publishing an image or client does not establish server rollout.
   the API on host loopback only: if clients reach port 3001 directly rather than
   through a proxy on the same host, set `API_PUBLISH_ADDRESS` first (see
   [Start Services](#start-services)). `API_PUBLISH_ADDRESS=0.0.0.0` publishes
-  it on IPv4 only. With a proxy on the host, also set `TRUSTED_PROXY_IPS` to
-  the Compose network's gateway (see
+  it on IPv4 only. A proxy in a container of its own (Traefik, or Nginx Proxy
+  Manager in another Compose project) that reaches port 3001 through the host's
+  IP address or the Docker gateway can no longer connect either: join it to the
+  server's Compose network or set `API_PUBLISH_ADDRESS` first (see
+  [Important Proxy Settings](#important-proxy-settings)). With a proxy on the
+  host, also set `TRUSTED_PROXY_IPS` to the Compose network's gateway (see
   [Important Proxy Settings](#important-proxy-settings)), or every client
   shares the proxy's address for login lockouts and rate limits.
 
