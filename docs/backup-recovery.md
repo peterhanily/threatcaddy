@@ -554,7 +554,7 @@ second directory on the same disk, and sync alone do not complete this drill.
 | PostgreSQL weekly dump | Weekly (Sunday) | Cron + `pg_dump` + gzip | 90 days |
 | File storage (`/data/files`) | Daily | Cron + tar/rsync | 30 days |
 | Server-side encrypted backups | Users manage their own | Via backup API | Max 50 per user |
-| Admin secret | On change | Copy `.admin-secret` file or record `ADMIN_SECRET` env var | Indefinite |
+| Admin secret | On change | Record `ADMIN_SECRET`, or the generated secret before the first administrator is created (the server then deletes `.admin-secret`) | Indefinite |
 | `.env` / environment config | On change | Secret manager or encrypted offline backup; never commit secret-bearing files to source control | Indefinite |
 | JWT key pair (Ed25519) | On initial setup | Secure offline storage | Indefinite |
 
@@ -563,7 +563,7 @@ second directory on the same disk, and sync alone do not complete this drill.
 - **Disk usage**: `/data/files` volume (backups + uploaded files)
 - **Database size**: `SELECT pg_size_pretty(pg_database_size('threatcaddy'));`
 - **Backup success**: Check cron job logs
-- **Health endpoint**: `GET /health` returns database connectivity and file storage accessibility
+- **Health endpoint**: `GET /health` returns `ok` (200) or `degraded` (503) with the server version after checking database connectivity and file storage access; the server log names a failing check
 - **Tombstone accumulation**: Soft-deleted entities are hard-deleted after 90 days by the cleanup service
 
 ### Testing Backups

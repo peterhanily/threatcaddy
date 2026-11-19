@@ -152,20 +152,17 @@ Some validation errors include additional detail:
 
 #### `GET /health`
 
-No authentication required. Checks database and file storage connectivity.
-The response also reports the server version, process uptime in seconds and
-memory use in MiB, so expose it only to monitoring systems.
+No authentication required. Checks database and file storage connectivity,
+and reports only the overall status and the server version. The response does
+not say which check failed; the server log records each new failure once as a
+`Health check degraded` warning that names the check. The version identifies
+the release, so expose this route only to monitoring systems.
 
 **Response `200`:**
 ```json
 {
   "status": "ok",
-  "db": "connected",
-  "storage": "accessible",
-  "version": "2.0.4",
-  "uptime": 3600,
-  "memory": { "rss": 180, "heapUsed": 60, "heapTotal": 90 },
-  "timestamp": "2026-03-07T12:00:00.000Z"
+  "version": "2.0.4"
 }
 ```
 
@@ -173,12 +170,7 @@ memory use in MiB, so expose it only to monitoring systems.
 ```json
 {
   "status": "degraded",
-  "db": "disconnected",
-  "storage": "accessible",
-  "version": "2.0.4",
-  "uptime": 3600,
-  "memory": { "rss": 180, "heapUsed": 60, "heapTotal": 90 },
-  "timestamp": "2026-03-07T12:00:00.000Z"
+  "version": "2.0.4"
 }
 ```
 

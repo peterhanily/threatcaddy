@@ -52,7 +52,13 @@ paths:
       security: []
       responses:
         "200":
-          description: Server health status
+          description: Database and file storage checks passed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: A check failed; the server log names it
           content:
             application/json:
               schema:
@@ -3131,24 +3137,8 @@ components:
       properties:
         status:
           type: string
-        db:
-          type: string
-        storage:
-          type: string
+          enum: [ok, degraded]
         version:
           type: string
-        uptime:
-          type: number
-        memory:
-          type: object
-          properties:
-            rss:
-              type: integer
-            heapUsed:
-              type: integer
-            heapTotal:
-              type: integer
-        timestamp:
-          type: string
-          format: date-time
-      required: [status, version, uptime, timestamp]
+      required: [status, version]
+      additionalProperties: false

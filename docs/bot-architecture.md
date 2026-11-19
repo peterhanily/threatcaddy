@@ -225,11 +225,11 @@ Supported languages and their images:
 
 | Language | Default Image |
 |----------|--------------|
-| `python` | `python:3.12-slim` |
-| `nodejs` | `node:22-alpine` |
-| `bash` | `alpine:3.19` |
+| `python` | `python:3.12.16-slim-trixie`, pinned by digest |
+| `nodejs` | `node:22.23.5-alpine3.24`, pinned by digest |
+| `bash` | `alpine:3.24.4`, pinned by digest (runs `sh`) |
 
-Images can be overridden via `SANDBOX_PYTHON_IMAGE`, `SANDBOX_NODE_IMAGE`, `SANDBOX_BASH_IMAGE` env vars. A `prePullSandboxImages()` function is available for pre-pulling at server startup.
+The digests are in `server/src/bots/sandbox.ts` and the [deployment guide](deployment.md#optional-bot-runtime-settings). Images can be overridden via `SANDBOX_PYTHON_IMAGE`, `SANDBOX_NODE_IMAGE`, `SANDBOX_BASH_IMAGE` env vars; pin overrides by digest too. The server calls `prePullSandboxImages()` at startup, without waiting for it; code runs never pull an image.
 
 These controls confine the sandboxed code, not the server that starts it. The server needs a Docker API, and Docker API access is root on that Docker host: mounting the host's Docker socket into the API container turns any compromise of the Node process into host root, and a socket proxy that permits container creation does not change that. Prefer a dedicated sandbox daemon reached through `DOCKER_HOST`; see [Docker Socket Security](deployment.md#46-docker-socket-security-bot-sandbox).
 

@@ -31,6 +31,21 @@ wildcards such as `*.s3.*.amazonaws.com` are invalid CSP syntax and are not
 replaced with provider-wide permission. The hosted browser suite checks startup
 and a lazy-loaded dialog for CSP diagnostics in Chromium, Firefox and WebKit.
 
+The policy allows no inline script except those in the built page: the build
+adds a hash of each inline script in `index.html` to `script-src`, and fails if
+`'unsafe-inline'` is added. An inline script inserted into the HTML after the
+build does not run. The app also refuses to run inside a frame. Serve the
+hosted build (`dist/`) from your web server, not the standalone file: served
+over http or https, the standalone file shows only a notice.
+
+Every hosted build also ships `public/.well-known/security.txt`. It names the
+ThreatCaddy project's private vulnerability reporting as the contact and
+`https://threatcaddy.com/.well-known/security.txt` as its canonical address, so
+a copy served from your own domain sends reports about your deployment to the
+project. Before you build your own hosted copy, replace the file's `Contact`,
+`Canonical`, `Policy` and `Expires` lines with your own. The build needs the
+file, and warns from 30 days before its `Expires` date.
+
 ## 1. Docker Deployment (Recommended)
 
 ### Prerequisites
@@ -227,7 +242,7 @@ The server Dockerfile (`server/Dockerfile`) uses a multi-stage build:
 
 1. **Build stage**: the official `node:24.22.3-alpine` image pinned by digest in the Dockerfile, installs all dependencies and compiles TypeScript
 2. **Runtime stage**: the same pinned Node 24.22.3 image, upgrades zlib to at least 1.4-r0, installs production dependencies only, drops the `ssh2` test suite (third-party test private keys) and npm's build-time compile cache, and copies compiled JS and migrations
-3. Runs as non-root user `app` with `NODE_ENV=production`, so error responses never echo exception messages (server errors were already generic). The application code in `/app` is root-owned and read-only to `app`, which can write only `/data/files`
+3. Runs as non-root user `app` with `NODE_ENV=production`, so error responses never echo exception messages (server errors were already generic). The application code in `/app` is root-owned and read-only to `app`; of the server's own directories, `app` can write only `/data/files`
 4. Declares a `HEALTHCHECK` that requests `/health` on `127.0.0.1:${PORT}` inside the container; Docker reports the result but does not restart the container
 5. Declares ports 3001 and 3002 for the two listeners; only the ports you publish are reachable from the host (the supplied Compose file publishes both on host loopback by default)
 
@@ -837,7 +852,11 @@ pending. Publishing an image or client does not establish server rollout.
   log rotation; the server-only command above does not. From 2.0.4 it publishes
   the API on host loopback only: if clients reach port 3001 directly rather than
   through a proxy on the same host, set `API_PUBLISH_ADDRESS` first (see
-  [Start Services](#start-services)).
+  [Start Services](#start-services)). `API_PUBLISH_ADDRESS=0.0.0.0` publishes
+  it on IPv4 only. With a proxy on the host, also set `TRUSTED_PROXY_IPS` to
+  the Compose network's gateway (see
+  [Important Proxy Settings](#important-proxy-settings)), or every client
+  shares the proxy's address for login lockouts and rate limits.
 
 Later images also differ in ways that affect custom deployments: since 2.0.1
 they have no npm, npx, Yarn or Corepack (use the packaged `node dist/...`
@@ -849,7 +868,13 @@ declare a `HEALTHCHECK` against `/health`. Since 2.0.4, `/health` answers only
 application code in `/app` is read-only to the runtime user, so keep
 `FILE_STORAGE_PATH` on a writable volume. The first 2.0.4 startup also deletes
 a generated `.admin-secret` file if an administrator exists (see
-[Retrieve Admin Bootstrap Secret](#retrieve-admin-bootstrap-secret)). On
+[Retrieve Admin Bootstrap Secret](#retrieve-admin-bootstrap-secret)). The
+default sandbox images of 2.0.4 are new references pinned by digest. The server
+pulls them at startup when its Docker API can reach the registry, and code runs
+never pull, so where the sandbox host has no registry access, pull the
+references from [Optional Bot Runtime Settings](#optional-bot-runtime-settings)
+there first, or set `SANDBOX_PYTHON_IMAGE`, `SANDBOX_NODE_IMAGE` and
+`SANDBOX_BASH_IMAGE` to images it has. On
 Kubernetes, leave `ADMIN_HOST` unset and reach administration with
 `kubectl port-forward`; do not expose port 3002 through a Service.
 
