@@ -20,7 +20,7 @@ Include the affected component, release version or commit, deployment type, expe
 
 ## What to expect
 
-ThreatCaddy is a personal open-source project with one maintainer, who aims to acknowledge a report within 7 days and to share an assessment, with a planned fix or the reason for declining, within 30 days. These are targets, not guarantees, and there is no bounty. Coordinate disclosure with the maintainer: please wait until a fixed release is published, or until you have agreed a date, before you disclose details.
+ThreatCaddy is a personal open-source project with one maintainer. On a best-effort basis, the maintainer aims to acknowledge a report within 7 days and to share an assessment, with a planned fix or the reason for declining, within 30 days. These are best-effort aims, not commitments, and there is no bounty. Coordinate disclosure with the maintainer: please wait until a fixed release is published, or until you have agreed a date, before you disclose details.
 
 ## How fixes are announced
 
