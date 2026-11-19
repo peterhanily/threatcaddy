@@ -69,10 +69,16 @@ test('hosted browser acceptance runs each Playwright project in its own job agai
   assert.deepEqual(job.strategy, { 'fail-fast': false, matrix: { project: config.projects } });
   // Observed before the split (Nov 2026): 3-5 minutes of build and standalone
   // work, and at most 10 minutes of tests for the slowest single project.
-  // Playwright must stop and write its report before GitHub cancels the job.
-  assert.equal(build['timeout-minutes'], 20);
-  assert.equal(job['timeout-minutes'], 30);
-  assert.ok(config.globalTimeout <= (job['timeout-minutes'] - 5) * 60_000);
+  // On 18 November 2026 the runners' Ubuntu mirror served WebKit's system
+  // packages at about 84 kB/s, so installing them took up to 30 minutes. The
+  // install step has its own limit, and the job leaves Playwright its full
+  // global timeout after it: Playwright must stop and write its report before
+  // GitHub cancels the job.
+  assert.equal(build['timeout-minutes'], 55);
+  assert.equal(job['timeout-minutes'], 60);
+  const browserInstall = stepsOf(job).find(step => step.run === 'pnpm exec playwright install --with-deps "$PROJECT"');
+  assert.equal(browserInstall['timeout-minutes'], 35);
+  assert.ok(browserInstall['timeout-minutes'] * 60_000 + config.globalTimeout <= (job['timeout-minutes'] - 5) * 60_000);
 
   const steps = stepsOf(job);
   const find = predicate => steps.findIndex(predicate);
@@ -159,6 +165,21 @@ test('required client checks validate every locale without report-only or narrow
   assert.equal(verify.jobs['client-checks']['continue-on-error'], undefined);
   assert.equal(JSON.parse(read('package.json')).scripts['locales:check'], 'node scripts/check-locales.mjs');
   assert.ok(verify.jobs.gate.needs.includes('client-checks'));
+});
+
+test('every browser system-package install has its own limit and leaves its job its working time', () => {
+  // The runners' Ubuntu mirror served Playwright's system packages at about
+  // 84 kB/s on 18 November 2026 (up to 30 minutes for WebKit). Each install step
+  // stops itself at 35 minutes, and its job keeps at least the 20 minutes the
+  // rest of its work had before.
+  const installs = Object.entries(verify.jobs).flatMap(([name, job]) => stepsOf(job)
+    .filter(step => /playwright install --with-deps/.test(step.run ?? ''))
+    .map(step => ({ name, job, step })));
+  assert.deepEqual(installs.map(item => item.name).sort(), ['browser', 'client-artifact', 'database']);
+  for (const { name, job, step } of installs) {
+    assert.equal(step['timeout-minutes'], 35, name);
+    assert.ok(job['timeout-minutes'] - step['timeout-minutes'] >= 20, name);
+  }
 });
 
 test('database verification installs locked root browser types before checking every integration fixture', () => {

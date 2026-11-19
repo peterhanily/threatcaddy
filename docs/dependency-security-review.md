@@ -3,7 +3,14 @@
 Keep the complete audit and publication gates enabled. Settings, repository
 changes, published artifacts and running server deployments are separate states.
 
-## 18 November 2026 picomatch audit exception
+## 18 November 2026 picomatch audit exception (removed the same day)
+
+GitHub withdrew GHSA-fc5q-39xc-vjpf at 15:38 UTC on 18 November 2026, after
+2.0.3 was released with the exception below. The audits no longer report it, so
+CI failed with "no longer reported; remove its exception", as designed, and
+the exception was deleted: `scripts/dependency-audit-exceptions.json` is empty.
+The reviewed-exception check stays in CI for any future exception. The rest of
+this section records the exception as it was reviewed.
 
 GitHub reviewed [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
 on 17 November: picomatch backtracks exponentially on single-branch repeated
@@ -113,10 +120,10 @@ claim that future advisories cannot affect the lockfiles.
 
 ## Remaining dependency advisories
 
-On 18 November 2026 the extension audit is clean, and the server audit reports
-only the excepted picomatch advisory. The root full audit reports that advisory
-and two moderate advisories, minimatch and glob below; deepmerge is no longer
-reported. These build-time packages remain under review:
+Since the picomatch advisory was withdrawn on 18 November 2026, the extension
+and server audits are clean. The root full audit reports two moderate
+advisories, minimatch and glob below; deepmerge is no longer reported. These
+build-time packages remain under review:
 
 | Package/advisory | Reachability and remaining action |
 | --- | --- |
@@ -128,7 +135,7 @@ inputs/configuration must remain trusted; CI jobs retain their time limits.
 This is a scoped exposure assessment, not a claim the dependencies are patched.
 Leave alerts open and recheck weekly. No severity threshold or development-package
 coverage is relaxed, and audit and registry errors still fail. No advisory is
-ignored except the reviewed picomatch exception above, which CI rechecks on every run.
+ignored; `scripts/dependency-audit-exceptions.json` lists no exception.
 
 ## CodeQL triage
 

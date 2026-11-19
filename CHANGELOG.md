@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- CI: the picomatch audit exception is removed. GitHub withdrew GHSA-fc5q-39xc-vjpf on 18 November 2026, so the audits no longer report it; the reviewed-exception check stays for future advisories.
 - The dashboard's default quick links add MacCrab.com and CaddyLabs.io after Forensicate.ai and OpenSlaw.ai. A workspace whose quick links were already edited keeps its own list; add them with **Add Link**.
 
 ## v2.0.3 — 2026-11-18
