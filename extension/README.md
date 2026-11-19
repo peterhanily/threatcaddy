@@ -27,6 +27,8 @@ The Chrome Web Store offers version 1.1.1, which is older and unsupported. It ha
 5. Select `manifest.json` inside the unzipped folder
 
 > Firefox removes a temporary add-on when the browser closes, so load it again after each restart. The ZIP is not signed; a permanent installation needs a build signed through [addons.mozilla.org](https://addons.mozilla.org), which is not yet available.
+>
+> The Firefox build of 1.1.5 was not run in Firefox before release.
 
 ## Features
 
