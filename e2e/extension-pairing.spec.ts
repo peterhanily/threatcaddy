@@ -7,6 +7,7 @@ const catalog = (namespace: string) => JSON.parse(readFileSync(new URL(`../publi
 const chat = catalog('chat');
 const common = catalog('common');
 const agent = catalog('agent');
+const toast = catalog('toast');
 const RELEASES = 'https://github.com/peterhanily/threatcaddy/releases/latest';
 const STEPS = 'https://github.com/peterhanily/threatcaddy/blob/main/extension/README.md#install--chrome';
 
@@ -109,3 +110,11 @@ test('with store 1.1.1, the chat start view and AgentCaddy name the version and 
   expect(await stubRequests(page)).toEqual([]);
 });
 
+// Store 1.1.1 marks clips sent without a receipt, so the app imports them and asks for the update.
+test('clips from store 1.1.1 are imported, and a toast asks for the update', async ({ page, baseURL }) => {
+  await openChatWithBridge(page, baseURL, STORE_1_1_1_CAPS);
+  await page.evaluate(() => window.postMessage({ type: 'THREATCADDY_IMPORT_CLIPS', clips: [{ id: 'legacy-fixture-clip', title: 'Fictional legacy clip',
+    content: 'Fictional clip body', sourceUrl: 'https://example.com/fictional', sourceTitle: 'Fictional page', createdAt: 1 }] }, location.origin));
+  await expect(page.getByText(toast.clip.outdatedExtension, { exact: true })).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath('clip-toast-store-1.1.1.png') });
+});

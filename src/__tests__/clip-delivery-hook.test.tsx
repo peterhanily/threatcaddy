@@ -109,6 +109,16 @@ describe('app clip delivery lifecycle', () => {
     expect(options.onOutdatedExtension).toHaveBeenCalledOnce();
   });
 
+  it('does not say clips were imported from an outdated extension when none of them was', async () => {
+    mocks.importClips.mockResolvedValue([{ ...committed, status: 'failed', error: 'Synthetic failure' }]);
+    const options = { ...callbacks(), onOutdatedExtension: vi.fn() };
+    renderHook(() => useClipDelivery(options));
+    await act(() => consume({ type: 'THREATCADDY_IMPORT_CLIPS', clips: [{ id: 'ordinary-fixture' }] }));
+    expect(options.onFailed).toHaveBeenCalledWith(1);
+    expect(options.onCommitted).not.toHaveBeenCalled();
+    expect(options.onOutdatedExtension).not.toHaveBeenCalled();
+  });
+
   it('does not claim success when the service throws before committing', async () => {
     mocks.importClips.mockRejectedValue(new Error('Rejected before writing'));
     const options = callbacks();

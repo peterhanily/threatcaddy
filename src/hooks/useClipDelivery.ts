@@ -51,13 +51,13 @@ export function useClipDelivery(options: Options): void {
           sourceId: message.sourceId, attemptId: message.attemptId, workspaceId: getActiveWorkspaceId(), results },
         window.location.protocol === 'file:' ? '*' : window.location.origin);
         if (lifetime.signal.aborted) return;
-        // Store 1.1.1 marks clips sent without a receipt and the GitHub build keeps its own captures, so
-        // these are imported rather than stranded.
-        if (!modern) latest.current.onOutdatedExtension?.();
         const failed = results.filter(result => result.status === 'failed').length;
         if (failed) latest.current.onFailed(failed);
         const committed = results.filter(result => result.status !== 'failed');
         if (committed.length) {
+          // Store 1.1.1 marks clips sent without a receipt and the GitHub build keeps its own captures, so
+          // these are imported rather than stranded.
+          if (!modern) latest.current.onOutdatedExtension?.();
           try { await latest.current.onCommitted(committed, lifetime.signal); }
           catch { if (!lifetime.signal.aborted) latest.current.onRefreshFailed(); }
         }
