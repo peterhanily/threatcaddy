@@ -162,7 +162,7 @@ memory use in MiB, so expose it only to monitoring systems.
   "status": "ok",
   "db": "connected",
   "storage": "accessible",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "uptime": 3600,
   "memory": { "rss": 180, "heapUsed": 60, "heapTotal": 90 },
   "timestamp": "2026-03-07T12:00:00.000Z"
@@ -175,7 +175,7 @@ memory use in MiB, so expose it only to monitoring systems.
   "status": "degraded",
   "db": "disconnected",
   "storage": "accessible",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "uptime": 3600,
   "memory": { "rss": 180, "heapUsed": 60, "heapTotal": 90 },
   "timestamp": "2026-03-07T12:00:00.000Z"
