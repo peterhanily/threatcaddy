@@ -678,7 +678,8 @@ const AppInner = memo(function AppInner({
     onBusy: busy => setPendingClipImports(busy ? 1 : 0),
     onFailed: count => addToast('warning', tt('clip.importWarning', { count })),
     onRefreshFailed: () => addToast('warning', tt('clip.refreshFailed')),
-    onOutdatedExtension: () => addToast('warning', tt('clip.outdatedExtension')),
+    // The only sign these clips were not imported, so it stays until dismissed.
+    onOutdatedExtension: () => addToast('warning', tt('clip.outdatedExtensionRefused'), 0),
     onCommitted: async (results, signal) => {
       await reloadAll();
       if (signal.aborted) return;

@@ -5,7 +5,7 @@
     "openedAsNote": "\"{{name}}\"을/를 새 노트로 열었습니다",
     "openFailed": "\"{{name}}\"을/를 열지 못했습니다",
     "refreshFailed": "클립은 저장되었지만 화면을 새로고침할 수 없습니다. 이 작업 공간을 새로고침하여 확인하세요.",
-    "outdatedExtension": "클립을 가져왔습니다. 이 클립은 1.1.3보다 오래된 ThreatCaddy 확장 프로그램에서 왔으며, ThreatCaddy는 더 이상 이 확장 프로그램을 AI, 통합 또는 웹 가져오기에 사용하지 않습니다. GitHub의 ThreatCaddy 릴리스에서 최신 버전을 설치하세요. Chrome 웹 스토어 버전은 더 오래되었습니다.",
+    "outdatedExtensionRefused": "클립을 가져오지 않았습니다. 이 클립은 1.1.3보다 오래된 ThreatCaddy 확장 프로그램에서 왔으며, ThreatCaddy는 더 이상 이 확장 프로그램을 사용하지 않습니다. GitHub의 ThreatCaddy 릴리스에서 최신 버전을 설치하세요. Chrome 웹 스토어 버전은 더 오래되었습니다. 이전 확장 프로그램은 이 클립을 'Sent'로 표시하지만 'Clip Review' 페이지에 보관합니다. 확장 프로그램을 제거하기 전에 그곳에서 복사하세요.",
     "fileRefreshFailed": "파일이 노트로 저장되었지만 화면을 새로고침할 수 없습니다. 이 작업 공간을 새로고침하여 확인하세요.",
     "fileTitle": "{{name}} — {{size}} — 수정 {{modified}}",
     "fileError": {

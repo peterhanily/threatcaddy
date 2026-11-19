@@ -5,7 +5,7 @@
     "openedAsNote": "\"{{name}}\" yeni not olarak açıldı",
     "openFailed": "\"{{name}}\" açılamadı",
     "refreshFailed": "Klipler kaydedildi ancak görünüm yenilenemedi. Görmek için bu çalışma alanını yeniden yükleyin.",
-    "outdatedExtension": "Klipler içe aktarıldı. Bunlar 1.1.3'ten eski bir ThreatCaddy uzantısından geldi; ThreatCaddy bu uzantıyı artık yapay zekâ, entegrasyonlar veya web getirme için kullanmıyor. En son sürümü GitHub'daki ThreatCaddy sürümlerinden yükleyin; Chrome Web Mağazası'ndaki sürüm daha eski.",
+    "outdatedExtensionRefused": "Klipler içe aktarılmadı. Bunlar 1.1.3'ten eski bir ThreatCaddy uzantısından geldi; ThreatCaddy bu uzantıyı artık kullanmıyor. En son sürümü GitHub'daki ThreatCaddy sürümlerinden yükleyin; Chrome Web Mağazası'ndaki sürüm daha eski. Eski uzantı bu klipleri “Sent” olarak işaretler ancak “Clip Review” sayfasında saklar: uzantıyı kaldırmadan önce klipleri oradan kopyalayın.",
     "fileRefreshFailed": "Dosya not olarak kaydedildi ancak görünüm yenilenemedi. Görmek için bu çalışma alanını yeniden yükleyin.",
     "fileTitle": "{{name}} — {{size}} — değiştirilme {{modified}}",
     "fileError": {

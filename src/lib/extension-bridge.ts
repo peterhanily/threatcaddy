@@ -8,7 +8,8 @@ export const EXTENSION_INSTALL_STEPS_URL = 'https://github.com/peterhanily/threa
 
 /** Extension 1.1.3 and later answer only an app approved in their popup, and advertise one of these
  *  capabilities. Store 1.1.1 advertises neither: it has no app pairing, follows redirects and has no
- *  private-address filter, so the app sends it no AI request, integration request or web fetch. */
+ *  private-address filter, so the app sends it no AI request, integration request or web fetch. Its clips
+ *  arrive without protocol 2, and useClipDelivery imports none of them. */
 export const isPairedBridgeCaps = (caps: unknown) => Array.isArray(caps) && (caps.includes('clip_import_ack_v2') || caps.includes('fetch_url_public_v1'));
 
 /** The capabilities a bridge published on the page. */

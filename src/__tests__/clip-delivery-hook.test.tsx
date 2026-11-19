@@ -14,7 +14,7 @@ let cleanup: ReturnType<typeof vi.fn>;
 const message = (): ClipImportMessage => ({ type: 'THREATCADDY_IMPORT_CLIPS', protocol: 2,
   sourceId: 'fixture-source', attemptId: 'fixture-attempt', expectedWorkspaceId: 'default', clips: [{ id: 'ordinary-fixture' }] });
 const committed: ClipImportResult = { id: 'ordinary-fixture', revision: 1, fingerprint: 'a'.repeat(64), status: 'imported', entityType: 'note', entityId: 'saved-note', folderId: 'saved-folder' };
-const callbacks = () => ({ onBusy: vi.fn(), onFailed: vi.fn(), onRefreshFailed: vi.fn(),
+const callbacks = () => ({ onBusy: vi.fn(), onFailed: vi.fn(), onRefreshFailed: vi.fn(), onOutdatedExtension: vi.fn(),
   onCommitted: vi.fn<(results: ClipImportResult[], signal: AbortSignal) => Promise<void>>().mockResolvedValue(undefined) });
 
 beforeEach(() => {
@@ -85,37 +85,25 @@ describe('app clip delivery lifecycle', () => {
     expect(options.onCommitted).not.toHaveBeenCalled();
   });
 
-  it('adapts legacy messages without giving legacy hop acknowledgements commit authority', async () => {
+  // Only extensions older than 1.1.3 send messages without protocol 2, store 1.1.1 among them, and the app
+  // uses none of their features. Store 1.1.1 marks the clips sent but keeps them on its Clip Review page.
+  it.each(['THREATCADDY_IMPORT_CLIPS', 'BROWSERNOTES_IMPORT_CLIPS'] as const)('refuses %s from an extension older than 1.1.3 and says why', async type => {
     const options = callbacks();
     renderHook(() => useClipDelivery(options));
-    await act(() => consume({ type: 'BROWSERNOTES_IMPORT_CLIPS', clips: [{ id: 'ordinary-fixture' }] }));
-    expect(mocks.adapt).toHaveBeenCalledOnce();
-    expect(mocks.importClips).toHaveBeenCalledWith([{ id: 'ordinary-fixture' }], expect.objectContaining({ sourceId: 'legacy-extension' }));
-    expect(options.onCommitted).toHaveBeenCalledWith([committed], expect.any(AbortSignal));
-    expect(window.postMessage).not.toHaveBeenCalled();
-  });
-
-  // Store 1.1.1 sends only legacy messages and marks clips sent without a receipt, and the GitHub build is a
-  // different extension with its own storage, so refusing them would strand captures. The app imports them
-  // and says the extension is outdated.
-  it('imports clips from an extension older than 1.1.3 and asks for the update', async () => {
-    const options = { ...callbacks(), onOutdatedExtension: vi.fn() };
-    renderHook(() => useClipDelivery(options));
-    await act(() => consume({ type: 'THREATCADDY_IMPORT_CLIPS', clips: [{ id: 'ordinary-fixture' }] }));
-    expect(mocks.importClips).toHaveBeenCalledWith([{ id: 'ordinary-fixture' }], expect.objectContaining({ sourceId: 'legacy-extension' }));
-    expect(options.onCommitted).toHaveBeenCalledWith([committed], expect.any(AbortSignal));
-    expect(options.onOutdatedExtension).toHaveBeenCalledOnce();
-    await act(() => consume(message()));
-    expect(options.onOutdatedExtension).toHaveBeenCalledOnce();
-  });
-
-  it('does not say clips were imported from an outdated extension when none of them was', async () => {
-    mocks.importClips.mockResolvedValue([{ ...committed, status: 'failed', error: 'Synthetic failure' }]);
-    const options = { ...callbacks(), onOutdatedExtension: vi.fn() };
-    renderHook(() => useClipDelivery(options));
-    await act(() => consume({ type: 'THREATCADDY_IMPORT_CLIPS', clips: [{ id: 'ordinary-fixture' }] }));
-    expect(options.onFailed).toHaveBeenCalledWith(1);
+    await act(() => consume({ type, clips: [{ id: 'ordinary-fixture' }] }));
+    expect(mocks.adapt).not.toHaveBeenCalled();
+    expect(mocks.importClips).not.toHaveBeenCalled();
     expect(options.onCommitted).not.toHaveBeenCalled();
+    expect(options.onFailed).not.toHaveBeenCalled();
+    expect(window.postMessage).not.toHaveBeenCalled();
+    expect(options.onOutdatedExtension).toHaveBeenCalledOnce();
+  });
+
+  it('imports a paired delivery without calling the extension outdated', async () => {
+    const options = callbacks();
+    renderHook(() => useClipDelivery(options));
+    await act(() => consume(message()));
+    expect(options.onCommitted).toHaveBeenCalledWith([committed], expect.any(AbortSignal));
     expect(options.onOutdatedExtension).not.toHaveBeenCalled();
   });
 

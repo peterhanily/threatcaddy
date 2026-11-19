@@ -5,7 +5,7 @@
     "openedAsNote": "Otwarto „{{name}}\" jako nową notatkę",
     "openFailed": "Nie udało się otworzyć „{{name}}\"",
     "refreshFailed": "Wycinki zapisano, ale widoku nie udało się odświeżyć. Odśwież obszar roboczy, aby je zobaczyć.",
-    "outdatedExtension": "Zaimportowano wycinki. Pochodzą z rozszerzenia ThreatCaddy starszego niż 1.1.3, którego ThreatCaddy nie używa już do AI, integracji ani pobierania stron. Zainstaluj najnowszą wersję z wydań ThreatCaddy na GitHubie; wersja w Chrome Web Store jest starsza.",
+    "outdatedExtensionRefused": "Nie zaimportowano wycinków. Pochodzą z rozszerzenia ThreatCaddy starszego niż 1.1.3, którego ThreatCaddy już nie używa. Zainstaluj najnowszą wersję z wydań ThreatCaddy na GitHubie; wersja w Chrome Web Store jest starsza. Stare rozszerzenie oznacza te wycinki jako „Sent”, ale zachowuje je na swojej stronie „Clip Review”: skopiuj je stamtąd, zanim usuniesz rozszerzenie.",
     "fileRefreshFailed": "Plik zapisano jako notatkę, ale widoku nie udało się odświeżyć. Odśwież obszar roboczy, aby ją zobaczyć.",
     "fileTitle": "{{name}} — {{size}} — Zmodyfikowano {{modified}}",
     "fileError": {

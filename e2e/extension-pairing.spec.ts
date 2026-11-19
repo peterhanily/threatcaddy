@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { goToApp } from './fixtures';
-import { seedRows } from './client-lifecycle-fixtures';
+import { readRows, seedRows } from './client-lifecycle-fixtures';
 
 const catalog = (namespace: string) => JSON.parse(readFileSync(new URL(`../public/locales/en/${namespace}.json`, import.meta.url), 'utf8'));
 const chat = catalog('chat');
@@ -110,11 +110,27 @@ test('with store 1.1.1, the chat start view and AgentCaddy name the version and 
   expect(await stubRequests(page)).toEqual([]);
 });
 
-// Store 1.1.1 marks clips sent without a receipt, so the app imports them and asks for the update.
-test('clips from store 1.1.1 are imported, and a toast asks for the update', async ({ page, baseURL }) => {
+// Store 1.1.1 sends clips without a receipt and marks them sent. The app imports nothing from it and says where
+// the clips stay.
+test('clips from store 1.1.1 are not imported, and a toast says why and where they stay', async ({ page, baseURL }) => {
   await openChatWithBridge(page, baseURL, STORE_1_1_1_CAPS);
   await page.evaluate(() => window.postMessage({ type: 'THREATCADDY_IMPORT_CLIPS', clips: [{ id: 'legacy-fixture-clip', title: 'Fictional legacy clip',
     content: 'Fictional clip body', sourceUrl: 'https://example.com/fictional', sourceTitle: 'Fictional page', createdAt: 1 }] }, location.origin));
-  await expect(page.getByText(toast.clip.outdatedExtension, { exact: true })).toBeVisible();
+  const notice = page.getByText(toast.clip.outdatedExtensionRefused, { exact: true });
+  await expect(notice).toBeVisible();
+  // The import channel answers ready only when no delivery is in progress.
+  const ready = await page.evaluate(() => new Promise<boolean>(resolve => {
+    const requestId = 'fictional-probe';
+    window.addEventListener('message', event => {
+      if (event.source === window && event.data?.type === 'TC_CLIP_IMPORT_READY' && event.data.requestId === requestId) resolve(event.data.ready);
+    });
+    window.postMessage({ type: 'TC_CLIP_IMPORT_PROBE', protocol: 2, requestId }, location.origin);
+  }));
+  expect(ready).toBe(true);
+  const { notes } = await readRows(page, ['notes']);
+  expect(JSON.stringify(notes)).not.toContain('Fictional clip body');
   await page.screenshot({ path: test.info().outputPath('clip-toast-store-1.1.1.png') });
+  // It stays until dismissed: it is the only sign the clips were not imported.
+  await page.waitForTimeout(4_500);
+  await expect(notice).toBeVisible();
 });
