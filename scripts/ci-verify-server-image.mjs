@@ -88,8 +88,11 @@ async function assertReady(label, expectedInitializations) {
         signal: AbortSignal.timeout(5_000),
       });
       const health = await response.json();
-      if (initialized && response.status === 200 && health.status === 'ok'
-          && health.db === 'connected' && health.storage === 'accessible') {
+      if (initialized && response.status === 200 && health.status === 'ok') {
+        // The public endpoint reports readiness and the release version only.
+        if (Object.keys(health).sort().join() !== 'status,version') {
+          throw new Error(`Health exposes more than status and version: ${Object.keys(health).join(', ')}`);
+        }
         if (health.version !== expectedVersion) {
           throw new Error(`Health version ${health.version} differs from image package version ${expectedVersion}`);
         }
@@ -103,7 +106,6 @@ async function assertReady(label, expectedInitializations) {
         });
         const stableHealth = await stableResponse.json();
         if (!stableResponse.ok || stableHealth.status !== 'ok'
-            || stableHealth.db !== 'connected' || stableHealth.storage !== 'accessible'
             || stableHealth.version !== expectedVersion) {
           throw new Error('Image lost health or package identity during the startup stability check');
         }
@@ -185,6 +187,17 @@ try {
       console.log('Runtime package managers and shims are absent');
     `]);
   console.log('Runtime package managers and shims are absent');
+  // As the runtime user: the root-owned application code is read-only, file
+  // storage is writable, and pruned test keys and the build compile cache are gone.
+  const layoutCheck = readFileSync(new URL('./lib/runtime-image-layout.mjs', import.meta.url), 'utf8');
+  docker(['run', '--rm', ...labels, '--network', 'none', '--entrypoint', 'node', imageId,
+    '--input-type=module', '-e', `${layoutCheck}
+      if (process.getuid() === 0) throw new Error('Layout must be checked as the non-root runtime user');
+      const problems = runtimeLayoutProblems({ readOnly: ['/app'], writable: ['/data/files'], absent: ['/app/node_modules/ssh2/test', '/tmp/node-compile-cache'] });
+      if (problems.length) throw new Error(problems.length + ' runtime layout problems:\\n' + problems.slice(0, 50).join('\\n'));
+      console.log('Runtime file layout passed');
+    `]);
+  console.log('Application code is read-only and file storage writable for the runtime user');
   // Exercise both native modules as the image's non-root runtime user. Merely
   // importing them or reaching /health does not establish native ABI support.
   docker(['run', '--rm', ...labels, '--network', 'none', '--entrypoint', 'node', imageId,

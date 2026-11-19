@@ -1,4 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
   rows: [] as unknown[][],
@@ -37,11 +40,17 @@ import { bootstrapAdminUser } from '../services/admin-session-service.js';
 import { getAdminHtml } from '../routes/admin-html/index.js';
 
 const original = process.env.ADMIN_SECRET;
+const storage = mkdtempSync(join(tmpdir(), 'threatcaddy-bootstrap-'));
+const secretFile = join(storage, '.admin-secret');
+afterAll(() => rmSync(storage, { recursive: true, force: true }));
 beforeEach(() => {
+  vi.stubEnv('FILE_STORAGE_PATH', storage);
+  rmSync(secretFile, { force: true });
   state.rows.length = 0; state.selects = 0; state.transactions = 0; state.hold = undefined;
   state.warn.mockClear(); state.info.mockClear(); state.hash.mockClear(); state.verify.mockClear();
 });
 afterEach(() => {
+  vi.unstubAllEnvs();
   if (original === undefined) delete process.env.ADMIN_SECRET; else process.env.ADMIN_SECRET = original;
 });
 
@@ -53,6 +62,8 @@ describe('ADMIN_SECRET startup', () => {
     expect(state.hash).toHaveBeenCalledWith(secret, expect.anything());
     expect(state.warn).toHaveBeenCalledTimes(1);
     expect(state.warn.mock.calls[0][0]).toMatch(/ADMIN_SECRET is shorter than 24 characters/);
+    // Rotation: a new configured value replaces the stored hash at the next restart.
+    expect(state.warn.mock.calls[0][0]).toMatch(/\.env[\s\S]*openssl rand -base64 32[\s\S]*restart/);
     expect(JSON.stringify([...state.warn.mock.calls, ...state.info.mock.calls])).not.toContain(secret);
   });
 
@@ -60,6 +71,25 @@ describe('ADMIN_SECRET startup', () => {
     process.env.ADMIN_SECRET = 'x'.repeat(24);
     await initAdminSecret();
     expect(state.warn).not.toHaveBeenCalled();
+  });
+
+  it('deletes a leftover generated secret file at startup once an administrator exists, without logging it', async () => {
+    delete process.env.ADMIN_SECRET;
+    writeFileSync(secretFile, 'generated-fixture-secret');
+    state.rows.push([{ key: 'admin_secret_hash', value: 'stored-hash' }], [{ id: 'active-admin' }]);
+    await initAdminSecret();
+    expect(existsSync(secretFile)).toBe(false);
+    expect(state.hash).not.toHaveBeenCalled();
+    expect(JSON.stringify(state.info.mock.calls)).toMatch(/Removed the generated admin bootstrap secret file/);
+    expect(JSON.stringify([...state.warn.mock.calls, ...state.info.mock.calls])).not.toContain('generated-fixture-secret');
+  });
+
+  it('keeps the generated secret file while no administrator exists', async () => {
+    delete process.env.ADMIN_SECRET;
+    writeFileSync(secretFile, 'generated-fixture-secret');
+    state.rows.push([{ key: 'admin_secret_hash', value: 'stored-hash' }], []);
+    await initAdminSecret();
+    expect(readFileSync(secretFile, 'utf8')).toBe('generated-fixture-secret');
   });
 
   it('tells administrators that a configured ADMIN_SECRET replaces a changed secret at restart', () => {

@@ -8,17 +8,20 @@ const MAX_OUTPUT_BYTES = 1024 * 1024; // 1MB per stream
 const DEFAULT_TIMEOUT_S = 30;
 const MAX_TIMEOUT_S = 120;
 
+// Official multi-platform images pinned to the index digests their tags had on
+// Docker Hub on 2026-11-18, so bot code never runs on an image that changed
+// without review. Refresh a pin by resolving a newer supported tag to its digest.
 const LANGUAGE_IMAGES: Record<string, { image: string; cmd: (code: string) => string[] }> = {
   python: {
-    image: process.env.SANDBOX_PYTHON_IMAGE || 'python:3.12-slim',
+    image: process.env.SANDBOX_PYTHON_IMAGE || 'python:3.12.16-slim-trixie@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b',
     cmd: (code) => ['python3', '-c', code],
   },
   nodejs: {
-    image: process.env.SANDBOX_NODE_IMAGE || 'node:22-alpine',
+    image: process.env.SANDBOX_NODE_IMAGE || 'node:22.23.5-alpine3.24@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a',
     cmd: (code) => ['node', '-e', code],
   },
   bash: {
-    image: process.env.SANDBOX_BASH_IMAGE || 'alpine:3.19',
+    image: process.env.SANDBOX_BASH_IMAGE || 'alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf',
     cmd: (code) => ['sh', '-c', code],
   },
 };
