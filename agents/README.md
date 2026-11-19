@@ -30,4 +30,8 @@ AI Agent → Chrome CDP → window.threatcaddy.exec(nonce, tool, input) → Inde
 # 3. Use the CLI
 node agents/claude-code/scripts/tc.mjs status
 node agents/claude-code/scripts/tc.mjs exec create_note '{"title":"Test","content":"Hello from Claude Code"}'
+
+# 4. When you finish: stop the daemon, then turn off the agent bridge
+#    and the remote debugging toggle
+node agents/claude-code/scripts/tc.mjs stop
 ```
