@@ -26,3 +26,38 @@ test('the hosted app does not run inside another site and opens in the top windo
   await expect(page).toHaveURL(app.href);
   await waitForAppReady(page);
 });
+
+// The privacy page is dark (#0f1117): the notice must paint its own opaque
+// background, and stay readable in the browser's light and dark schemes.
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`the framed notice is readable in the ${colorScheme} colour scheme`, async ({ page, baseURL }) => {
+    const app = new URL('/', baseURL);
+    await page.emulateMedia({ colorScheme });
+    await page.goto(new URL('/privacy.html', app).href);
+    await page.evaluate(src => {
+      const frame = document.createElement('iframe');
+      frame.src = src;
+      frame.style.cssText = 'width:900px;height:600px';
+      document.body.prepend(frame);
+    }, app.href);
+    await expect(page.frameLocator('iframe').getByRole('link', { name: 'Open ThreatCaddy', exact: true })).toBeVisible();
+    const frame = page.frames().find(candidate => candidate !== page.mainFrame());
+    const measured = await frame?.evaluate(() => {
+      const channels = (value: string) => (value.match(/[\d.]+/g) ?? []).map(Number);
+      const luminance = ([r, g, b]: number[]) => {
+        const [red, green, blue] = [r, g, b].map(value => value / 255).map(value => value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+      };
+      const background = channels(getComputedStyle(document.body).backgroundColor);
+      const contrast = (selector: string) => {
+        const [light, dark] = [luminance(channels(getComputedStyle(document.querySelector(selector) as Element).color)), luminance(background)].sort((a, b) => b - a);
+        return Math.round(((light + 0.05) / (dark + 0.05)) * 10) / 10;
+      };
+      return { opaque: (background[3] ?? 1) === 1, text: contrast('p'), link: contrast('a') };
+    });
+    expect(measured?.opaque).toBe(true);
+    // WCAG AA for normal text.
+    expect(measured?.text).toBeGreaterThanOrEqual(4.5);
+    expect(measured?.link).toBeGreaterThanOrEqual(4.5);
+  });
+}

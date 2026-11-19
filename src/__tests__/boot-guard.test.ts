@@ -80,6 +80,13 @@ describe('boot guard behaviour', () => {
     expect(link?.getAttribute('target')).toBe('_top');
   });
 
+  it('paints the notice in the browser\'s own light or dark colours, not the framing page\'s', () => {
+    const { document } = run({ standalone: false, href: 'https://threatcaddy.example/', framed: true });
+    // The page's colour scheme sets the canvas; jsdom cannot parse the system
+    // colours on <body>, so e2e/boot-guard.spec.ts measures those in browsers.
+    expect(document.documentElement.style.colorScheme).toBe('light dark');
+  });
+
   it('treats an unreadable top window as framed', () => {
     expect(run({ standalone: true, href: 'file:///fictional/ThreatCaddy.html', topThrows: true }).write).toHaveBeenCalledOnce();
   });

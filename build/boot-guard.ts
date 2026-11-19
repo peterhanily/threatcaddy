@@ -64,8 +64,11 @@ export function bootGuardScript({ standalone, messages }: { standalone: boolean;
   root.lang = language;
   root.dir = ${json(RTL)}.indexOf(language) < 0 ? 'ltr' : 'rtl';
   document.title = 'ThreatCaddy';
+  // The browser's own opaque colours, so neither the system scheme nor a
+  // framing page's background can make the notice unreadable.
+  root.style.colorScheme = 'light dark';
   var body = document.body;
-  body.style.cssText = 'margin:0;min-height:100vh;box-sizing:border-box;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;font:15px/1.5 system-ui,sans-serif;color-scheme:light dark';
+  body.style.cssText = 'margin:0;min-height:100vh;box-sizing:border-box;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;font:15px/1.5 system-ui,sans-serif;background:Canvas;color:CanvasText';
   var notice = body.appendChild(document.createElement('p'));
   notice.style.cssText = 'margin:0;max-width:32rem';
   notice.textContent = misplaced ? text.fileOnly : text.framed;
