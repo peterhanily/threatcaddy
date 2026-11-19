@@ -170,15 +170,22 @@ test('required client checks validate every locale without report-only or narrow
 test('every browser system-package install has its own limit and leaves its job its working time', () => {
   // The runners' Ubuntu mirror served Playwright's system packages at about
   // 84 kB/s on 18 November 2026 (up to 30 minutes for WebKit). Each install step
-  // stops itself at 35 minutes, and its job keeps at least the 20 minutes the
-  // rest of its work had before.
-  const installs = Object.entries(verify.jobs).flatMap(([name, job]) => stepsOf(job)
-    .filter(step => /playwright install --with-deps/.test(step.run ?? ''))
-    .map(step => ({ name, job, step })));
-  assert.deepEqual(installs.map(item => item.name).sort(), ['browser', 'client-artifact', 'database']);
+  // stops itself at 35 minutes, and its job keeps at least the minutes the rest
+  // of its work had before: 20 in verify.yml, 15 for the live Pages check.
+  const workingMinutes = {
+    'publish-pages.yml smoke': 15,
+    'verify.yml browser': 20,
+    'verify.yml client-artifact': 20,
+    'verify.yml database': 20,
+  };
+  const installs = Object.entries(workflows).flatMap(([file, workflow]) => Object.entries(workflow.jobs ?? {})
+    .flatMap(([name, job]) => stepsOf(job)
+      .filter(step => /playwright install --with-deps/.test(step.run ?? ''))
+      .map(step => ({ name: `${file} ${name}`, job, step }))));
+  assert.deepEqual(installs.map(item => item.name).sort(), Object.keys(workingMinutes));
   for (const { name, job, step } of installs) {
     assert.equal(step['timeout-minutes'], 35, name);
-    assert.ok(job['timeout-minutes'] - step['timeout-minutes'] >= 20, name);
+    assert.ok(job['timeout-minutes'] - step['timeout-minutes'] >= workingMinutes[name], name);
   }
 });
 

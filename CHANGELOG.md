@@ -49,7 +49,7 @@ Fixes from a security review of what ThreatCaddy exposes publicly: the hosted si
 ### CI and release
 
 - CI: the picomatch audit exception is removed. GitHub withdrew GHSA-fc5q-39xc-vjpf on 18 November 2026, so the audits no longer report it; the reviewed-exception check stays for future advisories.
-- CI: each step that installs the test browsers' system packages from the runners' Ubuntu mirror has its own 35-minute limit, and the jobs that run one allow 55 or 60 minutes, because the mirror took up to 30 minutes on 18 November 2026.
+- CI: each step that installs the test browsers' system packages from the runners' Ubuntu mirror has its own 35-minute limit, and the jobs that run one allow 50 to 60 minutes, because the mirror took up to 30 minutes on 18 November 2026.
 
 ## v2.0.3 — 2026-11-18
 
