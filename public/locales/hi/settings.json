@@ -42,7 +42,7 @@
   "general.removeSample": "नमूना जाँच हटाएं",
   "general.loadSample": "नमूना जाँच लोड करें",
   "general.about": "परिचय",
-  "general.aboutDesc": "ThreatCaddy — थ्रेट जाँच कार्यक्षेत्र। नोट्स, IOCs, टाइमलाइन और ग्राफ। सभी डेटा IndexedDB का उपयोग करके आपके ब्राउज़र में स्थानीय रूप से संग्रहीत।",
+  "general.aboutDesc": "ThreatCaddy — थ्रेट जाँच कार्यक्षेत्र। नोट्स, IOCs, टाइमलाइन और ग्राफ। जाँचें IndexedDB का उपयोग करके इसी ब्राउज़र में संग्रहीत होती हैं।",
   "general.aboutLocalFirst": "लोकल-फर्स्ट। आपका डेटा इसी ब्राउज़र में रहता है, जब तक आप कोई टीम सर्वर कनेक्ट न करें या AI, इंटीग्रेशन या क्लाउड बैकअप का उपयोग न करें। सेटिंग → AI में दिखता है कि AI अनुरोध कहाँ जाते हैं।",
   "general.version": "संस्करण {{version}}",
   "general.github": "GitHub",

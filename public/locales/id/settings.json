@@ -42,7 +42,7 @@
   "general.removeSample": "Hapus Investigasi Sampel",
   "general.loadSample": "Muat Investigasi Sampel",
   "general.about": "Tentang",
-  "general.aboutDesc": "ThreatCaddy — Ruang Kerja Investigasi Ancaman. Catatan, IOC, Timeline & Graf. Semua data disimpan secara lokal di browser Anda menggunakan IndexedDB.",
+  "general.aboutDesc": "ThreatCaddy — Ruang Kerja Investigasi Ancaman. Catatan, IOC, Timeline & Graf. Investigasi disimpan di browser ini menggunakan IndexedDB.",
   "general.aboutLocalFirst": "Local-first. Data Anda tetap di browser ini kecuali Anda menghubungkan server tim atau menggunakan AI, integrasi, atau cadangan cloud. Pengaturan → AI menunjukkan ke mana permintaan AI dikirim.",
   "general.version": "Versi {{version}}",
   "general.github": "GitHub",

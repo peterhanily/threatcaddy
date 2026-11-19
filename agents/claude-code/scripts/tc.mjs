@@ -61,8 +61,10 @@ async function getDebugWsUrl(port) {
 
   throw new Error(
     'Chrome remote debugging not found.\n' +
-    'Option 1 (recommended): Launch Chrome with --remote-debugging-port=9222\n' +
-    'Option 2: Open chrome://inspect/#remote-debugging and toggle the switch.'
+    'Turn it on at chrome://inspect/#remote-debugging (Chrome asks you to allow each new connection).\n' +
+    'Only if you cannot use that toggle: start a separate Chrome with --remote-debugging-port=9222\n' +
+    'and a dedicated --user-data-dir profile. While it runs, any program on this computer can\n' +
+    'control that browser without asking, so quit it when you finish.'
   );
 }
 
@@ -402,8 +404,12 @@ Options:
 
 Prerequisites:
   1. Chrome remote debugging enabled (one of):
-     a. Launch Chrome with: --remote-debugging-port=9222 (no popup)
-     b. Toggle chrome://inspect/#remote-debugging (popup fires once per session)
+     a. Toggle chrome://inspect/#remote-debugging (the default; Chrome asks you
+        to allow each new connection). Turn it off when you finish.
+     b. Only if you cannot use the toggle: a separate Chrome started with
+        --remote-debugging-port=9222 --user-data-dir=<a dedicated profile>.
+        While it runs, any program on this computer can control that browser
+        without asking. Quit it when you finish.
   2. ThreatCaddy open in a Chrome tab
   3. Node.js 22+
 

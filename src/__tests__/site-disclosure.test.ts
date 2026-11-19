@@ -3,8 +3,10 @@
  * SITE-8 / NARRATIVE-5 / SITE-10: the hosted site publishes an RFC 9116
  * security.txt, and its privacy policy states that threatcaddy.com loads no
  * analytics and that no integration catalog is fetched.
+ * NARRATIVE-4: the install prompt, page keywords and About text claim no more
+ * than that investigations are stored in the browser.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { ConfigEnv, Plugin, PluginOption, UserConfig } from 'vite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -101,5 +103,31 @@ describe('privacy policy', () => {
 
   it('lists no integration catalog download among third-party requests', () => {
     expect(page).not.toMatch(/catalog/i);
+  });
+});
+
+describe('public descriptions', () => {
+  it('describe local storage without claiming that no data leaves the browser', () => {
+    const manifest = JSON.parse(read('public/manifest.json')) as { description: string };
+    expect(manifest.description).not.toMatch(/no server|no tracking/i);
+    expect(manifest.description).toContain('Investigations are stored in your browser; team sync and AI requests go only where you configure them.');
+    // A self-hosted build may enable Cloudflare Web Analytics (deployment-policy.ts).
+    const keywords = /<meta name="keywords" content="([^"]*)"/.exec(read('index.html'))?.[1] ?? '';
+    expect(keywords).toContain('local-first');
+    expect(keywords).not.toMatch(/tracking/i);
+  });
+
+  it('says in About, in every language, only that investigations are stored in this browser', () => {
+    const root = resolve(__dirname, '../../public/locales');
+    const about = (locale: string) => (JSON.parse(readFileSync(resolve(root, locale, 'settings.json'), 'utf8')) as Record<string, string>)['general.aboutDesc'];
+    const english = about('en');
+    expect(english).toBe('ThreatCaddy — Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. Investigations are stored in this browser using IndexedDB.');
+    const locales = readdirSync(root).filter(name => name !== 'en');
+    expect(locales).toContain('de');
+    expect(locales).toHaveLength(20);
+    for (const locale of locales) {
+      expect(about(locale), locale).toContain('IndexedDB');
+      expect(about(locale), locale).not.toBe(english);
+    }
   });
 });

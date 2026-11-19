@@ -123,9 +123,9 @@ Port names follow the pattern `llm-<requestId>`.
 
 ### Protocol Versioning
 
-`bridge.js` declares a `TC_PROTOCOL_VERSION` (currently `1`) and a `TC_CAPABILITIES` array. In 1.1.4 it is `['llm_streaming', 'fetch_url', 'fetch_url_public_v1', 'clip_import', 'clip_import_ack_v2', 'proxy_fetch', 'proxy_fetch_abort', 'notification_ack']`. Once the background confirms that the app is approved, the bridge publishes the list on `document.documentElement.dataset.tcBridgeCaps` and sends it in `TC_EXTENSION_READY`, so the web app can detect which features the installed extension supports and degrade gracefully if the version is older. It removes the attribute while it rechecks approval.
+`bridge.js` declares a `TC_PROTOCOL_VERSION` (currently `1`) and a `TC_CAPABILITIES` array. In 1.1.4 and 1.1.5 it is `['llm_streaming', 'fetch_url', 'fetch_url_public_v1', 'clip_import', 'clip_import_ack_v2', 'proxy_fetch', 'proxy_fetch_abort', 'notification_ack']`. Once the background confirms that the app is approved, the bridge publishes the list on `document.documentElement.dataset.tcBridgeCaps` and sends it in `TC_EXTENSION_READY`, so the web app can detect which features the installed extension supports and degrade gracefully if the version is older. It removes the attribute while it rechecks approval.
 
-The app sends `TC_FETCH_URL` only to an extension whose capabilities include `fetch_url_public_v1` or `clip_import_ack_v2` (1.1.3 or later), which refuse private destinations and redirects. Besides the attribute, it checks at call time: it posts `TC_EXTENSION_PING` and fetches only if a `TC_EXTENSION_READY` reply arrives and every reply carries one of those capabilities. Otherwise it refuses with a message to install or update the extension.
+The app uses the extension only if its capabilities include `fetch_url_public_v1` or `clip_import_ack_v2` (1.1.3 or later); those versions answer only an approved app and refuse private destinations and redirects. Before each `TC_LLM_REQUEST`, `TC_FETCH_URL` and `TC_PROXY_FETCH` it checks at call time: it reads the attribute, posts `TC_EXTENSION_PING`, and sends the request only if a `TC_EXTENSION_READY` reply arrives and every reply carries one of those capabilities. Otherwise AI requests fail with a message to update the extension (or, when the bridge on the page stopped answering, to reload the page), web fetch is refused with a message to update it, chat titles and summaries are skipped, and integrations send their request from the page. Store 1.1.1 advertises neither capability, so it gets no request. The app also imports no `THREATCADDY_IMPORT_CLIPS` message without `protocol: 2`, which only extensions older than 1.1.3 send; it shows a notice to update instead.
 
 ### Duplicate Injection Guard
 
@@ -214,7 +214,8 @@ Static `content_scripts` in the manifest only cover `threatcaddy.com`. For self-
 | `storage` | Store captured clips and extension settings in `chrome.storage.local` |
 | `activeTab` | Access the current tab for content script injection and selection capture |
 | `scripting` | Inject `bridge.js`, `content.js`, and inline functions (`getSelectionAsMarkdown`, `getPageAsMarkdown`) into pages |
-| `tabs` | Query tab state, listen for tab updates (for dynamic bridge injection and clip delivery) |
+
+Since 1.1.5 the extension does not request `tabs`. Without it, the browser gives the extension a tab's address and title only where it has host permission, such as the app pages it is approved for, or through `activeTab` on the page where you use it; context-menu captures read the page's address and title that way.
 
 ### Required Host Permissions (`host_permissions`)
 

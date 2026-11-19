@@ -42,7 +42,7 @@
   "general.removeSample": "移除示例调查",
   "general.loadSample": "加载示例调查",
   "general.about": "关于",
-  "general.aboutDesc": "ThreatCaddy — 威胁调查工作台。笔记、IOC、时间线和图谱。所有数据使用 IndexedDB 本地存储在您的浏览器中。",
+  "general.aboutDesc": "ThreatCaddy — 威胁调查工作台。笔记、IOC、时间线和图谱。调查使用 IndexedDB 存储在此浏览器中。",
   "general.aboutLocalFirst": "本地优先。除非您连接团队服务器或使用 AI、集成或云备份，否则您的数据会保留在此浏览器中。设置 → AI 会显示 AI 请求的去向。",
   "general.version": "版本 {{version}}",
   "general.github": "GitHub",

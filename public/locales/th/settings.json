@@ -42,7 +42,7 @@
   "general.removeSample": "ลบการสืบสวนตัวอย่าง",
   "general.loadSample": "โหลดการสืบสวนตัวอย่าง",
   "general.about": "เกี่ยวกับ",
-  "general.aboutDesc": "ThreatCaddy — พื้นที่ทำงานการสืบสวนภัยคุกคาม บันทึก IOC ไทม์ไลน์ & กราฟ ข้อมูลทั้งหมดถูกจัดเก็บในเบราว์เซอร์โดยใช้ IndexedDB",
+  "general.aboutDesc": "ThreatCaddy — พื้นที่ทำงานการสืบสวนภัยคุกคาม บันทึก IOC ไทม์ไลน์ & กราฟ การสืบสวนถูกจัดเก็บในเบราว์เซอร์นี้โดยใช้ IndexedDB",
   "general.aboutLocalFirst": "Local-first ข้อมูลของคุณอยู่ในเบราว์เซอร์นี้ เว้นแต่คุณจะเชื่อมต่อเซิร์ฟเวอร์ทีม หรือใช้ AI การรวมระบบ หรือการสำรองข้อมูลคลาวด์ ดูได้ที่ การตั้งค่า → AI ว่าคำขอ AI ถูกส่งไปที่ใด",
   "general.version": "เวอร์ชัน {{version}}",
   "general.github": "GitHub",

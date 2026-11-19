@@ -42,7 +42,7 @@
   "general.removeSample": "Remove Sample Investigation",
   "general.loadSample": "Load Sample Investigation",
   "general.about": "About",
-  "general.aboutDesc": "ThreatCaddy — Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. All data stored locally in your browser using IndexedDB.",
+  "general.aboutDesc": "ThreatCaddy — Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. Investigations are stored in this browser using IndexedDB.",
   "general.aboutLocalFirst": "Local-first. Your data stays in this browser unless you connect a team server or use AI, integrations or cloud backup. Settings → AI shows where AI requests go.",
   "general.version": "Version {{version}}",
   "general.caddylabsTagline": "This is a CaddyLabs tool, made with love and tokens in Ireland.",

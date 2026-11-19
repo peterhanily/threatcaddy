@@ -6,23 +6,23 @@
 
 <p align="center">
   <strong>Local-first threat investigation workspace for security analysts.</strong><br/>
-  Notes, IOCs, timelines, graphs, CaddyAI, autonomous agents, and team collaboration — all in your browser.
+  Notes, IOCs, timelines, graphs, CaddyAI, autonomous agents, and optional team collaboration, with investigation data stored in your browser.
 </p>
 
 <p align="center">
   <a href="https://github.com/peterhanily/threatcaddy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/version-2.0.3-green.svg" alt="Version 2.0.3" />
+  <img src="https://img.shields.io/badge/version-2.0.4-green.svg" alt="Version 2.0.4" />
   <img src="https://img.shields.io/badge/TypeScript-6%20%2F%207-blue.svg?logo=typescript&logoColor=white" alt="TypeScript 6 (client) / 7 (server)" />
   <img src="https://img.shields.io/badge/React-19-61dafb.svg?logo=react&logoColor=white" alt="React 19" />
   <img src="https://img.shields.io/badge/Vite-7-646cff.svg?logo=vite&logoColor=white" alt="Vite 7" />
   <img src="https://img.shields.io/badge/PWA-ready-5a0fc8.svg?logo=pwa&logoColor=white" alt="PWA Ready" />
-  <a href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh"><img src="https://img.shields.io/badge/Chrome_Web_Store-Extension-4285F4.svg?logo=googlechrome&logoColor=white" alt="Chrome Web Store" /></a>
+  <a href="https://github.com/peterhanily/threatcaddy/releases/latest"><img src="https://img.shields.io/badge/extension-1.1.5-4285F4.svg?logo=github&logoColor=white" alt="Browser extension 1.1.5 (GitHub release)" /></a>
 </p>
 
 <p align="center">
   <a href="https://threatcaddy.com">threatcaddy.com</a> &nbsp;|&nbsp;
   <a href="https://threatcaddy.com/?demo=1">Live Demo</a> &nbsp;|&nbsp;
-  <a href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh">Chrome Extension</a>
+  <a href="extension/README.md#install--chrome">Browser Extension</a>
 </p>
 
 ---
@@ -32,17 +32,17 @@
 Most investigation tools lock your data in a cloud you don't control, cost per seat, and force you into rigid workflows. ThreatCaddy is different:
 
 - **Local-first** — Investigation data is stored in your browser's IndexedDB. No account is required for local use; optional sync, AI, enrichment and backup features can send data to configured services.
-- **Zero setup** — Open the URL and start working. No install, no server required.
+- **Zero setup** — Open the URL and start working. No install, and no team server needed for local use.
 - **Optional team server** — When you need collaboration, spin up a Docker container. Per-investigation sync lets you choose what stays local and what gets shared. Some details remain device-only; keep a [separate full backup](docs/backup-recovery.md#team-sync-and-backup-cover-different-data).
 - **Encryption at rest** — Optional AES-256-GCM encryption with PBKDF2 key derivation protects covered local content fields while locked; it does not encrypt the whole browser profile or provide end-to-end team sync.
-- **Works offline** — Download a standalone HTML file that runs from `file://`.
+- **Works offline** — Download a standalone HTML file that runs from `file://`. It runs only when opened from a file; served from a web server, it shows a notice instead.
 - **AI that works for you** — From a conversational assistant to a full autonomous multi-agent security team, CaddyAI and AgentCaddy meet you where you are.
 
 ## Quick Start
 
 **Try it now:** [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loads a sample investigation with a guided walkthrough.
 
-**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, `release-manifest.json` (with the source revision) and `SHA256SUMS`. Client and server 2.0.3 add AI prompt-injection hardening to the data-preservation, backup, session and evidence-import fixes of 2.0.2. The extension has its own version, currently 1.1.4; web fetch needs 1.1.3 or later. Read the [2.0.3 upgrade and channel notes](docs/releases/v2.0.3.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
+**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, `release-manifest.json` (with the source revision) and `SHA256SUMS`. Client and server 2.0.4 fix what a security review found in the hosted site, the standalone file, the browser extension and the team server image, on top of the AI prompt-injection hardening of 2.0.3. The extension has its own version, currently 1.1.5; ThreatCaddy uses only 1.1.3 or later. Read the [2.0.4 upgrade and channel notes](docs/releases/v2.0.4.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
 
 **Self-host the client:**
 
@@ -174,7 +174,7 @@ REST endpoints that expose skills through `GET /skills` and `POST /execute` (see
 - **Multi-timeline support** — Per-investigation timelines with dedicated views
 - **Timeline map** — Geolocated events on an interactive Leaflet map with clustered markers
 - **Smart data import** — Paste CSV, TSV, JSON, or NDJSON from SIEMs and EDR tools; auto-detect format, auto-map columns (Splunk, CrowdStrike, Elastic)
-- **Whiteboards** — Freeform drawing with Excalidraw integration
+- **Whiteboards** — Freeform drawing with Excalidraw integration. Web embeds are not loaded: each becomes a rectangle that keeps its link
 - **Activity log** — Track all actions across notes, tasks, timeline, and IOCs
 
 ### Organization
@@ -208,7 +208,7 @@ REST endpoints that expose skills through `GET /skills` and `POST /execute` (see
 
 ### Browser Extension
 
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or load the Firefox build manually — see [extension/README.md](extension/README.md). At the time of the 2.0.3 release the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch (it needs 1.1.3 or later). For web fetch, install 1.1.4 manually from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest) with the [manual install steps](extension/README.md#install--chrome) (in Firefox it is a temporary add-on until a signed build is available), approve ThreatCaddy in its popup, and keep only that extension enabled.
+Install version 1.1.5 from the [GitHub release](https://github.com/peterhanily/threatcaddy/releases/latest): download `threatcaddy-chrome.zip` or `threatcaddy-firefox.zip`, unzip it into a new, empty folder and load it with the [install steps](extension/README.md#install--chrome) (in Chrome, Developer mode and **Load unpacked**; in Firefox, a temporary add-on until a signed build is available; the 1.1.5 Firefox build was not run in Firefox before release). Then approve ThreatCaddy in the extension's popup and keep only that ThreatCaddy extension enabled. The Chrome Web Store version (1.1.1) is older: it has no app pairing, and its web fetch follows redirects and accepts private addresses. ThreatCaddy 2.0.4 uses none of its features: it sends it no AI, integration or web-fetch request and imports none of its clips.
 
 The extension connects to any ThreatCaddy instance: the hosted app, a self-hosted server, a local dev build, or a standalone `file://` HTML file.
 
@@ -251,7 +251,7 @@ To send clips to an offline `file://` build, enable **"Allow access to file URLs
 - **21 language catalogs** — Arabic, Chinese (Simplified), Dutch, English, Farsi, French, German, Hebrew, Hindi, Indonesian, Italian, Japanese, Korean, Polish, Portuguese (Brazil), Russian, Spanish, Thai, Turkish, Ukrainian, and Vietnamese, with RTL layout support for Arabic, Farsi and Hebrew. Automated checks cover keys and interpolation; they do not certify translation fluency or every assistive-technology combination.
 - **Guided tour** — Interactive onboarding walkthrough
 - **Browser navigation** — Back/forward with persistent state across refresh
-- **Standalone HTML** — Single-file offline version (`pnpm build:single`) with all assets and locale packs inlined. Language switcher included. Fully functional from `file://`
+- **Standalone HTML** — Single-file offline version (`pnpm build:single`) with all assets and locale packs inlined. Language switcher included. Fully functional from `file://`; served over http or https, it starts nothing and shows a notice, so deploy the hosted build (`dist/`) to a web server instead
 - **Keyboard shortcuts** — `Ctrl+N` (new note), `Ctrl+O` (open file), `Ctrl+K` (search), `Ctrl+S` (backup), `Ctrl+Shift+T` (new task), `Ctrl+E` (toggle editor mode), `` Ctrl+` `` (toggle preview), `Ctrl+1-4` (switch view), `Ctrl+/` (show shortcuts), `Ctrl+B/I` (bold/italic)
 - **PWA** — Installable progressive web app with offline support via service worker; registers as an OS-level file handler for `.md` and `.txt` files
 
@@ -312,7 +312,7 @@ pnpm build:single     # Standalone HTML → dist-single/index.html
 
 ## Browser Extension
 
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or see [extension/README.md](extension/README.md) for Firefox and manual install instructions. At the time of the 2.0.3 release the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch; for web fetch, install 1.1.4 manually from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest) with the [manual install steps](extension/README.md#install--chrome).
+Install version 1.1.5 from the [GitHub release](https://github.com/peterhanily/threatcaddy/releases/latest) with the [install steps](extension/README.md#install--chrome) for Chrome and Firefox. The Chrome Web Store version (1.1.1) is older, and ThreatCaddy 2.0.4 uses none of its features.
 
 To build from source:
 
@@ -339,7 +339,7 @@ Publishing a GHCR image does **not** roll out a running team server. Coordinate 
 
 ## Privacy
 
-Local use needs no account. Optional AI, enrichment, URL fetching, map tiles, catalogs, cloud backup and team sync involve network requests; the extension, custom endpoints or team server may act as intermediaries. Local encryption at rest is not end-to-end encryption for team sync. Hosted analytics are build-time opt-in, and hosting operators may retain request logs. Review the [Privacy Policy](https://threatcaddy.com/privacy.html) and your chosen service operators before processing sensitive data.
+Local use needs no account. Optional AI, enrichment, URL fetching, map tiles, cloud backup and team sync involve network requests; the extension, custom endpoints or team server may act as intermediaries. Once AI is set up, agents fetch a fixed list of reference sites, and run the built-in vendor lookups you enable, without per-call approval when the investigation allows it, which it does by default. Local encryption at rest is not end-to-end encryption for team sync. threatcaddy.com loads no analytics; self-hosted builds can opt in at build time, and hosting operators may retain request logs. Review the [Privacy Policy](https://threatcaddy.com/privacy.html) and your chosen service operators before processing sensitive data.
 
 ## License
 

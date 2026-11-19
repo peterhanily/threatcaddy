@@ -42,7 +42,7 @@
   "general.removeSample": "サンプル調査を削除",
   "general.loadSample": "サンプル調査を読み込む",
   "general.about": "概要",
-  "general.aboutDesc": "ThreatCaddy — 脅威調査ワークスペース。ノート、IOC、タイムライン & グラフ。すべてのデータはIndexedDBを使用してブラウザにローカル保存されます。",
+  "general.aboutDesc": "ThreatCaddy — 脅威調査ワークスペース。ノート、IOC、タイムライン & グラフ。調査はIndexedDBを使用してこのブラウザーに保存されます。",
   "general.aboutLocalFirst": "ローカルファースト。チームサーバーに接続するか、AI、インテグレーション、クラウドバックアップを使わない限り、データはこのブラウザーに留まります。AI リクエストの送信先は 設定 → AI で確認できます。",
   "general.version": "バージョン {{version}}",
   "general.github": "GitHub",

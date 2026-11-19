@@ -42,7 +42,7 @@
   "general.removeSample": "הסר חקירת דוגמה",
   "general.loadSample": "טען חקירת דוגמה",
   "general.about": "אודות",
-  "general.aboutDesc": "ThreatCaddy — סביבת עבודה לחקירת איומים. הערות, IOCs, ציירי זמן וגרפים. כל הנתונים מאוחסנים מקומית בדפדפן שלך באמצעות IndexedDB.",
+  "general.aboutDesc": "ThreatCaddy — סביבת עבודה לחקירת איומים. הערות, IOCs, ציירי זמן וגרפים. החקירות מאוחסנות בדפדפן הזה באמצעות IndexedDB.",
   "general.aboutLocalFirst": "מקומי קודם. הנתונים שלך נשארים בדפדפן הזה, אלא אם כן תחבר שרת צוות או תשתמש בבינה מלאכותית, באינטגרציות או בגיבוי ענן. בהגדרות ← בינה מלאכותית מוצג לאן נשלחות בקשות הבינה המלאכותית.",
   "general.version": "גרסה {{version}}",
   "general.github": "GitHub",

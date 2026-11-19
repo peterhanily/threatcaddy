@@ -42,7 +42,7 @@
   "general.removeSample": "Örnek Soruşturmayı Kaldır",
   "general.loadSample": "Örnek Soruşturmayı Yükle",
   "general.about": "Hakkında",
-  "general.aboutDesc": "ThreatCaddy — Tehdit Soruşturma Çalışma Alanı. Notlar, IOC'ler, Zaman Çizelgeleri ve Grafikler. Tüm veriler IndexedDB kullanarak tarayıcınızda yerel olarak saklanır.",
+  "general.aboutDesc": "ThreatCaddy — Tehdit Soruşturma Çalışma Alanı. Notlar, IOC'ler, Zaman Çizelgeleri ve Grafikler. Soruşturmalar IndexedDB kullanılarak bu tarayıcıda saklanır.",
   "general.aboutLocalFirst": "Yerel öncelikli. Bir ekip sunucusu bağlamadıkça ya da yapay zekâ, entegrasyonlar veya bulut yedeği kullanmadıkça verileriniz bu tarayıcıda kalır. Yapay zekâ isteklerinin nereye gittiğini Ayarlar → AI gösterir.",
   "general.version": "Sürüm {{version}}",
   "general.github": "GitHub",
