@@ -3,10 +3,9 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import type { ClipImportMessage } from '../lib/clipBuffer';
 import type { ClipImportResult } from '../lib/clip-protocol';
 
-const mocks = vi.hoisted(() => ({ subscribe: vi.fn(), importClips: vi.fn(), adapt: vi.fn() }));
+const mocks = vi.hoisted(() => ({ subscribe: vi.fn(), importClips: vi.fn() }));
 vi.mock('../lib/clipBuffer', () => ({ clipBuffer: { subscribe: mocks.subscribe } }));
 vi.mock('../lib/clip-import', () => ({ importClipBatch: mocks.importClips }));
-vi.mock('../lib/clip-protocol', () => ({ adaptLegacyClip: mocks.adapt }));
 import { useClipDelivery } from '../hooks/useClipDelivery';
 
 let consume: (message: ClipImportMessage) => Promise<void>;
@@ -22,7 +21,6 @@ beforeEach(() => {
   cleanup = vi.fn();
   mocks.subscribe.mockImplementation(handler => { consume = handler; return cleanup; });
   mocks.importClips.mockResolvedValue([committed]);
-  mocks.adapt.mockImplementation(async value => value);
   vi.spyOn(window, 'postMessage').mockImplementation(() => {});
 });
 afterEach(() => { vi.restoreAllMocks(); });
@@ -91,7 +89,6 @@ describe('app clip delivery lifecycle', () => {
     const options = callbacks();
     renderHook(() => useClipDelivery(options));
     await act(() => consume({ type, clips: [{ id: 'ordinary-fixture' }] }));
-    expect(mocks.adapt).not.toHaveBeenCalled();
     expect(mocks.importClips).not.toHaveBeenCalled();
     expect(options.onCommitted).not.toHaveBeenCalled();
     expect(options.onFailed).not.toHaveBeenCalled();

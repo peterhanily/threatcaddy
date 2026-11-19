@@ -1,7 +1,8 @@
 import { getActiveWorkspaceId, listWorkspaceProfiles } from './workspace-profiles';
 
-/** The extension retains v2 deliveries until a committed receipt. Only legacy
- * messages need a small in-memory bridge across initial unlock. */
+/** The extension retains v2 deliveries until a committed receipt. Legacy
+ * messages (extensions older than 1.1.3) are never imported: only the fact that
+ * one arrived is kept across unlock, so the app can say the extension is outdated. */
 export interface ClipImportMessage {
   type: 'THREATCADDY_IMPORT_CLIPS' | 'BROWSERNOTES_IMPORT_CLIPS';
   protocol?: number;
@@ -11,12 +12,8 @@ export interface ClipImportMessage {
   clips: unknown[];
 }
 type Consumer = (message: ClipImportMessage) => Promise<void>;
-const LEGACY_MAX_CLIPS = 100;
-const LEGACY_MAX_BYTES = 5 * 1024 * 1024;
 const MAX_BATCH = 20;
 const buffer: ClipImportMessage[] = [];
-let bufferedClips = 0;
-let bufferedBytes = 0;
 let listening = false;
 let consumer: Consumer | undefined;
 let busy = false;
@@ -36,7 +33,7 @@ function fail(message: ClipImportMessage, error: string) {
     }) });
 }
 
-function dispatch(message: ClipImportMessage, queued = false) {
+function dispatch(message: ClipImportMessage) {
   const current = consumer;
   if (!current || busy) {
     fail(message, current ? 'Another clip import is running. Retry when it finishes.' : 'Unlock or prepare this workspace, then retry the delivery.');
@@ -49,10 +46,6 @@ function dispatch(message: ClipImportMessage, queued = false) {
       else buffer.unshift(message);
       return;
     }
-    if (queued) {
-      bufferedClips -= message.clips.length;
-      bufferedBytes -= new TextEncoder().encode(JSON.stringify(message)).byteLength;
-    }
     return current(message);
   })
     .catch(() => fail(message, 'The import could not be completed. Your clips are retained; retry the delivery.'))
@@ -63,7 +56,7 @@ function drainLegacy() {
   if (!consumer || busy) return;
   const message = buffer.shift();
   if (!message) return;
-  dispatch(message, true);
+  dispatch(message);
 }
 
 function handler(event: MessageEvent) {
@@ -89,15 +82,8 @@ function handler(event: MessageEvent) {
     dispatch(message);
     return;
   }
-  let bytes: number;
-  try { bytes = new TextEncoder().encode(JSON.stringify(message)).byteLength; } catch { return; }
-  if (bufferedClips + message.clips.length > LEGACY_MAX_CLIPS || bufferedBytes + bytes > LEGACY_MAX_BYTES) {
-    console.warn('Legacy clip buffer is full. Keep the original extension clips and resend after unlocking.');
-    return;
-  }
-  buffer.push(message);
-  bufferedClips += message.clips.length;
-  bufferedBytes += bytes;
+  // However large, a legacy delivery leaves only a marker; one pending marker is enough.
+  if (!buffer.length) buffer.push({ type: message.type, clips: [] });
   drainLegacy();
 }
 

@@ -59,6 +59,19 @@ describe('bounded clip delivery channel', () => {
     expect(window.postMessage).not.toHaveBeenCalled();
   });
 
+  it('signals every legacy delivery, however large, without keeping its clips', async () => {
+    // Store 1.1.1 sends all unsent clips in one message; the app imports none of them.
+    deliver(legacy(101));
+    deliver({ ...legacy(1), clips: [{ id: 'large', content: 'x'.repeat(6 * 1024 * 1024) }] });
+    const consume = vi.fn(async () => {});
+    unsubscribe = channel.subscribe(consume);
+    await vi.waitFor(() => expect(consume).toHaveBeenCalledTimes(1));
+    expect(consume).toHaveBeenCalledWith(expect.objectContaining({ type: 'THREATCADDY_IMPORT_CLIPS', clips: [] }));
+    deliver(legacy(150));
+    await vi.waitFor(() => expect(consume).toHaveBeenCalledTimes(2));
+    expect(window.postMessage).not.toHaveBeenCalled();
+  });
+
   it('rejects another v2 batch while a commit is pending and recovers on error', async () => {
     let reject: (error: Error) => void = () => {};
     const pending = new Promise<void>((_, rejectPromise) => { reject = rejectPromise; });
@@ -87,17 +100,6 @@ describe('bounded clip delivery channel', () => {
     expect(window.postMessage).toHaveBeenCalledTimes(1);
   });
 
-  it('bounds locked legacy capture without discarding previously queued messages', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    deliver(legacy(100));
-    deliver(legacy());
-    const consume = vi.fn(async () => {});
-    unsubscribe = channel.subscribe(consume);
-    await vi.waitFor(() => expect(consume).toHaveBeenCalledTimes(1));
-    expect(consume).toHaveBeenCalledWith(legacy(100));
-    expect(console.warn).toHaveBeenCalledTimes(1);
-  });
-
   it('does not let stale cleanup remove a newer subscriber', () => {
     const oldCleanup = channel.subscribe(async () => {});
     unsubscribe = channel.subscribe(async () => {});
@@ -106,14 +108,14 @@ describe('bounded clip delivery channel', () => {
     expect(window.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({ ready: true }), window.location.origin);
   });
 
-  it('retains legacy work when strict-mode mounting changes the owner before dispatch', async () => {
+  it('keeps the legacy notice when strict-mode mounting changes the owner before dispatch', async () => {
     deliver(legacy());
     const initial = vi.fn(async () => {});
     const cleanup = channel.subscribe(initial);
     cleanup();
     const current = vi.fn(async () => {});
     unsubscribe = channel.subscribe(current);
-    await vi.waitFor(() => expect(current).toHaveBeenCalledWith(legacy()));
+    await vi.waitFor(() => expect(current).toHaveBeenCalledWith({ type: 'THREATCADDY_IMPORT_CLIPS', clips: [] }));
     expect(initial).not.toHaveBeenCalled();
     expect(window.postMessage).not.toHaveBeenCalled();
   });
