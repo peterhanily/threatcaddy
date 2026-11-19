@@ -42,7 +42,7 @@
   "general.removeSample": "Remover investigação de exemplo",
   "general.loadSample": "Carregar investigação de exemplo",
   "general.about": "Sobre",
-  "general.aboutDesc": "ThreatCaddy — Espaço de trabalho de investigação de ameaças. Notas, IOCs, Cronologias e Grafos. Todos os dados são armazenados localmente no seu navegador usando IndexedDB.",
+  "general.aboutDesc": "ThreatCaddy — Espaço de trabalho de investigação de ameaças. Notas, IOCs, Cronologias e Grafos. As investigações são armazenadas neste navegador usando IndexedDB.",
   "general.aboutLocalFirst": "Local-first. Seus dados ficam neste navegador, a menos que você conecte um servidor de equipe ou use IA, integrações ou backup na nuvem. Configurações → IA mostra para onde vão as solicitações de IA.",
   "general.version": "Versão {{version}}",
   "general.github": "GitHub",

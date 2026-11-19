@@ -42,7 +42,7 @@
   "general.removeSample": "Supprimer l'enquête exemple",
   "general.loadSample": "Charger l'enquête exemple",
   "general.about": "À propos",
-  "general.aboutDesc": "ThreatCaddy — Espace de travail d'investigation des menaces. Notes, IOCs, chronologies et graphes. Toutes les données sont stockées localement dans votre navigateur via IndexedDB.",
+  "general.aboutDesc": "ThreatCaddy — Espace de travail d'investigation des menaces. Notes, IOCs, chronologies et graphes. Les enquêtes sont stockées dans ce navigateur via IndexedDB.",
   "general.aboutLocalFirst": "Local-first. Vos données restent dans ce navigateur, sauf si vous connectez un serveur d'équipe ou utilisez l'IA, des intégrations ou la sauvegarde cloud. Paramètres → IA indique où vont les requêtes d'IA.",
   "general.version": "Version {{version}}",
   "general.github": "GitHub",

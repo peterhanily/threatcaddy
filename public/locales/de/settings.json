@@ -42,7 +42,7 @@
   "general.removeSample": "Beispieluntersuchung entfernen",
   "general.loadSample": "Beispieluntersuchung laden",
   "general.about": "Über",
-  "general.aboutDesc": "ThreatCaddy — Arbeitsbereich für Bedrohungsuntersuchungen. Notizen, IOCs, Zeitleisten und Graphen. Alle Daten werden lokal in Ihrem Browser mit IndexedDB gespeichert.",
+  "general.aboutDesc": "ThreatCaddy — Arbeitsbereich für Bedrohungsuntersuchungen. Notizen, IOCs, Zeitleisten und Graphen. Untersuchungen werden in diesem Browser mit IndexedDB gespeichert.",
   "general.aboutLocalFirst": "Local-first. Ihre Daten bleiben in diesem Browser, es sei denn, Sie verbinden einen Team-Server oder nutzen KI, Integrationen oder Cloud-Backup. Unter Einstellungen → KI sehen Sie, wohin KI-Anfragen gehen.",
   "general.version": "Programmversion {{version}}",
   "general.github": "GitHub",

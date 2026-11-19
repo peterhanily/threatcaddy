@@ -42,7 +42,7 @@
   "general.removeSample": "Xóa điều tra mẫu",
   "general.loadSample": "Tải điều tra mẫu",
   "general.about": "Giới thiệu",
-  "general.aboutDesc": "ThreatCaddy — Không gian làm việc điều tra mối đe dọa. Ghi chú, IOC, Timeline & Đồ thị. Tất cả dữ liệu được lưu cục bộ trong trình duyệt bằng IndexedDB.",
+  "general.aboutDesc": "ThreatCaddy — Không gian làm việc điều tra mối đe dọa. Ghi chú, IOC, Timeline & Đồ thị. Các cuộc điều tra được lưu trong trình duyệt này bằng IndexedDB.",
   "general.aboutLocalFirst": "Local-first. Dữ liệu của bạn ở lại trong trình duyệt này trừ khi bạn kết nối máy chủ nhóm hoặc dùng AI, tích hợp hay sao lưu đám mây. Cài đặt → AI cho biết các yêu cầu AI được gửi đến đâu.",
   "general.version": "Phiên bản {{version}}",
   "general.github": "GitHub",

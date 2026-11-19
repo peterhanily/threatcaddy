@@ -42,7 +42,7 @@
   "general.removeSample": "Voorbeeldonderzoek verwijderen",
   "general.loadSample": "Voorbeeldonderzoek laden",
   "general.about": "Over",
-  "general.aboutDesc": "ThreatCaddy — werkruimte voor dreigingsonderzoek. Notities, IOC's, tijdlijn en grafieken. Alle gegevens worden lokaal in de browser opgeslagen in IndexedDB.",
+  "general.aboutDesc": "ThreatCaddy — werkruimte voor dreigingsonderzoek. Notities, IOC's, tijdlijn en grafieken. Onderzoeken worden in deze browser opgeslagen in IndexedDB.",
   "general.aboutLocalFirst": "Local-first. Uw gegevens blijven in deze browser, tenzij u een teamserver koppelt of AI, integraties of cloud-back-up gebruikt. Instellingen → AI toont waar AI-verzoeken naartoe gaan.",
   "general.version": "Versie {{version}}",
   "general.github": "GitHub",
