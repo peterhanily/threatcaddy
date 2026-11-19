@@ -129,6 +129,23 @@ describe('agent hook lifecycle ownership', () => {
     expect(mocks.run.mock.calls[0][2]).toBe(false);
   });
 
+  // With the GitHub build and store 1.1.1 both installed, the GitHub build owns the page and publishes its
+  // capabilities, and 1.1.1's second injection announces itself once more, possibly last.
+  it('keeps the paired bridge when store 1.1.1 announces itself after it', async () => {
+    const first = folder(); mocks.folders.set(first.id, first);
+    document.documentElement.dataset.tcBridgeCaps = PAIRED_BRIDGE_CAPS.join(',');
+    try {
+      renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+      act(() => window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'TC_EXTENSION_READY', capabilities: PAIRED_BRIDGE_CAPS } })));
+      act(() => window.dispatchEvent(new MessageEvent('message', { source: window,
+        data: { type: 'TC_EXTENSION_READY', capabilities: ['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch'] } })));
+      await act(async () => vi.advanceTimersByTimeAsync(3000));
+      expect(mocks.run.mock.calls[0][2]).toBe(true);
+    } finally {
+      delete document.documentElement.dataset.tcBridgeCaps;
+    }
+  });
+
   it('does not auto-start the legacy agent while its own proposal is pending', async () => {
     const first = folder(); mocks.folders.set(first.id, first); mocks.pending.mockResolvedValue([{ toolName: 'fetch_url' }]);
     const { result } = renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));

@@ -160,6 +160,7 @@
   "standaloneWarning.message": "स्टैंडअलोन संस्करण file:// पर बिना एन्क्रिप्शन के चल रहा है। अन्य स्थानीय HTML फ़ाइलें आपके डेटा तक पहुँच सकती हैं। स्टैंडअलोन मोड में Content Security Policy स्क्रिप्ट या नेटवर्क कनेक्शन को प्रतिबंधित नहीं करती।",
   "standaloneWarning.enableEncryption": "सेटिंग में एन्क्रिप्शन सक्षम करें",
   "extension.updateRequired": "ThreatCaddy को अपने ब्राउज़र एक्सटेंशन का 1.1.3 या बाद का संस्करण चाहिए, जिसमें यह ऐप स्वीकृत हो। Chrome वेब स्टोर अभी भी पुराना संस्करण देता है, इसलिए GitHub पर ThreatCaddy रिलीज़ से नवीनतम संस्करण इंस्टॉल करें। केवल सबसे नया ThreatCaddy एक्सटेंशन इंस्टॉल रहने दें, फिर पेज फिर से लोड करें।",
+  "extension.reloadRequired": "ThreatCaddy ब्राउज़र एक्सटेंशन ने इस पेज पर जवाब देना बंद कर दिया है, जैसा कि उसके अपडेट होने या फिर से लोड होने के बाद होता है। पेज फिर से लोड करें।",
   "extension.menuLink": "ब्राउज़र एक्सटेंशन (GitHub)",
   "extension.githubRelease": "GitHub रिलीज़",
   "extension.installSteps": "इंस्टॉल करने के चरण",

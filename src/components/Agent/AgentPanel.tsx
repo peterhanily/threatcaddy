@@ -6,7 +6,7 @@ import {
 import type { AgentAction, AgentPolicy, AgentProfile, AgentDeployment, Folder, AgentStatus, Settings, Task } from '../../types';
 import { DEFAULT_AGENT_POLICY } from '../../types';
 import { cn, formatDate, postMessageOrigin } from '../../lib/utils';
-import { isPairedBridgeCaps } from '../../lib/extension-bridge';
+import { announcedBridge, EXTENSION_INSTALL_STEPS_URL, EXTENSION_RELEASES_URL } from '../../lib/extension-bridge';
 import { db } from '../../db';
 import { executeApprovedAction, rejectAction, bulkApproveActions, previewBulkApprove } from '../../lib/agent-action-approval';
 import { acknowledgeReconciliation } from '../../lib/agent-handoff';
@@ -138,11 +138,14 @@ function InvestigationAgentPanel({
 
   // Detect extension availability
   const [extensionAvailable, setExtensionAvailable] = useState(false);
+  const [extensionOutdated, setExtensionOutdated] = useState(false);
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.source === window && event.data?.type === 'TC_EXTENSION_READY') {
         // Store 1.1.1 announces itself too, but the app sends it nothing.
-        setExtensionAvailable(isPairedBridgeCaps(event.data.capabilities));
+        const announced = announcedBridge(event.data.capabilities);
+        setExtensionAvailable(announced === 'paired');
+        setExtensionOutdated(announced === 'outdated');
       }
     };
     window.addEventListener('message', handler);
@@ -398,10 +401,17 @@ function InvestigationAgentPanel({
                   <Puzzle size={14} className="text-accent-blue" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-text-primary">{t('panel.installExtension')}</p>
+                  <p className="text-xs font-medium text-text-primary">{t(extensionOutdated ? 'panel.updateExtension' : 'panel.installExtension')}</p>
                   <p className="text-[11px] text-text-muted mt-0.5">
-                    {t('panel.installExtensionDesc')}
+                    {extensionOutdated ? t('extension.updateRequired', { ns: 'common' }) : t('panel.installExtensionDesc')}
                   </p>
+                  {extensionOutdated && (
+                    <p className="text-[11px] mt-1">
+                      <a href={EXTENSION_RELEASES_URL} target="_blank" rel="noopener noreferrer" className="text-accent-blue hover:underline">{t('extension.githubRelease', { ns: 'common' })}</a>
+                      {' · '}
+                      <a href={EXTENSION_INSTALL_STEPS_URL} target="_blank" rel="noopener noreferrer" className="text-accent-blue hover:underline">{t('extension.installSteps', { ns: 'common' })}</a>
+                    </p>
+                  )}
                 </div>
               </div>
             )}

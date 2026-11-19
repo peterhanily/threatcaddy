@@ -6,6 +6,7 @@
   "panel.openAISettings": "Abrir configuración de IA",
   "panel.installExtension": "Instalar la extensión de navegador",
   "panel.installExtensionDesc": "AgentCaddy requiere la extensión de navegador ThreatCaddy para hacer proxy de solicitudes API, o un servidor de equipo conectado.",
+  "panel.updateExtension": "Actualizar la extensión de navegador",
   "panel.agentSettings": "Configuración de agentes",
   "panel.toggleAgentSettings": "Alternar configuración de agentes",
   "panel.agentRunning": "Agente en ejecución",

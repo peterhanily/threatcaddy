@@ -161,6 +161,7 @@
   "standaloneWarning.message": "تعمل النسخة المستقلة عبر file://\u200e دون تشفير. يمكن لملفات HTML المحلية الأخرى الوصول إلى بياناتك. في الوضع المستقل، لا تقيّد سياسة أمان المحتوى (Content Security Policy) النصوص البرمجية ولا اتصالات الشبكة.",
   "standaloneWarning.enableEncryption": "تفعيل التشفير في الإعدادات",
   "extension.updateRequired": "يحتاج ThreatCaddy إلى إضافة المتصفح الخاصة به بالإصدار 1.1.3 أو أحدث، مع الموافقة على هذا التطبيق فيها. لا يزال متجر Chrome الإلكتروني يقدّم إصدارًا أقدم، لذا ثبّت أحدث إصدار من إصدارات ThreatCaddy على GitHub. احتفظ بأحدث إضافة ThreatCaddy مثبّتة فقط، ثم أعد تحميل الصفحة.",
+  "extension.reloadRequired": "توقفت إضافة متصفح ThreatCaddy عن الاستجابة لهذه الصفحة، كما يحدث بعد تحديثها أو إعادة تحميلها. أعد تحميل الصفحة.",
   "extension.menuLink": "إضافة المتصفح (GitHub)",
   "extension.githubRelease": "إصدار GitHub",
   "extension.installSteps": "خطوات التثبيت",

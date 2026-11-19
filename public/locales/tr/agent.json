@@ -6,6 +6,7 @@
   "panel.openAISettings": "AI Ayarlarını Aç",
   "panel.installExtension": "Tarayıcı uzantısını yükle",
   "panel.installExtensionDesc": "AgentCaddy, API isteklerini yönlendirmek için ThreatCaddy tarayıcı uzantısı veya bağlı bir ekip sunucusu gerektirir.",
+  "panel.updateExtension": "Tarayıcı uzantısını güncelle",
   "panel.agentSettings": "Ajan ayarları",
   "panel.toggleAgentSettings": "Ajan ayarlarını aç/kapat",
   "panel.agentRunning": "Ajan çalışıyor",

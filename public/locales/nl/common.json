@@ -160,6 +160,7 @@
   "standaloneWarning.message": "De zelfstandige versie draait via file:// zonder versleuteling. Andere lokale HTML-bestanden kunnen toegang krijgen tot je gegevens. In de zelfstandige modus beperkt de Content Security Policy geen scripts of netwerkverbindingen.",
   "standaloneWarning.enableEncryption": "Versleuteling inschakelen in Instellingen",
   "extension.updateRequired": "ThreatCaddy vereist zijn browserextensie 1.1.3 of later, goedgekeurd voor deze app. De Chrome Web Store biedt nog een oudere versie aan, dus installeer de nieuwste versie via de ThreatCaddy-releases op GitHub. Houd alleen de nieuwste ThreatCaddy-extensie geïnstalleerd en laad daarna de pagina opnieuw.",
+  "extension.reloadRequired": "De ThreatCaddy-browserextensie reageert niet meer op deze pagina, zoals na het bijwerken of opnieuw laden van de extensie. Laad de pagina opnieuw.",
   "extension.menuLink": "Browserextensie (GitHub)",
   "extension.githubRelease": "GitHub-release",
   "extension.installSteps": "Installatiestappen",

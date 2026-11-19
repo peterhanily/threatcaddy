@@ -16,6 +16,7 @@ import { answerBridgeCheck, PAIRED_BRIDGE_CAPS, publishBridgeCaps } from './help
 import i18n from '../i18n';
 import enSettings from '../../public/locales/en/settings.json';
 import enChat from '../../public/locales/en/chat.json';
+import enCommon from '../../public/locales/en/common.json';
 import deChat from '../../public/locales/de/chat.json';
 
 const state = vi.hoisted(() => ({
@@ -339,5 +340,42 @@ describe('chat routes where Settings says', () => {
     await act(async () => { await state.input.onSend('What happened?'); });
     await waitFor(() => expect(helper).toHaveBeenCalledOnce());
     expect((vi.mocked(helper).mock.calls[0] as unknown[])[name === 'title' ? 4 : 3]).toBe('synthetic-local-key');
+  });
+});
+
+// Store 1.1.1 publishes its capabilities on every page and answers pings with them. Its users already have an
+// extension installed and turned on, so chat says which version it needs and where to get it.
+describe('chat with only store 1.1.1, which has no app pairing', () => {
+  const STORE_1_1_1_CAPS = ['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch'];
+  beforeEach(() => {
+    vi.mocked(window.postMessage).mockImplementation(((message: { type?: string }) => {
+      if (answerBridgeCheck(message, STORE_1_1_1_CAPS)) return;
+      if (message?.type === 'TC_LLM_REQUEST') extensionRequests.push(message);
+    }) as typeof window.postMessage);
+  });
+  const announceStore = () => act(() => {
+    publishBridgeCaps(STORE_1_1_1_CAPS);
+    window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'TC_EXTENSION_READY', protocolVersion: 1, capabilities: STORE_1_1_1_CAPS } }));
+  });
+
+  it('with no chats, the empty view names the version and links the GitHub release', () => {
+    render(<ChatView threads={[]} settings={{ ...DEFAULT_SETTINGS, llmAnthropicApiKey: 'synthetic-key' }} onCreateThread={vi.fn()}
+      onUpdateThread={vi.fn()} onAddMessage={onAddMessage} onTrashThread={vi.fn()} onOpenSettings={vi.fn()} />);
+    expect(screen.getByText(enChat.view.extensionRequired)).toBeInTheDocument();
+    announceStore();
+    expect(screen.queryByText(enChat.view.extensionRequired)).not.toBeInTheDocument();
+    expect(screen.getByText(enCommon['extension.updateRequired'])).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: enCommon['extension.githubRelease'] })).toHaveAttribute('href', 'https://github.com/peterhanily/threatcaddy/releases/latest');
+    expect(screen.getByRole('link', { name: enCommon['extension.installSteps'] })).toHaveAttribute('href', 'https://github.com/peterhanily/threatcaddy/blob/main/extension/README.md#install--chrome');
+  });
+
+  it.each(['auto', 'extension'] as const)('%s routing: a prompt says what to install and goes nowhere', async mode => {
+    renderChat({ llmAnthropicApiKey: 'synthetic-key', llmRoutingMode: mode });
+    announceStore();
+    await act(async () => { await state.input.onSend('What happened?'); });
+    expect(screen.getByRole('alert')).toHaveTextContent(enCommon['extension.updateRequired']);
+    expect(extensionRequests).toEqual([]);
+    expect(sendViaServer).not.toHaveBeenCalled();
+    expect(onAddMessage).not.toHaveBeenCalled();
   });
 });

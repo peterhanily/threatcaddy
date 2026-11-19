@@ -95,7 +95,7 @@ export function ChatView({
   const { selectedChatThreadId: selectedThreadId, setSelectedChatThreadId: onSelectThread } = useNavigation();
   const { selectedFolderId, selectedFolder } = useInvestigation();
   const { maxLevel: screenshareMaxLevel } = useScreenshare();
-  const { extensionAvailable, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
+  const { extensionAvailable, extensionOutdated, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
   const { t } = useTranslation('chat');
   const { addToast } = useToast();
   // Re-render on sign-in and sign-out. The route reads the stored session, as Settings → AI does.
@@ -1361,10 +1361,20 @@ export function ChatView({
                 ? t('view.selectThread')
                 : t('view.aiAssistant')}
             </p>
-            {!canChat && (
+            {!canChat && !extensionOutdated && (
               <p className="text-xs mt-3 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
                 {t('view.extensionRequired')}
               </p>
+            )}
+            {!canChat && extensionOutdated && (
+              <div className="text-xs mt-3 mx-4 max-w-md px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 space-y-1">
+                <p>{t('extension.updateRequired', { ns: 'common' })}</p>
+                <p>
+                  <a href={EXTENSION_RELEASES_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">{t('extension.githubRelease', { ns: 'common' })}</a>
+                  {' · '}
+                  <a href={EXTENSION_INSTALL_STEPS_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">{t('extension.installSteps', { ns: 'common' })}</a>
+                </p>
+              </div>
             )}
           </div>
         )}

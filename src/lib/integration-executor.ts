@@ -3,7 +3,7 @@ import { resolveVariables, resolveDataValue, evaluateCondition, resolveDeep } fr
 import { compileIntegrationPlan, INTEGRATION_LIMITS } from './integration-plan';
 import type { IntegrationPlan } from './integration-plan';
 import { postMessageOrigin } from './utils';
-import { extensionUpdateRequired, hasPairedBridge } from './extension-bridge';
+import { checkPairedBridge, extensionRefusal, type BridgeCheck } from './extension-bridge';
 import { resolveIntegrationConfig, validateIntegrationConfig } from './integration-config';
 import { cancellableRequest } from './request-cancellation';
 import { integrationDelay } from './integration-cancellation';
@@ -207,15 +207,17 @@ export function syncProxyAllowedDomains(templates: IntegrationTemplate[]): void 
 }
 
 /** Only a paired 1.1.3+ bridge relays requests. Store 1.1.1 advertises proxy_fetch too, but it gets
- *  nothing ('refused'): the page fetches as it does without an extension. */
-async function bridgeProxyTransport(): Promise<'bridge' | 'refused' | 'none'> {
+ *  nothing ('unpaired'), nor does a bridge that stopped answering ('silent'): the page fetches as it does
+ *  without an extension. */
+async function bridgeProxyTransport(): Promise<'bridge' | 'none' | Exclude<BridgeCheck, 'paired'>> {
   try {
     const caps = document.documentElement.dataset.tcBridgeCaps || '';
     if (!caps.split(',').includes('proxy_fetch')) return 'none';
   } catch {
     return 'none';
   }
-  return await hasPairedBridge() ? 'bridge' : 'refused';
+  const check = await checkPairedBridge();
+  return check === 'paired' ? 'bridge' : check;
 }
 
 export class IntegrationExecutor {
@@ -660,8 +662,8 @@ export class IntegrationExecutor {
         try {
           response = await fetch(url.toString(), fetchOptions);
         } catch (error) {
-          // A request the old extension was not given: say how to get one the app uses.
-          if (transport === 'refused' && error instanceof TypeError) throw new Error(`${error.message}. ${await extensionUpdateRequired()}`);
+          // A request the extension was not given: say how to get one the app uses, or to reload the page.
+          if (transport !== 'none' && error instanceof TypeError) throw new Error(`${error.message}. ${await extensionRefusal(transport)}`);
           throw error;
         }
         responseStatus = response.status;

@@ -6,6 +6,7 @@ import { seedRows } from './client-lifecycle-fixtures';
 const catalog = (namespace: string) => JSON.parse(readFileSync(new URL(`../public/locales/en/${namespace}.json`, import.meta.url), 'utf8'));
 const chat = catalog('chat');
 const common = catalog('common');
+const agent = catalog('agent');
 const RELEASES = 'https://github.com/peterhanily/threatcaddy/releases/latest';
 const STEPS = 'https://github.com/peterhanily/threatcaddy/blob/main/extension/README.md#install--chrome';
 
@@ -17,7 +18,7 @@ const CAPS_1_1_4 = ['llm_streaming', 'fetch_url', 'fetch_url_public_v1', 'clip_i
 
 /** One installed bridge, as bridge.js behaves: it publishes its capabilities, answers pings from its
  *  listener, and records every request the page gives it. */
-async function openChatWithBridge(page: Page, baseURL: string | undefined, caps: string[], onboarded = true) {
+async function openChatWithBridge(page: Page, baseURL: string | undefined, caps: string[], onboarded = true, withThread = true) {
   const origin = new URL(String(baseURL)).origin;
   await page.context().route(/^https?:\/\//, route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
   await page.context().routeWebSocket(/.*/, socket => socket.close());
@@ -36,13 +37,13 @@ async function openChatWithBridge(page: Page, baseURL: string | undefined, caps:
   await goToApp(page);
   const now = Date.now();
   await seedRows(page, { folders: [{ id: 'pairing-case', name: 'Fictional pairing case', order: 0, status: 'active', tags: [], createdAt: now, updatedAt: now }],
-    chatThreads: [{ id: 'pairing-thread', title: 'Fictional pairing thread', messages: [], provider: 'anthropic', model: 'claude-sonnet-4-6',
-      folderId: 'pairing-case', mode: 'act', tags: [], createdAt: now, updatedAt: now }] });
-  await page.evaluate(() => {
+    chatThreads: withThread ? [{ id: 'pairing-thread', title: 'Fictional pairing thread', messages: [], provider: 'anthropic', model: 'claude-sonnet-4-6',
+      folderId: 'pairing-case', mode: 'act', tags: [], createdAt: now, updatedAt: now }] : [] });
+  await page.evaluate(withThread => {
     localStorage.setItem('threatcaddy-settings', JSON.stringify({ language: 'en', tiAutoExtractEnabled: false, llmAnthropicApiKey: 'synthetic-not-a-key' }));
     sessionStorage.setItem('threatcaddy-nav-state', JSON.stringify({ view: 'chat', selectedFolderId: 'pairing-case' }));
-    sessionStorage.setItem('tc-chat-thread', 'pairing-thread');
-  });
+    if (withThread) sessionStorage.setItem('tc-chat-thread', 'pairing-thread');
+  }, withThread);
   await page.reload();
   await expect(page.locator('[data-tour="header"]')).toBeVisible({ timeout: 15_000 });
   return page.getByRole('textbox', { name: 'Message to CaddyAI', exact: true });
@@ -84,3 +85,27 @@ test('a paired 1.1.4 bridge gets the chat request', async ({ page, baseURL }) =>
   await input.press('Enter');
   await expect.poll(() => stubRequests(page)).toEqual(['TC_LLM_REQUEST']);
 });
+
+// Store 1.1.1's users already have an extension installed and turned on: where chat or AgentCaddy cannot run,
+// the app says which version it needs and where to get it, not only that an extension is required.
+test('with store 1.1.1, the chat start view and AgentCaddy name the version and link the release', async ({ page, baseURL }) => {
+  await openChatWithBridge(page, baseURL, STORE_1_1_1_CAPS, true, false);
+  const start = page.getByText(common['extension.updateRequired'], { exact: true }).locator('..');
+  await expect(start).toBeVisible();
+  await expect(page.getByText(chat.view.extensionRequired, { exact: true })).toHaveCount(0);
+  await expect(start.getByRole('link', { name: common['extension.githubRelease'], exact: true })).toHaveAttribute('href', RELEASES);
+  await expect(start.getByRole('link', { name: common['extension.installSteps'], exact: true })).toHaveAttribute('href', STEPS);
+  await page.screenshot({ path: test.info().outputPath('chat-start-store-1.1.1.png') });
+
+  await page.evaluate(() => sessionStorage.setItem('threatcaddy-nav-state', JSON.stringify({ view: 'agent', selectedFolderId: 'pairing-case' })));
+  await page.reload();
+  const banner = page.getByText(agent['panel.updateExtension'], { exact: true }).locator('..');
+  await expect(banner).toBeVisible({ timeout: 15_000 });
+  await expect(banner).toContainText(common['extension.updateRequired']);
+  await expect(banner.getByRole('link', { name: common['extension.githubRelease'], exact: true })).toHaveAttribute('href', RELEASES);
+  await expect(banner.getByRole('link', { name: common['extension.installSteps'], exact: true })).toHaveAttribute('href', STEPS);
+  await expect(page.getByText(agent['panel.installExtension'], { exact: true })).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath('agent-store-1.1.1.png') });
+  expect(await stubRequests(page)).toEqual([]);
+});
+

@@ -160,6 +160,7 @@
   "standaloneWarning.message": "Bağımsız sürüm şifreleme olmadan file:// üzerinden çalışıyor. Diğer yerel HTML dosyaları verilerinize erişebilir. Bağımsız modda Content Security Policy betikleri veya ağ bağlantılarını kısıtlamaz.",
   "standaloneWarning.enableEncryption": "Şifrelemeyi Ayarlar bölümünde etkinleştir",
   "extension.updateRequired": "ThreatCaddy, bu uygulama için onaylanmış tarayıcı uzantısının 1.1.3 veya sonraki bir sürümünü gerektirir. Chrome Web Mağazası hâlâ daha eski bir sürüm sunuyor, bu nedenle en son sürümü GitHub'daki ThreatCaddy sürümlerinden yükleyin. Yalnızca en yeni ThreatCaddy uzantısını yüklü tutun, ardından sayfayı yeniden yükleyin.",
+  "extension.reloadRequired": "ThreatCaddy tarayıcı uzantısı, güncellendikten veya yeniden yüklendikten sonra olduğu gibi bu sayfaya yanıt vermeyi bıraktı. Sayfayı yeniden yükleyin.",
   "extension.menuLink": "Tarayıcı uzantısı (GitHub)",
   "extension.githubRelease": "GitHub sürümü",
   "extension.installSteps": "Kurulum adımları",

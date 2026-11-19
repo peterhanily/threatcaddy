@@ -160,6 +160,7 @@
   "standaloneWarning.message": "スタンドアロン版を暗号化なしで file:// から実行しています。ほかのローカル HTML ファイルがデータにアクセスできます。スタンドアロンモードでは、Content Security Policy はスクリプトやネットワーク接続を制限しません。",
   "standaloneWarning.enableEncryption": "設定で暗号化を有効にする",
   "extension.updateRequired": "ThreatCaddy には、このアプリを承認済みのブラウザー拡張機能 1.1.3 以降が必要です。Chrome ウェブストアではまだ古いバージョンが提供されているため、GitHub の ThreatCaddy リリースから最新版をインストールしてください。インストールする ThreatCaddy 拡張機能は最新のものだけにして、ページを再読み込みしてください。",
+  "extension.reloadRequired": "ThreatCaddy ブラウザー拡張機能がこのページに応答しなくなりました。拡張機能を更新または再読み込みした後にこうなります。ページを再読み込みしてください。",
   "extension.menuLink": "ブラウザー拡張機能 (GitHub)",
   "extension.githubRelease": "GitHub リリース",
   "extension.installSteps": "インストール手順",

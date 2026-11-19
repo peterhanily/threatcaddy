@@ -6,6 +6,7 @@
   "panel.openAISettings": "KI-Einstellungen öffnen",
   "panel.installExtension": "Browser-Erweiterung installieren",
   "panel.installExtensionDesc": "AgentCaddy benötigt die ThreatCaddy-Browser-Erweiterung, um API-Anfragen zu proxyen, oder einen verbundenen Team-Server.",
+  "panel.updateExtension": "Browser-Erweiterung aktualisieren",
   "panel.agentSettings": "Agenteneinstellungen",
   "panel.toggleAgentSettings": "Agenteneinstellungen umschalten",
   "panel.agentRunning": "Agent läuft",

@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid';
 import { registerLockParticipant } from '../lib/workspace-lock';
 import { retainLockedChatResult, type ChatRecoveryTarget } from '../lib/locked-chat-recovery';
 import { postMessageOrigin } from '../lib/utils';
-import { extensionUpdateRequired, hasPairedBridge, isPairedBridgeCaps } from '../lib/extension-bridge';
+import { announcedBridge, checkPairedBridge, extensionRefusal } from '../lib/extension-bridge';
 import i18n from '../i18n';
 
 interface ToolDef {
@@ -107,10 +107,10 @@ function dispatchLLMRequest(
     signal.addEventListener('abort', cleanup, { once: true });
     window.addEventListener('message', complete);
     // Only a paired 1.1.3+ bridge gets the request and its API key; store 1.1.1 has no app pairing.
-    void hasPairedBridge().then(async paired => {
+    void checkPairedBridge().then(async check => {
       if (signal.aborted) return;
-      if (!paired) {
-        const error = await extensionUpdateRequired();
+      if (check !== 'paired') {
+        const error = await extensionRefusal(check);
         if (!signal.aborted) window.postMessage({ type: 'TC_LLM_ERROR', requestId, error }, postMessageOrigin());
         return;
       }
@@ -135,6 +135,8 @@ function dispatchLLMRequest(
 /** Provides LLM chat capabilities -- streaming requests, multi-turn agentic tool loops, and extension bridge detection. */
 export function useLLM() {
   const [extensionAvailable, setExtensionAvailable] = useState(false);
+  /** An extension older than 1.1.3, such as store 1.1.1, announced itself; the app sends it nothing. */
+  const [extensionOutdated, setExtensionOutdated] = useState(false);
   const [extensionInfo, setExtensionInfo] = useState<ExtensionInfo | null>(null);
   const [streamingContent, setStreamingContent] = useState('');
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
@@ -376,7 +378,9 @@ export function useLLM() {
 
       if (event.data.type === 'TC_EXTENSION_READY') {
         // Store 1.1.1 announces itself too, but the app sends it nothing.
-        setExtensionAvailable(isPairedBridgeCaps(event.data.capabilities));
+        const announced = announcedBridge(event.data.capabilities);
+        setExtensionAvailable(announced === 'paired');
+        setExtensionOutdated(announced === 'outdated');
         setExtensionInfo({
           protocolVersion: event.data.protocolVersion || 1,
           capabilities: event.data.capabilities || [],
@@ -514,6 +518,7 @@ export function useLLM() {
 
   return {
     extensionAvailable,
+    extensionOutdated,
     extensionInfo,
     streamingContent,
     activeRequestId,

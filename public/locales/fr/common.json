@@ -160,6 +160,7 @@
   "standaloneWarning.message": "La version autonome s’exécute depuis file:// sans chiffrement. D’autres fichiers HTML locaux peuvent accéder à vos données. En mode autonome, la Content Security Policy ne restreint ni les scripts ni les connexions réseau.",
   "standaloneWarning.enableEncryption": "Activer le chiffrement dans les Paramètres",
   "extension.updateRequired": "ThreatCaddy nécessite son extension de navigateur 1.1.3 ou ultérieure, approuvée pour cette application. Le Chrome Web Store propose encore une version plus ancienne : installez donc la dernière version depuis les versions publiées de ThreatCaddy sur GitHub. Ne gardez installée que l’extension ThreatCaddy la plus récente, puis rechargez la page.",
+  "extension.reloadRequired": "L’extension de navigateur ThreatCaddy ne répond plus sur cette page, comme après sa mise à jour ou son rechargement. Rechargez la page.",
   "extension.menuLink": "Extension de navigateur (GitHub)",
   "extension.githubRelease": "Version publiée sur GitHub",
   "extension.installSteps": "Étapes d’installation",

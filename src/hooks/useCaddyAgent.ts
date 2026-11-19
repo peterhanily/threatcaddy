@@ -16,7 +16,7 @@ import { runAgentCycle } from '../lib/caddy-agent';
 import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
 import { runSupervisorCycle, sendEscalationNotification } from '../lib/caddy-agent-supervisor';
 import { postMessageOrigin } from '../lib/utils';
-import { isPairedBridgeCaps } from '../lib/extension-bridge';
+import { announcedBridge } from '../lib/extension-bridge';
 import i18n from '../i18n';
 
 interface UseCaddyAgentOptions {
@@ -63,7 +63,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged, onSuperviso
     const handler = (event: MessageEvent) => {
       if (event.source === window && event.data?.type === 'TC_EXTENSION_READY') {
         // Store 1.1.1 announces itself too, but the app sends it nothing.
-        setExtensionAvailable(isPairedBridgeCaps(event.data.capabilities));
+        setExtensionAvailable(announcedBridge(event.data.capabilities) === 'paired');
       }
     };
     window.addEventListener('message', handler);

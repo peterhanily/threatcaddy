@@ -9,7 +9,9 @@ import i18n from '../i18n';
 import enSettings from '../../public/locales/en/settings.json';
 import deAgent from '../../public/locales/de/agent.json';
 import deSettings from '../../public/locales/de/settings.json';
-import { PAIRED_BRIDGE_CAPS } from './helpers/paired-bridge';
+import enAgent from '../../public/locales/en/agent.json';
+import enCommon from '../../public/locales/en/common.json';
+import { PAIRED_BRIDGE_CAPS, publishBridgeCaps } from './helpers/paired-bridge';
 
 vi.mock('../components/Agent/AgentProfilePicker', () => ({ AgentProfilePicker: () => null }));
 vi.mock('../components/Agent/AgentMeetingPanel', () => ({ AgentMeetingPanel: () => null }));
@@ -29,7 +31,8 @@ const announceExtension = (capabilities = PAIRED_BRIDGE_CAPS) => act(() => {
 });
 
 beforeEach(() => localStorage.clear());
-afterEach(() => { cleanup(); localStorage.clear(); });
+afterEach(() => { cleanup(); localStorage.clear(); delete document.documentElement.dataset.tcBridgeCaps; });
+const STORE_1_1_1_CAPS = ['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch'];
 
 describe('AgentCaddy readiness follows the route', () => {
   it('signed in, in a new workspace whose settings are empty: no setup banner', async () => {
@@ -64,12 +67,29 @@ describe('AgentCaddy readiness follows the route', () => {
     expect(screen.getByText('Install the browser extension')).toBeInTheDocument();
   });
 
-  it('explicit Browser Extension routing with only store 1.1.1, which has no app pairing: the setup banner shows', async () => {
-    await renderPanel({ llmRoutingMode: 'extension', llmAnthropicApiKey: 'synthetic-key' });
-    announceExtension(['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch']);
+  // Its users already have an extension installed and turned on: the banner says which version and where.
+  it.each(['extension', 'auto'] as const)('%s routing with only store 1.1.1, which has no app pairing: the banner asks for 1.1.3 from GitHub', async mode => {
+    await renderPanel({ llmRoutingMode: mode, llmAnthropicApiKey: 'synthetic-key' });
+    publishBridgeCaps(STORE_1_1_1_CAPS);
+    announceExtension(STORE_1_1_1_CAPS);
     expect(setupBanner()).toBeInTheDocument();
-    expect(screen.getByText('Install the browser extension')).toBeInTheDocument();
+    expect(screen.getByText((enAgent as Record<string, string>)['panel.updateExtension'])).toBeInTheDocument();
+    expect(screen.getByText(enCommon['extension.updateRequired'])).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: enCommon['extension.githubRelease'] })).toHaveAttribute('href', 'https://github.com/peterhanily/threatcaddy/releases/latest');
+    expect(screen.getByRole('link', { name: enCommon['extension.installSteps'] })).toHaveAttribute('href', 'https://github.com/peterhanily/threatcaddy/blob/main/extension/README.md#install--chrome');
+    expect(screen.queryByText(enAgent['panel.installExtension'])).not.toBeInTheDocument();
+    publishBridgeCaps();
     announceExtension();
+    expect(setupBanner()).not.toBeInTheDocument();
+  });
+
+  // With the GitHub build and store 1.1.1 both installed, the GitHub build owns the page and publishes its
+  // capabilities, and 1.1.1's second injection announces itself once more, possibly last.
+  it('keeps the paired bridge when store 1.1.1 announces itself after it', async () => {
+    await renderPanel({ llmRoutingMode: 'extension', llmAnthropicApiKey: 'synthetic-key' });
+    publishBridgeCaps();
+    announceExtension();
+    announceExtension(STORE_1_1_1_CAPS);
     expect(setupBanner()).not.toBeInTheDocument();
   });
 
