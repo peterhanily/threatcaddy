@@ -1,6 +1,8 @@
 /** The Chrome Web Store's extension 1.1.1 has no app pairing, follows redirects and has no private-address
  * filter. The app uses none of the extension's features (AI, integration proxy, web fetch) unless the bridge
  * that owns the page advertises the 1.1.3+ pairing capability, and says which version it needs and where. */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { sendViaExtension } from '../lib/llm-router';
@@ -8,6 +10,7 @@ import { generateChatTitle, summarizeConversation } from '../lib/chat-utils';
 import { IntegrationExecutor } from '../lib/integration-executor';
 import { executeFetchUrl } from '../lib/llm-tools-analysis';
 import { useLLM } from '../hooks/useLLM';
+import { isPairedBridgeCaps } from '../lib/extension-bridge';
 import type { IntegrationTemplate, InstalledIntegration } from '../types/integration-types';
 
 // Store 1.1.1 (66ec58f4 bridge.js:6), the 1.1.3 download (aa4646ad bridge.js:6) and 1.1.4 (bridge.js:6).
@@ -187,6 +190,15 @@ describe('integration requests through the extension proxy', () => {
     expect((await runIntegration()).status).toBe('success');
     expect(posted('TC_PROXY_FETCH')).toHaveLength(1);
     expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('the extension this repository ships', () => {
+  it('advertises the pairing capability the app requires', () => {
+    const bridge = readFileSync(join(process.cwd(), 'extension', 'src', 'bridge.js'), 'utf8');
+    const caps = JSON.parse(/var TC_CAPABILITIES = (\[[^\]]*\]);/.exec(bridge)?.[1].replace(/'/g, '"') ?? 'null');
+    expect(isPairedBridgeCaps(caps)).toBe(true);
+    expect(isPairedBridgeCaps(STORE_1_1_1_CAPS)).toBe(false);
   });
 });
 
