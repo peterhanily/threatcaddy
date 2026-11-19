@@ -66,9 +66,11 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
 
   const handleExcalidrawChange = useCallback((elements: readonly unknown[], appState: Record<string, unknown>, files: Record<string, unknown> = {}) => {
     // A paste, dropped file or library item can still add one: replace it at once.
+    // One the Web Embed tool is still drawing stays inert (validateEmbeddable)
+    // until drawing ends: replacing it mid-drag would leave a 0x0 shape.
     if (hasEmbeds(elements)) {
       elements = withoutEmbeds(elements);
-      excalidrawApiRef.current?.updateScene({ elements: elements as never });
+      if (!appState.newElement) excalidrawApiRef.current?.updateScene({ elements: elements as never });
     }
     const next = {
       elements: JSON.stringify(elements),

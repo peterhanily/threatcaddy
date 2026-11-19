@@ -95,6 +95,37 @@ describe('WhiteboardEditor embeds', () => {
     ]);
   });
 
+  it('lets the Web Embed tool finish drawing, then keeps the drawn size and link as a shape', async () => {
+    const board = whiteboard([rectangle]);
+    await db.whiteboards.add(board);
+    render(<WhiteboardEditor {...props} whiteboard={board} onUpdate={persist} />, { wrapper: ToastProvider });
+    const state = { zoom: { value: 1 }, scrollX: 0, scrollY: 0, theme: 'dark' };
+    // Excalidraw keeps resizing its appState.newElement while the pointer is down.
+    const drawing = { id: 'drawn', type: 'embeddable', x: 40, y: 40, width: 0, height: 0, isDeleted: false, link: null };
+    for (const size of [{ width: 0, height: 0 }, { width: 220, height: 170 }]) {
+      const element = { ...drawing, ...size };
+      act(() => { scene.change?.([rectangle, element], { ...state, newElement: element }, {}); });
+    }
+    expect(scene.updateScene).not.toHaveBeenCalled();
+    await act(async () => { await flushEntityDrafts(); });
+    const whileDrawing = JSON.parse((await db.whiteboards.get(board.id))?.elements ?? 'null') as Array<{ type: string }>;
+    expect(whileDrawing.map(element => element.type)).toEqual(['rectangle', 'rectangle']);
+
+    const drawn = { ...drawing, width: 220, height: 170, link: 'https://www.youtube.com/watch?v=bbbbbbbbbbb' };
+    act(() => { scene.change?.([rectangle, drawn], { ...state, newElement: null }, {}); });
+    expect(scene.updateScene).toHaveBeenCalledTimes(1);
+    const replaced = scene.updateScene.mock.calls[0][0].elements as Array<{ id: string; type: string; width: number; height: number; link?: string | null }>;
+    expect(replaced.map(({ id, type, width, height, link }) => ({ id, type, width, height, link }))).toEqual([
+      { id: 'shape', type: 'rectangle', width: 10, height: 10, link: undefined },
+      { id: 'drawn', type: 'rectangle', width: 220, height: 170, link: drawn.link },
+    ]);
+    await act(async () => { await flushEntityDrafts(); });
+    expect(shapes(JSON.parse((await db.whiteboards.get(board.id))?.elements ?? 'null'))).toEqual([
+      { id: 'shape', type: 'rectangle', link: undefined },
+      { id: 'drawn', type: 'rectangle', link: drawn.link },
+    ]);
+  });
+
   it('rejects a pasted scene that carries an iframe element', async () => {
     const board = whiteboard([]);
     render(<WhiteboardEditor {...props} whiteboard={board} onUpdate={persist} />, { wrapper: ToastProvider });
