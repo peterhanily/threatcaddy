@@ -4,6 +4,7 @@ import { useCaddyAgent } from '../hooks/useCaddyAgent';
 import { DEFAULT_SETTINGS, type Folder } from '../types';
 import type { AgentAction } from '../types';
 import type { AgentCycleResult } from '../lib/caddy-agent';
+import { PAIRED_BRIDGE_CAPS } from './helpers/paired-bridge';
 
 const mocks = vi.hoisted(() => ({
   folders: new Map<string, Folder>(), get: vi.fn(), count: vi.fn(), metrics: vi.fn(), pending: vi.fn(), memory: vi.fn(),
@@ -114,9 +115,35 @@ describe('agent hook lifecycle ownership', () => {
   it('uses the latest extension readiness instead of the initial timer closure', async () => {
     const first = folder(); mocks.folders.set(first.id, first);
     renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
-    act(() => window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'TC_EXTENSION_READY' } })));
+    act(() => window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'TC_EXTENSION_READY', capabilities: PAIRED_BRIDGE_CAPS } })));
     await act(async () => vi.advanceTimersByTimeAsync(3000));
     expect(mocks.run.mock.calls[0][2]).toBe(true);
+  });
+
+  it('does not count store 1.1.1, which has no app pairing, as the extension', async () => {
+    const first = folder(); mocks.folders.set(first.id, first);
+    renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+    act(() => window.dispatchEvent(new MessageEvent('message', { source: window,
+      data: { type: 'TC_EXTENSION_READY', capabilities: ['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch'] } })));
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(mocks.run.mock.calls[0][2]).toBe(false);
+  });
+
+  // With the GitHub build and store 1.1.1 both installed, the GitHub build owns the page and publishes its
+  // capabilities, and 1.1.1's second injection announces itself once more, possibly last.
+  it('keeps the paired bridge when store 1.1.1 announces itself after it', async () => {
+    const first = folder(); mocks.folders.set(first.id, first);
+    document.documentElement.dataset.tcBridgeCaps = PAIRED_BRIDGE_CAPS.join(',');
+    try {
+      renderHook(() => useCaddyAgent({ folder: first, settings: DEFAULT_SETTINGS }));
+      act(() => window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'TC_EXTENSION_READY', capabilities: PAIRED_BRIDGE_CAPS } })));
+      act(() => window.dispatchEvent(new MessageEvent('message', { source: window,
+        data: { type: 'TC_EXTENSION_READY', capabilities: ['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch'] } })));
+      await act(async () => vi.advanceTimersByTimeAsync(3000));
+      expect(mocks.run.mock.calls[0][2]).toBe(true);
+    } finally {
+      delete document.documentElement.dataset.tcBridgeCaps;
+    }
   });
 
   it('does not auto-start the legacy agent while its own proposal is pending', async () => {

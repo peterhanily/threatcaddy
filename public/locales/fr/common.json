@@ -122,7 +122,6 @@
   "sidebar.agentStatusError": "erreur",
   "sidebar.github": "GitHub",
   "sidebar.downloadStandalone": "Télécharger la version autonome",
-  "sidebar.chromeExtension": "Extension Chrome",
   "sidebar.privacy": "Confidentialité",
   "sidebar.tags": "Étiquettes",
   "sidebar.noTags": "Aucune étiquette pour le moment",
@@ -160,7 +159,12 @@
   "header.standalone": "Autonome",
   "standaloneWarning.message": "La version autonome s’exécute depuis file:// sans chiffrement. D’autres fichiers HTML locaux peuvent accéder à vos données. En mode autonome, la Content Security Policy ne restreint ni les scripts ni les connexions réseau.",
   "standaloneWarning.enableEncryption": "Activer le chiffrement dans les Paramètres",
-  "header.chromeExtension": "Extension Chrome",
+  "extension.updateRequired": "ThreatCaddy nécessite son extension de navigateur 1.1.3 ou ultérieure, approuvée pour cette application. Le Chrome Web Store propose encore une version plus ancienne : installez donc la dernière version depuis les versions publiées de ThreatCaddy sur GitHub. Ne gardez installée que l’extension ThreatCaddy la plus récente, puis rechargez la page.",
+  "extension.reloadRequired": "L’extension de navigateur ThreatCaddy ne répond plus sur cette page, comme après sa mise à jour ou son rechargement. Rechargez la page.",
+  "extension.menuLink": "Extension de navigateur (GitHub)",
+  "extension.githubRelease": "Version publiée sur GitHub",
+  "extension.installSteps": "Étapes d’installation",
+  "extension.storeOlder": "La version du Chrome Web Store est plus ancienne.",
   "header.privacy": "Confidentialité",
   "header.saveBackup": "Sauvegarder",
   "header.loadBackup": "Charger une sauvegarde",
@@ -297,5 +301,8 @@
   "offlineStatus.settingUnavailable": "Ce navigateur ne peut pas garder ThreatCaddy disponible hors ligne, mais il fonctionne toujours en ligne.",
   "offlineStatus.backupNote": "L’utilisation hors ligne n’est pas une sauvegarde. Effacer les données de ce navigateur supprime tout ce qui y est enregistré, et les navigateurs peuvent aussi supprimer d’eux-mêmes les données de site enregistrées, par exemple lorsque l’espace vient à manquer. Exportez régulièrement une sauvegarde JSON et conservez le fichier en lieu sûr.",
   "sync.backupWarning": "Avant de supprimer les données locales, enregistrez et vérifiez une sauvegarde complète. La synchronisation d’équipe ne peut pas restaurer les détails propres à cet appareil, comme les dossiers de notes, listes de contrôle, progression des procédures et résultats d’outils ou images des discussions. Enregistrer une sauvegarde télécharge du JSON non chiffré.",
-  "demoModal.reportWorkflow": "Suivez les notes liées, des preuves au brouillon du rapport. Vérifiez les conclusions et téléchargez la note en Markdown ; sauvegardez séparément tout l’espace de travail."
+  "demoModal.reportWorkflow": "Suivez les notes liées, des preuves au brouillon du rapport. Vérifiez les conclusions et téléchargez la note en Markdown ; sauvegardez séparément tout l’espace de travail.",
+  "bootGuard.framed": "Pour votre sécurité, ThreatCaddy ne s’exécute pas à l’intérieur d’un autre site web.",
+  "bootGuard.fileOnly": "Cette copie hors ligne de ThreatCaddy ne fonctionne que lorsque vous ouvrez le fichier enregistré sur votre ordinateur.",
+  "bootGuard.open": "Ouvrir ThreatCaddy"
 }

@@ -122,7 +122,6 @@
   "sidebar.agentStatusError": "error",
   "sidebar.github": "GitHub",
   "sidebar.downloadStandalone": "Descargar versión independiente",
-  "sidebar.chromeExtension": "Extensión de Chrome",
   "sidebar.privacy": "Privacidad",
   "sidebar.tags": "Etiquetas",
   "sidebar.noTags": "Aún no hay etiquetas",
@@ -160,7 +159,12 @@
   "header.standalone": "Independiente",
   "standaloneWarning.message": "La versión independiente se ejecuta en file:// sin cifrado. Otros archivos HTML locales pueden acceder a sus datos. En el modo independiente, la Content Security Policy no restringe los scripts ni las conexiones de red.",
   "standaloneWarning.enableEncryption": "Activar el cifrado en Configuración",
-  "header.chromeExtension": "Extensión de Chrome",
+  "extension.updateRequired": "ThreatCaddy requiere su extensión de navegador 1.1.3 o posterior, aprobada para esta aplicación. Chrome Web Store todavía ofrece una versión anterior, así que instala la versión más reciente desde las versiones de ThreatCaddy en GitHub. Conserva instalada solo la extensión de ThreatCaddy más reciente y luego recarga la página.",
+  "extension.reloadRequired": "La extensión de navegador de ThreatCaddy dejó de responder en esta página, como ocurre después de actualizarla o recargarla. Recarga la página.",
+  "extension.menuLink": "Extensión del navegador (GitHub)",
+  "extension.githubRelease": "Versión en GitHub",
+  "extension.installSteps": "Pasos de instalación",
+  "extension.storeOlder": "La versión de Chrome Web Store es más antigua.",
   "header.privacy": "Privacidad",
   "header.saveBackup": "Guardar copia de seguridad",
   "header.loadBackup": "Cargar copia de seguridad",
@@ -297,5 +301,8 @@
   "offlineStatus.settingUnavailable": "Este navegador no puede mantener ThreatCaddy disponible sin conexión, pero sigue funcionando en línea.",
   "offlineStatus.backupNote": "El uso sin conexión no es una copia de seguridad. Borrar los datos de este navegador elimina todo lo guardado aquí, y los navegadores también pueden eliminar por su cuenta los datos guardados de los sitios, por ejemplo, cuando queda poco espacio. Exporta un respaldo JSON con regularidad y guarda el archivo en un lugar seguro.",
   "sync.backupWarning": "Antes de eliminar datos locales, guarde y verifique una copia de seguridad completa. La sincronización de equipo no puede recuperar detalles exclusivos del dispositivo, como carpetas de notas, listas de comprobación, progreso de procedimientos y resultados de herramientas o imágenes del chat. Guardar copia de seguridad descarga JSON sin cifrar.",
-  "demoModal.reportWorkflow": "Siga las notas enlazadas desde las pruebas hasta el borrador del informe. Revise las conclusiones y descargue la nota como Markdown; use Guardar copia para todo el espacio de trabajo."
+  "demoModal.reportWorkflow": "Siga las notas enlazadas desde las pruebas hasta el borrador del informe. Revise las conclusiones y descargue la nota como Markdown; use Guardar copia para todo el espacio de trabajo.",
+  "bootGuard.framed": "Por su seguridad, ThreatCaddy no se ejecuta dentro de otro sitio web.",
+  "bootGuard.fileOnly": "Esta copia sin conexión de ThreatCaddy solo funciona cuando abre el archivo guardado en su equipo.",
+  "bootGuard.open": "Abrir ThreatCaddy"
 }

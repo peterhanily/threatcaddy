@@ -5,6 +5,7 @@
     "openedAsNote": "已将\"{{name}}\"作为新笔记打开",
     "openFailed": "无法打开\"{{name}}\"",
     "refreshFailed": "剪辑已保存，但视图无法刷新。重新加载此工作区即可查看。",
+    "outdatedExtensionRefused": "片段未导入。它们来自低于 1.1.3 的 ThreatCaddy 扩展，ThreatCaddy 已不再使用该扩展。请从 GitHub 上的 ThreatCaddy 发布版本安装最新版本；Chrome 应用商店中的版本较旧。旧扩展会将这些片段标记为“Sent”，但仍将其保留在其“Clip Review”页面中：请在移除该扩展之前从那里复制它们。",
     "fileRefreshFailed": "文件已保存为笔记，但视图无法刷新。重新加载此工作区即可查看。",
     "fileTitle": "{{name}} — {{size}} — 修改于 {{modified}}",
     "fileError": {
@@ -82,8 +83,6 @@
     "nameRequired": "集成名称是必需的",
     "createdAndInstalled": "集成\"{{name}}\"已创建并安装",
     "saveFailed": "保存失败：{{error}}",
-    "installedFromCatalog": "已从社区目录安装 {{name}}",
-    "installCatalogFailed": "安装社区模板失败",
     "templateExported": "已导出 {{name}}",
     "installTeamFailed": "安装团队模板失败",
     "notFound": "集成未找到",

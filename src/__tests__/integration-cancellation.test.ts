@@ -1,8 +1,9 @@
 import Dexie from 'dexie';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { IntegrationExecutor, type ExecutionCallbacks, type ExecutionOptions } from '../lib/integration-executor';
 import { integrationWrite } from '../lib/integration-cancellation';
 import type { IntegrationStep, IntegrationTemplate, InstalledIntegration } from '../types/integration-types';
+import { answerBridgeCheck, publishBridgeCaps } from './helpers/paired-bridge';
 
 const installation: InstalledIntegration = { id: 'installed', templateId: 'fixture', name: 'Fixture', enabled: true,
   config: {}, scopeType: 'all', scopeFolderIds: [], runCount: 0, errorCount: 0, createdAt: 1, updatedAt: 1 };
@@ -60,24 +61,35 @@ describe('integration cancellation ownership', () => {
     expect((await run).status).toBe('timeout'); expect(h.callbacks.onCreateEntity).not.toHaveBeenCalled();
     expect(h.callbacks.onNotify).not.toHaveBeenCalled(); expect(vi.getTimerCount()).toBe(0);
   });
+  // A paired 1.1.3+ bridge; the app relays integration requests through no other.
+  const messageListenersRemoved = (add: MockInstance<typeof window.addEventListener>, remove: MockInstance<typeof window.removeEventListener>) => {
+    for (const [type, listener] of add.mock.calls) if (type === 'message') expect(remove).toHaveBeenCalledWith('message', listener);
+  };
   it('stops extension waiting, posts scoped cancellation, and removes the response listener', async () => {
-    document.documentElement.dataset.tcBridgeCaps = 'proxy_fetch,proxy_fetch_abort';
-    const post = vi.spyOn(window, 'postMessage').mockImplementation(() => {});
+    publishBridgeCaps();
+    const post = vi.spyOn(window, 'postMessage').mockImplementation(message => { answerBridgeCheck(message); });
     const add = vi.spyOn(window, 'addEventListener'); const remove = vi.spyOn(window, 'removeEventListener');
     const h = setup([http]); const run = h.run();
-    const request = post.mock.calls[0][0]; h.controller.abort();
+    const request = await vi.waitFor(() => {
+      const posted = post.mock.calls.find(([message]) => message?.type === 'TC_PROXY_FETCH')?.[0];
+      expect(posted).toBeDefined();
+      return posted;
+    });
+    h.controller.abort();
     expect((await run).status).toBe('cancelled');
     expect(post).toHaveBeenCalledWith({ type: 'TC_PROXY_ABORT', requestId: request.requestId }, expect.any(String));
-    const listener = add.mock.calls.find(([type]) => type === 'message')?.[1];
-    expect(remove).toHaveBeenCalledWith('message', listener);
+    messageListenersRemoved(add, remove);
     expect(h.callbacks.onCreateEntity).not.toHaveBeenCalled();
   });
   it('cleans up a bridge listener when posting the request itself fails', async () => {
-    vi.useFakeTimers(); document.documentElement.dataset.tcBridgeCaps = 'proxy_fetch';
-    vi.spyOn(window, 'postMessage').mockImplementation(() => { throw new Error('Synthetic unavailable bridge'); });
+    vi.useFakeTimers(); publishBridgeCaps();
+    vi.spyOn(window, 'postMessage').mockImplementation(message => { if (!answerBridgeCheck(message)) throw new Error('Synthetic unavailable bridge'); });
     const add = vi.spyOn(window, 'addEventListener'); const remove = vi.spyOn(window, 'removeEventListener');
-    const h = setup([http]); expect((await h.run()).status).toBe('error');
-    expect(remove).toHaveBeenCalledWith('message', add.mock.calls.find(([type]) => type === 'message')?.[1]);
+    const h = setup([http]); const run = h.run();
+    // The ping, its answer and its end marker each take a message hop.
+    for (let hop = 0; hop < 5; hop++) await vi.advanceTimersByTimeAsync(1);
+    expect((await run).status).toBe('error');
+    messageListenersRemoved(add, remove);
     expect(vi.getTimerCount()).toBe(0); expect(h.callbacks.onCreateEntity).not.toHaveBeenCalled();
   });
   it('does not start the next output after a callback cancels, and passes the owned signal to the write', async () => {

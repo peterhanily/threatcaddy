@@ -1,3 +1,5 @@
+// First, so a page the boot guard blocked evaluates no other module.
+import './lib/boot-blocked'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

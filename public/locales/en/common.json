@@ -169,7 +169,6 @@
   "sidebar.agentStatusError": "error",
   "sidebar.github": "GitHub",
   "sidebar.downloadStandalone": "Download Standalone",
-  "sidebar.chromeExtension": "Chrome Extension",
   "sidebar.privacy": "Privacy",
   "sidebar.tags": "Tags",
   "sidebar.noTags": "No tags yet",
@@ -207,7 +206,12 @@
   "header.standalone": "Standalone",
   "standaloneWarning.message": "Running standalone on file:// without encryption. Other local HTML files can access your data. In standalone mode, the Content Security Policy does not restrict scripts or network connections.",
   "standaloneWarning.enableEncryption": "Enable encryption in Settings",
-  "header.chromeExtension": "Chrome Extension",
+  "extension.updateRequired": "ThreatCaddy needs its browser extension 1.1.3 or later, approved for this app. The Chrome Web Store still offers an older version, so install the latest version from the ThreatCaddy releases on GitHub. Keep only the newest ThreatCaddy extension installed, then reload the page.",
+  "extension.reloadRequired": "The ThreatCaddy browser extension stopped answering this page, as it does after it is updated or reloaded. Reload the page.",
+  "extension.menuLink": "Browser extension (GitHub)",
+  "extension.githubRelease": "GitHub release",
+  "extension.installSteps": "Install steps",
+  "extension.storeOlder": "The Chrome Web Store version is older.",
   "header.privacy": "Privacy",
   "header.caddylabs": "CaddyLabs",
   "header.saveBackup": "Save Backup",
@@ -297,5 +301,8 @@
   "offlineStatus.settingUnavailable": "This browser can't keep ThreatCaddy available offline, but it still works online.",
   "offlineStatus.backupNote": "Offline use is not a backup. Clearing this browser's data deletes everything saved here, and browsers can also remove saved site data on their own, for example when space runs low. Export a JSON backup regularly and keep the file somewhere safe.",
   "sync.backupWarning": "Before removing local data, save and verify a full backup. Team sync cannot recover device-only details such as note folders, checklists, playbook progress and chat tool results/images. Save Backup downloads unencrypted JSON.",
-  "demoModal.reportWorkflow": "Follow the linked notes from source evidence to a draft report. Review the conclusions and download the report note as Markdown; use Save Backup for the full workspace."
+  "demoModal.reportWorkflow": "Follow the linked notes from source evidence to a draft report. Review the conclusions and download the report note as Markdown; use Save Backup for the full workspace.",
+  "bootGuard.framed": "For your safety, ThreatCaddy does not run inside another website.",
+  "bootGuard.fileOnly": "This offline copy of ThreatCaddy runs only when you open the file saved on your computer.",
+  "bootGuard.open": "Open ThreatCaddy"
 }

@@ -6,12 +6,19 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { standaloneHtml } from './build/standalone-html'
 import { dependencyProvenance } from './build/dependency-provenance'
+import { bootGuard } from './build/boot-guard'
 
 /** The hosted policy's script and connect hosts do not fit a file:// page, but
  * images and media keep a policy: notes and chat cannot load remote images,
  * audio or video (beacons); map tiles, pasted screenshots and whiteboard images
- * still load. */
-const STANDALONE_MEDIA_CSP ='<meta http-equiv="Content-Security-Policy" content="img-src \'self\' data: blob: https://*.basemaps.cartocdn.com; media-src \'self\' data: blob:">';
+ * still load. Scripts are the file's own inline code, blob: workers (data:
+ * where a library probes or falls back) and WebAssembly (whiteboard image
+ * resizing and font subsetting); frames, plugins, form posts and <base> are
+ * refused. connect-src stays open: analysts connect this file to team servers,
+ * AI endpoints, integrations and cloud storage of their choosing, and
+ * connection-policy.ts reads a policy without connect-src as open.
+ * Chromium applies this policy to file:// pages; WebKit does not. */
+const STANDALONE_CSP = '<meta http-equiv="Content-Security-Policy" content="img-src \'self\' data: blob: https://*.basemaps.cartocdn.com; media-src \'self\' data: blob:; script-src \'unsafe-inline\' \'wasm-unsafe-eval\' blob:; worker-src blob: data:; object-src \'none\'; base-uri \'none\'; form-action \'none\'; frame-src \'none\'">';
 
 function stripCSPForSingleFile(): Plugin {
   return {
@@ -22,7 +29,7 @@ function stripCSPForSingleFile(): Plugin {
         const hostedCSP = /<meta\s+http-equiv="Content-Security-Policy"[^>]*\/?\s*>/i;
         if (!hostedCSP.test(html)) throw new Error('Standalone build expects the hosted Content-Security-Policy meta to replace.');
         return html
-          .replace(hostedCSP, STANDALONE_MEDIA_CSP)
+          .replace(hostedCSP, STANDALONE_CSP)
           // The hosted stale-chunk guard is unnecessary for a monolithic file.
           .replace(/<script\s+src="\.\/chunk-reload-guard\.js"[^>]*>\s*<\/script>/i, '');
       },
@@ -107,7 +114,7 @@ function loadCompressedLocales(): Record<string, string> {
 }
 
 export default defineConfig({
-  plugins: [standaloneAssets(), react(), tailwindcss(), stripCSPForSingleFile(), inlineFaviconForSingleFile(), standaloneNotices(), dependencyProvenance('standalone'), standaloneHtml()],
+  plugins: [standaloneAssets(), react(), tailwindcss(), stripCSPForSingleFile(), bootGuard({ standalone: true, localesDir: resolve(__dirname, 'public/locales') }), inlineFaviconForSingleFile(), standaloneNotices(), dependencyProvenance('standalone'), standaloneHtml()],
   base: './',
   esbuild: { supported: { 'inline-script': true, 'inline-style': true } },
   worker: {

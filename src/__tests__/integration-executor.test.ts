@@ -7,6 +7,7 @@ import type {
   IntegrationStep,
   IntegrationOutput,
 } from '../types/integration-types';
+import { publishBridgeCaps } from './helpers/paired-bridge';
 
 // ---------------------------------------------------------------------------
 // Mock fetch globally
@@ -112,7 +113,7 @@ describe('IntegrationExecutor', () => {
       const callbacks = makeCallbacks({ onCreateEntity: vi.fn(), onUpdateEntity: vi.fn(), onNotify: vi.fn() });
       const postMessage = vi.spyOn(window, 'postMessage').mockImplementation(() => {});
       const timer = vi.spyOn(globalThis, 'setTimeout');
-      if (transport === 'bridge') document.documentElement.dataset.tcBridgeCaps = 'proxy_fetch';
+      if (transport === 'bridge') publishBridgeCaps();
       try {
         const result = await executor.run(template, makeInstallation({ apiKey: ' ', otherSecret: 'fictional-secret-value' }), makeInput(), callbacks);
         expect(result).toMatchObject({ status: 'error', outputSummary: 'Failed', entitiesCreated: 0, entitiesUpdated: 0, apiCallsMade: 0, log: [] });

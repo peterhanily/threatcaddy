@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import type { Timeline, Whiteboard, ViewMode } from '../../types';
 import { cn } from '../../lib/utils';
+import { EXTENSION_INSTALL_STEPS_URL, EXTENSION_RELEASES_URL } from '../../lib/extension-bridge';
 import { NavItem, CollapsedIcon } from './SidebarHelpers';
 import { WhiteboardSubList } from './WhiteboardSubList';
 import { TimelineSubList } from './TimelineSubList';
@@ -555,14 +556,20 @@ export function Sidebar({
           <span>{t('sidebar.downloadStandalone')}</span>
         </a>
         <a
-          href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh"
+          href={EXTENSION_RELEASES_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
         >
           <Puzzle size={16} />
-          <span>{t('sidebar.chromeExtension')}</span>
+          <span>{t('extension.menuLink')}</span>
         </a>
+        <p className="ps-9 pe-3 pb-1 text-[11px] text-text-muted">
+          {t('extension.storeOlder')}{' '}
+          <a href={EXTENSION_INSTALL_STEPS_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-text-primary">
+            {t('extension.installSteps')}
+          </a>
+        </p>
         <a
           href="https://threatcaddy.com/privacy.html"
           target="_blank"

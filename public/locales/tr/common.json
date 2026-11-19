@@ -122,7 +122,6 @@
   "sidebar.agentStatusError": "hata",
   "sidebar.github": "GitHub",
   "sidebar.downloadStandalone": "Bağımsız Sürümü İndir",
-  "sidebar.chromeExtension": "Chrome Uzantısı",
   "sidebar.privacy": "Gizlilik",
   "sidebar.tags": "Etiketler",
   "sidebar.noTags": "Henüz etiket yok",
@@ -160,7 +159,12 @@
   "header.standalone": "Bağımsız",
   "standaloneWarning.message": "Bağımsız sürüm şifreleme olmadan file:// üzerinden çalışıyor. Diğer yerel HTML dosyaları verilerinize erişebilir. Bağımsız modda Content Security Policy betikleri veya ağ bağlantılarını kısıtlamaz.",
   "standaloneWarning.enableEncryption": "Şifrelemeyi Ayarlar bölümünde etkinleştir",
-  "header.chromeExtension": "Chrome Uzantısı",
+  "extension.updateRequired": "ThreatCaddy, bu uygulama için onaylanmış tarayıcı uzantısının 1.1.3 veya sonraki bir sürümünü gerektirir. Chrome Web Mağazası hâlâ daha eski bir sürüm sunuyor, bu nedenle en son sürümü GitHub'daki ThreatCaddy sürümlerinden yükleyin. Yalnızca en yeni ThreatCaddy uzantısını yüklü tutun, ardından sayfayı yeniden yükleyin.",
+  "extension.reloadRequired": "ThreatCaddy tarayıcı uzantısı, güncellendikten veya yeniden yüklendikten sonra olduğu gibi bu sayfaya yanıt vermeyi bıraktı. Sayfayı yeniden yükleyin.",
+  "extension.menuLink": "Tarayıcı uzantısı (GitHub)",
+  "extension.githubRelease": "GitHub sürümü",
+  "extension.installSteps": "Kurulum adımları",
+  "extension.storeOlder": "Chrome Web Mağazası'ndaki sürüm daha eski.",
   "header.privacy": "Gizlilik",
   "header.saveBackup": "Yedek Kaydet",
   "header.loadBackup": "Yedek Yükle",
@@ -297,5 +301,8 @@
   "offlineStatus.settingUnavailable": "Bu tarayıcı ThreatCaddy'yi çevrimdışı kullanılabilir tutamıyor, ancak çevrimiçi çalışmaya devam ediyor.",
   "offlineStatus.backupNote": "Çevrimdışı kullanım bir yedek değildir. Bu tarayıcının verilerini temizlemek burada kayıtlı her şeyi siler; tarayıcılar da kayıtlı site verilerini kendiliğinden kaldırabilir, örneğin yer azaldığında. Düzenli olarak bir JSON yedeği dışa aktarın ve dosyayı güvenli bir yerde saklayın.",
   "sync.backupWarning": "Yerel verileri kaldırmadan önce tam bir yedek kaydedip doğrulayın. Ekip eşitlemesi; not klasörleri, kontrol listeleri, çalışma planı ilerlemesi ve sohbet aracı sonuçları veya görselleri gibi yalnızca bu cihazda bulunan ayrıntıları geri getiremez. Yedeği Kaydet, şifrelenmemiş JSON indirir.",
-  "demoModal.reportWorkflow": "Kaynak kanıtlardan rapor taslağına bağlantılı notları izleyin. Sonuçları inceleyin ve raporu Markdown olarak indirin; tüm çalışma alanının yedeğini kaydedin."
+  "demoModal.reportWorkflow": "Kaynak kanıtlardan rapor taslağına bağlantılı notları izleyin. Sonuçları inceleyin ve raporu Markdown olarak indirin; tüm çalışma alanının yedeğini kaydedin.",
+  "bootGuard.framed": "Güvenliğiniz için ThreatCaddy başka bir web sitesinin içinde çalışmaz.",
+  "bootGuard.fileOnly": "ThreatCaddy'nin bu çevrimdışı kopyası yalnızca bilgisayarınıza kaydedilen dosyayı açtığınızda çalışır.",
+  "bootGuard.open": "ThreatCaddy'yi aç"
 }

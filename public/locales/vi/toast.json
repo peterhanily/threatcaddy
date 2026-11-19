@@ -5,6 +5,7 @@
     "openedAsNote": "Đã mở \"{{name}}\" dưới dạng ghi chú mới",
     "openFailed": "Mở \"{{name}}\" thất bại",
     "refreshFailed": "Đã lưu đoạn trích nhưng không thể làm mới giao diện. Tải lại không gian làm việc này để xem.",
+    "outdatedExtensionRefused": "Không nhập các đoạn trích. Chúng đến từ tiện ích ThreatCaddy cũ hơn 1.1.3, mà ThreatCaddy không còn dùng nữa. Hãy cài phiên bản mới nhất từ các bản phát hành ThreatCaddy trên GitHub; phiên bản trên Cửa hàng Chrome trực tuyến cũ hơn. Tiện ích cũ đánh dấu các đoạn trích này là “Sent” nhưng vẫn giữ chúng trên trang “Clip Review” của nó: hãy sao chép chúng từ đó trước khi gỡ tiện ích.",
     "fileRefreshFailed": "Đã lưu tệp thành ghi chú nhưng không thể làm mới giao diện. Tải lại không gian làm việc này để xem.",
     "fileTitle": "{{name}} — {{size}} — sửa đổi {{modified}}",
     "fileError": {
@@ -82,8 +83,6 @@
     "nameRequired": "Cần tên tích hợp",
     "createdAndInstalled": "Đã tạo và cài đặt tích hợp \"{{name}}\"",
     "saveFailed": "Lưu thất bại: {{error}}",
-    "installedFromCatalog": "Đã cài đặt {{name}} từ danh mục cộng đồng",
-    "installCatalogFailed": "Cài đặt mẫu cộng đồng thất bại",
     "templateExported": "Đã xuất {{name}}",
     "installTeamFailed": "Cài đặt mẫu nhóm thất bại",
     "notFound": "Không tìm thấy tích hợp",

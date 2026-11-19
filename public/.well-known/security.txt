@@ -1,0 +1,5 @@
+Contact: https://github.com/peterhanily/threatcaddy/security/advisories/new
+Expires: 2027-11-17T23:59:59Z
+Preferred-Languages: en
+Canonical: https://threatcaddy.com/.well-known/security.txt
+Policy: https://github.com/peterhanily/threatcaddy/blob/main/SECURITY.md

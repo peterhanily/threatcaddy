@@ -9,16 +9,17 @@ Interact with a live ThreatCaddy investigation session running in Chrome. Create
 
 ## Prerequisites
 
-- Chrome launched with `--remote-debugging-port=9222` (recommended, no popups)
-  - macOS: `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222`
-  - Alternative: `chrome://inspect/#remote-debugging` → toggle on (shows allow popup each time)
+- Chrome remote debugging turned on at `chrome://inspect/#remote-debugging` (the default). Chrome asks you to allow each new debugging connection. Turn the toggle off when you finish.
+- Only if you cannot use the toggle: a separate Chrome started with `--remote-debugging-port=9222` and a dedicated profile of its own, never your everyday profile (recent Chrome versions ignore the flag for the default profile):
+  - macOS: `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir="$HOME/.threatcaddy-debug-profile"`
+  - While it runs, any program on this computer can connect to port 9222 and control that browser without asking, including reading and changing the ThreatCaddy data open in it. Use that profile only for this work, and quit that Chrome when you finish.
 - ThreatCaddy open in a Chrome tab with an investigation selected
-- The agent bridge turned on in ThreatCaddy under Settings → AI (it is off by default)
+- The agent bridge turned on in ThreatCaddy under Settings → AI (it is off by default); turn it off when you finish
 - Node.js 22+
 
 ## Commands
 
-All commands use `scripts/tc.mjs`. The first command spawns a background daemon that holds the Chrome CDP session open. Chrome's "Allow debugging" popup fires once; all subsequent commands reuse the session silently. The daemon auto-exits after 20 minutes idle.
+All commands use `scripts/tc.mjs`. The first command spawns a background daemon that holds the Chrome CDP session open. Chrome's "Allow debugging" popup fires once; all subsequent commands reuse the session silently. While the daemon runs, any program that can open its socket in `/tmp`, such as any program running under your account, can send it commands. It exits after 20 minutes idle or when the tab closes; stop it yourself with `scripts/tc.mjs stop` when you finish.
 
 ### Check connection
 

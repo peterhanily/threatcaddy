@@ -122,7 +122,6 @@
   "sidebar.agentStatusError": "エラー",
   "sidebar.github": "GitHub",
   "sidebar.downloadStandalone": "スタンドアロンをダウンロード",
-  "sidebar.chromeExtension": "Chrome拡張機能",
   "sidebar.privacy": "プライバシー",
   "sidebar.tags": "タグ",
   "sidebar.noTags": "タグはまだありません",
@@ -160,7 +159,12 @@
   "header.standalone": "スタンドアロン",
   "standaloneWarning.message": "スタンドアロン版を暗号化なしで file:// から実行しています。ほかのローカル HTML ファイルがデータにアクセスできます。スタンドアロンモードでは、Content Security Policy はスクリプトやネットワーク接続を制限しません。",
   "standaloneWarning.enableEncryption": "設定で暗号化を有効にする",
-  "header.chromeExtension": "Chrome拡張機能",
+  "extension.updateRequired": "ThreatCaddy には、このアプリを承認済みのブラウザー拡張機能 1.1.3 以降が必要です。Chrome ウェブストアではまだ古いバージョンが提供されているため、GitHub の ThreatCaddy リリースから最新版をインストールしてください。インストールする ThreatCaddy 拡張機能は最新のものだけにして、ページを再読み込みしてください。",
+  "extension.reloadRequired": "ThreatCaddy ブラウザー拡張機能がこのページに応答しなくなりました。拡張機能を更新または再読み込みした後にこうなります。ページを再読み込みしてください。",
+  "extension.menuLink": "ブラウザー拡張機能 (GitHub)",
+  "extension.githubRelease": "GitHub リリース",
+  "extension.installSteps": "インストール手順",
+  "extension.storeOlder": "Chrome ウェブストアのバージョンは古いものです。",
   "header.privacy": "プライバシー",
   "header.saveBackup": "バックアップを保存",
   "header.loadBackup": "バックアップを読み込む",
@@ -297,5 +301,8 @@
   "offlineStatus.settingUnavailable": "このブラウザーでは ThreatCaddy をオフラインで使える状態に保てませんが、オンラインでは引き続き動作します。",
   "offlineStatus.backupNote": "オフラインでの利用はバックアップではありません。このブラウザーのデータを消去すると、ここに保存されたものはすべて削除されます。また、空き容量が少ないときなど、ブラウザーが保存済みのサイトデータを自動的に削除することもあります。定期的に JSON バックアップをエクスポートし、ファイルを安全な場所に保管してください。",
   "sync.backupWarning": "ローカルデータを削除する前に、完全なバックアップを保存して検証してください。チーム同期では、ノートフォルダー、チェックリスト、プレイブックの進捗、チャットのツール結果や画像など、この端末にしかない詳細を復元できません。「バックアップを保存」は暗号化されていないJSONをダウンロードします。",
-  "demoModal.reportWorkflow": "リンクされたノートで証拠からレポート案まで確認できます。結論を検証し、レポートを Markdown でダウンロードしてください。作業領域全体は別途バックアップを保存します。"
+  "demoModal.reportWorkflow": "リンクされたノートで証拠からレポート案まで確認できます。結論を検証し、レポートを Markdown でダウンロードしてください。作業領域全体は別途バックアップを保存します。",
+  "bootGuard.framed": "安全のため、ThreatCaddy は他のウェブサイト内では動作しません。",
+  "bootGuard.fileOnly": "この ThreatCaddy のオフライン版は、コンピューターに保存したファイルを開いた場合にのみ動作します。",
+  "bootGuard.open": "ThreatCaddy を開く"
 }

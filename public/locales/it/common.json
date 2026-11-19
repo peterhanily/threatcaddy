@@ -122,7 +122,6 @@
   "sidebar.agentStatusError": "errore",
   "sidebar.github": "GitHub",
   "sidebar.downloadStandalone": "Scarica versione standalone",
-  "sidebar.chromeExtension": "Estensione Chrome",
   "sidebar.privacy": "Privacy",
   "sidebar.tags": "Tag",
   "sidebar.noTags": "Ancora nessun tag",
@@ -160,7 +159,12 @@
   "header.standalone": "Standalone",
   "standaloneWarning.message": "La versione standalone è in esecuzione da file:// senza crittografia. Altri file HTML locali possono accedere ai tuoi dati. In modalità standalone la Content Security Policy non limita gli script né le connessioni di rete.",
   "standaloneWarning.enableEncryption": "Abilita la crittografia in Impostazioni",
-  "header.chromeExtension": "Estensione Chrome",
+  "extension.updateRequired": "ThreatCaddy richiede la sua estensione del browser 1.1.3 o successiva, approvata per questa app. Il Chrome Web Store offre ancora una versione precedente, quindi installa l'ultima versione dalle release di ThreatCaddy su GitHub. Tieni installata solo l'estensione ThreatCaddy più recente, poi ricarica la pagina.",
+  "extension.reloadRequired": "L'estensione del browser ThreatCaddy ha smesso di rispondere in questa pagina, come accade dopo che è stata aggiornata o ricaricata. Ricarica la pagina.",
+  "extension.menuLink": "Estensione del browser (GitHub)",
+  "extension.githubRelease": "Release su GitHub",
+  "extension.installSteps": "Passaggi di installazione",
+  "extension.storeOlder": "La versione del Chrome Web Store è precedente.",
   "header.privacy": "Privacy",
   "header.saveBackup": "Salva backup",
   "header.loadBackup": "Carica backup",
@@ -297,5 +301,8 @@
   "offlineStatus.settingUnavailable": "Questo browser non può mantenere ThreatCaddy disponibile offline, ma funziona comunque online.",
   "offlineStatus.backupNote": "L’uso offline non è un backup. Cancellare i dati di questo browser elimina tutto ciò che è salvato qui, e i browser possono anche rimuovere da soli i dati dei siti salvati, ad esempio quando lo spazio scarseggia. Esporta regolarmente un backup JSON e conserva il file in un luogo sicuro.",
   "sync.backupWarning": "Prima di rimuovere i dati locali, salva e verifica un backup completo. La sincronizzazione del team non può recuperare dettagli presenti solo sul dispositivo, come cartelle delle note, checklist, avanzamento dei playbook e risultati degli strumenti o immagini della chat. Salva backup scarica JSON non crittografato.",
-  "demoModal.reportWorkflow": "Segui le note collegate dalle prove alla bozza del rapporto. Verifica le conclusioni e scarica la nota in Markdown; usa Salva backup per l’intero spazio di lavoro."
+  "demoModal.reportWorkflow": "Segui le note collegate dalle prove alla bozza del rapporto. Verifica le conclusioni e scarica la nota in Markdown; usa Salva backup per l’intero spazio di lavoro.",
+  "bootGuard.framed": "Per la tua sicurezza, ThreatCaddy non funziona all’interno di un altro sito web.",
+  "bootGuard.fileOnly": "Questa copia offline di ThreatCaddy funziona solo quando apri il file salvato sul tuo computer.",
+  "bootGuard.open": "Apri ThreatCaddy"
 }

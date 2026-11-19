@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import type { LLMProvider, ContentBlock } from '../types';
 import { postMessageOrigin } from './utils';
+import { hasPairedBridge } from './extension-bridge';
 
 export const MAX_CONTEXT_MESSAGES = 40;
 
@@ -43,14 +44,16 @@ export function truncateConversation(
  * Returns a concise summary preserving key IOCs, decisions, and findings.
  * Returns null on timeout or failure.
  */
-export function summarizeConversation(
+export async function summarizeConversation(
   truncatedMessages: { role: string; content: string }[],
   provider: LLMProvider,
   model: string,
   apiKey: string,
   endpoint?: string,
 ): Promise<string | null> {
-  if (truncatedMessages.length === 0) return Promise.resolve(null);
+  if (truncatedMessages.length === 0) return null;
+  // Only a paired 1.1.3+ bridge gets the request and its API key; store 1.1.1 has no app pairing.
+  if (!await hasPairedBridge()) return null;
 
   const conversationText = truncatedMessages
     .map(m => `${m.role === 'user' ? 'Analyst' : 'CaddyAI'}: ${m.content.slice(0, 500)}`)
@@ -117,7 +120,7 @@ export function summarizeConversation(
  * Generate a concise chat title via a one-shot LLM request through the extension bridge.
  * Returns null on timeout or failure so callers can silently fall back.
  */
-export function generateChatTitle(
+export async function generateChatTitle(
   userMessage: string,
   assistantReply: string,
   provider: LLMProvider,
@@ -125,6 +128,7 @@ export function generateChatTitle(
   apiKey: string,
   endpoint?: string,
 ): Promise<string | null> {
+  if (!await hasPairedBridge()) return null;
   return new Promise((resolve) => {
     const requestId = nanoid();
     let settled = false;

@@ -5,6 +5,7 @@
     "openedAsNote": "'{{name}}' geopend als nieuwe notitie",
     "openFailed": "'{{name}}' openen mislukt",
     "refreshFailed": "Clips zijn opgeslagen, maar de weergave kon niet worden vernieuwd. Laad deze werkruimte opnieuw om ze te zien.",
+    "outdatedExtensionRefused": "Clips niet geïmporteerd. Ze kwamen van een ThreatCaddy-extensie ouder dan 1.1.3, die ThreatCaddy niet meer gebruikt. Installeer de nieuwste versie via de ThreatCaddy-releases op GitHub; de versie in de Chrome Web Store is ouder. De oude extensie markeert deze clips als ‘Sent’, maar bewaart ze op haar pagina ‘Clip Review’: kopieer ze daarvandaan voordat u de extensie verwijdert.",
     "fileRefreshFailed": "Het bestand is als notitie opgeslagen, maar de weergave kon niet worden vernieuwd. Laad deze werkruimte opnieuw om het te zien.",
     "fileTitle": "{{name}} — {{size}} — Gewijzigd {{modified}}",
     "fileError": {
@@ -82,8 +83,6 @@
     "nameRequired": "Integratienaam is verplicht",
     "createdAndInstalled": "Integratie '{{name}}' aangemaakt en geïnstalleerd",
     "saveFailed": "Opslaan mislukt: {{error}}",
-    "installedFromCatalog": "{{name}} geïnstalleerd vanuit de communitycatalogus",
-    "installCatalogFailed": "Communitysjabloon installeren mislukt",
     "templateExported": "{{name}} geëxporteerd",
     "installTeamFailed": "Teamsjabloon installeren mislukt",
     "notFound": "Integratie niet gevonden",

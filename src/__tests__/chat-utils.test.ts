@@ -1,26 +1,38 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import { generateChatTitle } from '../lib/chat-utils';
+import { answerBridgeCheck, publishBridgeCaps } from './helpers/paired-bridge';
 
 describe('generateChatTitle', () => {
+  // A paired 1.1.3+ bridge; the app sends titles to no other.
+  let postMessageSpy: MockInstance<typeof window.postMessage>;
   beforeEach(() => {
     vi.useFakeTimers();
+    publishBridgeCaps();
+    postMessageSpy = vi.spyOn(window, 'postMessage').mockImplementation(message => { answerBridgeCheck(message); });
   });
 
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    delete document.documentElement.dataset.tcBridgeCaps;
   });
 
-  it('posts TC_LLM_REQUEST with correct payload', async () => {
-    const postMessageSpy = vi.spyOn(window, 'postMessage');
+  /** The title request, once the bridge has answered as paired. */
+  async function titleRequest() {
+    // The ping, its answer and its end marker each take a message hop; fake timers delay a hop
+    // scheduled during another by 1 ms.
+    for (let hop = 0; hop < 5; hop++) {
+      await vi.advanceTimersByTimeAsync(1);
+      const call = postMessageSpy.mock.calls.find(([message]) => message?.type === 'TC_LLM_REQUEST');
+      if (call) return call;
+    }
+    throw new Error('No title request was posted');
+  }
 
+  it('posts TC_LLM_REQUEST with correct payload', async () => {
     const promise = generateChatTitle('Hello', 'Hi there', 'anthropic', 'claude-sonnet-4-6', 'sk-test');
 
-    // Advance microtasks so postMessage fires
-    await vi.advanceTimersByTimeAsync(0);
-
-    expect(postMessageSpy).toHaveBeenCalled();
-    const call = postMessageSpy.mock.calls[0];
+    const call = await titleRequest();
     expect(call[0].type).toBe('TC_LLM_REQUEST');
     expect(call[0].payload.provider).toBe('anthropic');
     expect(call[0].payload.model).toBe('claude-sonnet-4-6');
@@ -40,13 +52,10 @@ describe('generateChatTitle', () => {
   });
 
   it('resolves null on TC_LLM_ERROR', async () => {
-    const postMessageSpy = vi.spyOn(window, 'postMessage');
     const promise = generateChatTitle('Hello', 'Hi there', 'anthropic', 'claude-sonnet-4-6', 'sk-test');
 
-    await vi.advanceTimersByTimeAsync(0);
-
     // Extract requestId from posted message
-    const requestId = postMessageSpy.mock.calls[0][0].requestId;
+    const requestId = (await titleRequest())[0].requestId;
 
     // Simulate an error response
     const event = new MessageEvent('message', {
@@ -60,13 +69,9 @@ describe('generateChatTitle', () => {
   });
 
   it('includes endpoint for local provider', async () => {
-    const postMessageSpy = vi.spyOn(window, 'postMessage');
-
     const promise = generateChatTitle('Hello', 'Hi', 'local', 'llama3', 'key', 'http://localhost:11434/v1');
 
-    await vi.advanceTimersByTimeAsync(0);
-
-    const call = postMessageSpy.mock.calls[0];
+    const call = await titleRequest();
     expect(call[0].payload.endpoint).toBe('http://localhost:11434/v1');
 
     await vi.advanceTimersByTimeAsync(6000);
@@ -74,14 +79,11 @@ describe('generateChatTitle', () => {
   });
 
   it('truncates long messages in the prompt', async () => {
-    const postMessageSpy = vi.spyOn(window, 'postMessage');
     const longMessage = 'A'.repeat(1000);
 
     const promise = generateChatTitle(longMessage, longMessage, 'anthropic', 'claude-sonnet-4-6', 'key');
 
-    await vi.advanceTimersByTimeAsync(0);
-
-    const call = postMessageSpy.mock.calls[0];
+    const call = await titleRequest();
     const content = call[0].payload.messages[0].content;
     // Each part truncated to 300 chars
     expect(content.length).toBeLessThan(1000);
@@ -91,13 +93,10 @@ describe('generateChatTitle', () => {
   });
 
   it('resolves title from TC_LLM_DONE text block', async () => {
-    const postMessageSpy = vi.spyOn(window, 'postMessage');
     const promise = generateChatTitle('Hello', 'Hi there', 'anthropic', 'claude-sonnet-4-6', 'sk-test');
 
-    await vi.advanceTimersByTimeAsync(0);
-
     // Extract requestId
-    const requestId = postMessageSpy.mock.calls[0][0].requestId;
+    const requestId = (await titleRequest())[0].requestId;
 
     // Simulate a successful response
     const event = new MessageEvent('message', {

@@ -6,6 +6,7 @@
   "panel.openAISettings": "فتح إعدادات الذكاء الاصطناعي",
   "panel.installExtension": "تثبيت إضافة المتصفح",
   "panel.installExtensionDesc": "يتطلب AgentCaddy إضافة المتصفح ThreatCaddy لتوجيه طلبات API، أو خادم فريق متصل.",
+  "panel.updateExtension": "تحديث إضافة المتصفح",
   "panel.agentSettings": "إعدادات الوكيل",
   "panel.toggleAgentSettings": "تبديل إعدادات الوكيل",
   "panel.agentRunning": "الوكيل يعمل",

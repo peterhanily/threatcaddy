@@ -4,21 +4,19 @@ Clip text, images, and selections from web pages into ThreatCaddy. Works on Chro
 
 ## Install — Chrome
 
-**[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh)**
+Install version 1.1.5 from the ThreatCaddy release on GitHub:
 
-At the time of ThreatCaddy 2.0.3 the store offers version 1.1.1, which ThreatCaddy 2.0.3 refuses for web fetch (it needs 1.1.3 or later). For web fetch, use the manual install below, which is version 1.1.4, approve ThreatCaddy in its popup (see [Usage](#usage)), and keep only that extension enabled.
-
-<details>
-<summary>Manual install (developer mode)</summary>
-
-1. **[Download threatcaddy-chrome.zip](./threatcaddy-chrome.zip)**, or the file of the same name from the [release downloads](https://github.com/peterhanily/threatcaddy/releases/latest)
+1. **Download `threatcaddy-chrome.zip`** from the [latest release](https://github.com/peterhanily/threatcaddy/releases/latest), or [the copy in this folder](./threatcaddy-chrome.zip)
 2. Unzip it into a new, empty folder (the archive has no top-level folder)
 3. Open `chrome://extensions` in Chrome
 4. Enable **Developer mode** (toggle in top-right)
 5. Click **Load unpacked**
 6. Select the unzipped folder
+7. Approve ThreatCaddy in the extension's popup (see [Usage](#usage)), then reload the ThreatCaddy tab
 
-</details>
+Keep only one ThreatCaddy extension enabled: when two are installed, the one that loads first serves the page.
+
+The Chrome Web Store offers version 1.1.1, which is older and unsupported. It has no app pairing, and its web fetch follows redirects and accepts private addresses. ThreatCaddy 2.0.4 uses none of its features: it sends it no AI, integration or web-fetch request and imports none of its clips. Store 1.1.1 marks clips it sent "Sent" but keeps them on its Clip Review page, so copy any you still need from there before you remove it.
 
 ## Install — Firefox
 
@@ -29,6 +27,8 @@ At the time of ThreatCaddy 2.0.3 the store offers version 1.1.1, which ThreatCad
 5. Select `manifest.json` inside the unzipped folder
 
 > Firefox removes a temporary add-on when the browser closes, so load it again after each restart. The ZIP is not signed; a permanent installation needs a build signed through [addons.mozilla.org](https://addons.mozilla.org), which is not yet available.
+>
+> The Firefox build of 1.1.5 was not run in Firefox before release.
 
 ## Features
 
@@ -38,7 +38,7 @@ At the time of ThreatCaddy 2.0.3 the store offers version 1.1.1, which ThreatCad
 - **Confirmation bubble** — Visual feedback after each capture
 - **Send to ThreatCaddy** — Confirm the destination workspace and transfer captured clips with per-clip save receipts
 - **LLM Proxy** — Routes CaddyAI API calls from the web app through the extension's background script, bypassing CORS restrictions for Anthropic, OpenAI, Gemini and Mistral. When a local LLM endpoint is configured in the app, the app sends chat, agent, meeting and supervisor requests to it directly; chat titles and conversation summaries still reach it through the extension (see the local-AI setting below)
-- **Web fetch** — Fetches public web pages for CaddyAI and agents. ThreatCaddy 2.0.3 uses web fetch only with extension 1.1.3 or later; if more than one ThreatCaddy extension is installed, keep only the newest enabled and reload the app tab
+- **Web fetch** — Fetches public web pages for CaddyAI and agents. ThreatCaddy uses web fetch, like every extension feature, only with extension 1.1.3 or later; if more than one ThreatCaddy extension is installed, keep only the newest enabled and reload the app tab
 
 ## Usage
 
@@ -97,8 +97,8 @@ not an independent backup. Deleting browser storage removes its local receipts.
 - General URL fetching accepts public HTTP(S) hostnames only, with separate browser host permission. Proxy requests additionally require a nonempty, per-app exact-host policy refreshed within 24 hours. Redirects and ambient cookies are not forwarded; responses are capped at 5 MiB.
 - Literal IP addresses, localhost and local-network hostname suffixes are not general-fetch targets. The portable browser API cannot pin DNS resolution, so an approved public hostname is still a trust boundary; do not approve domains you do not trust.
 - AI provider requests use the configured provider and explicit permissions. Changing app approvals aborts existing AI streams. Captured content is never transferred to a different origin after a redirect.
-- For a local model that returns no structured tool calls, version 1.1.4 reads tool calls from the reply text only in the exact `<tool_call>{…}</tool_call>` wrapper the app asks for; JSON in code fences or other tags is ignored. The app treats such calls as taken from reply text and asks before any that write, send data out or reach another investigation.
-- Version 1.1.4 advertises its guarded web fetch as `fetch_url_public_v1`. When another installed ThreatCaddy extension loaded the bridge first, 1.1.4 leaves that extension's capabilities alone.
+- For a local model that returns no structured tool calls, version 1.1.4 and later read tool calls from the reply text only in the exact `<tool_call>{…}</tool_call>` wrapper the app asks for; JSON in code fences or other tags is ignored. The app treats such calls as taken from reply text and asks before any that write, send data out or reach another investigation.
+- Version 1.1.4 and later advertise their guarded web fetch as `fetch_url_public_v1`. When another installed ThreatCaddy extension loaded the bridge first, they leave that extension's capabilities alone.
 
 ## Build
 
@@ -117,7 +117,7 @@ npm run package:write    # Refresh both extension archives and root download ali
 
 The build script reads the `BROWSER` environment variable (`chrome` or `firefox`) and copies the appropriate manifest and source files into `dist/<browser>/`.
 
-Both browser manifests and package metadata use version **1.1.4**. The popup reads
+Both browser manifests and package metadata use version **1.1.5**. The popup reads
 its version from the installed manifest; translations only format that value.
 Release verification requires exactly 34 regular files, including all 21 locale
 catalogs, with source/build/archive parity. Unexpected files (even stale build

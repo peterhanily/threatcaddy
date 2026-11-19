@@ -109,7 +109,6 @@
   "sidebar.agentStatusError": "오류",
   "sidebar.github": "GitHub",
   "sidebar.downloadStandalone": "독립 실행형 다운로드",
-  "sidebar.chromeExtension": "Chrome 확장 프로그램",
   "sidebar.privacy": "개인정보 보호",
   "sidebar.tags": "태그",
   "sidebar.noTags": "아직 태그가 없습니다",
@@ -152,7 +151,12 @@
   "header.standalone": "독립 실행형",
   "standaloneWarning.message": "독립 실행형 버전이 암호화 없이 file://에서 실행 중입니다. 다른 로컬 HTML 파일이 데이터에 접근할 수 있습니다. 독립 실행형 모드에서는 Content Security Policy가 스크립트나 네트워크 연결을 제한하지 않습니다.",
   "standaloneWarning.enableEncryption": "설정에서 암호화 활성화",
-  "header.chromeExtension": "Chrome 확장 프로그램",
+  "extension.updateRequired": "ThreatCaddy에는 이 앱을 승인한 브라우저 확장 프로그램 1.1.3 이상이 필요합니다. Chrome 웹 스토어는 아직 이전 버전을 제공하므로 GitHub의 ThreatCaddy 릴리스에서 최신 버전을 설치하세요. 최신 ThreatCaddy 확장 프로그램만 설치된 상태로 두고 페이지를 새로 고치세요.",
+  "extension.reloadRequired": "ThreatCaddy 브라우저 확장 프로그램이 이 페이지에 더 이상 응답하지 않습니다. 확장 프로그램을 업데이트하거나 다시 로드한 뒤에 이렇게 됩니다. 페이지를 새로 고치세요.",
+  "extension.menuLink": "브라우저 확장 프로그램 (GitHub)",
+  "extension.githubRelease": "GitHub 릴리스",
+  "extension.installSteps": "설치 단계",
+  "extension.storeOlder": "Chrome 웹 스토어 버전은 더 오래되었습니다.",
   "header.privacy": "개인정보 보호",
   "header.saveBackup": "백업 저장",
   "header.loadBackup": "백업 불러오기",
@@ -402,5 +406,8 @@
   "offlineStatus.settingUnavailable": "이 브라우저에서는 ThreatCaddy를 오프라인으로 사용할 수 있게 유지할 수 없지만, 온라인에서는 계속 작동합니다.",
   "offlineStatus.backupNote": "오프라인 사용은 백업이 아닙니다. 이 브라우저의 데이터를 지우면 여기에 저장된 모든 내용이 삭제되며, 저장 공간이 부족할 때처럼 브라우저가 저장된 사이트 데이터를 스스로 제거할 수도 있습니다. JSON 백업을 정기적으로 내보내고 파일을 안전한 곳에 보관하세요.",
   "sync.backupWarning": "로컬 데이터를 삭제하기 전에 전체 백업을 저장하고 확인하세요. 팀 동기화는 노트 폴더, 체크리스트, 플레이북 진행 상황, 채팅 도구 결과나 이미지처럼 이 기기에만 있는 세부 정보를 복구할 수 없습니다. 백업 저장은 암호화되지 않은 JSON을 다운로드합니다.",
-  "demoModal.reportWorkflow": "연결된 노트를 따라 원본 증거부터 보고서 초안까지 확인하세요. 결론을 검토하고 보고서를 Markdown으로 다운로드하세요. 전체 작업 공간은 별도로 백업 저장하세요."
+  "demoModal.reportWorkflow": "연결된 노트를 따라 원본 증거부터 보고서 초안까지 확인하세요. 결론을 검토하고 보고서를 Markdown으로 다운로드하세요. 전체 작업 공간은 별도로 백업 저장하세요.",
+  "bootGuard.framed": "보안을 위해 ThreatCaddy는 다른 웹사이트 안에서 실행되지 않습니다.",
+  "bootGuard.fileOnly": "이 ThreatCaddy 오프라인 사본은 컴퓨터에 저장된 파일을 열 때만 실행됩니다.",
+  "bootGuard.open": "ThreatCaddy 열기"
 }

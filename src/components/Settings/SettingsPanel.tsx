@@ -10,7 +10,7 @@ import { useCustomSlashCommands } from '../../hooks/useCustomSlashCommands';
 import { TemplateManager } from './TemplateManager';
 import { PlaybookManager } from './PlaybookManager';
 import { DEFAULT_SYSTEM_PROMPT } from '../../lib/llm-tools';
-import { hasGuardedBridgeFetch } from '../../lib/llm-tools-analysis';
+import { hasPairedBridge, isPairedBridgeCaps } from '../../lib/extension-bridge';
 import { isHttpsOrLoopback } from '../../lib/agent-hosts';
 import { MODELS, MODEL_PROVIDER_MAP } from '../../lib/models';
 import { hasServerSession, resolveRoute } from '../../lib/llm-router';
@@ -879,8 +879,8 @@ const bridgeCapsSnapshot = () => document.documentElement.dataset.tcBridgeCaps ?
 
 // Without a local endpoint every model takes the routing mode's route; with one, cloud models still do.
 const ROUTE_KEYS = {
-  all: { server: 'ai.dataFlow.routeServer', extension: 'ai.dataFlow.routeExtension', 'no-extension': 'ai.dataFlow.routeNoExtension', 'no-server': 'ai.dataFlow.routeNoServer', none: 'ai.dataFlow.routeNone' },
-  cloud: { server: 'ai.dataFlow.routeCloudServer', extension: 'ai.dataFlow.routeCloudExtension', 'no-extension': 'ai.dataFlow.routeCloudNoExtension', 'no-server': 'ai.dataFlow.routeCloudNoServer', none: 'ai.dataFlow.routeCloudNone' },
+  all: { server: 'ai.dataFlow.routeServer', extension: 'ai.dataFlow.routeExtension', 'no-extension': 'ai.dataFlow.routeNoExtension', 'no-server': 'ai.dataFlow.routeNoServer', none: 'ai.dataFlow.routeNone', outdated: 'ai.dataFlow.routeOutdatedExtension' },
+  cloud: { server: 'ai.dataFlow.routeCloudServer', extension: 'ai.dataFlow.routeCloudExtension', 'no-extension': 'ai.dataFlow.routeCloudNoExtension', 'no-server': 'ai.dataFlow.routeCloudNoServer', none: 'ai.dataFlow.routeCloudNone', outdated: 'ai.dataFlow.routeCloudOutdatedExtension' },
 } as const;
 
 /** Describes where requests go for every model the analyst can pick: a local model with an endpoint is
@@ -893,9 +893,12 @@ function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpda
   const caps = capsText.split(',').filter(Boolean);
   const localEndpoint = settings.llmLocalEndpoint?.trim();
   // Every cloud provider takes the same route.
-  const cloud = resolveRoute(settings, { extensionAvailable: caps.length > 0, serverSession: hasServerSession(), provider: 'anthropic' });
+  // Store 1.1.1 publishes capabilities too, but the app sends it nothing.
+  const cloud = resolveRoute(settings, { extensionAvailable: isPairedBridgeCaps(caps), serverSession: hasServerSession(), provider: 'anthropic' });
   const keys = ROUTE_KEYS[localEndpoint ? 'cloud' : 'all'];
-  const cloudKey = keys[cloud.route === 'unavailable' ? cloud.reason : cloud.route === 'server' ? 'server' : 'extension'];
+  // Its users already have an extension installed and turned on: say what to install instead.
+  const outdated = caps.length > 0 && !isPairedBridgeCaps(caps);
+  const cloudKey = keys[cloud.route === 'unavailable' ? (outdated && cloud.reason !== 'no-server' ? 'outdated' : cloud.reason) : cloud.route === 'server' ? 'server' : 'extension'];
   // Server-routed requests go to the signed-in session's server.
   const routeLines = [
     ...(localEndpoint ? [t('ai.dataFlow.routeLocal', { host: hostOf(localEndpoint) })] : []),
@@ -907,7 +910,7 @@ function AIDataFlow({ settings, onUpdateSettings }: { settings: Settings; onUpda
   useEffect(() => {
     if (!capsText) return;
     let current = true;
-    void hasGuardedBridgeFetch().then(guarded => { if (current) setFetchCheck({ caps: capsText, guarded }); });
+    void hasPairedBridge().then(guarded => { if (current) setFetchCheck({ caps: capsText, guarded }); });
     return () => { current = false; setFetchCheck(undefined); };
   }, [capsText]);
   const fetchLine = !caps.length ? t('ai.dataFlow.fetchNoExtension')

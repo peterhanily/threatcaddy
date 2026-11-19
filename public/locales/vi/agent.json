@@ -6,6 +6,7 @@
   "panel.openAISettings": "Mở cài đặt AI",
   "panel.installExtension": "Cài đặt tiện ích mở rộng trình duyệt",
   "panel.installExtensionDesc": "AgentCaddy cần tiện ích mở rộng trình duyệt ThreatCaddy để chuyển tiếp yêu cầu API, hoặc máy chủ nhóm được kết nối.",
+  "panel.updateExtension": "Cập nhật tiện ích mở rộng trình duyệt",
   "panel.agentSettings": "Cài đặt tác nhân",
   "panel.toggleAgentSettings": "Chuyển đổi cài đặt tác nhân",
   "panel.agentRunning": "Tác nhân đang chạy",

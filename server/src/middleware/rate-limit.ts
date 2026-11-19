@@ -1,5 +1,6 @@
 import type { Context, Next } from 'hono';
-import { isIP } from 'node:net';
+import { BlockList, isIP } from 'node:net';
+import { logger } from '../lib/logger.js';
 
 interface RateLimitEntry {
   count: number;
@@ -20,27 +21,64 @@ function normalizeIP(ip: string): string {
   return ip.toLowerCase();
 }
 
-export function proxyConfiguration(env = process.env): { enabled: boolean; peers: Set<string> } {
+interface ProxyConfiguration { enabled: boolean; trusts(ip: string): boolean }
+
+/** One exact address, or a CIDR range such as 172.16.0.0/12 or fd00::/8; a /0 range would trust every peer. */
+function addTrustedPeer(peers: BlockList, entry: string): boolean {
+  const [address, prefix, extra] = entry.split('/');
+  const family = isIP(address);
+  if (!family || extra !== undefined) return false;
+  const type = family === 4 ? 'ipv4' : 'ipv6';
+  if (prefix === undefined) {
+    peers.addAddress(address, type);
+    return true;
+  }
+  const bits = /^[1-9]\d{0,2}$/.test(prefix) ? Number(prefix) : 0;
+  if (bits < 1 || bits > (family === 4 ? 32 : 128)) return false;
+  peers.addSubnet(address, bits, type);
+  return true;
+}
+
+let cachedConfiguration: { key: string; config: ProxyConfiguration } | undefined;
+
+export function proxyConfiguration(env = process.env): ProxyConfiguration {
+  const key = `${env.TRUST_PROXY}\n${env.TRUSTED_PROXY_IPS}`;
+  if (cachedConfiguration?.key === key) return cachedConfiguration.config;
   const value = (env.TRUST_PROXY ?? '0').trim().toLowerCase();
   if (!['0', '1', 'false', 'true'].includes(value)) throw new Error('TRUST_PROXY must be true/false or 1/0');
-  const peers = (env.TRUSTED_PROXY_IPS ?? '127.0.0.1,::1').split(',').map(ip => ip.trim()).filter(Boolean);
-  if (peers.some(ip => !isIP(ip))) throw new Error('TRUSTED_PROXY_IPS must contain exact IP addresses, not hostnames or CIDRs');
-  return { enabled: value === '1' || value === 'true', peers: new Set(peers.map(normalizeIP)) };
+  const peers = new BlockList();
+  const entries = (env.TRUSTED_PROXY_IPS ?? '127.0.0.1,::1').split(',').map(ip => ip.trim()).filter(Boolean);
+  if (!entries.every(entry => addTrustedPeer(peers, entry))) {
+    throw new Error('TRUSTED_PROXY_IPS must contain IP addresses or CIDR ranges (prefix 1-32 for IPv4, 1-128 for IPv6), not hostnames');
+  }
+  const config = { enabled: value === '1' || value === 'true', trusts: (ip: string) => peers.check(ip, isIP(ip) === 4 ? 'ipv4' : 'ipv6') };
+  cachedConfiguration = { key, config };
+  return config;
 }
+
+let untrustedForwardingLogged = false;
 
 export function getClientIp(c: Context): string {
   const remote = (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)?.incoming?.socket?.remoteAddress;
   if (!remote || !isIP(remote)) return 'unknown';
   const address = normalizeIP(remote);
   const config = proxyConfiguration();
-  // Forwarding only has meaning when the immediate connection is a known proxy.
-  if (!config.enabled || !config.peers.has(address)) return address;
   const forwarded = c.req.header('x-forwarded-for');
+  // Forwarding only has meaning when the immediate connection is a known proxy.
+  if (!config.enabled || !config.trusts(address)) {
+    if (forwarded !== undefined && !untrustedForwardingLogged) {
+      untrustedForwardingLogged = true;
+      logger.warn('Ignoring X-Forwarded-For from a peer that is not a trusted proxy, so every client behind it shares this address for rate limits and login lockouts. If this peer is your reverse proxy, set TRUST_PROXY=1 and add it to TRUSTED_PROXY_IPS. Logged once.', {
+        peer: address, trustProxy: config.enabled,
+      });
+    }
+    return address;
+  }
   if (forwarded) {
     const chain = forwarded.split(',').map(ip => ip.trim());
     if (chain.some(ip => !isIP(ip))) return address;
     for (const hop of chain.reverse().map(normalizeIP)) {
-      if (!config.peers.has(hop)) return hop;
+      if (!config.trusts(hop)) return hop;
     }
     return chain.length ? normalizeIP(chain[chain.length - 1]) : address;
   }

@@ -6,6 +6,7 @@
   "panel.openAISettings": "打开 AI 设置",
   "panel.installExtension": "安装浏览器扩展",
   "panel.installExtensionDesc": "AgentCaddy 需要 ThreatCaddy 浏览器扩展来代理 API 请求，或连接团队服务器。",
+  "panel.updateExtension": "更新浏览器扩展",
   "panel.agentSettings": "代理设置",
   "panel.toggleAgentSettings": "切换代理设置",
   "panel.agentRunning": "代理正在运行",

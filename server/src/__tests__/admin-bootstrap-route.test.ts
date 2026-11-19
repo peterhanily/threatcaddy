@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrizzleQueryError } from 'drizzle-orm';
 
-const { bootstrap, sign } = vi.hoisted(() => ({ bootstrap: vi.fn(), sign: vi.fn() }));
+const { bootstrap, sign, removeSecretFile } = vi.hoisted(() => ({ bootstrap: vi.fn(), sign: vi.fn(), removeSecretFile: vi.fn() }));
 vi.mock('../services/admin-session-service.js', () => ({ bootstrapAdminUser: bootstrap }));
+vi.mock('../services/bootstrap-secret-file.js', () => ({ removeBootstrapSecretFile: removeSecretFile }));
 vi.mock('../middleware/admin-auth.js', () => ({ signAdminToken: sign }));
-vi.mock('../lib/logger.js', () => ({ logger: { info: vi.fn() } }));
+vi.mock('../lib/logger.js', () => ({ logger: { info: vi.fn(), warn: vi.fn() } }));
 
 // Import the production handler and rate limiter, not a duplicated route.
 import app from '../routes/admin/bootstrap.js';
@@ -57,6 +58,7 @@ describe('administrator bootstrap production route', () => {
     expect(busy.headers.get('Retry-After')).toBe('1');
     expect((await request(valid)).status).toBe(409);
     expect(sign).not.toHaveBeenCalled();
+    expect(removeSecretFile).not.toHaveBeenCalled();
   });
 
   it('maps a database duplicate-username violation to 409 without echoing the failed query', async () => {
@@ -78,5 +80,14 @@ describe('administrator bootstrap production route', () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ token: 'fixture-token', admin });
     expect(sign).toHaveBeenCalledWith(admin.id, admin.username, 'fixture-hash');
+  });
+
+  it('deletes the generated bootstrap secret file once the first administrator exists', async () => {
+    const admin = { id: 'admin-id', username: 'admin', displayName: 'Administrator' };
+    expect((await request(valid)).status).toBe(401);
+    expect(removeSecretFile).not.toHaveBeenCalled();
+    bootstrap.mockResolvedValue({ admin, passwordHash: 'fixture-hash' });
+    expect((await request(valid)).status).toBe(200);
+    expect(removeSecretFile).toHaveBeenCalledOnce();
   });
 });

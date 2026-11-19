@@ -8,6 +8,9 @@ import { applyDeploymentPolicy, type DeploymentPolicy } from './src/lib/deployme
 import { startupBudget } from './build/startup-budget'
 import { dependencyProvenance } from './build/dependency-provenance'
 import { localeCacheName, workboxOptions } from './build/pwa-workbox'
+import { bootGuard } from './build/boot-guard'
+import { cspScriptHashes } from './build/csp-script-hashes'
+import { securityTxtExpiry } from './build/security-txt'
 
 function deploymentPolicy(policy: DeploymentPolicy): Plugin {
   return {
@@ -47,7 +50,10 @@ export default defineConfig(({ mode }) => {
     selfHostedFontAssets(),
     react(),
     tailwindcss(),
+    bootGuard({ standalone: false, localesDir: resolve(__dirname, 'public/locales') }),
     deploymentPolicy({ analyticsToken: env.VITE_CF_ANALYTICS_TOKEN, connectOrigins: env.VITE_CONNECT_ORIGINS }),
+    cspScriptHashes(),
+    securityTxtExpiry(resolve(__dirname, 'public/.well-known/security.txt')),
     startupBudget(),
     dependencyProvenance('hosted'),
     VitePWA({

@@ -1,7 +1,7 @@
 {
   "name": "ThreatCaddy",
   "short_name": "ThreatCaddy",
-  "description": "Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. No server. No tracking.",
+  "description": "Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. Investigations are stored in your browser; team sync and AI requests go only where you configure them.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

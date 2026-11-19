@@ -5,6 +5,7 @@
     "openedAsNote": "「{{name}}」を新しいノートとして開きました",
     "openFailed": "「{{name}}」を開けませんでした",
     "refreshFailed": "クリップは保存されましたが、表示を更新できませんでした。このワークスペースを再読み込みすると表示されます。",
+    "outdatedExtensionRefused": "クリップはインポートされませんでした。これらは 1.1.3 より古い ThreatCaddy 拡張機能から送られたもので、ThreatCaddy はその拡張機能を使用しなくなりました。GitHub の ThreatCaddy リリースから最新版をインストールしてください。Chrome ウェブストアのバージョンは古いものです。古い拡張機能はこれらのクリップに「Sent」の印を付けますが、「Clip Review」ページに保持します。拡張機能を削除する前に、そこからコピーしてください。",
     "fileRefreshFailed": "ファイルはノートとして保存されましたが、表示を更新できませんでした。このワークスペースを再読み込みすると表示されます。",
     "fileTitle": "{{name}} — {{size}} — 更新日時 {{modified}}",
     "fileError": {
@@ -82,8 +83,6 @@
     "nameRequired": "インテグレーション名は必須です",
     "createdAndInstalled": "インテグレーション「{{name}}」を作成してインストールしました",
     "saveFailed": "保存に失敗しました: {{error}}",
-    "installedFromCatalog": "コミュニティカタログから {{name}} をインストールしました",
-    "installCatalogFailed": "コミュニティテンプレートのインストールに失敗しました",
     "templateExported": "{{name}} をエクスポートしました",
     "installTeamFailed": "チームテンプレートのインストールに失敗しました",
     "notFound": "インテグレーションが見つかりません",

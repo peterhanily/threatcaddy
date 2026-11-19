@@ -122,7 +122,6 @@
   "sidebar.agentStatusError": "错误",
   "sidebar.github": "GitHub",
   "sidebar.downloadStandalone": "下载独立版",
-  "sidebar.chromeExtension": "Chrome 扩展",
   "sidebar.privacy": "隐私",
   "sidebar.tags": "标签",
   "sidebar.noTags": "暂无标签",
@@ -160,7 +159,12 @@
   "header.standalone": "独立版",
   "standaloneWarning.message": "独立版正在通过 file:// 无加密运行。其他本地 HTML 文件可以访问您的数据。在独立模式下，Content Security Policy 不会限制脚本或网络连接。",
   "standaloneWarning.enableEncryption": "在设置中启用加密",
-  "header.chromeExtension": "Chrome 扩展",
+  "extension.updateRequired": "ThreatCaddy 需要已批准此应用的浏览器扩展 1.1.3 或更高版本。Chrome 应用商店仍提供较旧的版本，请从 GitHub 上的 ThreatCaddy 发布版本安装最新版本。请只保留已安装的最新 ThreatCaddy 扩展，然后重新加载页面。",
+  "extension.reloadRequired": "ThreatCaddy 浏览器扩展已停止响应此页面，扩展更新或重新加载后会出现这种情况。请重新加载页面。",
+  "extension.menuLink": "浏览器扩展 (GitHub)",
+  "extension.githubRelease": "GitHub 发布版本",
+  "extension.installSteps": "安装步骤",
+  "extension.storeOlder": "Chrome 应用商店中的版本较旧。",
   "header.privacy": "隐私",
   "header.saveBackup": "保存备份",
   "header.loadBackup": "加载备份",
@@ -297,5 +301,8 @@
   "offlineStatus.settingUnavailable": "此浏览器无法让 ThreatCaddy 保持离线可用，但它仍可在线使用。",
   "offlineStatus.backupNote": "离线使用不是备份。清除此浏览器的数据会删除这里保存的所有内容，浏览器也可能自行移除已保存的网站数据，例如在空间不足时。请定期导出 JSON 备份，并将文件保存在安全的地方。",
   "sync.backupWarning": "删除本地数据前，请保存并验证完整备份。团队同步无法恢复仅保存在此设备上的详情，例如笔记文件夹、检查清单、预案进度以及聊天工具结果或图片。“保存备份”会下载未加密的 JSON 文件。",
-  "demoModal.reportWorkflow": "通过关联笔记从源证据了解报告草稿。审阅结论并将报告笔记下载为 Markdown；使用“保存备份”保留整个工作区。"
+  "demoModal.reportWorkflow": "通过关联笔记从源证据了解报告草稿。审阅结论并将报告笔记下载为 Markdown；使用“保存备份”保留整个工作区。",
+  "bootGuard.framed": "为了您的安全，ThreatCaddy 不会在其他网站内运行。",
+  "bootGuard.fileOnly": "此 ThreatCaddy 离线副本仅在您打开保存在计算机上的文件时运行。",
+  "bootGuard.open": "打开 ThreatCaddy"
 }

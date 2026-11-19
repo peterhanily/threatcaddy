@@ -12,10 +12,15 @@ previously built image. Update the source, then run
 `docker compose build server` and
 `docker compose up -d --no-deps --force-recreate server`.
 
-2.0.3 adds no database migrations and changes no server code apart from the
-version that `/health` reports. Its changes are client-side AI hardening; see
-the [2.0.3 notes](../docs/releases/v2.0.3.md). Upgrade team clients too:
-members still on 2.0.2 do not have the client protections.
+2.0.4 adds no database migrations, but changes server defaults that can need
+action before you recreate the server: the supplied Compose file publishes the
+API on host loopback only, `TRUSTED_PROXY_IPS` should name the Compose
+network's gateway when a proxy on the host forwards to it, `/health` returns
+only `status` and `version`, the application code in the image is read-only to
+the runtime user, the generated `.admin-secret` file is deleted once an
+administrator exists, and the sandbox images are pinned by digest. See the
+[2.0.4 upgrade notes](../docs/releases/v2.0.4.md#upgrade). Upgrade team clients
+too.
 
 Reverting code or an image does not roll back database migrations. Restoring
 data requires the matching database and file snapshot plus an explicit

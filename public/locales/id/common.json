@@ -122,7 +122,6 @@
   "sidebar.agentStatusError": "kesalahan",
   "sidebar.github": "GitHub",
   "sidebar.downloadStandalone": "Unduh Versi Mandiri",
-  "sidebar.chromeExtension": "Ekstensi Chrome",
   "sidebar.privacy": "Privasi",
   "sidebar.tags": "Tag",
   "sidebar.noTags": "Belum ada tag",
@@ -160,7 +159,12 @@
   "header.standalone": "Mandiri",
   "standaloneWarning.message": "Versi mandiri berjalan di file:// tanpa enkripsi. File HTML lokal lain dapat mengakses data Anda. Dalam mode mandiri, Content Security Policy tidak membatasi skrip atau koneksi jaringan.",
   "standaloneWarning.enableEncryption": "Aktifkan enkripsi di Pengaturan",
-  "header.chromeExtension": "Ekstensi Chrome",
+  "extension.updateRequired": "ThreatCaddy memerlukan ekstensi browsernya versi 1.1.3 atau yang lebih baru, yang disetujui untuk aplikasi ini. Chrome Web Store masih menawarkan versi yang lebih lama, jadi pasang versi terbaru dari rilis ThreatCaddy di GitHub. Biarkan hanya ekstensi ThreatCaddy terbaru yang terpasang, lalu muat ulang halaman.",
+  "extension.reloadRequired": "Ekstensi browser ThreatCaddy berhenti merespons halaman ini, seperti yang terjadi setelah ekstensi diperbarui atau dimuat ulang. Muat ulang halaman.",
+  "extension.menuLink": "Ekstensi browser (GitHub)",
+  "extension.githubRelease": "Rilis GitHub",
+  "extension.installSteps": "Langkah pemasangan",
+  "extension.storeOlder": "Versi di Chrome Web Store lebih lama.",
   "header.privacy": "Privasi",
   "header.saveBackup": "Simpan Cadangan",
   "header.loadBackup": "Muat Cadangan",
@@ -297,5 +301,8 @@
   "offlineStatus.settingUnavailable": "Browser ini tidak dapat membuat ThreatCaddy tetap tersedia secara offline, tetapi ThreatCaddy tetap berfungsi secara online.",
   "offlineStatus.backupNote": "Penggunaan offline bukan cadangan. Menghapus data browser ini akan menghapus semua yang tersimpan di sini, dan browser juga dapat menghapus data situs yang tersimpan dengan sendirinya, misalnya saat ruang penyimpanan hampir habis. Ekspor cadangan JSON secara rutin dan simpan berkasnya di tempat yang aman.",
   "sync.backupWarning": "Sebelum menghapus data lokal, simpan dan verifikasi cadangan lengkap. Sinkronisasi tim tidak dapat memulihkan detail khusus perangkat seperti folder catatan, daftar periksa, progres playbook, serta hasil alat atau gambar obrolan. Simpan Cadangan mengunduh JSON tanpa enkripsi.",
-  "demoModal.reportWorkflow": "Ikuti catatan tertaut dari bukti sumber ke draf laporan. Periksa kesimpulan dan unduh catatan laporan sebagai Markdown; simpan cadangan seluruh ruang kerja."
+  "demoModal.reportWorkflow": "Ikuti catatan tertaut dari bukti sumber ke draf laporan. Periksa kesimpulan dan unduh catatan laporan sebagai Markdown; simpan cadangan seluruh ruang kerja.",
+  "bootGuard.framed": "Demi keamanan Anda, ThreatCaddy tidak berjalan di dalam situs web lain.",
+  "bootGuard.fileOnly": "Salinan offline ThreatCaddy ini hanya berjalan saat Anda membuka file yang tersimpan di komputer Anda.",
+  "bootGuard.open": "Buka ThreatCaddy"
 }

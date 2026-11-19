@@ -5,6 +5,7 @@
     "openedAsNote": "\"{{name}}\" als neue Notiz geöffnet",
     "openFailed": "\"{{name}}\" konnte nicht geöffnet werden",
     "refreshFailed": "Clips wurden gespeichert, aber die Ansicht konnte nicht aktualisiert werden. Laden Sie diesen Arbeitsbereich neu, um sie zu sehen.",
+    "outdatedExtensionRefused": "Clips nicht importiert. Sie stammen aus einer ThreatCaddy-Erweiterung älter als 1.1.3, die ThreatCaddy nicht mehr verwendet. Installieren Sie die neueste Version aus den ThreatCaddy-Releases auf GitHub; die Version im Chrome Web Store ist älter. Die alte Erweiterung markiert diese Clips als „Sent“, behält sie aber auf ihrer Seite „Clip Review“: Kopieren Sie sie von dort, bevor Sie die Erweiterung entfernen.",
     "fileRefreshFailed": "Die Datei wurde als Notiz gespeichert, aber die Ansicht konnte nicht aktualisiert werden. Laden Sie diesen Arbeitsbereich neu, um sie zu sehen.",
     "fileTitle": "{{name}} — {{size}} — Geändert {{modified}}",
     "fileError": {
@@ -82,8 +83,6 @@
     "nameRequired": "Integrationsname ist erforderlich",
     "createdAndInstalled": "Integration \"{{name}}\" erstellt und installiert",
     "saveFailed": "Speichern fehlgeschlagen: {{error}}",
-    "installedFromCatalog": "{{name}} aus Community-Katalog installiert",
-    "installCatalogFailed": "Community-Vorlage konnte nicht installiert werden",
     "templateExported": "{{name}} exportiert",
     "installTeamFailed": "Team-Vorlage konnte nicht installiert werden",
     "notFound": "Integration nicht gefunden",

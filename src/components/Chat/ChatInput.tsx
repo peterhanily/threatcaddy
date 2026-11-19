@@ -8,6 +8,7 @@ import type { LLMProvider } from '../../types';
 import type { LLMRoute } from '../../lib/llm-router';
 import { MODELS as STATIC_MODELS } from '../../lib/models';
 import { cn } from '../../lib/utils';
+import { EXTENSION_INSTALL_STEPS_URL, EXTENSION_RELEASES_URL } from '../../lib/extension-bridge';
 import { MENTION_CATEGORIES, type MentionSuggestion } from '../../lib/chat-mentions';
 
 const SLASH_COMMAND_DEFS = [
@@ -335,8 +336,11 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <div className="text-xs space-y-1">
             <p className="font-medium">{t('input.extensionRequiredTitle')}</p>
-            <p className="text-amber-400/80">{t('input.extensionRequiredDesc')}{' '}
-              <a href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">{t('input.chromeWebStore')}</a>.
+            <p className="text-amber-400/80">{t('input.extensionRequiredVersion')} {t('extension.storeOlder', { ns: 'common' })}</p>
+            <p className="text-amber-400/80">
+              <a href={EXTENSION_RELEASES_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">{t('extension.githubRelease', { ns: 'common' })}</a>
+              {' · '}
+              <a href={EXTENSION_INSTALL_STEPS_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">{t('extension.installSteps', { ns: 'common' })}</a>
             </p>
             {onOpenSettings && (
               <button onClick={onOpenSettings} className="text-accent hover:text-accent-hover underline">

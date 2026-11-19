@@ -65,6 +65,29 @@ test('the runtime image defaults to production behaviour and reports its own hea
   assert.ok(runtimeStage.indexOf('HEALTHCHECK') < runtimeStage.indexOf('CMD ["node", "dist/index.js"]'));
 });
 
+test('the runtime user can write its file storage but not the root-owned application code', () => {
+  const chowns = [...runtimeStage.matchAll(/chown\s+(?:-R\s+)?\S+\s+([^\n&\\]+)/g)].map(match => match[1].trim().split(/\s+/));
+  assert.deepEqual(chowns, [['/data/files']]);
+  assert.doesNotMatch(runtimeStage, /--chown|--chmod|chmod\s/);
+  assert.ok(runtimeStage.indexOf('chown -R app:app /data/files') < runtimeStage.indexOf('\nUSER app\n'));
+  assert.ok(runtimeStage.indexOf('COPY --from=build /app/dist ./dist') < runtimeStage.indexOf('\nUSER app\n'));
+});
+
+test('the dependency layer drops third-party test keys and the build-time compile cache', () => {
+  // Pruning in a later layer would leave the bytes in this one.
+  const install = runtimeStage.match(/^RUN [^\n]*(?:\\\n[^\n]*)*npm ci --omit=dev(?:[^\n]*\\\n)*[^\n]*$/m)?.[0];
+  assert.ok(install, 'Runtime stage must install production dependencies in one RUN instruction');
+  const removed = install.replaceAll('\\\n', ' ').split('&&').map(command => command.trim().split(/\s+/))
+    .filter(([tool, flags]) => tool === 'rm' && flags === '-rf').flatMap(args => args.slice(2));
+  for (const path of ['node_modules/ssh2/test', '/tmp/node-compile-cache']) assert.ok(removed.includes(path), path);
+});
+
+test('image acceptance checks the runtime file layout as the runtime user', () => {
+  const acceptance = read('scripts/ci-verify-server-image.mjs');
+  assert.match(acceptance, /readFileSync\(new URL\('\.\/lib\/runtime-image-layout\.mjs', import\.meta\.url\)/);
+  assert.match(acceptance, /readOnly: \['\/app'\], writable: \['\/data\/files'\], absent: \['\/app\/node_modules\/ssh2\/test', '\/tmp\/node-compile-cache'\]/);
+});
+
 test('Compose bounds container logs for both services', () => {
   const compose = load(read('docker-compose.yml'));
   for (const name of ['server', 'db']) {
@@ -73,4 +96,17 @@ test('Compose bounds container logs for both services', () => {
     assert.match(logging.options['max-size'], /^\d+m$/);
     assert.match(logging.options['max-file'], /^\d+$/);
   }
+});
+
+test('Compose publishes the API on host loopback unless the operator opts in to another address', () => {
+  const ports = load(read('docker-compose.yml')).services.server.ports;
+  const effective = environment => ports.map(port => port.replace(/\$\{(\w+):-([^}]*)\}/g, (_, name, fallback) => environment[name] || fallback));
+  assert.deepEqual(effective({}), ['127.0.0.1:3001:3001', '127.0.0.1:3002:3002']);
+  // The opt-in moves only the API; administration stays on host loopback.
+  assert.deepEqual(effective({ API_PUBLISH_ADDRESS: '0.0.0.0' }), ['0.0.0.0:3001:3001', '127.0.0.1:3002:3002']);
+  const deployment = read('docs/deployment.md');
+  const reference = deployment.match(/### Docker Compose Reference\n\n```yaml\n([\s\S]*?)```/)?.[1];
+  assert.ok(reference, 'docs/deployment.md must keep its Compose reference');
+  assert.deepEqual(load(reference).services.server.ports, ports, 'The documented Compose file must publish the same ports');
+  assert.match(deployment, /API_PUBLISH_ADDRESS=0\.0\.0\.0/);
 });

@@ -31,6 +31,21 @@ wildcards such as `*.s3.*.amazonaws.com` are invalid CSP syntax and are not
 replaced with provider-wide permission. The hosted browser suite checks startup
 and a lazy-loaded dialog for CSP diagnostics in Chromium, Firefox and WebKit.
 
+The policy allows no inline script except those in the built page: the build
+adds a hash of each inline script in `index.html` to `script-src`, and fails if
+`'unsafe-inline'` is added. An inline script inserted into the HTML after the
+build does not run. The app also refuses to run inside a frame. Serve the
+hosted build (`dist/`) from your web server, not the standalone file: served
+over http or https, the standalone file shows only a notice.
+
+Every hosted build also ships `public/.well-known/security.txt`. It names the
+ThreatCaddy project's private vulnerability reporting as the contact and
+`https://threatcaddy.com/.well-known/security.txt` as its canonical address, so
+a copy served from your own domain sends reports about your deployment to the
+project. Before you build your own hosted copy, replace the file's `Contact`,
+`Canonical`, `Policy` and `Expires` lines with your own. The build needs the
+file, and warns from 30 days before its `Expires` date.
+
 ## 1. Docker Deployment (Recommended)
 
 ### Prerequisites
@@ -107,13 +122,22 @@ docker compose up -d
 
 This starts:
 - **PostgreSQL 17** on internal network (not exposed to host)
-- **ThreatCaddy Server** with the API on port 3001 of every host interface and
-  the admin panel on host loopback only (`127.0.0.1:3002`)
+- **ThreatCaddy Server** with the API on host loopback (`127.0.0.1:3001`) for the
+  TLS reverse proxy in [3. Reverse Proxy Setup](#3-reverse-proxy-setup), and the
+  admin panel on host loopback only (`127.0.0.1:3002`)
+
+The API speaks plain HTTP. To serve clients without a proxy on this host, opt
+in explicitly in `.env`, either on every IPv4 interface or on one interface
+address (such as a VPN address):
+
+```env
+API_PUBLISH_ADDRESS=0.0.0.0
+```
 
 Docker-published ports bypass host firewalls such as ufw and firewalld, so a
-firewall rule does not hide port 3001. When a reverse proxy on the same host
-terminates TLS, publish the API as `127.0.0.1:3001:3001` instead; otherwise
-restrict it with provider security groups or `DOCKER-USER` rules.
+firewall rule does not hide port 3001. Restrict it with provider security groups
+or `DOCKER-USER` rules, and do not send passwords or tokens to it across an
+untrusted network.
 
 ### Verify
 
@@ -121,8 +145,8 @@ restrict it with provider security groups or `DOCKER-USER` rules.
 # Health check
 curl http://localhost:3001/health
 
-# Expected response (abridged):
-# {"status":"ok","db":"connected","storage":"accessible","version":"...","uptime":42,"memory":{...},"timestamp":"..."}
+# Expected response:
+# {"status":"ok","version":"..."}
 ```
 
 ### Retrieve Admin Bootstrap Secret
@@ -137,7 +161,13 @@ docker compose exec server cat /data/files/.admin-secret
 # http://localhost:3002/admin
 ```
 
-**Important:** Delete the `.admin-secret` file after reading it, or set `ADMIN_SECRET` explicitly.
+The server deletes `.admin-secret` once an administrator exists: right after
+the first one is created, and at each startup while one exists. The secret only
+creates an administrator while none is active. It keeps working until it is
+rotated, so a copy in an older file-volume backup or snapshot still works; to
+retire it, set a new `ADMIN_SECRET` and restart, or use **Change Secret** in
+the admin panel. If every administrator is later lost, set `ADMIN_SECRET` and
+restart to create one again.
 
 ### Docker Compose Reference
 
@@ -146,7 +176,7 @@ services:
   server:
     build: ./server
     ports:
-      - "3001:3001"    # API + WebSocket
+      - "${API_PUBLISH_ADDRESS:-127.0.0.1}:3001:3001" # API + WebSocket: host loopback unless you opt in
       - "127.0.0.1:3002:3002" # Admin panel: host loopback only
     environment:
       DATABASE_URL: postgres://tc:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/threatcaddy
@@ -211,10 +241,10 @@ volumes:
 The server Dockerfile (`server/Dockerfile`) uses a multi-stage build:
 
 1. **Build stage**: the official `node:24.22.3-alpine` image pinned by digest in the Dockerfile, installs all dependencies and compiles TypeScript
-2. **Runtime stage**: the same pinned Node 24.22.3 image, upgrades zlib to at least 1.4-r0, installs production dependencies only and copies compiled JS and migrations
-3. Runs as non-root user `app` with `NODE_ENV=production`, so error responses never echo exception messages (server errors were already generic)
+2. **Runtime stage**: the same pinned Node 24.22.3 image, upgrades zlib to at least 1.4-r0, installs production dependencies only, drops the `ssh2` test suite (third-party test private keys) and npm's build-time compile cache, and copies compiled JS and migrations
+3. Runs as non-root user `app` with `NODE_ENV=production`, so error responses never echo exception messages (server errors were already generic). The application code in `/app` is root-owned and read-only to `app`; of the server's own directories, `app` can write only `/data/files`
 4. Declares a `HEALTHCHECK` that requests `/health` on `127.0.0.1:${PORT}` inside the container; Docker reports the result but does not restart the container
-5. Declares ports 3001 and 3002 for the two listeners; only the ports you publish are reachable from the host (the supplied Compose file publishes administration on host loopback only)
+5. Declares ports 3001 and 3002 for the two listeners; only the ports you publish are reachable from the host (the supplied Compose file publishes both on host loopback by default)
 
 ---
 
@@ -244,9 +274,9 @@ The server Dockerfile (`server/Dockerfile`) uses a multi-stage build:
 | `STORAGE_QUOTA_PER_USER_BYTES` | Combined retained file/backup quota per user; positive integer bytes | `2147483648` (2 GiB) |
 | `STORAGE_QUOTA_TOTAL_BYTES` | Combined retained file/backup quota across users; positive integer bytes | `21474836480` (20 GiB) |
 | `TRUST_PROXY` | `true`/`1` enables forwarding from trusted peers only; `false`/`0` disables it | `0` |
-| `TRUSTED_PROXY_IPS` | Comma-separated exact socket peer IPs allowed to supply forwarding headers; no hostnames or CIDRs | `127.0.0.1,::1` |
+| `TRUSTED_PROXY_IPS` | Comma-separated socket peer IPs or CIDR ranges (IPv4 or IPv6) allowed to supply forwarding headers; no hostnames or `/0`. See [Important Proxy Settings](#important-proxy-settings) | `127.0.0.1,::1` |
 | `SERVER_NAME` | Display name for the server instance | Auto-generated (e.g., "Alpha Hub") |
-| `ADMIN_SECRET` | Bootstrap secret for creating the first admin user. If not set, auto-generated on first launch and written to `${FILE_STORAGE_PATH}/.admin-secret`. Use at least 24 random characters; startup logs a warning for a shorter value. A configured value replaces a secret changed in the admin panel at every restart. | Auto-generated |
+| `ADMIN_SECRET` | Bootstrap secret for creating the first admin user. If not set, auto-generated on first launch and written to `${FILE_STORAGE_PATH}/.admin-secret`. The generated file is deleted once an administrator exists. Use at least 24 random characters; startup logs a warning for a shorter value that explains how to rotate it. A configured value replaces a secret changed in the admin panel at every restart. | Auto-generated |
 
 ### LLM API Keys (Optional)
 
@@ -271,9 +301,9 @@ and [webhook ownership requirements](../server/docs/credential-recovery.md#webho
 |----------|-------------|---------|
 | `BOT_EXECUTION_TIMEOUT_MS` | Maximum bot execution time in milliseconds | `300000` (5 minutes) |
 | `BOT_MAX_CONCURRENT_RUNS` | Maximum number of bots executing simultaneously | `10` |
-| `SANDBOX_PYTHON_IMAGE` | Docker image for Python sandbox | `python:3.12-slim` |
-| `SANDBOX_NODE_IMAGE` | Docker image for Node.js sandbox | `node:22-alpine` |
-| `SANDBOX_BASH_IMAGE` | Docker image for Bash sandbox | `alpine:3.19` |
+| `SANDBOX_PYTHON_IMAGE` | Docker image for Python sandbox (default: official Python 3.12, pinned by digest) | `python:3.12.16-slim-trixie@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b` |
+| `SANDBOX_NODE_IMAGE` | Docker image for Node.js sandbox (default: official Node.js 22, pinned by digest) | `node:22.23.5-alpine3.24@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a` |
+| `SANDBOX_BASH_IMAGE` | Docker image for shell code, run with `sh` (default: official Alpine 3.24, pinned by digest) | `alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf` |
 
 ### Database Connection Pool
 
@@ -291,8 +321,8 @@ The server should sit behind a reverse proxy for TLS termination, WebSocket supp
 These examples publish only the API, WebSocket and SPA. They deliberately do
 not route the admin listener: reach administration through the SSH tunnel in
 [4.3 Admin Panel Access](#43-admin-panel-access). `/health` reports the server
-version, uptime and memory figures, so both examples answer it only for the
-proxy host itself; add your monitoring addresses explicitly.
+version, so both examples answer it only for the proxy host itself; add your
+monitoring addresses explicitly.
 
 ### Nginx
 
@@ -349,7 +379,7 @@ server {
         proxy_send_timeout 86400s;
     }
 
-    # Health check (no auth; reports version, uptime and memory)
+    # Health check (no auth; reports the server version)
     location = /health {
         allow 127.0.0.1;
         allow ::1;
@@ -391,34 +421,91 @@ your-domain.com {
 
     # API
     handle /api/* {
-        reverse_proxy localhost:3001
+        reverse_proxy 127.0.0.1:3001
     }
 
     # WebSocket
     handle /ws {
-        reverse_proxy localhost:3001
+        reverse_proxy 127.0.0.1:3001
     }
 
-    # Health check (no auth; reports version, uptime and memory)
+    # Health check (no auth; reports the server version)
     handle /health {
         # Add monitoring addresses or CIDRs after ::1
         @outside not remote_ip 127.0.0.1 ::1
         respond @outside 403
-        reverse_proxy localhost:3001
+        reverse_proxy 127.0.0.1:3001
     }
 }
 ```
 
 ### Important Proxy Settings
 
-When running behind a reverse proxy, set in your `.env`:
+Behind a reverse proxy, the server must know which peers are your proxy.
+Otherwise every client shares the proxy's address, and one outsider can trip
+the login lockout and the rate limits for everyone. Set `TRUST_PROXY=1` and list
+in `TRUSTED_PROXY_IPS` the address your proxy's connections arrive from, as the
+server sees it: exact IPv4 or IPv6 addresses, or CIDR ranges such as
+`172.18.0.0/16`.
+
+With the supplied Compose file and nginx or Caddy on the host, as in the
+examples above, the proxy connects to the port Docker publishes, and the
+container sees the Compose network's gateway, not `127.0.0.1`. Look the gateway
+up (the network is named after your Compose project; `docker network ls` lists
+it):
+
+```bash
+docker network inspect threatcaddy_default --format '{{range .IPAM.Config}}{{.Gateway}} {{end}}'
+```
+
+Then set it in your `.env` and recreate the server with `docker compose up -d`:
 
 ```env
 TRUST_PROXY=1
-TRUSTED_PROXY_IPS=127.0.0.1,::1
+# The gateway printed above, for example:
+TRUSTED_PROXY_IPS=172.18.0.1
 ```
 
-Only connections from `TRUSTED_PROXY_IPS` may supply `X-Forwarded-For` (or `X-Real-IP` when absent). The server uses the nearest untrusted address in a valid IP chain. Other connections use their socket address. Set the actual proxy peer IPs for Docker/remote proxies; loopback defaults do not cover container bridge addresses. Your proxy must overwrite or correctly append forwarded addresses. Both variables are passed through by Compose. Without this configuration, requests share the proxy's rate limit.
+Removing the network (`docker compose down`) can give it another gateway on the
+next start, so check the address again afterwards. For a proxy and a Node
+server on the same host without containers, keep the default
+`TRUSTED_PROXY_IPS=127.0.0.1,::1`. For a proxy elsewhere, list its address, or a
+range that only your proxies use. A `/0` range is refused because it would
+trust every peer.
+
+A proxy in a container of its own, such as Traefik or Nginx Proxy Manager in
+another Compose project, cannot reach the API's loopback publication through
+the host's IP address or the Docker gateway. Either join it to the server's
+Compose network and proxy to `http://server:3001` (the API listens on every
+interface inside its container), for example in the proxy's Compose file:
+
+```yaml
+services:
+  proxy:
+    networks: [default, threatcaddy]
+networks:
+  threatcaddy:
+    name: threatcaddy_default
+    external: true
+```
+
+or set `API_PUBLISH_ADDRESS` to the address the proxy connects to (see
+[Start Services](#start-services)). On the shared network the server sees the
+proxy container's address on that network, which can change when the container
+is recreated: trust it, or that network's subnet (`{{.Subnet}}` in place of
+`{{.Gateway}}` in the command above) if only the proxy and ThreatCaddy's own
+containers use that network. A container on that network can also reach the
+admin panel on port 3002 (see [4.3 Admin Panel Access](#43-admin-panel-access)),
+so route only port 3001 to the server. Through `API_PUBLISH_ADDRESS`, trust the
+peer that the warning below names.
+
+The first time a peer that is not trusted sends `X-Forwarded-For` to a route
+that uses the client address, such as sign-in, the server logs one warning that
+names the peer (`docker compose logs server`). Trust that address only after
+confirming it is your proxy: anyone who can reach the server directly can send
+the header.
+
+Only connections from `TRUSTED_PROXY_IPS` may supply `X-Forwarded-For` (or `X-Real-IP` when absent). The server uses the nearest untrusted address in a valid IP chain. Other connections use their socket address. Your proxy must overwrite or correctly append forwarded addresses. Both variables are passed through by Compose.
 
 ---
 
@@ -542,12 +629,18 @@ sandbox disabled unless you need it.
    method. A permitted container create can still request privileged mode or
    host bind mounts, so a proxy does not remove the host-root exposure.
 
-3. Pre-pull sandbox images to avoid delays:
-   ```bash
-   docker pull python:3.12-slim
-   docker pull node:22-alpine
-   docker pull alpine:3.19
-   ```
+3. When the server can reach a Docker API, it pulls the three sandbox images at
+   every startup, so the first run does not wait for a download. The defaults
+   are official images pinned by digest (Python 3.12, Node.js 22, and Alpine 3.24
+   for shell code; exact references in
+   [Optional Bot Runtime Settings](#optional-bot-runtime-settings)), so they
+   change only when a ThreatCaddy release moves a pin, never between restarts.
+   To use other reviewed images, for example from a private mirror, set
+   `SANDBOX_PYTHON_IMAGE`, `SANDBOX_NODE_IMAGE` and `SANDBOX_BASH_IMAGE` to
+   references pinned the same way (`name:tag@sha256:<digest>`);
+   `docker buildx imagetools inspect <name:tag>` prints a tag's current digest.
+   A reference without a digest is resolved again at every startup and can
+   change without review.
 
 ### 4.7 Rate Limiting
 
@@ -636,7 +729,7 @@ server log.
 GET /health
 ```
 
-Returns HTTP 200 with `{"status":"ok"}` when healthy, or HTTP 503 with `{"status":"degraded"}` when checks fail.
+Returns HTTP 200 with `{"status":"ok","version":"<server version>"}` when healthy, or HTTP 503 with `{"status":"degraded","version":"<server version>"}` when checks fail. The response names no failing check and reports no uptime or memory figures; the server log records each new failure as a `Health check degraded` warning naming the check.
 
 Checks performed:
 - **Database connectivity**: `SELECT 1` query
@@ -690,6 +783,9 @@ For ELK/Loki integration, the JSON log format is already structured and ready fo
 The [server publication workflow](../.github/workflows/deploy-server.yml) runs the
 required verification for the selected `main` commit, then promotes the already
 tested image to GHCR as `ghcr.io/<owner>/<repo>/server:sha-<commit>` and `:latest`.
+The first verified build of each server version, normally the release commit,
+is also tagged with that version (for example `:2.0.4`, from the image's
+`package.json`); later builds of the same version never move that tag.
 It checks source identity and artifact integrity; it does not SSH into a host,
 restart a live container, migrate a deployed database, or change deployment
 secrets. Operators must select and roll out the image themselves, preferably by
@@ -779,15 +875,38 @@ pending. Publishing an image or client does not establish server rollout.
   replaces a daemon-wide log driver; to keep shipping logs through yours, add
   the override in [4.8 Logging](#48-logging) before recreating the containers.
   Recreate the database container once (`docker compose up -d db`) to apply its
-  log rotation; the server-only command above does not.
+  log rotation; the server-only command above does not. From 2.0.4 it publishes
+  the API on host loopback only: if clients reach port 3001 directly rather than
+  through a proxy on the same host, set `API_PUBLISH_ADDRESS` first (see
+  [Start Services](#start-services)). `API_PUBLISH_ADDRESS=0.0.0.0` publishes
+  it on IPv4 only. A proxy in a container of its own (Traefik, or Nginx Proxy
+  Manager in another Compose project) that reaches port 3001 through the host's
+  IP address or the Docker gateway can no longer connect either: join it to the
+  server's Compose network or set `API_PUBLISH_ADDRESS` first (see
+  [Important Proxy Settings](#important-proxy-settings)). With a proxy on the
+  host, also set `TRUSTED_PROXY_IPS` to the Compose network's gateway (see
+  [Important Proxy Settings](#important-proxy-settings)), or every client
+  shares the proxy's address for login lockouts and rate limits.
 
 Later images also differ in ways that affect custom deployments: since 2.0.1
 they have no npm, npx, Yarn or Corepack (use the packaged `node dist/...`
 commands), and since 2.0.2 they run on Node 24.22.3 with
 `NODE_ENV=production` (error responses no longer echo exception messages) and
-declare a `HEALTHCHECK` against `/health`. On Kubernetes, leave `ADMIN_HOST`
-unset and reach administration with `kubectl port-forward`; do not expose port
-3002 through a Service.
+declare a `HEALTHCHECK` against `/health`. Since 2.0.4, `/health` answers only
+`status` and `version` (monitoring that read `db`, `storage`, `uptime` or
+`memory` should alert on the status code and use container metrics), and the
+application code in `/app` is read-only to the runtime user, so keep
+`FILE_STORAGE_PATH` on a writable volume. The first 2.0.4 startup also deletes
+a generated `.admin-secret` file if an administrator exists (see
+[Retrieve Admin Bootstrap Secret](#retrieve-admin-bootstrap-secret)). The
+default sandbox images of 2.0.4 are new references pinned by digest. The server
+pulls them at startup when its Docker API can reach the registry, and code runs
+never pull, so where the sandbox host has no registry access, pull the
+references from [Optional Bot Runtime Settings](#optional-bot-runtime-settings)
+there first, or set `SANDBOX_PYTHON_IMAGE`, `SANDBOX_NODE_IMAGE` and
+`SANDBOX_BASH_IMAGE` to images it has. On
+Kubernetes, leave `ADMIN_HOST` unset and reach administration with
+`kubectl port-forward`; do not expose port 3002 through a Service.
 
 Preserve the database, managed-file volumes, stable application keys and other
 deployment settings. Confirm the running image identity and OCI revision label

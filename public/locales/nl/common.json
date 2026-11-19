@@ -122,7 +122,6 @@
   "sidebar.agentStatusError": "fout",
   "sidebar.github": "GitHub",
   "sidebar.downloadStandalone": "Zelfstandige versie downloaden",
-  "sidebar.chromeExtension": "Chrome-extensie",
   "sidebar.privacy": "Privacy",
   "sidebar.tags": "Tags",
   "sidebar.noTags": "Nog geen tags",
@@ -160,7 +159,12 @@
   "header.standalone": "Zelfstandige versie",
   "standaloneWarning.message": "De zelfstandige versie draait via file:// zonder versleuteling. Andere lokale HTML-bestanden kunnen toegang krijgen tot je gegevens. In de zelfstandige modus beperkt de Content Security Policy geen scripts of netwerkverbindingen.",
   "standaloneWarning.enableEncryption": "Versleuteling inschakelen in Instellingen",
-  "header.chromeExtension": "Chrome-extensie",
+  "extension.updateRequired": "ThreatCaddy vereist zijn browserextensie 1.1.3 of later, goedgekeurd voor deze app. De Chrome Web Store biedt nog een oudere versie aan, dus installeer de nieuwste versie via de ThreatCaddy-releases op GitHub. Houd alleen de nieuwste ThreatCaddy-extensie geïnstalleerd en laad daarna de pagina opnieuw.",
+  "extension.reloadRequired": "De ThreatCaddy-browserextensie reageert niet meer op deze pagina, zoals na het bijwerken of opnieuw laden van de extensie. Laad de pagina opnieuw.",
+  "extension.menuLink": "Browserextensie (GitHub)",
+  "extension.githubRelease": "GitHub-release",
+  "extension.installSteps": "Installatiestappen",
+  "extension.storeOlder": "De versie in de Chrome Web Store is ouder.",
   "header.privacy": "Privacy",
   "header.saveBackup": "Back-up opslaan",
   "header.loadBackup": "Back-up laden",
@@ -297,5 +301,8 @@
   "offlineStatus.settingUnavailable": "Deze browser kan ThreatCaddy niet offline beschikbaar houden, maar online werkt het nog steeds.",
   "offlineStatus.backupNote": "Offline gebruik is geen back-up. Als u de gegevens van deze browser wist, wordt alles verwijderd wat hier is opgeslagen, en browsers kunnen opgeslagen sitegegevens ook zelf verwijderen, bijvoorbeeld als de ruimte opraakt. Exporteer regelmatig een JSON-back-up en bewaar het bestand op een veilige plek.",
   "sync.backupWarning": "Sla een volledige back-up op en controleer deze voordat u lokale gegevens verwijdert. Teamsynchronisatie kan apparaatspecifieke details zoals notitiemappen, checklists, playbookvoortgang en toolresultaten of afbeeldingen in chats niet herstellen. Back-up opslaan downloadt onversleutelde JSON.",
-  "demoModal.reportWorkflow": "Volg de gekoppelde notities van bewijs naar conceptrapport. Controleer de conclusies en download de rapportnotitie als Markdown; gebruik Back-up opslaan voor de volledige werkruimte."
+  "demoModal.reportWorkflow": "Volg de gekoppelde notities van bewijs naar conceptrapport. Controleer de conclusies en download de rapportnotitie als Markdown; gebruik Back-up opslaan voor de volledige werkruimte.",
+  "bootGuard.framed": "Voor je veiligheid draait ThreatCaddy niet binnen een andere website.",
+  "bootGuard.fileOnly": "Deze offline kopie van ThreatCaddy werkt alleen als je het bestand opent dat op je computer is opgeslagen.",
+  "bootGuard.open": "ThreatCaddy openen"
 }

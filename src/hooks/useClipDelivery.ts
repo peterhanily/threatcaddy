@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { clipBuffer } from '../lib/clipBuffer';
 import { importClipBatch } from '../lib/clip-import';
-import { adaptLegacyClip, type ClipImportResult } from '../lib/clip-protocol';
+import type { ClipImportResult } from '../lib/clip-protocol';
 import { getActiveWorkspaceId } from '../lib/workspace-profiles';
 import { getCurrentUserName } from '../lib/utils';
 
@@ -13,6 +13,8 @@ interface Options {
   onCommitted: (results: ClipImportResult[], signal: AbortSignal) => Promise<void>;
   onFailed: (count: number) => void;
   onRefreshFailed: () => void;
+  /** Legacy messages come only from extensions older than 1.1.3, and the app imports none of them. */
+  onOutdatedExtension: () => void;
 }
 
 /** Own the channel for the mounted/unlocked App, not for each hook refresh. */
@@ -23,29 +25,25 @@ export function useClipDelivery(options: Options): void {
     const lifetime = new AbortController();
     const unsubscribe = clipBuffer.subscribe(async message => {
       const current = latest.current;
+      // Only extensions older than 1.1.3 send messages without protocol 2, store 1.1.1 among them, and the
+      // app uses none of their features. Store 1.1.1 marks the clips sent but keeps them on its Clip Review page.
+      if (message.protocol !== 2) { current.onOutdatedExtension(); return; }
       current.onBusy(true);
       try {
-        const modern = message.protocol === 2;
-        if (modern && (!message.sourceId || !message.attemptId || !message.expectedWorkspaceId)) return;
-        const workspaceId = modern ? message.expectedWorkspaceId : getActiveWorkspaceId();
-        if (!workspaceId) return;
-        const clips = modern ? message.clips : await Promise.all(message.clips.map(async value => {
-          try { return await adaptLegacyClip(value); }
-          catch { return value; } // The service rejects this row without losing valid siblings.
-        }));
+        if (!message.sourceId || !message.attemptId || !message.expectedWorkspaceId) return;
+        const workspaceId = message.expectedWorkspaceId;
+        const clips = message.clips;
         const results: ClipImportResult[] = [];
-        // Legacy messages predate the small v2 wire batches. They still use the
-        // same transactional, idempotent service but never claim a v2 receipt.
         for (let offset = 0; offset < clips.length; offset += 20) {
           results.push(...await importClipBatch(clips.slice(offset, offset + 20), {
-            sourceId: modern ? message.sourceId || '' : 'legacy-extension', workspaceId,
+            sourceId: message.sourceId, workspaceId,
             enabledIOCTypes: current.enabledIOCTypes, defaultConfidence: current.defaultConfidence,
             defaultTimelineId: current.defaultTimelineId, createdBy: getCurrentUserName(), signal: lifetime.signal,
           }));
         }
         // A receipt describes the durable transaction, not whether the UI can
         // refresh. A display failure must not relabel committed clips as failed.
-        if (modern) window.postMessage({ type: 'THREATCADDY_CLIP_IMPORT_RESULT', protocol: 2,
+        window.postMessage({ type: 'THREATCADDY_CLIP_IMPORT_RESULT', protocol: 2,
           sourceId: message.sourceId, attemptId: message.attemptId, workspaceId: getActiveWorkspaceId(), results },
         window.location.protocol === 'file:' ? '*' : window.location.origin);
         if (lifetime.signal.aborted) return;

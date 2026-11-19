@@ -9,6 +9,7 @@ import { sendDirectToLocal, sendViaExtension, sendViaServer, type LLMRouteReques
 import { useLLM } from '../hooks/useLLM';
 import { runAgentCycle } from '../lib/caddy-agent';
 import { runSupervisorCycle } from '../lib/caddy-agent-supervisor';
+import { answerBridgeCheck, publishBridgeCaps } from './helpers/paired-bridge';
 
 const server = vi.hoisted(() => ({ stream: vi.fn() }));
 vi.mock('../lib/server-api', async (importOriginal) => ({ ...await importOriginal<typeof import('../lib/server-api')>(), streamLLMChat: server.stream }));
@@ -34,13 +35,14 @@ const toolUses = (payload: Payload) => payload.messages.flatMap(message => Array
 const outgoingNames = (payload: Payload) => [...(payload.tools ?? []).map(tool => tool.name), ...toolUses(payload).map(block => block.name)];
 const aliasOf = (payload: Payload, description: string) => payload.tools?.find(tool => tool.description === description)?.name ?? `missing tool: ${description}`;
 
-// Extension double: records every TC_LLM_REQUEST and answers it with the next scripted turn.
+// Extension double, a paired 1.1.3+ bridge: records every TC_LLM_REQUEST and answers it with the next scripted turn.
 type Reply = (payload: Payload) => { stopReason: string; contentBlocks: unknown[] };
 let requests: { requestId: string; payload: Payload }[] = [];
 let replies: Reply[] = [];
 function installExtension() {
+  publishBridgeCaps();
   vi.spyOn(window, 'postMessage').mockImplementation(((message: { type?: string; requestId: string; payload: Payload }) => {
-    if (message?.type !== 'TC_LLM_REQUEST') return;
+    if (answerBridgeCheck(message) || message?.type !== 'TC_LLM_REQUEST') return;
     requests.push(message);
     const reply = (replies.shift() ?? (() => ({ stopReason: 'end_turn', contentBlocks: [{ type: 'text', text: 'Done.' }] })))(message.payload);
     setTimeout(() => window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'TC_LLM_DONE', requestId: message.requestId, ...reply } })), 0);
@@ -52,7 +54,7 @@ beforeEach(async () => {
   server.stream.mockReset();
   await Promise.all(db.tables.map(table => table.clear()));
 });
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); delete document.documentElement.dataset.tcBridgeCaps; });
 
 describe('D-NAMES-2 alias round trip', () => {
   it('maps dynamic names to readable aliases and restores the internal names', () => {
