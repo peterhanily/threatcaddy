@@ -83,8 +83,6 @@
     "nameRequired": "El nombre de la integración es obligatorio",
     "createdAndInstalled": "Integración \"{{name}}\" creada e instalada",
     "saveFailed": "Error al guardar: {{error}}",
-    "installedFromCatalog": "{{name}} instalado desde el catálogo comunitario",
-    "installCatalogFailed": "Error al instalar la plantilla comunitaria",
     "templateExported": "{{name}} exportado",
     "installTeamFailed": "Error al instalar la plantilla del equipo",
     "notFound": "Integración no encontrada",

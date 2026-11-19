@@ -82,8 +82,6 @@
     "nameRequired": "Integration name is required",
     "createdAndInstalled": "Integration \"{{name}}\" created and installed",
     "saveFailed": "Failed to save: {{error}}",
-    "installedFromCatalog": "Installed {{name}} from community catalog",
-    "installCatalogFailed": "Failed to install community template",
     "templateExported": "Exported {{name}}",
     "installTeamFailed": "Failed to install team template",
     "notFound": "Integration not found",

@@ -297,5 +297,8 @@
   "offlineStatus.settingUnavailable": "Ta przeglądarka nie może utrzymać dostępności ThreatCaddy offline, ale nadal działa online.",
   "offlineStatus.backupNote": "Korzystanie offline nie jest kopią zapasową. Wyczyszczenie danych tej przeglądarki usuwa wszystko, co jest tu zapisane, a przeglądarki mogą też same usuwać zapisane dane witryn, na przykład gdy brakuje miejsca. Regularnie eksportuj kopię zapasową JSON i przechowuj plik w bezpiecznym miejscu.",
   "sync.backupWarning": "Przed usunięciem danych lokalnych zapisz i sprawdź pełną kopię zapasową. Synchronizacja zespołowa nie odtworzy szczegółów zapisanych tylko na urządzeniu, takich jak foldery notatek, listy kontrolne, postęp procedur oraz wyniki narzędzi lub obrazy z czatu. Zapis kopii zapasowej pobiera niezaszyfrowany plik JSON.",
-  "demoModal.reportWorkflow": "Przejdź po połączonych notatkach od dowodów do szkicu raportu. Sprawdź wnioski i pobierz notatkę jako Markdown; zapisz kopię zapasową całego obszaru roboczego."
+  "demoModal.reportWorkflow": "Przejdź po połączonych notatkach od dowodów do szkicu raportu. Sprawdź wnioski i pobierz notatkę jako Markdown; zapisz kopię zapasową całego obszaru roboczego.",
+  "bootGuard.framed": "Ze względów bezpieczeństwa ThreatCaddy nie działa wewnątrz innej witryny.",
+  "bootGuard.fileOnly": "Ta kopia offline ThreatCaddy działa tylko po otwarciu pliku zapisanego na Twoim komputerze.",
+  "bootGuard.open": "Otwórz ThreatCaddy"
 }

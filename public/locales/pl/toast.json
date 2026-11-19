@@ -84,8 +84,6 @@
     "nameRequired": "Nazwa integracji jest wymagana",
     "createdAndInstalled": "Integracja „{{name}}\" utworzona i zainstalowana",
     "saveFailed": "Nie udało się zapisać: {{error}}",
-    "installedFromCatalog": "Zainstalowano {{name}} z katalogu społeczności",
-    "installCatalogFailed": "Nie udało się zainstalować szablonu społeczności",
     "templateExported": "Wyeksportowano {{name}}",
     "installTeamFailed": "Nie udało się zainstalować szablonu zespołu",
     "notFound": "Integracja nie znaleziona",

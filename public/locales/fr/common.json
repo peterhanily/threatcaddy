@@ -297,5 +297,8 @@
   "offlineStatus.settingUnavailable": "Ce navigateur ne peut pas garder ThreatCaddy disponible hors ligne, mais il fonctionne toujours en ligne.",
   "offlineStatus.backupNote": "L’utilisation hors ligne n’est pas une sauvegarde. Effacer les données de ce navigateur supprime tout ce qui y est enregistré, et les navigateurs peuvent aussi supprimer d’eux-mêmes les données de site enregistrées, par exemple lorsque l’espace vient à manquer. Exportez régulièrement une sauvegarde JSON et conservez le fichier en lieu sûr.",
   "sync.backupWarning": "Avant de supprimer les données locales, enregistrez et vérifiez une sauvegarde complète. La synchronisation d’équipe ne peut pas restaurer les détails propres à cet appareil, comme les dossiers de notes, listes de contrôle, progression des procédures et résultats d’outils ou images des discussions. Enregistrer une sauvegarde télécharge du JSON non chiffré.",
-  "demoModal.reportWorkflow": "Suivez les notes liées, des preuves au brouillon du rapport. Vérifiez les conclusions et téléchargez la note en Markdown ; sauvegardez séparément tout l’espace de travail."
+  "demoModal.reportWorkflow": "Suivez les notes liées, des preuves au brouillon du rapport. Vérifiez les conclusions et téléchargez la note en Markdown ; sauvegardez séparément tout l’espace de travail.",
+  "bootGuard.framed": "Pour votre sécurité, ThreatCaddy ne s’exécute pas à l’intérieur d’un autre site web.",
+  "bootGuard.fileOnly": "Cette copie hors ligne de ThreatCaddy ne fonctionne que lorsque vous ouvrez le fichier enregistré sur votre ordinateur.",
+  "bootGuard.open": "Ouvrir ThreatCaddy"
 }

@@ -86,8 +86,6 @@
     "nameRequired": "اسم التكامل مطلوب",
     "createdAndInstalled": "تم إنشاء التكامل \"{{name}}\" وتثبيته",
     "saveFailed": "فشل الحفظ: {{error}}",
-    "installedFromCatalog": "تم تثبيت {{name}} من كتالوج المجتمع",
-    "installCatalogFailed": "فشل تثبيت قالب المجتمع",
     "templateExported": "تم تصدير {{name}}",
     "installTeamFailed": "فشل تثبيت قالب الفريق",
     "notFound": "التكامل غير موجود",

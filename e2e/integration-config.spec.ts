@@ -28,11 +28,7 @@ async function openFixtureConfiguration(page: Page) {
 
 for (const multiple of [false, true]) {
   test(`integration config validates accessibly and preserves zero/false/${multiple ? 'array' : 'legacy scalar'} values`, async ({ page }) => {
-    // Configuring this disabled fixture never runs an integration or contacts a
-    // provider. Stub the settings panel's unrelated community-catalog lookup.
-    await page.route('https://raw.githubusercontent.com/peterhanily/threatcaddy-integrations/main/catalog.json', route => route.fulfill({
-      contentType: 'application/json', body: JSON.stringify({ entries: [] }),
-    }));
+    // Configuring this disabled fixture never runs an integration or contacts a provider.
     await goToApp(page);
     const regions = multiple ? ['north', 'south'] : 'north';
     await page.evaluate(async regions => {

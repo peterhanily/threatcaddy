@@ -1,15 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trash2, Settings2, Power, AlertCircle, Check, ExternalLink, Clock, Plus, Search, Upload, Download, RefreshCw, Share2, Users, Globe2, Loader2, ArrowUpCircle, Wrench } from 'lucide-react';
+import { Trash2, Settings2, Power, AlertCircle, Check, ExternalLink, Clock, Plus, Search, Upload, Download, Share2, Users, Loader2, Wrench } from 'lucide-react';
 import { useIntegrations } from '../../hooks/useIntegrations';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { fetchCatalog, fetchTemplate } from '../../lib/integration-catalog';
 import { shareIntegrationTemplate, fetchTeamTemplates, deleteTeamTemplate } from '../../lib/server-api';
 import { IntegrationBuilder } from './IntegrationBuilder';
 import { IntegrationConfigForm } from './IntegrationConfigForm';
 import { INTEGRATION_LIMITS } from '../../lib/integration-plan';
-import type { IntegrationTemplate, InstalledIntegration, IntegrationRun, IntegrationCategory, CatalogEntry } from '../../types/integration-types';
+import type { IntegrationTemplate, InstalledIntegration, IntegrationRun, IntegrationCategory } from '../../types/integration-types';
 
 type SubTab = 'installed' | 'catalog' | 'history';
 
@@ -72,17 +71,6 @@ function TemplateIcon({ name, color }: { name: string; color: string }) {
       {name.charAt(0).toUpperCase()}
     </div>
   );
-}
-
-/** Compare semver strings (a < b => negative, a > b => positive, equal => 0) */
-function compareSemver(a: string, b: string): number {
-  const pa = a.split('.').map(Number);
-  const pb = b.split('.').map(Number);
-  for (let i = 0; i < 3; i++) {
-    const diff = (pa[i] || 0) - (pb[i] || 0);
-    if (diff !== 0) return diff;
-  }
-  return 0;
 }
 
 /** Export a template as a clean JSON file (strips runtime/config data). */
@@ -316,12 +304,6 @@ function CatalogTab({
   installedTemplateIds,
   onInstall,
   onImportJson,
-  onInstallCommunityEntry,
-  catalogEntries,
-  catalogLoading,
-  catalogLoaded,
-  catalogError,
-  onRefreshCatalog,
   teamTemplates,
   teamLoading,
   teamError,
@@ -334,12 +316,6 @@ function CatalogTab({
   installedTemplateIds: Set<string>;
   onInstall: (templateId: string) => void;
   onImportJson: (json: string) => Promise<void>;
-  onInstallCommunityEntry: (entry: CatalogEntry) => Promise<void>;
-  catalogEntries: CatalogEntry[];
-  catalogLoading: boolean;
-  catalogLoaded: boolean;
-  catalogError: string | null;
-  onRefreshCatalog: () => void;
   teamTemplates: IntegrationTemplate[];
   teamLoading: boolean;
   teamError: string | null;
@@ -356,7 +332,6 @@ function CatalogTab({
   const [importing, setImporting] = useState(false);
   const [imported, setImported] = useState(false);
   const importPending = useRef(false);
-  const [installingEntryId, setInstallingEntryId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Group builtin templates by category
@@ -376,25 +351,6 @@ function CatalogTab({
       templates: filtered.filter((t) => t.category === cat),
     }))
     .filter((g) => g.templates.length > 0);
-
-  // Filter community entries by search
-  const filteredCommunity = searchQuery
-    ? catalogEntries.filter(
-        (e) =>
-          e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          e.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          e.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-    : catalogEntries;
-
-  // Group community entries by category
-  const communityCategories = Array.from(new Set(filteredCommunity.map((e) => e.category)));
-  const communityGrouped = communityCategories
-    .map((cat) => ({
-      category: cat,
-      entries: filteredCommunity.filter((e) => e.category === cat),
-    }))
-    .filter((g) => g.entries.length > 0);
 
   // Filter team templates by search
   const filteredTeam = searchQuery
@@ -437,25 +393,6 @@ function CatalogTab({
     } catch (err) {
       setImportError(err instanceof Error ? err.message : t('catalog.importFailed'));
     } finally { importPending.current = false; setImporting(false); }
-  };
-
-  const handleInstallCommunityEntry = async (entry: CatalogEntry) => {
-    setInstallingEntryId(entry.id);
-    try {
-      await onInstallCommunityEntry(entry);
-    } finally {
-      setInstallingEntryId(null);
-    }
-  };
-
-  /** Check if a community entry has an update available vs installed version */
-  const getUpdateStatus = (entryId: string, entryVersion: string): 'installed' | 'update-available' | 'not-installed' => {
-    if (!installedTemplateIds.has(entryId)) return 'not-installed';
-    const installedTemplate = templates.find((t) => t.id === entryId);
-    if (installedTemplate && compareSemver(installedTemplate.version, entryVersion) < 0) {
-      return 'update-available';
-    }
-    return 'installed';
   };
 
   return (
@@ -570,7 +507,7 @@ function CatalogTab({
         </div>
       ))}
 
-      {filtered.length === 0 && searchQuery && !catalogLoading && filteredCommunity.length === 0 && filteredTeam.length === 0 && (
+      {filtered.length === 0 && searchQuery && filteredTeam.length === 0 && (
         <p className="text-sm text-gray-500 text-center py-4">{t('catalog.noTemplatesMatch')}</p>
       )}
 
@@ -663,127 +600,6 @@ function CatalogTab({
           )}
         </div>
       )}
-
-      {/* Community Catalog Section */}
-      <div className="border-t border-gray-700 pt-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-            <Globe2 size={12} />
-            {t('catalog.communityCatalog')}
-          </h4>
-          <button
-            onClick={onRefreshCatalog}
-            disabled={catalogLoading}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors disabled:opacity-50"
-            title={t(catalogError ? 'catalog.retry' : catalogLoaded ? 'catalog.refresh' : 'catalog.load')}
-          >
-            <RefreshCw size={10} className={catalogLoading ? 'animate-spin' : ''} />
-            {t(catalogError ? 'catalog.retry' : catalogLoaded ? 'catalog.refresh' : 'catalog.load')}
-          </button>
-        </div>
-
-        {catalogError && (
-          <div role="status" className="flex items-start gap-2 text-xs text-gray-300 py-2">
-            <AlertCircle size={12} className="shrink-0 mt-0.5" />
-            <span>{catalogError}</span>
-          </div>
-        )}
-        {!catalogLoaded && !catalogLoading ? (
-          <p className="text-xs text-gray-400 py-2">{t('catalog.optional')}</p>
-        ) : catalogLoading && catalogEntries.length === 0 ? (
-          <div className="flex items-center gap-2 py-4 justify-center">
-            <Loader2 size={14} className="animate-spin text-gray-500" />
-            <span className="text-xs text-gray-500">{t('catalog.loadingCommunityCatalog')}</span>
-          </div>
-        ) : filteredCommunity.length === 0 && !catalogLoading ? (
-          !catalogError && <p className="text-xs text-gray-500 py-2">
-            {searchQuery ? t('catalog.noCommunityMatch') : t('catalog.noCommunityAvailable')}
-          </p>
-        ) : (
-          communityGrouped.map(({ category, entries }) => (
-            <div key={`community-${category}`} className="space-y-2">
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: CATEGORY_COLORS[category] || '#6b7280' }}
-                />
-                {CATEGORY_LABELS[category] || category}
-              </h4>
-
-              {entries.map((entry) => {
-                const updateStatus = getUpdateStatus(entry.id, entry.version);
-                const isInstalling = installingEntryId === entry.id;
-
-                return (
-                  <div
-                    key={entry.id}
-                    className="bg-gray-800 border border-gray-700 rounded-lg p-3"
-                  >
-                    <div className="flex items-start gap-3">
-                      <TemplateIcon name={entry.name} color={entry.color} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-medium text-gray-200">
-                            {entry.name}
-                          </span>
-                          <span className="text-[10px] text-gray-600">v{entry.version}</span>
-                          <span className="text-[10px] text-gray-600">by {entry.author}</span>
-                          {entry.downloads > 0 && (
-                            <span className="text-[10px] text-gray-600 flex items-center gap-0.5">
-                              <Download size={8} />
-                              {entry.downloads.toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-0.5">{entry.description}</p>
-                        {entry.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {entry.tags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="px-1.5 py-0.5 rounded text-[10px] bg-gray-700/50 text-gray-400 border border-gray-700"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        {updateStatus === 'installed' ? (
-                          <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/20">
-                            <Check size={12} />
-                            {t('catalog.installed')}
-                          </span>
-                        ) : updateStatus === 'update-available' ? (
-                          <button
-                            disabled
-                            title={t('catalog.replacementHint')}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs font-medium hover:bg-yellow-500/30 transition-colors disabled:opacity-50"
-                          >
-                            <ArrowUpCircle size={12} />
-                            {t('catalog.replacementUnavailable')}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleInstallCommunityEntry(entry)}
-                            disabled={isInstalling}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
-                          >
-                            {isInstalling ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-                            {t('catalog.install')}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))
-        )}
-      </div>
 
       {/* Import section */}
       <div className="border-t border-gray-700 pt-4 space-y-3">
@@ -986,11 +802,6 @@ export function IntegrationPanel() {
 
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('installed');
   const [showBuilder, setShowBuilder] = useState(false);
-  const [catalogEntries, setCatalogEntries] = useState<CatalogEntry[]>([]);
-  const [catalogLoading, setCatalogLoading] = useState(false);
-  const [catalogLoaded, setCatalogLoaded] = useState(false);
-  const [catalogError, setCatalogError] = useState<string | null>(null);
-  const catalogRequestPending = useRef(false);
   const mounted = useRef(true);
   const [teamTemplates, setTeamTemplates] = useState<IntegrationTemplate[]>([]);
   const [teamLoading, setTeamLoading] = useState(false);
@@ -1003,28 +814,6 @@ export function IntegrationPanel() {
     mounted.current = true;
     return () => { mounted.current = false; };
   }, []);
-
-  // The optional catalog is not contacted until the user requests it. Built-ins
-  // and custom imports remain available even when its publisher is unavailable.
-  const loadCatalog = useCallback(async () => {
-    if (catalogRequestPending.current) return;
-    catalogRequestPending.current = true;
-    setCatalogLoading(true);
-    setCatalogError(null);
-    try {
-      const result = await fetchCatalog();
-      if (!mounted.current) return;
-      setCatalogEntries(result.entries);
-      setCatalogLoaded(true);
-      if (result.error) {
-        const reason = t(`catalog.error.${result.error}`);
-        setCatalogError(`${reason} ${t(result.source === 'cache' ? 'catalog.cachedFallback' : 'catalog.builtinFallback')}`);
-      }
-    } finally {
-      catalogRequestPending.current = false;
-      if (mounted.current) setCatalogLoading(false);
-    }
-  }, [t]);
 
   // Fetch team templates
   const loadTeamTemplates = useCallback(async () => {
@@ -1050,11 +839,6 @@ export function IntegrationPanel() {
     void loadTeamTemplates();
   }, [loadTeamTemplates]);
 
-  const handleRefreshCatalog = () => {
-    // Keep the last validated catalog as an explicitly labelled offline fallback.
-    void loadCatalog();
-  };
-
   const handleInstall = async (templateId: string) => {
     const template = templates.find((t) => t.id === templateId);
     await createInstallation(templateId, {});
@@ -1065,21 +849,6 @@ export function IntegrationPanel() {
 
   const handleImportJson = async (json: string) => {
     await importTemplate(json);
-  };
-
-  const handleInstallCommunityEntry = async (entry: CatalogEntry) => {
-    try {
-      const template = await fetchTemplate(entry);
-      template.source = 'community';
-      await installTemplate(template);
-      await createInstallation(template.id, {});
-      addToast('success', tt('integration.installedFromCatalog', { name: entry.name }));
-      if (template.configSchema.length > 0) {
-        setActiveSubTab('installed');
-      }
-    } catch (err) {
-      addToast('error', err instanceof Error ? err.message : tt('integration.installCatalogFailed'));
-    }
   };
 
   const handleExport = (template: IntegrationTemplate) => {
@@ -1209,12 +978,6 @@ export function IntegrationPanel() {
               installedTemplateIds={installedTemplateIds}
               onInstall={handleInstall}
               onImportJson={handleImportJson}
-              onInstallCommunityEntry={handleInstallCommunityEntry}
-              catalogEntries={catalogEntries}
-              catalogLoading={catalogLoading}
-              catalogLoaded={catalogLoaded}
-              catalogError={catalogError}
-              onRefreshCatalog={handleRefreshCatalog}
               teamTemplates={teamTemplates}
               teamLoading={teamLoading}
               teamError={teamError}

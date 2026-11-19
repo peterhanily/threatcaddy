@@ -84,8 +84,6 @@
     "nameRequired": "Назва інтеграції обов'язкова",
     "createdAndInstalled": "Інтеграцію «{{name}}» створено та встановлено",
     "saveFailed": "Не вдалося зберегти: {{error}}",
-    "installedFromCatalog": "Встановлено {{name}} з каталогу спільноти",
-    "installCatalogFailed": "Не вдалося встановити шаблон спільноти",
     "templateExported": "Експортовано {{name}}",
     "installTeamFailed": "Не вдалося встановити шаблон команди",
     "notFound": "Інтеграцію не знайдено",

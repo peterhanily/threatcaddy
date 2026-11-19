@@ -297,5 +297,8 @@
   "offlineStatus.settingUnavailable": "Browser ini tidak dapat membuat ThreatCaddy tetap tersedia secara offline, tetapi ThreatCaddy tetap berfungsi secara online.",
   "offlineStatus.backupNote": "Penggunaan offline bukan cadangan. Menghapus data browser ini akan menghapus semua yang tersimpan di sini, dan browser juga dapat menghapus data situs yang tersimpan dengan sendirinya, misalnya saat ruang penyimpanan hampir habis. Ekspor cadangan JSON secara rutin dan simpan berkasnya di tempat yang aman.",
   "sync.backupWarning": "Sebelum menghapus data lokal, simpan dan verifikasi cadangan lengkap. Sinkronisasi tim tidak dapat memulihkan detail khusus perangkat seperti folder catatan, daftar periksa, progres playbook, serta hasil alat atau gambar obrolan. Simpan Cadangan mengunduh JSON tanpa enkripsi.",
-  "demoModal.reportWorkflow": "Ikuti catatan tertaut dari bukti sumber ke draf laporan. Periksa kesimpulan dan unduh catatan laporan sebagai Markdown; simpan cadangan seluruh ruang kerja."
+  "demoModal.reportWorkflow": "Ikuti catatan tertaut dari bukti sumber ke draf laporan. Periksa kesimpulan dan unduh catatan laporan sebagai Markdown; simpan cadangan seluruh ruang kerja.",
+  "bootGuard.framed": "Demi keamanan Anda, ThreatCaddy tidak berjalan di dalam situs web lain.",
+  "bootGuard.fileOnly": "Salinan offline ThreatCaddy ini hanya berjalan saat Anda membuka file yang tersimpan di komputer Anda.",
+  "bootGuard.open": "Buka ThreatCaddy"
 }

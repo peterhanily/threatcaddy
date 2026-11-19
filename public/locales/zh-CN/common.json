@@ -297,5 +297,8 @@
   "offlineStatus.settingUnavailable": "此浏览器无法让 ThreatCaddy 保持离线可用，但它仍可在线使用。",
   "offlineStatus.backupNote": "离线使用不是备份。清除此浏览器的数据会删除这里保存的所有内容，浏览器也可能自行移除已保存的网站数据，例如在空间不足时。请定期导出 JSON 备份，并将文件保存在安全的地方。",
   "sync.backupWarning": "删除本地数据前，请保存并验证完整备份。团队同步无法恢复仅保存在此设备上的详情，例如笔记文件夹、检查清单、预案进度以及聊天工具结果或图片。“保存备份”会下载未加密的 JSON 文件。",
-  "demoModal.reportWorkflow": "通过关联笔记从源证据了解报告草稿。审阅结论并将报告笔记下载为 Markdown；使用“保存备份”保留整个工作区。"
+  "demoModal.reportWorkflow": "通过关联笔记从源证据了解报告草稿。审阅结论并将报告笔记下载为 Markdown；使用“保存备份”保留整个工作区。",
+  "bootGuard.framed": "为了您的安全，ThreatCaddy 不会在其他网站内运行。",
+  "bootGuard.fileOnly": "此 ThreatCaddy 离线副本仅在您打开保存在计算机上的文件时运行。",
+  "bootGuard.open": "打开 ThreatCaddy"
 }

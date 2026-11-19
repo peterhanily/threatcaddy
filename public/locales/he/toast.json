@@ -83,8 +83,6 @@
     "nameRequired": "שם אינטגרציה נדרש",
     "createdAndInstalled": "אינטגרציה \"{{name}}\" נוצרה והותקנה",
     "saveFailed": "שמירה נכשלה: {{error}}",
-    "installedFromCatalog": "{{name}} הותקן מקטלוג הקהילה",
-    "installCatalogFailed": "התקנת תבנית קהילה נכשלה",
     "templateExported": "{{name}} יוצא",
     "installTeamFailed": "התקנת תבנית צוות נכשלה",
     "notFound": "אינטגרציה לא נמצאה",

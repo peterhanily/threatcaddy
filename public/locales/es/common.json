@@ -297,5 +297,8 @@
   "offlineStatus.settingUnavailable": "Este navegador no puede mantener ThreatCaddy disponible sin conexión, pero sigue funcionando en línea.",
   "offlineStatus.backupNote": "El uso sin conexión no es una copia de seguridad. Borrar los datos de este navegador elimina todo lo guardado aquí, y los navegadores también pueden eliminar por su cuenta los datos guardados de los sitios, por ejemplo, cuando queda poco espacio. Exporta un respaldo JSON con regularidad y guarda el archivo en un lugar seguro.",
   "sync.backupWarning": "Antes de eliminar datos locales, guarde y verifique una copia de seguridad completa. La sincronización de equipo no puede recuperar detalles exclusivos del dispositivo, como carpetas de notas, listas de comprobación, progreso de procedimientos y resultados de herramientas o imágenes del chat. Guardar copia de seguridad descarga JSON sin cifrar.",
-  "demoModal.reportWorkflow": "Siga las notas enlazadas desde las pruebas hasta el borrador del informe. Revise las conclusiones y descargue la nota como Markdown; use Guardar copia para todo el espacio de trabajo."
+  "demoModal.reportWorkflow": "Siga las notas enlazadas desde las pruebas hasta el borrador del informe. Revise las conclusiones y descargue la nota como Markdown; use Guardar copia para todo el espacio de trabajo.",
+  "bootGuard.framed": "Por su seguridad, ThreatCaddy no se ejecuta dentro de otro sitio web.",
+  "bootGuard.fileOnly": "Esta copia sin conexión de ThreatCaddy solo funciona cuando abre el archivo guardado en su equipo.",
+  "bootGuard.open": "Abrir ThreatCaddy"
 }

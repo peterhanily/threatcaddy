@@ -297,5 +297,8 @@
   "offlineStatus.settingUnavailable": "Este navegador não consegue manter o ThreatCaddy disponível offline, mas ele continua funcionando online.",
   "offlineStatus.backupNote": "O uso offline não é um backup. Limpar os dados deste navegador apaga tudo o que está salvo aqui, e os navegadores também podem remover por conta própria dados de sites salvos, por exemplo, quando falta espaço. Exporte um backup JSON regularmente e guarde o arquivo em um lugar seguro.",
   "sync.backupWarning": "Antes de remover dados locais, salve e verifique um backup completo. A sincronização da equipe não recupera detalhes exclusivos do dispositivo, como pastas de notas, listas de verificação, progresso de playbooks e resultados de ferramentas ou imagens do chat. Salvar backup baixa JSON sem criptografia.",
-  "demoModal.reportWorkflow": "Siga as notas vinculadas das evidências ao rascunho do relatório. Revise as conclusões e baixe a nota em Markdown; use Salvar backup para todo o espaço de trabalho."
+  "demoModal.reportWorkflow": "Siga as notas vinculadas das evidências ao rascunho do relatório. Revise as conclusões e baixe a nota em Markdown; use Salvar backup para todo o espaço de trabalho.",
+  "bootGuard.framed": "Para sua segurança, o ThreatCaddy não é executado dentro de outro site.",
+  "bootGuard.fileOnly": "Esta cópia offline do ThreatCaddy só funciona quando você abre o arquivo salvo no seu computador.",
+  "bootGuard.open": "Abrir o ThreatCaddy"
 }

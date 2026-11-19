@@ -84,8 +84,6 @@
     "nameRequired": "Название интеграции обязательно",
     "createdAndInstalled": "Интеграция «{{name}}» создана и установлена",
     "saveFailed": "Не удалось сохранить: {{error}}",
-    "installedFromCatalog": "Установлено {{name}} из каталога сообщества",
-    "installCatalogFailed": "Не удалось установить шаблон сообщества",
     "templateExported": "Экспортировано {{name}}",
     "installTeamFailed": "Не удалось установить шаблон команды",
     "notFound": "Интеграция не найдена",
