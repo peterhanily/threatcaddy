@@ -47,3 +47,11 @@ test('the hosted policy refuses injected inline handlers', async ({ page }) => {
   expect(ran).toBe(false);
   await expect(page.locator('html')).toHaveAttribute('data-violated-directive', /^script-src/);
 });
+
+// SITE-8: the build ships an RFC 9116 contact file.
+test('security.txt is served from the well-known path', async ({ request }) => {
+  const response = await request.get('/.well-known/security.txt');
+  expect(response.status()).toBe(200);
+  expect(response.headers()['content-type']).toMatch(/^text\/plain/);
+  expect(await response.text()).toContain('Contact: https://github.com/peterhanily/threatcaddy/security/advisories/new');
+});

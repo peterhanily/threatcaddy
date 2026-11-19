@@ -28,6 +28,11 @@ describe('hosted service worker navigation', () => {
     expect(denied('/privacy.html')).toBe(true);
   });
 
+  it('serves security.txt from the network, never the app shell or the precache', () => {
+    expect(denied('/.well-known/security.txt')).toBe(true);
+    expect(options.globPatterns?.some(pattern => pattern.includes('well-known') || pattern.startsWith('**') || pattern.startsWith('*.txt'))).toBe(false);
+  });
+
   it('still answers app navigations and keeps the API out of the fallback', () => {
     expect(denied('/')).toBe(false);
     expect(denied('/?view=notes')).toBe(false);

@@ -26,9 +26,9 @@ export function workboxOptions(localeCache: string): NonNullable<VitePWAOptions[
     // use of a script offline does not depend on a previously warmed CDN.
     globPatterns: ['index.html', 'privacy.html', 'logo.svg', 'manifest.json', 'locales/en/*.json', 'assets/**/*.{js,css}', 'fonts/**/*.woff2', 'licenses/*.txt', '*.{ico,js}'],
     navigateFallback: 'index.html',
-    // Static pages such as the privacy policy are documents of their own,
-    // never routes of the app shell.
-    navigateFallbackDenylist: [/\/(?:api|ws)(?:\/|$)/, /\.html$/],
+    // Static pages such as the privacy policy and security.txt are documents
+    // of their own, never routes of the app shell.
+    navigateFallbackDenylist: [/\/(?:api|ws)(?:\/|$)/, /\.html$/, /\/\.well-known\//],
     skipWaiting: true,
     clientsClaim: true,
     maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
