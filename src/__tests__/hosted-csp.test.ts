@@ -51,7 +51,7 @@ const sha256 = (code: string) => `'sha256-${createHash('sha256').update(code).di
 describe('hosted Content-Security-Policy', () => {
   it('allows each inline script of the built page by hash, and nothing else inline', async () => {
     const html = await hostedHtml();
-    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(match => match[1]);
+    const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)].filter(match => !match[1].trim()).map(match => match[2]);
     // The boot guard and the two theme snippets.
     expect(scripts).toHaveLength(3);
     const scriptSrc = directives(html)['script-src'];

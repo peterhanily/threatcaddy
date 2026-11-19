@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Plugin } from 'vite';
 
-const SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+const SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi;
 const SCRIPT_SRC = /(<meta\s+http-equiv="Content-Security-Policy"\s+content="[^"]*?\bscript-src\b)([^;"]*)/i;
 
 /** CSP hash sources for every inline script the browser would run. Data
