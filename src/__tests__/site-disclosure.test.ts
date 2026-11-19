@@ -6,7 +6,13 @@
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import type { ConfigEnv, Plugin, PluginOption, UserConfig } from 'vite';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { securityTxtExpiry, securityTxtRenewalWarning } from '../../build/security-txt';
+
+vi.mock('vite-plugin-pwa', () => ({ VitePWA: () => ({ name: 'vite-plugin-pwa-under-test' }) }));
+// The hosted config reads VITE_* values from .env files; this test needs none of them.
+vi.mock('vite', async (importOriginal) => ({ ...(await importOriginal<typeof import('vite')>()), loadEnv: () => ({}) }));
 
 const read = (path: string) => readFileSync(resolve(__dirname, '../..', path), 'utf8');
 
@@ -34,6 +40,54 @@ describe('security.txt', () => {
     const time = Date.parse(expires[0]);
     expect(time).toBeGreaterThan(Date.parse('2026-11-18T00:00:00Z'));
     expect(time).toBeLessThanOrEqual(Date.parse('2027-11-18T00:00:00Z'));
+  });
+});
+
+// RFC 9116: consumers treat an expired file as stale. Every build says when it
+// is due; none fails on a date, so an older release still builds after it.
+describe('security.txt renewal', () => {
+  const file = 'Contact: https://example.invalid/report\nExpires: 2027-11-17T23:59:59Z\n';
+  const at = (date: string) => Date.parse(date);
+
+  afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
+
+  it('stays quiet until 30 days before Expires, then asks for renewal', () => {
+    expect(securityTxtRenewalWarning(file, at('2027-10-18T00:00:00Z'))).toBeUndefined();
+    expect(securityTxtRenewalWarning(file, at('2027-10-19T00:00:00Z'))).toBe(
+      'public/.well-known/security.txt expires on 2027-11-17T23:59:59Z, in 29 days: renew Expires (at most a year ahead) before publishing.');
+    expect(securityTxtRenewalWarning(file, at('2027-11-18T00:00:00Z'))).toBe(
+      'public/.well-known/security.txt expired on 2027-11-17T23:59:59Z: renew Expires (at most a year ahead) before publishing.');
+    expect(securityTxtRenewalWarning('Contact: https://example.invalid/report\n', at('2027-01-01T00:00:00Z'))).toBe(
+      'public/.well-known/security.txt has no valid Expires field.');
+  });
+
+  it('warns in the build log, as a GitHub Actions annotation there, and never fails the build', () => {
+    const warn = vi.fn();
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const start = (now: string) => {
+      const plugin = securityTxtExpiry(resolve(__dirname, '../../public/.well-known/security.txt'), () => at(now));
+      expect(plugin.apply).toBe('build');
+      (plugin.buildStart as unknown as (this: { warn: typeof warn }) => void).call({ warn });
+    };
+    vi.stubEnv('GITHUB_ACTIONS', 'true');
+    start('2026-11-19T00:00:00Z');
+    expect(warn).not.toHaveBeenCalled();
+    expect(log).not.toHaveBeenCalled();
+    start('2027-12-01T00:00:00Z');
+    const message = 'public/.well-known/security.txt expired on 2027-11-17T23:59:59Z: renew Expires (at most a year ahead) before publishing.';
+    expect(warn).toHaveBeenCalledExactlyOnceWith(message);
+    expect(log).toHaveBeenCalledExactlyOnceWith(`::warning title=security.txt::${message}`);
+    vi.stubEnv('GITHUB_ACTIONS', '');
+    start('2027-12-01T00:00:00Z');
+    expect(warn).toHaveBeenCalledTimes(2);
+    expect(log).toHaveBeenCalledOnce();
+  });
+
+  it('is checked by the hosted build, which publishes the file', async () => {
+    const { default: config } = await import('../../vite.config');
+    const resolved = await (config as (env: ConfigEnv) => UserConfig | Promise<UserConfig>)({ mode: 'production', command: 'build', isSsrBuild: false, isPreview: false });
+    const plugins = ((resolved.plugins ?? []) as PluginOption[]).flat(Infinity as 1).filter(Boolean) as Plugin[];
+    expect(plugins.map(plugin => plugin.name)).toContain('security-txt-expiry');
   });
 });
 
