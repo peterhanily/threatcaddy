@@ -2,8 +2,54 @@
 
 ## Unreleased
 
-- CI: the picomatch audit exception is removed. GitHub withdrew GHSA-fc5q-39xc-vjpf on 18 November 2026, so the audits no longer report it; the reviewed-exception check stays for future advisories.
+## v2.0.4 — RELEASE-DATE
+
+Fixes from a security review of what ThreatCaddy exposes publicly: the hosted site, the standalone file, the browser extension and the team server image. The app no longer runs inside a frame, the standalone file runs only when opened from a file, whiteboards no longer load embedded web content, and the hosted page runs only its own inline scripts. ThreatCaddy now uses no feature of a browser extension older than 1.1.3, such as the Chrome Web Store's 1.1.1, and its install links point to the GitHub release. The team server's Compose file publishes the API on host loopback only, `TRUSTED_PROXY_IPS` accepts CIDR ranges, and `/health` reports only its status and version. No database migrations and no stored data format changes. See the [upgrade and channel notes](docs/releases/v2.0.4.md). The extension is released at 1.1.5.
+
+### Security
+
+#### Hosted app and standalone file
+
+- The standalone file runs only when opened from a file (`file://`). Served over http or https, for example at threatcaddy.com/threatcaddy-standalone.html, it starts nothing and reads no storage; a short notice links to the folder it was served from, which on threatcaddy.com is the hosted app. The hosted Download links and the standalone file's Update button still work.
+- ThreatCaddy no longer runs inside a frame. The hosted app and the standalone file show a notice, in the browser's language and colours, with an **Open ThreatCaddy** link that opens the app in the top window. GitHub Pages cannot send a header that forbids framing, so the page checks this itself before anything else runs.
+- The hosted content security policy no longer allows `'unsafe-inline'` scripts. The build adds the hashes of the page's own inline scripts, so injected inline scripts and event-handler attributes do not run, and the build fails if `'unsafe-inline'` returns. `raw.githubusercontent.com` is no longer allowed.
+- The standalone file's policy now also refuses frames, plugins, form submissions and `<base>` changes, and loads no script from another site: only its own inline code, `blob:` workers and WebAssembly. Network connections stay open, because the file connects to the team servers, AI endpoints, integrations and cloud storage you configure. Chromium-based browsers apply this policy; Safari and other WebKit browsers ignore a policy in a file opened from disk.
+- threatcaddy.com publishes `/.well-known/security.txt`, which points to GitHub private vulnerability reporting. The privacy policy says the hosted site loads no analytics and links to private reporting. Each hosted build warns from 30 days before the file's `Expires` date, without failing.
+
+#### Whiteboards
+
+- Whiteboards no longer load embedded web content (YouTube, X, Reddit and others). Opening a board turns each embed into a rectangle that keeps its link, which you can open from the shape, and saves the board that way, so the embed does not come back. Embeds that are pasted, dropped or added from a library are converted too, and the Web Embed tool draws a linked rectangle of the drawn size. A paste that carries an `iframe` element is still refused.
+
+#### Integrations
+
+- The community integration catalog is removed: it fetched an unsigned file from a GitHub repository that does not exist. ThreatCaddy no longer contacts `raw.githubusercontent.com`. Built-in integrations, team templates and importing a template from a file or pasted JSON are unchanged.
+
+#### Browser extension
+
+- ThreatCaddy uses no feature of an extension older than 1.1.3, such as the Chrome Web Store's 1.1.1, which has no app pairing and whose web fetch follows redirects and accepts private addresses. That covers CaddyAI chat, agents, meetings, the supervisor, chat titles and summaries, integration requests and web fetch. AI requests fail with a translated message that names 1.1.3 and the GitHub release; integrations send their requests from the page instead, as without an extension.
+- Clips from an extension older than 1.1.3 are no longer imported, however many arrive. A notice that stays until dismissed says so and how to update. Store 1.1.1 marks such clips "Sent" but keeps them on its Clip Review page, so you can copy them from there.
+- The help menu, the mobile sidebar, the CaddyAI connection banner and CaddyAI onboarding link the GitHub release and its install steps, and say that the Chrome Web Store version is older. With an extension older than 1.1.3 installed, AgentCaddy, the empty chat view, Settings → AI and AI route errors say that ThreatCaddy needs 1.1.3 or later and where to get it.
+- When the extension stops answering a tab left open while it was updated or reloaded, AI requests and failed integration requests there ask for a page reload, in the analyst's language.
+- Extension 1.1.5 no longer asks for the `tabs` permission, which browsers describe as reading your browsing history. Right-click captures read the page's address and title through `activeTab`. Its bridge capabilities are unchanged.
+
+#### Team server
+
+- `TRUSTED_PROXY_IPS` accepts CIDR ranges (IPv4 and IPv6) as well as exact addresses; hostnames and `/0` ranges are refused at startup. With the supplied Compose file and a proxy on the host, trust the Compose network's gateway, as the deployment guide shows, so login lockouts and rate limits apply to each client rather than to everyone behind the proxy. The first `X-Forwarded-For` header from a peer the server does not trust, or while `TRUST_PROXY` is off, logs one warning that names the peer.
+- The supplied Compose file publishes the API on host loopback (`127.0.0.1:3001`) for a reverse proxy on the same host. Set `API_PUBLISH_ADDRESS` in `.env`, for example to `0.0.0.0` for every IPv4 interface, to publish it elsewhere.
+- `/health` returns only `status` and `version`, with HTTP 200 or 503. It no longer reports the database and storage checks, uptime, memory or a timestamp; each new failing check is logged once as `Health check degraded`.
+- Server image: the application code in `/app` is root-owned and read-only to the runtime user; of the server's own directories, only file storage (`/data/files`) is writable. The image no longer ships the `ssh2` package's test suite, which holds third-party test private keys, or npm's compile cache.
+- The generated `/data/files/.admin-secret` file is deleted after the first administrator is created, and at each startup while an active administrator exists. A copy kept elsewhere, such as in an older backup, works until you rotate the secret: set `ADMIN_SECRET` and restart, or use **Change Secret**. A short `ADMIN_SECRET` still only warns, and the warning now says how to rotate it.
+- The bot sandbox's default images are pinned by digest: `python:3.12.16-slim-trixie`, `node:22.23.5-alpine3.24` and `alpine:3.24.4`, replacing the unpinned `python:3.12-slim` and `node:22-alpine` and the end-of-life `alpine:3.19`. `SANDBOX_PYTHON_IMAGE`, `SANDBOX_NODE_IMAGE` and `SANDBOX_BASH_IMAGE` still override them.
+- The GHCR publication also tags the first verified build of each server version with that version, for example `:2.0.4`, and never moves that tag.
+
+### Dashboard
+
 - The dashboard's default quick links add MacCrab.com and CaddyLabs.io after Forensicate.ai and OpenSlaw.ai. A workspace whose quick links were already edited keeps its own list; add them with **Add Link**.
+
+### CI and release
+
+- CI: the picomatch audit exception is removed. GitHub withdrew GHSA-fc5q-39xc-vjpf on 18 November 2026, so the audits no longer report it; the reviewed-exception check stays for future advisories.
+- CI: each step that installs the test browsers' system packages from the runners' Ubuntu mirror has its own 35-minute limit, and the jobs that run one allow 55 or 60 minutes, because the mirror took up to 30 minutes on 18 November 2026.
 
 ## v2.0.3 — 2026-11-18
 
