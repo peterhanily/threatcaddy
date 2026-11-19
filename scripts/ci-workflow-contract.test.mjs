@@ -69,10 +69,16 @@ test('hosted browser acceptance runs each Playwright project in its own job agai
   assert.deepEqual(job.strategy, { 'fail-fast': false, matrix: { project: config.projects } });
   // Observed before the split (Nov 2026): 3-5 minutes of build and standalone
   // work, and at most 10 minutes of tests for the slowest single project.
-  // Playwright must stop and write its report before GitHub cancels the job.
+  // On 18 November 2026 the runners' Ubuntu mirror served WebKit's system
+  // packages at about 84 kB/s, so installing them took up to 30 minutes. The
+  // install step has its own limit, and the job leaves Playwright its full
+  // global timeout after it: Playwright must stop and write its report before
+  // GitHub cancels the job.
   assert.equal(build['timeout-minutes'], 20);
-  assert.equal(job['timeout-minutes'], 30);
-  assert.ok(config.globalTimeout <= (job['timeout-minutes'] - 5) * 60_000);
+  assert.equal(job['timeout-minutes'], 60);
+  const browserInstall = stepsOf(job).find(step => step.run === 'pnpm exec playwright install --with-deps "$PROJECT"');
+  assert.equal(browserInstall['timeout-minutes'], 35);
+  assert.ok(browserInstall['timeout-minutes'] * 60_000 + config.globalTimeout <= (job['timeout-minutes'] - 5) * 60_000);
 
   const steps = stepsOf(job);
   const find = predicate => steps.findIndex(predicate);
