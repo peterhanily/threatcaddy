@@ -145,4 +145,10 @@ describe('bundle fallback', () => {
   it('lets an ordinary page start', async () => {
     await expect(import('../lib/boot-blocked')).resolves.toBeDefined();
   });
+
+  it('is the first module the app entry imports', () => {
+    const entry = readFileSync(resolve(__dirname, '../main.tsx'), 'utf8');
+    const imports = [...entry.matchAll(/^import\s[^\n]*$/gm)].map(([statement]) => statement);
+    expect(imports[0]).toMatch(/^import '\.\/lib\/boot-blocked';?$/);
+  });
 });
