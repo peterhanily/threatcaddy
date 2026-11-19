@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## v2.0.4 — RELEASE-DATE
+## v2.0.4 — 2026-11-19
 
 Fixes from a security review of what ThreatCaddy exposes publicly: the hosted site, the standalone file, the browser extension and the team server image. The app no longer runs inside a frame, the standalone file runs only when opened from a file, whiteboards no longer load embedded web content, and the hosted page runs only its own inline scripts. ThreatCaddy now uses no feature of a browser extension older than 1.1.3, such as the Chrome Web Store's 1.1.1, and its install links point to the GitHub release. The team server's Compose file publishes the API on host loopback only, `TRUSTED_PROXY_IPS` accepts CIDR ranges, and `/health` reports only its status and version. No database migrations and no stored data format changes. See the [upgrade and channel notes](docs/releases/v2.0.4.md). The extension is released at 1.1.5.
 
