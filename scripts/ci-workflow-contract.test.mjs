@@ -608,6 +608,7 @@ case "$1 $2" in
       *) case '${registry}' in
            present) printf '{"fixture":"first build"}\\n' ;;
            absent) printf 'no such manifest: %s\\n' "$3" >&2; exit 1 ;;
+           ghcr-absent) printf 'manifest unknown\\n' >&2; exit 1 ;;
            *) printf 'unauthorized: synthetic registry failure\\n' >&2; exit 1 ;;
          esac ;;
     esac ;;
@@ -637,6 +638,13 @@ test('server publication adds a version tag for the first verified build of each
   assert.deepEqual(calls.filter(call => call.startsWith('tag ')).map(call => call.split(' ')[1]), Array(3).fill(`sha256:${'d'.repeat(64)}`));
   assert.ok(calls.indexOf(`manifest inspect ${image}:2.0.4`) < calls.indexOf(pushes[0]));
   assert.ok(calls.includes('rm fixture-container'));
+});
+
+test('server publication treats GHCR\'s "manifest unknown" as a version tag that does not exist yet', t => {
+  // GHCR answered exactly this for ghcr.io/peterhanily/threatcaddy/server:2.0.4 on 19 November 2026.
+  const { status, calls, sha, image } = runServerPublish(t, { registry: 'ghcr-absent' });
+  assert.equal(status, 0);
+  assert.deepEqual(calls.filter(call => call.startsWith('push ')), [`push ${image}:sha-${sha}`, `push ${image}:latest`, `push ${image}:2.0.4`]);
 });
 
 test('server publication never moves an existing version tag to a later build', t => {
