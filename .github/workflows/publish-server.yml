@@ -77,7 +77,8 @@ jobs:
           if docker manifest inspect "$image:$version" > /dev/null 2> version-tag.log; then
             push_version=false
             echo "::notice::$image:$version already exists and stays on its first build"
-          elif grep -q 'no such manifest' version-tag.log; then
+          # Docker Hub says "no such manifest"; GHCR says "manifest unknown".
+          elif grep -q -E 'no such manifest|manifest unknown' version-tag.log; then
             push_version=true
           else
             cat version-tag.log >&2
