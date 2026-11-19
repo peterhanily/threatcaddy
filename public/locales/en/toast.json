@@ -3,6 +3,7 @@
     "importWarning": "Imported with {{count}} failed clip(s)",
     "importFailed": "Failed to import clips from extension",
     "refreshFailed": "Clips were saved, but the view could not refresh. Reload this workspace to see them.",
+    "outdatedExtensionRefused": "Clips not imported. They came from a ThreatCaddy extension older than 1.1.3, which ThreatCaddy no longer uses. Install the latest version from the ThreatCaddy releases on GitHub; the Chrome Web Store version is older. The old extension marks these clips \"Sent\" but keeps them on its \"Clip Review\" page: copy them from there before you remove it.",
     "openedAsNote": "Opened \"{{name}}\" as a new note",
     "openFailed": "Failed to open \"{{name}}\"",
     "fileRefreshFailed": "The file was saved as a note, but the view could not refresh. Reload this workspace to see it.",

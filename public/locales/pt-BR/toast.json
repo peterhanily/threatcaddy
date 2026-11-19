@@ -5,6 +5,7 @@
     "openedAsNote": "\"{{name}}\" aberto como nova nota",
     "openFailed": "Falha ao abrir \"{{name}}\"",
     "refreshFailed": "Os recortes foram salvos, mas a visualização não foi atualizada. Recarregue este espaço para vê-los.",
+    "outdatedExtensionRefused": "Recortes não importados. Eles vieram de uma extensão ThreatCaddy anterior à 1.1.3, que o ThreatCaddy não usa mais. Instale a versão mais recente a partir das versões do ThreatCaddy no GitHub; a versão da Chrome Web Store é mais antiga. A extensão antiga marca esses recortes como “Sent”, mas os mantém na página “Clip Review” dela: copie-os de lá antes de remover a extensão.",
     "fileRefreshFailed": "O arquivo foi salvo como nota, mas a visualização não foi atualizada. Recarregue este espaço para vê-la.",
     "fileTitle": "{{name}} — {{size}} — Modificado {{modified}}",
     "fileError": {

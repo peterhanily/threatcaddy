@@ -5,6 +5,7 @@ import { ThemeToggle } from '../Common/ThemeToggle';
 import { ScreenshareToggle } from '../Common/ScreenshareToggle';
 import { CreateDropdown } from '../Common/CreateDropdown';
 import { cn } from '../../lib/utils';
+import { EXTENSION_INSTALL_STEPS_URL, EXTENSION_RELEASES_URL } from '../../lib/extension-bridge';
 import { NotificationBell } from '../CaddyShack/NotificationBell';
 import { PresenceIndicator } from '../Common/PresenceIndicator';
 import type { PresenceUser } from '../../types';
@@ -231,15 +232,21 @@ export function Header({
             )}
             <a
               data-tour="extension"
-              href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh"
+              href={EXTENSION_RELEASES_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors no-underline"
+              className="flex items-center gap-2 px-3 pt-2 pb-0.5 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors no-underline"
               onClick={() => setHelpMenuOpen(false)}
             >
               <Puzzle size={14} />
-              {t('header.chromeExtension')}
+              {t('extension.menuLink')}
             </a>
+            <p className="ps-9 pe-3 pb-2 text-[10px] text-gray-500">
+              {t('extension.storeOlder')}{' '}
+              <a href={EXTENSION_INSTALL_STEPS_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-300" onClick={() => setHelpMenuOpen(false)}>
+                {t('extension.installSteps')}
+              </a>
+            </p>
             <a
               href="https://threatcaddy.com/privacy.html"
               target="_blank"

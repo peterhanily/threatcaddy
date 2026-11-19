@@ -6,6 +6,7 @@
   "panel.openAISettings": "פתח הגדרות AI",
   "panel.installExtension": "התקן תוסף דפדפן",
   "panel.installExtensionDesc": "AgentCaddy דורש תוסף הדפדפן ThreatCaddy לניתוב בקשות API, או שרת צוות מחובר.",
+  "panel.updateExtension": "עדכן תוסף דפדפן",
   "panel.agentSettings": "הגדרות סוכן",
   "panel.toggleAgentSettings": "החלף הגדרות סוכן",
   "panel.agentRunning": "הסוכן פועל",

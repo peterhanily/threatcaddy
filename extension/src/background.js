@@ -468,8 +468,12 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // Handle context menu click
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+chrome.contextMenus.onClicked.addListener(async (info, clicked) => {
   if (info.menuItemId === 'save-to-threatcaddy' && info.selectionText) {
+    // There is no `tabs` permission, and Chromium can build the clicked tab before it grants activeTab,
+    // so read the tab again for its address and title, keeping the clicked page's address if that fails.
+    const current = await chrome.tabs.get(clicked.id).catch(() => clicked);
+    const tab = { ...current, url: current.url || info.pageUrl };
     let text = info.selectionText;
     try {
       const [result] = await chrome.scripting.executeScript({

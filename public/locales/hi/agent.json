@@ -6,6 +6,7 @@
   "panel.openAISettings": "AI सेटिंग खोलें",
   "panel.installExtension": "ब्राउज़र एक्सटेंशन इंस्टॉल करें",
   "panel.installExtensionDesc": "AgentCaddy को API अनुरोधों को प्रॉक्सी करने के लिए ThreatCaddy ब्राउज़र एक्सटेंशन या कनेक्टेड टीम सर्वर की आवश्यकता है।",
+  "panel.updateExtension": "ब्राउज़र एक्सटेंशन अपडेट करें",
   "panel.agentSettings": "एजेंट सेटिंग",
   "panel.toggleAgentSettings": "एजेंट सेटिंग दिखाएं/छुपाएं",
   "panel.agentRunning": "एजेंट चल रहा है",

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useLLM } from '../hooks/useLLM';
+import { answerBridgeCheck, PAIRED_BRIDGE_CAPS, publishBridgeCaps } from './helpers/paired-bridge';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -101,13 +102,13 @@ describe('useLLM', () => {
   it('detects extension when TC_EXTENSION_READY is received', async () => {
     const { result } = renderHook(() => useLLM());
     await act(async () => {
-      postToWindow({ type: 'TC_EXTENSION_READY', protocolVersion: 2, capabilities: ['llm', 'fetch'] });
+      postToWindow({ type: 'TC_EXTENSION_READY', protocolVersion: 2, capabilities: PAIRED_BRIDGE_CAPS });
       await flush();
     });
     expect(result.current.extensionAvailable).toBe(true);
     expect(result.current.extensionInfo).toEqual({
       protocolVersion: 2,
-      capabilities: ['llm', 'fetch'],
+      capabilities: PAIRED_BRIDGE_CAPS,
     });
   });
 
@@ -128,8 +129,9 @@ describe('useLLM', () => {
     const origPostMessage = window.postMessage;
     window.postMessage = vi.fn((...args: Parameters<typeof window.postMessage>) => {
       messages.push(args[0]);
-      origPostMessage.apply(window, args);
+      if (!answerBridgeCheck(args[0])) origPostMessage.apply(window, args);
     });
+    publishBridgeCaps();
 
     const { result } = renderHook(() => useLLM());
     await act(async () => { await flush(); });
@@ -151,13 +153,16 @@ describe('useLLM', () => {
     expect(result.current.isStreaming).toBe(true);
     expect(requestId!).toBeTruthy();
 
-    const llmRequest = messages.find(
-      (m) => (m as Record<string, unknown>).type === 'TC_LLM_REQUEST',
-    ) as Record<string, unknown>;
-    expect(llmRequest).toBeTruthy();
+    // The request leaves once the bridge has answered as paired.
+    const llmRequest = await vi.waitFor(() => {
+      const posted = messages.find((m) => (m as Record<string, unknown>).type === 'TC_LLM_REQUEST') as Record<string, unknown>;
+      expect(posted).toBeTruthy();
+      return posted;
+    });
     expect(llmRequest.requestId).toBe(requestId!);
 
     window.postMessage = origPostMessage;
+    delete document.documentElement.dataset.tcBridgeCaps;
   });
 
   it('accumulates streaming content from TC_LLM_CHUNK messages', async () => {

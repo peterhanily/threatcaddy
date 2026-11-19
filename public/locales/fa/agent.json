@@ -6,6 +6,7 @@
   "panel.openAISettings": "باز کردن تنظیمات AI",
   "panel.installExtension": "نصب افزونه مرورگر",
   "panel.installExtensionDesc": "AgentCaddy برای پروکسی کردن درخواست‌های API به افزونه مرورگر ThreatCaddy یا سرور تیمی متصل نیاز دارد.",
+  "panel.updateExtension": "به‌روزرسانی افزونه مرورگر",
   "panel.agentSettings": "تنظیمات عامل",
   "panel.toggleAgentSettings": "نمایش/پنهان تنظیمات عامل",
   "panel.agentRunning": "عامل در حال اجرا است",

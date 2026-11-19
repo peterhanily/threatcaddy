@@ -112,25 +112,6 @@ export async function validateClip(value: unknown): Promise<ClipRevision> {
   return { ...clip, fingerprint: supplied };
 }
 
-/** Legacy messages cannot acknowledge extension delivery; this only gives retries a stable identity. */
-export async function adaptLegacyClip(value: unknown): Promise<ClipRevision> {
-  const row = record(value);
-  const clip: ClipContent = {
-    id: typeof row.id === 'string' && row.id.trim() ? row.id : 'legacy', revision: 1,
-    title: typeof row.title === 'string' ? row.title : '',
-    content: typeof row.content === 'string' ? row.content : '',
-    sourceUrl: typeof row.sourceUrl === 'string' ? row.sourceUrl : '',
-    sourceTitle: typeof row.sourceTitle === 'string' ? row.sourceTitle : '',
-    entityType: row.entityType === undefined ? 'note' : row.entityType as ClipEntityType,
-    folderName: typeof row.folderName === 'string' ? row.folderName : '',
-    clsLevel: typeof row.clsLevel === 'string' ? row.clsLevel : '',
-    createdAt: row.createdAt === undefined ? 0 : row.createdAt as number,
-  };
-  validateClipContent(clip);
-  if (!(typeof row.id === 'string' && row.id.trim())) clip.id = `legacy-${await fingerprintClip(clip)}`;
-  return createClipRevision(clip);
-}
-
 export function clipReceiptKey(sourceId: string, clip: Pick<ClipContent, 'id' | 'revision'>): string {
   return JSON.stringify([sourceId, clip.id, clip.revision]);
 }

@@ -6,6 +6,7 @@
   "panel.openAISettings": "Відкрити налаштування ШІ",
   "panel.installExtension": "Встановити розширення браузера",
   "panel.installExtensionDesc": "AgentCaddy потребує розширення браузера ThreatCaddy для проксування API-запитів або підключеного командного сервера.",
+  "panel.updateExtension": "Оновити розширення браузера",
   "panel.agentSettings": "Налаштування агента",
   "panel.toggleAgentSettings": "Перемкнути налаштування агента",
   "panel.agentRunning": "Агент запущено",

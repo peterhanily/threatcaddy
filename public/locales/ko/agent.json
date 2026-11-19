@@ -6,6 +6,7 @@
   "panel.openAISettings": "AI 설정 열기",
   "panel.installExtension": "브라우저 확장 프로그램 설치",
   "panel.installExtensionDesc": "AgentCaddy는 API 요청 프록시를 위해 ThreatCaddy 브라우저 확장 프로그램 또는 팀 서버 연결이 필요합니다.",
+  "panel.updateExtension": "브라우저 확장 프로그램 업데이트",
   "panel.agentSettings": "에이전트 설정",
   "panel.toggleAgentSettings": "에이전트 설정 전환",
   "panel.agentRunning": "에이전트 실행 중",

@@ -6,6 +6,7 @@
   "panel.openAISettings": "เปิดการตั้งค่า AI",
   "panel.installExtension": "ติดตั้งส่วนขยายเบราว์เซอร์",
   "panel.installExtensionDesc": "AgentCaddy ต้องการส่วนขยายเบราว์เซอร์ ThreatCaddy เพื่อส่งผ่าน API request หรือการเชื่อมต่อกับเซิร์ฟเวอร์ทีม",
+  "panel.updateExtension": "อัปเดตส่วนขยายเบราว์เซอร์",
   "panel.agentSettings": "การตั้งค่าเอเจนต์",
   "panel.toggleAgentSettings": "สลับการตั้งค่าเอเจนต์",
   "panel.agentRunning": "เอเจนต์กำลังทำงาน",

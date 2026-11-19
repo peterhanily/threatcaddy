@@ -6,6 +6,7 @@
   "panel.openAISettings": "Buka Pengaturan AI",
   "panel.installExtension": "Pasang ekstensi browser",
   "panel.installExtensionDesc": "AgentCaddy memerlukan ekstensi browser ThreatCaddy untuk meneruskan permintaan API, atau server tim yang terhubung.",
+  "panel.updateExtension": "Perbarui ekstensi browser",
   "panel.agentSettings": "Pengaturan agen",
   "panel.toggleAgentSettings": "Beralih pengaturan agen",
   "panel.agentRunning": "Agen sedang berjalan",

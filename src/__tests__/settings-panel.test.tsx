@@ -401,6 +401,27 @@ describe('SettingsPanel: where AI data goes', () => {
       'Requests to cloud models go from the browser extension straight to the provider, using the API key saved on this device.']);
   });
 
+  // Its users already have an extension installed and turned on: the route line says which version and where.
+  it('gives store 1.1.1, which has no app pairing, no extension route, and says what to install', () => {
+    document.documentElement.dataset.tcBridgeCaps = STORE_1_1_1_CAPS;
+    const outdated = 'The installed browser extension is older than 1.1.3, so AI requests cannot use it. Install the latest version from the ThreatCaddy releases on GitHub; the Chrome Web Store version is older.';
+    const auto = renderAI();
+    expect(lines()[0]).toBe(outdated);
+    auto.unmount();
+    const explicit = renderAI({ llmRoutingMode: 'extension' });
+    expect(lines()[0]).toBe(outdated);
+    explicit.unmount();
+    renderAI({ llmLocalEndpoint: 'http://localhost:11434/v1' });
+    expect(lines().slice(0, 2)).toEqual(['Requests to your local model go straight to it at localhost:11434.',
+      'The installed browser extension is older than 1.1.3, so requests to cloud models cannot use it. Install the latest version from the ThreatCaddy releases on GitHub; the Chrome Web Store version is older.']);
+  });
+
+  it('keeps the sign-in line for Team Server routing with store 1.1.1', () => {
+    document.documentElement.dataset.tcBridgeCaps = STORE_1_1_1_CAPS;
+    renderAI({ llmRoutingMode: 'server' });
+    expect(lines()[0]).toBe('Routing is set to Team Server Proxy, but you are not signed in to a team server, so AI requests will fail.');
+  });
+
   it('keeps one route line when no local model endpoint is set, even with a local default model', () => {
     signIn();
     renderAI({ llmDefaultProvider: 'local', llmLocalEndpoint: '  ' });

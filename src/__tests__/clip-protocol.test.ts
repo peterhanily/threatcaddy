@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptLegacyClip, CLIP_LIMITS, clipReceiptKey, createClipRevision, fingerprintClip,
+import { CLIP_LIMITS, clipReceiptKey, createClipRevision, fingerprintClip,
   serializeClipContent, validateClip, validateClipContent, type ClipContent } from '../lib/clip-protocol';
 
 const fixture: ClipContent = { id: 'clip-example', revision: 1, title: 'Synthetic café',
@@ -38,15 +38,5 @@ describe('extension clip protocol v2', () => {
 
   it('requires a fingerprint before import', async () => {
     await expect(validateClip(fixture)).rejects.toThrow(/fingerprint/);
-  });
-
-  it('adapts legacy captures with stable IDs and deterministic missing IDs/timestamps', async () => {
-    const saved = await adaptLegacyClip({ id: 'old-clip', content: 'Legacy content', sent: true, createdAt: 10 });
-    expect(saved).toMatchObject({ id: 'old-clip', revision: 1, entityType: 'note', content: 'Legacy content' });
-    const first = await adaptLegacyClip({ title: 'No old identity', content: 'Legacy content' });
-    expect(first.id).toMatch(/^legacy-[a-f0-9]{64}$/);
-    expect(first.createdAt).toBe(0);
-    expect(await adaptLegacyClip({ title: 'No old identity', content: 'Legacy content' })).toEqual(first);
-    expect((await adaptLegacyClip({ title: 'Different capture', content: 'Legacy content' })).id).not.toBe(first.id);
   });
 });

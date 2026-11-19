@@ -7,6 +7,7 @@ import { cancellableRequest } from './request-cancellation';
 import { decodeBlocks, encodeRequest } from './tool-name-alias';
 import { readStoredAuth } from './auth-storage';
 import { workspaceStorageKey } from './workspace-profiles';
+import { checkPairedBridge, extensionRefusal, outdatedBridgePublished } from './extension-bridge';
 import i18n from '../i18n';
 import type { LLMProvider, Settings } from '../types';
 
@@ -163,6 +164,8 @@ export const UNAVAILABLE_ROUTE_ERRORS = {
 /** Chat, agents, meetings and the supervisor show this to the analyst, so it is translated.
  * Hosted builds load the namespace lazily. */
 export async function unavailableRouteError(reason: keyof typeof UNAVAILABLE_ROUTE_ERRORS): Promise<string> {
+  // Store 1.1.1 is installed and turned on, but the app does not use it: say what to install instead.
+  if (reason !== 'no-server' && outdatedBridgePublished()) return extensionRefusal();
   await i18n.loadNamespaces('settings');
   return i18n.t(UNAVAILABLE_ROUTE_ERRORS[reason], { ns: 'settings' });
 }
@@ -195,7 +198,14 @@ export function sendViaExtension(request: LLMRouteRequest, callbacks: LLMRouteCa
   if (lifecycle.signal.aborted) { cleanup(); return requestId; }
   window.addEventListener('message', handler);
   lifecycle.signal.addEventListener('abort', abort, { once: true });
-  window.postMessage({ type: 'TC_LLM_REQUEST', requestId, payload: encoded.req }, postMessageOrigin());
+  // Only a paired 1.1.3+ bridge gets the request and its API key; store 1.1.1 has no app pairing.
+  void checkPairedBridge().then(async check => {
+    if (lifecycle.signal.aborted) return;
+    if (check === 'paired') { window.postMessage({ type: 'TC_LLM_REQUEST', requestId, payload: encoded.req }, postMessageOrigin()); return; }
+    const error = await extensionRefusal(check);
+    if (lifecycle.signal.aborted) return;
+    cleanup(); callbacks.onError(error);
+  });
   return requestId;
 }
 
