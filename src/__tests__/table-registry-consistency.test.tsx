@@ -61,7 +61,9 @@ function block(path: string, marker: string): string {
 const quoted = (text: string) => sorted((text.match(/'([A-Za-z0-9_]+)'/g) ?? []).map((x) => x.slice(1, -1)));
 const allTables = () => db.tables.map((table) => table.name);
 const entityTables = () => allTables().filter((name) => !(name in INTERNAL_TABLES));
-const indexedBy = (field: string) => db.tables.filter((table) => table.schema.indexes.some((index) => index.name === field)).map((table) => table.name);
+/** Backed-up tables with an index on `field` (local-only tables are exempt above). */
+const indexedBy = (field: string) => db.tables.filter((table) => !(table.name in NOT_BACKED_UP)
+  && table.schema.indexes.some((index) => index.name === field)).map((table) => table.name);
 
 describe('table lists stay consistent with the Dexie schema', () => {
   it('names a reason for every internal table and keeps the exemption lists current', () => {
@@ -80,11 +82,11 @@ describe('table lists stay consistent with the Dexie schema', () => {
   });
 
   it('puts every table indexed by folderId or investigationId in the investigation scope', () => {
-    const expected = sorted(['folders', ...indexedBy('folderId'), ...indexedBy('investigationId')].filter((name) => !(name in NOT_BACKED_UP)));
+    const expected = sorted(['folders', ...indexedBy('folderId'), ...indexedBy('investigationId')]);
     expect(sorted(INVESTIGATION_TABLES)).toEqual(expected);
     expect(sorted(scopedTables)).toEqual(expected);
     expect(sorted(FOLDER_CONTENT_TABLES)).toEqual(sorted(indexedBy('folderId')));
-    expect(sorted(TAGGED_TABLES)).toEqual(sorted(['folders', ...indexedBy('folderId')]));
+    expect(sorted(TAGGED_TABLES)).toEqual(sorted(['folders', ...indexedBy('tags')]));
     for (const name of expected) expect(ENTITY_RELATIONS, name).toHaveProperty(name);
   });
 
