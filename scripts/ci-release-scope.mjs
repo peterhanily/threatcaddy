@@ -34,7 +34,39 @@ export function changedPaths(before, after, cwd) {
   return parseChangedPaths(output);
 }
 
-export function releaseScope({ eventName, ref, before, after, cwd = process.cwd(), diff = changedPaths }) {
+/** The commit behind the server image that GHCR currently serves as `latest`,
+ * read from its `org.opencontainers.image.revision` label. Any failure is
+ * reported, never guessed: the caller then publishes conservatively. */
+export async function publishedRevision(repository, { registry = 'https://ghcr.io', fetchImpl = fetch } = {}) {
+  try {
+    if (typeof repository !== 'string' || !/^[\w.-]+\/[\w.-]+$/.test(repository)) throw new Error('Repository name unavailable');
+    const name = `${repository.toLowerCase()}/server`;
+    const get = async (url, headers = {}) => {
+      const response = await fetchImpl(url, { headers, redirect: 'follow', signal: AbortSignal.timeout(15_000) });
+      if (!response.ok) throw new Error(`${url} answered ${response.status}`);
+      return response.json();
+    };
+    const { token } = await get(`${registry}/token?scope=repository:${name}:pull`);
+    if (typeof token !== 'string' || !token) throw new Error('Registry token unavailable');
+    const auth = { Authorization: `Bearer ${token}` };
+    const accept = 'application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json';
+    let manifest = await get(`${registry}/v2/${name}/manifests/latest`, { ...auth, Accept: accept });
+    if (Array.isArray(manifest?.manifests)) {
+      const image = manifest.manifests.find(entry => entry?.platform?.os === 'linux' && entry?.platform?.architecture === 'amd64');
+      if (!/^sha256:[a-f0-9]{64}$/.test(image?.digest ?? '')) throw new Error('No linux/amd64 image in the published index');
+      manifest = await get(`${registry}/v2/${name}/manifests/${image.digest}`, { ...auth, Accept: accept });
+    }
+    const config = manifest?.config?.digest;
+    if (!/^sha256:[a-f0-9]{64}$/.test(config ?? '')) throw new Error('Published manifest has no image config');
+    const revision = (await get(`${registry}/v2/${name}/blobs/${config}`, auth))?.config?.Labels?.['org.opencontainers.image.revision'];
+    if (!isCommitSHA(revision)) throw new Error('Published image has no source revision label');
+    return { revision };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+export function releaseScope({ eventName, ref, before, after, published, cwd = process.cwd(), diff = changedPaths }) {
   // Manual server publication is an explicit separate workflow; CI dispatch,
   // pull requests and scheduled audits must never gain publication as a side effect.
   if (eventName !== 'push' || ref !== 'refs/heads/main') {
@@ -42,6 +74,17 @@ export function releaseScope({ eventName, ref, before, after, cwd = process.cwd(
   }
   if (!isCommitSHA(after) || after === ZERO_SHA) {
     throw new Error('A main push requires an exact nonzero source SHA');
+  }
+  // Compare with what GHCR actually serves, not only with the previous push: an
+  // earlier push whose publication failed must not be skipped by a later one.
+  if (published !== undefined) {
+    if (!published || !isCommitSHA(published.revision)) {
+      return { required: true, fallback: true, reason: 'Published server image revision unavailable; conservatively include server publication' };
+    }
+    if (published.revision === after) {
+      return { required: false, fallback: false, reason: 'The published server image is already this revision' };
+    }
+    before = published.revision;
   }
   if (!isCommitSHA(before) || before === ZERO_SHA) {
     return { required: true, fallback: true, reason: 'Comparison base unavailable; conservatively include server publication' };
@@ -52,7 +95,8 @@ export function releaseScope({ eventName, ref, before, after, cwd = process.cwd(
       throw new Error('Invalid changed-path listing');
     }
     const required = paths.some(isServerReleasePath);
-    return { required, fallback: false, reason: required ? 'Server release paths changed' : 'Only non-server release paths changed' };
+    const since = published === undefined ? '' : ' since the published server image';
+    return { required, fallback: false, reason: required ? `Server release paths changed${since}` : `Only non-server release paths changed${since}` };
   } catch {
     // Force pushes can orphan the previous tip even after a full checkout.
     // A missing object, timeout or oversized diff must not silently skip release.
@@ -75,11 +119,19 @@ if (import.meta.main) {
       // Missing/malformed event metadata uses the same conservative fallback.
     }
   }
+  const mainPush = process.env.GITHUB_EVENT_NAME === 'push' && process.env.GITHUB_REF === 'refs/heads/main';
+  // RELEASE_SCOPE_REGISTRY exists for the offline contract test only, so it may
+  // name nothing but a loopback stand-in.
+  const override = process.env.RELEASE_SCOPE_REGISTRY;
+  const registry = override && /^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(override) ? override : 'https://ghcr.io';
+  const published = mainPush ? await publishedRevision(process.env.GITHUB_REPOSITORY, { registry }) : undefined;
+  if (published?.error) console.log(`::warning::Could not read the published server image revision: ${published.error}`);
   const result = releaseScope({
     eventName: process.env.GITHUB_EVENT_NAME,
     ref: process.env.GITHUB_REF,
     before,
     after: process.env.GITHUB_SHA,
+    published,
   });
   writeReleaseScope(result, process.env.GITHUB_OUTPUT);
   console.log(`${result.fallback ? '::warning::' : ''}${result.reason}`);

@@ -86,10 +86,12 @@ jobs:
             exit 1
           fi
           docker tag "$image_id" "$image:sha-$GITHUB_SHA"
-          docker tag "$image_id" "$image:latest"
           docker push "$image:sha-$GITHUB_SHA"
-          docker push "$image:latest"
           if [ "$push_version" = true ]; then
             docker tag "$image_id" "$image:$version"
             docker push "$image:$version"
           fi
+          # latest moves last: ci-release-scope.mjs treats latest at this commit
+          # as a complete publication, so every other tag must already exist.
+          docker tag "$image_id" "$image:latest"
+          docker push "$image:latest"
