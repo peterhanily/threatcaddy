@@ -19,7 +19,8 @@ const event = (over: Partial<TimelineEvent>): TimelineEvent => ({
   timelineId: 'tl-1', trashed: false, archived: false, createdAt: 1, updatedAt: 1, ...over,
 }) as TimelineEvent;
 
-afterEach(() => localStorage.clear());
+const originalScroll = Element.prototype.scrollIntoView;
+afterEach(() => { localStorage.clear(); Element.prototype.scrollIntoView = originalScroll; });
 
 function eventForm(): HTMLFormElement {
   const form = screen.getByPlaceholderText('Event title...').closest('form');
@@ -34,8 +35,7 @@ function actorRow(name: string): HTMLElement {
 
 describe('AttributionComboInput today', () => {
   it('suggests attribution actors by case-insensitive substring and accepts free text', () => {
-    const original = Element.prototype.scrollIntoView;
-    Element.prototype.scrollIntoView = () => {}; // jsdom has no layout
+    Element.prototype.scrollIntoView = () => {}; // jsdom has no layout; restored in afterEach
     function Harness() {
       const [value, setValue] = useState('');
       return <AttributionComboInput value={value} onChange={setValue} actors={['APT29', 'Lazarus Group', 'ghost_ledger']} placeholder="Actor" />;
@@ -43,7 +43,7 @@ describe('AttributionComboInput today', () => {
     render(<Harness />);
     const input = screen.getByPlaceholderText('Actor');
     fireEvent.focus(input);
-    fireEvent.change(input, { target: { value: 'laz' } });
+    fireEvent.change(input, { target: { value: 'ARUS' } }); // mid-name and upper case
     // Today the list is plain <li> items with no listbox/option roles (an accessibility gap Phase 4 replaces).
     expect(screen.getByText('Lazarus Group').tagName).toBe('LI');
     expect(screen.queryByText('APT29')).toBeNull();
@@ -52,7 +52,6 @@ describe('AttributionComboInput today', () => {
     expect(input).toHaveValue('Lazarus Group');
     fireEvent.change(input, { target: { value: 'An actor nobody listed' } });
     expect(input).toHaveValue('An actor nobody listed');
-    Element.prototype.scrollIntoView = original;
   });
 });
 

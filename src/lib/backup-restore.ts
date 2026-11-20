@@ -35,7 +35,7 @@ interface Plan { preview: RestorePreview; operations: Operation[]; basis: string
 const previewSnapshots = new WeakMap<RestorePreview, string>();
 
 function table(name: BackupTable): Table<Row, string> { return db.table(name); }
-const sharedTables = new Set<BackupTable>(['tags', 'timelines']);
+export const sharedTables: ReadonlySet<BackupTable> = new Set<BackupTable>(['tags', 'timelines']);
 export const scopedTables: ReadonlySet<BackupTable> = new Set<BackupTable>([
   'folders', 'notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs',
   'evidenceItems', 'chatThreads', 'agentActions', 'agentDeployments', 'agentMeetings',

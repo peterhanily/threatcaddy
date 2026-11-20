@@ -7,11 +7,11 @@ import { validatePortableTables } from './backup-records';
 import { isSyncTable } from './sync-state';
 
 export type BackupRow = Record<string, unknown> & { id: string };
-export const INVESTIGATION_TABLES: BackupTable[] = [
+export const INVESTIGATION_TABLES: readonly BackupTable[] = [
   'folders', 'notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs',
   'evidenceItems', 'chatThreads', 'agentActions', 'agentDeployments', 'agentMeetings',
 ];
-const SHARED_TABLES = new Set<BackupTable>(['tags', 'timelines']);
+export const SHARED_TABLES: ReadonlySet<BackupTable> = new Set<BackupTable>(['tags', 'timelines']);
 
 /** Older sync clients persisted the server revision on entity rows. Project
  * that transport-only value out without mutating IndexedDB or sanitizing away
