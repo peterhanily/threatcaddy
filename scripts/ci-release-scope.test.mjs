@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
+import { createServer } from 'node:http';
+import { promisify } from 'node:util';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, renameSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { changedPaths, isServerReleasePath, parseChangedPaths, releaseScope, writeReleaseScope } from './ci-release-scope.mjs';
+import { changedPaths, isServerReleasePath, parseChangedPaths, publishedRevision, releaseScope, writeReleaseScope } from './ci-release-scope.mjs';
 
 const before = 'a'.repeat(40);
 const after = 'b'.repeat(40);
@@ -156,22 +158,92 @@ test('serializes only explicit booleans to the Actions output file', t => {
   assert.throws(() => writeReleaseScope({ required: false }), /Invalid/);
 });
 
-test('CLI uses event before SHA, writes output, and warns on unavailable metadata', t => {
+const published = 'c'.repeat(40);
+
+test('compares with the revision GHCR serves, so an unpublished earlier push is not skipped', () => {
+  // 19 November 2026: two server-changing pushes never published, and the next
+  // push changed only a test and the CHANGELOG.
+  const result = releaseScope({ ...mainPush, published: { revision: published }, diff: (base, head) => {
+    assert.deepEqual([base, head], [published, after]);
+    return ['e2e/whiteboard-embeds.spec.ts', 'server/package.json'];
+  } });
+  assert.deepEqual(result, { required: true, fallback: false, reason: 'Server release paths changed since the published server image' });
+  assert.equal(releaseScope({ ...mainPush, published: { revision: published }, diff: () => ['CHANGELOG.md'] }).required, false);
+});
+
+test('an unknown published revision publishes conservatively, and a current one skips', () => {
+  for (const value of [{ error: 'registry unreachable' }, null, {}, { revision: 'HEAD~1' }, { revision: 'A'.repeat(40) }]) {
+    const result = releaseScope({ ...mainPush, published: value, diff: () => assert.fail('must not compare') });
+    assert.equal(result.required, true, JSON.stringify(value));
+    assert.equal(result.fallback, true, JSON.stringify(value));
+  }
+  assert.deepEqual(releaseScope({ ...mainPush, published: { revision: after }, diff: () => assert.fail('must not compare') }),
+    { required: false, fallback: false, reason: 'The published server image is already this revision' });
+  const unavailable = releaseScope({ ...mainPush, published: { revision: published }, diff: () => { throw new Error('missing object'); } });
+  assert.equal(unavailable.required, true);
+  assert.equal(unavailable.fallback, true);
+});
+
+/** A local stand-in for GHCR's token, manifest and blob endpoints. */
+async function fakeRegistry(t, { revision, index = false, status = 200 } = {}) {
+  const config = `sha256:${'1'.repeat(64)}`;
+  const amd64 = `sha256:${'2'.repeat(64)}`;
+  const requests = [];
+  const server = createServer((request, response) => {
+    requests.push({ url: request.url, authorization: request.headers.authorization });
+    const send = body => { response.writeHead(status, { 'content-type': 'application/json' }); response.end(JSON.stringify(body)); };
+    if (request.url.startsWith('/token?scope=repository:owner/threatcaddy/server:pull')) return send({ token: 'fixture-token' });
+    if (request.url === '/v2/owner/threatcaddy/server/manifests/latest') {
+      return send(index ? { manifests: [{ digest: `sha256:${'3'.repeat(64)}`, platform: { os: 'linux', architecture: 'arm64' } },
+        { digest: amd64, platform: { os: 'linux', architecture: 'amd64' } }] } : { config: { digest: config } });
+    }
+    if (request.url === `/v2/owner/threatcaddy/server/manifests/${amd64}`) return send({ config: { digest: config } });
+    if (request.url === `/v2/owner/threatcaddy/server/blobs/${config}`) {
+      return send({ config: { Labels: revision ? { 'org.opencontainers.image.revision': revision } : {} } });
+    }
+    response.writeHead(404); response.end();
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  return { registry: `http://127.0.0.1:${server.address().port}`, requests };
+}
+
+test('reads the published revision label through the registry token, manifest and config', async t => {
+  const single = await fakeRegistry(t, { revision: published });
+  assert.deepEqual(await publishedRevision('Owner/ThreatCaddy', { registry: single.registry }), { revision: published });
+  assert.ok(single.requests.slice(1).every(request => request.authorization === 'Bearer fixture-token'));
+  const index = await fakeRegistry(t, { revision: published, index: true });
+  assert.deepEqual(await publishedRevision('Owner/ThreatCaddy', { registry: index.registry }), { revision: published });
+  for (const options of [{ revision: undefined }, { revision: 'not-a-sha' }, { revision: published, status: 500 }]) {
+    const broken = await fakeRegistry(t, options);
+    assert.match((await publishedRevision('Owner/ThreatCaddy', { registry: broken.registry })).error, /./, JSON.stringify(options));
+  }
+  for (const repository of [undefined, '', 'owner', 'owner/repo/extra', '../x']) {
+    assert.ok((await publishedRevision(repository, { registry: single.registry })).error, String(repository));
+  }
+});
+
+test('CLI compares with the published revision, writes output, and warns when it is unavailable', async t => {
   const { cwd, write, commit } = repository(t);
   write('README.md');
-  const before = commit();
+  const base = commit();
+  write('server/src/changed.ts');
+  const unpublished = commit();
   write('src/client.ts');
-  const after = commit();
+  const head = commit();
   const eventPath = join(cwd, 'event.json');
   const output = join(cwd, 'actions-output');
-  writeFileSync(eventPath, JSON.stringify({ before }));
-  const env = { ...process.env, GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main',
-    GITHUB_SHA: after, GITHUB_EVENT_PATH: eventPath, GITHUB_OUTPUT: output };
+  writeFileSync(eventPath, JSON.stringify({ before: unpublished }));
   const script = fileURLToPath(new URL('./ci-release-scope.mjs', import.meta.url));
-  const run = () => execFileSync(process.execPath, [script], { cwd, env, encoding: 'utf8' });
-  assert.match(run(), /Only non-server/);
-  assert.equal(readFileSync(output, 'utf8'), 'server-publish-required=false\n');
-  writeFileSync(eventPath, 'invalid JSON');
-  assert.match(run(), /::warning::Comparison base unavailable/);
-  assert.equal(readFileSync(output, 'utf8'), 'server-publish-required=false\nserver-publish-required=true\n');
+  const run = async registry => (await promisify(execFile)(process.execPath, [script], { cwd, encoding: 'utf8', env: { ...process.env,
+    GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main', GITHUB_SHA: head, GITHUB_EVENT_PATH: eventPath,
+    GITHUB_OUTPUT: output, GITHUB_REPOSITORY: 'Owner/ThreatCaddy', RELEASE_SCOPE_REGISTRY: registry } })).stdout;
+  // The previous push only changed client code, but the published image predates the server change.
+  assert.match(await run((await fakeRegistry(t, { revision: base })).registry), /Server release paths changed since the published server image/);
+  assert.equal(readFileSync(output, 'utf8'), 'server-publish-required=true\n');
+  assert.match(await run((await fakeRegistry(t, { revision: unpublished })).registry), /Only non-server release paths changed since/);
+  assert.equal(readFileSync(output, 'utf8'), 'server-publish-required=true\nserver-publish-required=false\n');
+  assert.match(await run((await fakeRegistry(t, { revision: published, status: 503 })).registry),
+    /::warning::Could not read the published server image revision[\s\S]*::warning::Published server image revision unavailable/);
+  assert.equal(readFileSync(output, 'utf8'), 'server-publish-required=true\nserver-publish-required=false\nserver-publish-required=true\n');
 });
