@@ -7,7 +7,7 @@ import { validatePortableTables } from './backup-records';
 import { isSyncTable } from './sync-state';
 
 export type BackupRow = Record<string, unknown> & { id: string };
-const INVESTIGATION_TABLES: BackupTable[] = [
+export const INVESTIGATION_TABLES: BackupTable[] = [
   'folders', 'notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs',
   'evidenceItems', 'chatThreads', 'agentActions', 'agentDeployments', 'agentMeetings',
 ];

@@ -19,7 +19,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Sanitizer = (raw: unknown) => any;
 
-const TABLE_SANITIZERS: Record<string, Sanitizer> = {
+export const TABLE_SANITIZERS: Record<string, Sanitizer> = {
   notes: sanitizeNote,
   tasks: sanitizeTask,
   folders: sanitizeFolder,
