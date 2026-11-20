@@ -633,7 +633,8 @@ test('server publication adds a version tag for the first verified build of each
   const { status, calls, sha, image } = runServerPublish(t);
   assert.equal(status, 0);
   const pushes = calls.filter(call => call.startsWith('push '));
-  assert.deepEqual(pushes, [`push ${image}:sha-${sha}`, `push ${image}:latest`, `push ${image}:2.0.4`]);
+  assert.deepEqual(pushes, [`push ${image}:sha-${sha}`, `push ${image}:2.0.4`, `push ${image}:latest`]);
+  // `latest` moves last: the release scope treats `latest` at this commit as fully published.
   // The same verified image ID receives every tag, after the version tag was checked.
   assert.deepEqual(calls.filter(call => call.startsWith('tag ')).map(call => call.split(' ')[1]), Array(3).fill(`sha256:${'d'.repeat(64)}`));
   assert.ok(calls.indexOf(`manifest inspect ${image}:2.0.4`) < calls.indexOf(pushes[0]));
@@ -644,7 +645,7 @@ test('server publication treats GHCR\'s "manifest unknown" as a version tag that
   // GHCR answered exactly this for ghcr.io/peterhanily/threatcaddy/server:2.0.4 on 19 November 2026.
   const { status, calls, sha, image } = runServerPublish(t, { registry: 'ghcr-absent' });
   assert.equal(status, 0);
-  assert.deepEqual(calls.filter(call => call.startsWith('push ')), [`push ${image}:sha-${sha}`, `push ${image}:latest`, `push ${image}:2.0.4`]);
+  assert.deepEqual(calls.filter(call => call.startsWith('push ')), [`push ${image}:sha-${sha}`, `push ${image}:2.0.4`, `push ${image}:latest`]);
 });
 
 test('server publication never moves an existing version tag to a later build', t => {

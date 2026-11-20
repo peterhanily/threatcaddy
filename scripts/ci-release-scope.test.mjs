@@ -173,7 +173,8 @@ test('compares with the revision GHCR serves, so an unpublished earlier push is 
 
 test('an unknown published revision publishes conservatively, and a current one skips', () => {
   for (const value of [{ error: 'registry unreachable' }, null, {}, { revision: 'HEAD~1' }, { revision: 'A'.repeat(40) }]) {
-    const result = releaseScope({ ...mainPush, published: value, diff: () => assert.fail('must not compare') });
+    // Any comparison here would answer 'not required' and fail the test.
+    const result = releaseScope({ ...mainPush, published: value, diff: () => ['CHANGELOG.md'] });
     assert.equal(result.required, true, JSON.stringify(value));
     assert.equal(result.fallback, true, JSON.stringify(value));
   }
@@ -185,17 +186,17 @@ test('an unknown published revision publishes conservatively, and a current one 
 });
 
 /** A local stand-in for GHCR's token, manifest and blob endpoints. */
-async function fakeRegistry(t, { revision, index = false, status = 200 } = {}) {
+async function fakeRegistry(t, { revision, index = false, status = 200, token = 'fixture-token', amd64Platform = 'amd64', configDigest } = {}) {
   const config = `sha256:${'1'.repeat(64)}`;
   const amd64 = `sha256:${'2'.repeat(64)}`;
   const requests = [];
   const server = createServer((request, response) => {
     requests.push({ url: request.url, authorization: request.headers.authorization });
     const send = body => { response.writeHead(status, { 'content-type': 'application/json' }); response.end(JSON.stringify(body)); };
-    if (request.url.startsWith('/token?scope=repository:owner/threatcaddy/server:pull')) return send({ token: 'fixture-token' });
+    if (request.url.startsWith('/token?scope=repository:owner/threatcaddy/server:pull')) return send(token === null ? {} : { token });
     if (request.url === '/v2/owner/threatcaddy/server/manifests/latest') {
       return send(index ? { manifests: [{ digest: `sha256:${'3'.repeat(64)}`, platform: { os: 'linux', architecture: 'arm64' } },
-        { digest: amd64, platform: { os: 'linux', architecture: 'amd64' } }] } : { config: { digest: config } });
+        { digest: amd64, platform: { os: 'linux', architecture: amd64Platform } }] } : { config: { digest: configDigest ?? config } });
     }
     if (request.url === `/v2/owner/threatcaddy/server/manifests/${amd64}`) return send({ config: { digest: config } });
     if (request.url === `/v2/owner/threatcaddy/server/blobs/${config}`) {
@@ -214,7 +215,9 @@ test('reads the published revision label through the registry token, manifest an
   assert.ok(single.requests.slice(1).every(request => request.authorization === 'Bearer fixture-token'));
   const index = await fakeRegistry(t, { revision: published, index: true });
   assert.deepEqual(await publishedRevision('Owner/ThreatCaddy', { registry: index.registry }), { revision: published });
-  for (const options of [{ revision: undefined }, { revision: 'not-a-sha' }, { revision: published, status: 500 }]) {
+  for (const options of [{ revision: undefined }, { revision: 'not-a-sha' }, { revision: published, status: 500 },
+    { revision: published, token: null }, { revision: published, token: '' },
+    { revision: published, index: true, amd64Platform: 'arm64' }, { revision: published, configDigest: 'sha256:short' }]) {
     const broken = await fakeRegistry(t, options);
     assert.match((await publishedRevision('Owner/ThreatCaddy', { registry: broken.registry })).error, /./, JSON.stringify(options));
   }

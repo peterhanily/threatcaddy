@@ -120,10 +120,11 @@ if (import.meta.main) {
     }
   }
   const mainPush = process.env.GITHUB_EVENT_NAME === 'push' && process.env.GITHUB_REF === 'refs/heads/main';
-  // RELEASE_SCOPE_REGISTRY exists for the offline contract test only.
-  const published = mainPush
-    ? await publishedRevision(process.env.GITHUB_REPOSITORY, { registry: process.env.RELEASE_SCOPE_REGISTRY || 'https://ghcr.io' })
-    : undefined;
+  // RELEASE_SCOPE_REGISTRY exists for the offline contract test only, so it may
+  // name nothing but a loopback stand-in.
+  const override = process.env.RELEASE_SCOPE_REGISTRY;
+  const registry = override && /^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(override) ? override : 'https://ghcr.io';
+  const published = mainPush ? await publishedRevision(process.env.GITHUB_REPOSITORY, { registry }) : undefined;
   if (published?.error) console.log(`::warning::Could not read the published server image revision: ${published.error}`);
   const result = releaseScope({
     eventName: process.env.GITHUB_EVENT_NAME,
