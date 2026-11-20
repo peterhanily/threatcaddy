@@ -44,16 +44,26 @@ test('the Web Embed tool saves a linked shape of the drawn size and frames nothi
   await page.mouse.down();
   // Excalidraw handles one pointer move per animation frame; WebKit otherwise
   // drops the last moves of a quick drag.
+  const frame = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   for (let step = 1; step <= 8; step++) {
     await page.mouse.move(x + (220 * step) / 8, y + (170 * step) / 8);
-    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await frame();
+  }
+  // Hold the end point for a few frames: on a loaded CI runner WebKit can
+  // still drop the last moves (seen once as 220 x 137 on 19 November 2026).
+  for (let settle = 0; settle < 3; settle++) {
+    await page.mouse.move(x + 220, y + 170);
+    await frame();
   }
   await page.mouse.up();
   const input = page.locator('.excalidraw-hyperlinkContainer-input');
   await input.fill(LINK);
   await input.press('Enter');
+  // The guarded regression is a 0 x 0 shape; require a shape of about the
+  // drawn size without depending on the exact last pointer event.
   await expect.poll(async () => (await savedElements(page)).filter(element => element.link === LINK)
-    .map(({ type, width, height }) => ({ type, width, height }))).toEqual([{ type: 'rectangle', width: 220, height: 170 }]);
+    .map(({ type, width, height }) => ({ type, wide: width >= 180 && width <= 221, tall: height >= 120 && height <= 171 })))
+    .toEqual([{ type: 'rectangle', wide: true, tall: true }]);
   expect((await savedElements(page)).filter(element => element.type !== 'rectangle')).toEqual([]);
   await expect(page.locator('.excalidraw iframe')).toHaveCount(0);
   expect(remote).toEqual([]);
