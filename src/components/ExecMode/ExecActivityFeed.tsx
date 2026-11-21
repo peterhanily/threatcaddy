@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, ListChecks, Clock, PenTool, FolderOpen, Tag, Shield, Cloud, Database, MessageSquare, Bot } from 'lucide-react';
+import { FileText, ListChecks, Clock, PenTool, FolderOpen, Tag, Shield, Cloud, Database, MessageSquare, Bot, Contact } from 'lucide-react';
 import type { ActivityLogEntry, ActivityCategory } from '../../types';
 import { ACTIVITY_CATEGORY_LABELS } from '../../types';
 import { formatDate } from '../../lib/utils';
@@ -27,6 +27,7 @@ const CATEGORY_ICONS: Record<ActivityCategory, typeof FileText> = {
   tag: Tag,
   ioc: Shield,
   evidence: FileText,
+  identity: Contact,
   sync: Cloud,
   data: Database,
   'agent-bridge': Bot,

@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useLoggedActions } from '../hooks/useLoggedActions';
-import type { Note, Task, TimelineEvent, StandaloneIOC, EvidenceItem, ChatThread, Folder, Tag, Timeline, Whiteboard } from '../types';
+import type { Note, Task, TimelineEvent, StandaloneIOC, EvidenceItem, Identity, ChatThread, Folder, Tag, Timeline, Whiteboard } from '../types';
 import type { ActivityCategory, ActivityAction } from '../types';
 
 type LogFn = (category: ActivityCategory, action: ActivityAction, detail: string, itemId?: string, itemTitle?: string) => void;
@@ -46,6 +46,10 @@ function buildMocks() {
     size: 4, content: 'test', extractionStatus: 'extracted', importedAt: Date.now(),
     chunkIndex: 1, chunkCount: 1, tags: [], trashed: false, archived: false,
     createdAt: Date.now(), updatedAt: Date.now(),
+  };
+  const sampleIdentity: Identity = {
+    id: 'id1', type: 'person', name: 'Dana Okafor', aliases: [], details: [], connections: [],
+    tags: [], trashed: false, archived: false, createdAt: Date.now(), updatedAt: Date.now(),
   };
   const sampleThread: ChatThread = {
     id: 'ch1', title: 'Test Thread', messages: [], model: 'test',
@@ -130,6 +134,18 @@ function buildMocks() {
     reload: vi.fn(),
   };
 
+  const identities = {
+    identities: [sampleIdentity, { ...sampleIdentity, id: 'id2', name: 'D. Okafor' }],
+    createIdentity: vi.fn().mockResolvedValue(sampleIdentity),
+    trashIdentity: vi.fn().mockResolvedValue(undefined),
+    restoreIdentity: vi.fn().mockResolvedValue(undefined),
+    toggleArchiveIdentity: vi.fn().mockResolvedValue(undefined),
+    deleteIdentity: vi.fn().mockResolvedValue(undefined),
+    mergeIdentities: vi.fn().mockResolvedValue(undefined),
+    emptyTrashIdentities: vi.fn().mockResolvedValue(undefined),
+    reload: vi.fn(),
+  };
+
   const chats = {
     createThread: vi.fn().mockResolvedValue(sampleThread),
     reload: vi.fn(),
@@ -153,9 +169,9 @@ function buildMocks() {
 
   return {
     log, notes, tasks, timeline, timelinesOps, whiteboardOps,
-    standaloneIOCs, evidenceItems, chats, foldersOps, tagsOps,
+    standaloneIOCs, evidenceItems, identities, chats, foldersOps, tagsOps,
     sampleNote, sampleTask, sampleEvent, sampleTimeline,
-    sampleWhiteboard, sampleIOC, sampleEvidenceItem, sampleThread, sampleFolder, sampleTag,
+    sampleWhiteboard, sampleIOC, sampleEvidenceItem, sampleIdentity, sampleThread, sampleFolder, sampleTag,
   };
 }
 
@@ -177,6 +193,7 @@ describe('useLoggedActions', () => {
         mocks.whiteboardOps,
         mocks.standaloneIOCs,
         mocks.evidenceItems,
+        mocks.identities,
         mocks.chats,
         mocks.foldersOps,
         mocks.tagsOps,
@@ -865,6 +882,7 @@ describe('useLoggedActions', () => {
       expect(mocks.timeline.reload).toHaveBeenCalled();
       expect(mocks.whiteboardOps.reload).toHaveBeenCalled();
       expect(mocks.standaloneIOCs.reload).toHaveBeenCalled();
+      expect(mocks.identities.reload).toHaveBeenCalled();
       expect(mocks.chats.reload).toHaveBeenCalled();
       expect(mocks.log).toHaveBeenCalledWith(
         'folder', 'delete',
@@ -891,6 +909,7 @@ describe('useLoggedActions', () => {
       expect(mocks.timeline.reload).toHaveBeenCalled();
       expect(mocks.whiteboardOps.reload).toHaveBeenCalled();
       expect(mocks.standaloneIOCs.reload).toHaveBeenCalled();
+      expect(mocks.identities.reload).toHaveBeenCalled();
     });
 
     it('loggedArchiveFolder calls archiveFolder and reloads all entity hooks', async () => {
@@ -905,6 +924,7 @@ describe('useLoggedActions', () => {
         expect.stringContaining('Archived investigation'),
         'f1', 'Test Folder',
       );
+      expect(mocks.identities.reload).toHaveBeenCalled();
       expect(mocks.notes.reload).toHaveBeenCalled();
       expect(mocks.tasks.reload).toHaveBeenCalled();
       expect(mocks.timeline.reload).toHaveBeenCalled();
@@ -924,6 +944,7 @@ describe('useLoggedActions', () => {
         expect.stringContaining('Unarchived investigation'),
         'f1', 'Test Folder',
       );
+      expect(mocks.identities.reload).toHaveBeenCalled();
       expect(mocks.notes.reload).toHaveBeenCalled();
       expect(mocks.tasks.reload).toHaveBeenCalled();
     });
@@ -979,6 +1000,35 @@ describe('useLoggedActions', () => {
     });
   });
 
+  // ─── Identities ───────────────────────────────────────────────
+
+  describe('identity operations', () => {
+    it('logs create, trash, restore, archive and delete with the identity name', async () => {
+      const { result } = renderLoggedActions();
+      await act(async () => {
+        await result.current.loggedCreateIdentity({ name: 'Dana Okafor' });
+        await result.current.loggedTrashIdentity('id1');
+        await result.current.loggedRestoreIdentity('id1');
+        await result.current.loggedToggleArchiveIdentity('id1');
+        await result.current.loggedDeleteIdentity('id1');
+      });
+      expect(mocks.identities.createIdentity).toHaveBeenCalledWith({ name: 'Dana Okafor' });
+      expect(mocks.identities.trashIdentity).toHaveBeenCalledWith('id1');
+      expect(mocks.identities.restoreIdentity).toHaveBeenCalledWith('id1');
+      expect(mocks.identities.toggleArchiveIdentity).toHaveBeenCalledWith('id1');
+      expect(mocks.identities.deleteIdentity).toHaveBeenCalledWith('id1');
+      const calls = (mocks.log as ReturnType<typeof vi.fn>).mock.calls.map((c: unknown[]) => [c[0], c[1], c[3], c[4]]);
+      expect(calls).toEqual(['create', 'trash', 'restore', 'archive', 'delete'].map(action => ['identity', action, 'id1', 'Dana Okafor']));
+    });
+
+    it('logs a merge under the kept identity and names both', async () => {
+      const { result } = renderLoggedActions();
+      await act(async () => { await result.current.loggedMergeIdentities('id1', 'id2'); });
+      expect(mocks.identities.mergeIdentities).toHaveBeenCalledWith('id1', 'id2');
+      expect(mocks.log).toHaveBeenCalledWith('identity', 'update', 'Merged identity "D. Okafor" into "Dana Okafor"', 'id1', 'Dana Okafor');
+    });
+  });
+
   // ─── Composite ────────────────────────────────────────────────
 
   describe('emptyAllTrash', () => {
@@ -999,11 +1049,13 @@ describe('useLoggedActions', () => {
       expect(mocks.timeline.emptyTrashEvents).toHaveBeenCalled();
       expect(mocks.whiteboardOps.emptyTrashWhiteboards).toHaveBeenCalled();
       expect(mocks.standaloneIOCs.emptyTrashIOCs).toHaveBeenCalled();
+      expect(mocks.evidenceItems.emptyTrashEvidenceItems).toHaveBeenCalled();
+      expect(mocks.identities.emptyTrashIdentities).toHaveBeenCalled();
 
-      // Should have logged 6 separate empty-trash actions, including evidence.
+      // Should have logged 7 separate empty-trash actions, including evidence and identities.
       const logCalls = (mocks.log as ReturnType<typeof vi.fn>).mock.calls;
       const emptyTrashCalls = logCalls.filter((c: unknown[]) => c[1] === 'empty-trash');
-      expect(emptyTrashCalls).toHaveLength(6);
+      expect(emptyTrashCalls).toHaveLength(7);
     });
   });
 });

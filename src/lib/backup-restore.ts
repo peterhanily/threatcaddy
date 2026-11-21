@@ -2,7 +2,7 @@
 import Dexie, { type Table } from 'dexie';
 import { db } from '../db';
 import { backupFingerprint, backupStateFingerprint, canonicalBackupJSON, type BackupPayload } from './backup-crypto';
-import { requireDifferentialBase, selectBackupData } from './backup-data';
+import { INVESTIGATION_TABLES, requireDifferentialBase, selectBackupData, SHARED_TABLES } from './backup-data';
 import { BACKUP_TABLES, investigationOf, isBackupTable, parseEntityScope, type BackupTable } from './backup-tables';
 import { flushEntityDrafts, withEntityDraftBarrier } from './entity-drafts';
 import { mapEntityReferences } from './entity-relations';
@@ -35,11 +35,7 @@ interface Plan { preview: RestorePreview; operations: Operation[]; basis: string
 const previewSnapshots = new WeakMap<RestorePreview, string>();
 
 function table(name: BackupTable): Table<Row, string> { return db.table(name); }
-export const sharedTables: ReadonlySet<BackupTable> = new Set<BackupTable>(['tags', 'timelines']);
-export const scopedTables: ReadonlySet<BackupTable> = new Set<BackupTable>([
-  'folders', 'notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs',
-  'evidenceItems', 'chatThreads', 'agentActions', 'agentDeployments', 'agentMeetings',
-]);
+const scopedTables: ReadonlySet<BackupTable> = new Set(INVESTIGATION_TABLES);
 
 function isRow(item: unknown): item is Row {
   if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
@@ -72,7 +68,7 @@ function validate(payload: BackupPayload, mode: Mode): Map<BackupTable, Row[]> {
     if (!isBackupTable(name)) throw new Error(`Unsupported backup table: ${name}.`);
     if (!Array.isArray(value)) throw new Error(`Backup table ${name} must be an array; omit absent tables explicitly.`);
     if (entity && entity.table !== name) throw new Error(`Table ${name} is outside the entity backup scope.`);
-    if (payload.scope === 'investigation' && !scopedTables.has(name) && !sharedTables.has(name)) {
+    if (payload.scope === 'investigation' && !scopedTables.has(name) && !SHARED_TABLES.has(name)) {
       throw new Error(`Table ${name} is not part of an investigation backup.`);
     }
     const ids = new Set<string>();
@@ -174,7 +170,7 @@ async function prepare(payload: BackupPayload, mode: Mode, parent?: BackupPayloa
     const tombstones = payload.deletedIds?.[name] ?? [];
     if (rows === undefined && tombstones.length === 0) continue;
     const existing = new Map((before.get(name) ?? []).map(row => [row.id, row]));
-    const shared = payload.scope === 'investigation' && sharedTables.has(name);
+    const shared = payload.scope === 'investigation' && SHARED_TABLES.has(name);
     const puts: Row[] = [];
     const incomingIds = new Set(rows?.map(row => row.id));
     let added = 0;

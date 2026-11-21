@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "Beyaz tahtalar",
   "encryption.table.standaloneIOCs": "Göstergeler",
   "encryption.table.evidenceItems": "Kanıtlar",
+  "encryption.table.identities": "Kimlikler",
   "encryption.table.chatThreads": "Sohbetler",
   "encryption.table.agentActions": "Ajan işlemleri",
   "encryption.table.agentProfiles": "Ajan profilleri",

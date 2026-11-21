@@ -128,5 +128,6 @@
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
   "model.group.mistral": "Mistral",
-  "activityCategory.evidence": "साक्ष्य"
+  "activityCategory.evidence": "साक्ष्य",
+  "activityCategory.identity": "पहचान"
 }

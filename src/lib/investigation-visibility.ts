@@ -21,6 +21,7 @@ export interface InvestigationVisibilityInput {
   standaloneIOCs: readonly InvestigationVisibilityEntity[];
   chatThreads: readonly InvestigationVisibilityEntity[];
   evidenceItems: readonly InvestigationVisibilityEntity[];
+  identities: readonly InvestigationVisibilityEntity[];
   maxLevel: string | null | undefined;
   effectiveLevels: string[];
   /** False until every local collection has loaded; prevents metadata flashes. */
@@ -109,7 +110,7 @@ export function buildInvestigationVisibility(input: InvestigationVisibilityInput
   };
 
   const collections = [input.notes, input.tasks, input.timelineEvents, input.whiteboards,
-    input.standaloneIOCs, input.chatThreads, input.evidenceItems];
+    input.standaloneIOCs, input.chatThreads, input.evidenceItems, input.identities];
   for (const entities of collections) {
     for (const entity of entities) {
       if (!isRestricted(entity)) continue;

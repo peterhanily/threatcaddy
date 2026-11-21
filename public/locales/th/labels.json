@@ -128,5 +128,6 @@
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
   "model.group.mistral": "Mistral",
-  "activityCategory.evidence": "หลักฐาน"
+  "activityCategory.evidence": "หลักฐาน",
+  "activityCategory.identity": "ข้อมูลประจำตัว"
 }

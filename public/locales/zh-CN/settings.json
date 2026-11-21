@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "白板",
   "encryption.table.standaloneIOCs": "指标",
   "encryption.table.evidenceItems": "证据",
+  "encryption.table.identities": "身份",
   "encryption.table.chatThreads": "聊天",
   "encryption.table.agentActions": "代理操作",
   "encryption.table.agentProfiles": "代理配置",

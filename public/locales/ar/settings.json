@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "السبورات البيضاء",
   "encryption.table.standaloneIOCs": "المؤشرات",
   "encryption.table.evidenceItems": "الأدلة",
+  "encryption.table.identities": "الهويات",
   "encryption.table.chatThreads": "المحادثات",
   "encryption.table.agentActions": "إجراءات الوكلاء",
   "encryption.table.agentProfiles": "ملفات تعريف الوكلاء",

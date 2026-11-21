@@ -23,6 +23,7 @@ import { useTimelines } from './hooks/useTimelines';
 import { useWhiteboards } from './hooks/useWhiteboards';
 import { useStandaloneIOCs } from './hooks/useStandaloneIOCs';
 import { useEvidenceItems } from './hooks/useEvidenceItems';
+import { useIdentities } from './hooks/useIdentities';
 import { useEvidenceImportFence } from './hooks/useEvidenceImportFence';
 import { useChats } from './hooks/useChats';
 import { useFolders } from './hooks/useFolders';
@@ -141,6 +142,7 @@ function AppDataLayer() {
   const { whiteboards, loading: whiteboardsLoading, createWhiteboard, updateWhiteboard, deleteWhiteboard, trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard, emptyTrashWhiteboards, getFilteredWhiteboards, whiteboardCounts, reload: reloadWhiteboards } = useWhiteboards();
   const standaloneIOCsHook = useStandaloneIOCs();
   const evidenceItemsHook = useEvidenceItems();
+  const identitiesHook = useIdentities();
   const chatsHook = useChats();
   const { folders, loading: foldersLoading, createFolder, updateFolder, deleteFolder, deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reload: reloadFolders } = useFolders();
   const { tags, createTag, updateTag, deleteTag, reload: reloadTags } = useTags();
@@ -180,7 +182,7 @@ function AppDataLayer() {
     try {
       const results = await Promise.allSettled([
         reloadFolders(), notes.reload(), tasks.reload(), timeline.reload(), reloadTimelines(),
-        reloadWhiteboards(), standaloneIOCsHook.reload(), evidenceItemsHook.reload(), chatsHook.reload(),
+        reloadWhiteboards(), standaloneIOCsHook.reload(), evidenceItemsHook.reload(), identitiesHook.reload(), chatsHook.reload(),
         reloadTags(), noteTemplatesHook.reload(), playbooksHook.reload(),
       ]);
       setReloadFailed(results.some(result => result.status === 'rejected'));
@@ -188,7 +190,7 @@ function AppDataLayer() {
       setPendingReloads(count => count - 1);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reloadFolders, notes.reload, tasks.reload, timeline.reload, reloadTimelines, reloadWhiteboards, standaloneIOCsHook.reload, evidenceItemsHook.reload, chatsHook.reload, reloadTags, noteTemplatesHook.reload, playbooksHook.reload]);
+  }, [reloadFolders, notes.reload, tasks.reload, timeline.reload, reloadTimelines, reloadWhiteboards, standaloneIOCsHook.reload, evidenceItemsHook.reload, identitiesHook.reload, chatsHook.reload, reloadTags, noteTemplatesHook.reload, playbooksHook.reload]);
 
   // Reload folders when agent tools modify folder state (e.g. deploy_agent enables agentEnabled)
   useEffect(() => {
@@ -267,6 +269,7 @@ function AppDataLayer() {
             reloadWhiteboards={reloadWhiteboards}
             standaloneIOCsHook={standaloneIOCsHook}
             evidenceItemsHook={evidenceItemsHook}
+            identitiesHook={identitiesHook}
             chatsHook={chatsHook}
             folders={folders}
             foldersLoading={foldersLoading}
@@ -372,6 +375,7 @@ type AppInnerProps = {
   reloadWhiteboards: ReturnType<typeof useWhiteboards>['reload'];
   standaloneIOCsHook: ReturnType<typeof useStandaloneIOCs>;
   evidenceItemsHook: ReturnType<typeof useEvidenceItems>;
+  identitiesHook: ReturnType<typeof useIdentities>;
   chatsHook: ReturnType<typeof useChats>;
   folders: ReturnType<typeof useFolders>['folders'];
   foldersLoading: boolean;
@@ -420,7 +424,7 @@ const AppInner = memo(function AppInner({
   whiteboards, whiteboardsLoading, bulkDataLoading, bulkDataFailed, createWhiteboard, updateWhiteboard, deleteWhiteboard,
   trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard,
   emptyTrashWhiteboards, getFilteredWhiteboards, reloadWhiteboards,
-  standaloneIOCsHook, evidenceItemsHook, chatsHook,
+  standaloneIOCsHook, evidenceItemsHook, identitiesHook, chatsHook,
   folders: allFolders, foldersLoading, createFolder, updateFolder, deleteFolder,
   deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reloadFolders,
   tags: allTags, createTag, updateTag, deleteTag, reloadTags,
@@ -496,14 +500,16 @@ const AppInner = memo(function AppInner({
   const [productDraftFolderId, setProductDraftFolderId] = useState<string>();
   const effectiveClsLevels = useMemo(() => getEffectiveClsLevels(settings.tiClsLevels), [settings.tiClsLevels]);
   const privacyDataReady = !bulkDataLoading && pendingClipImports === 0 && !foldersLoading && !notes.loading && !tasks.loading && !timeline.loading
-    && !whiteboardsLoading && !standaloneIOCsHook.loading && chatsHook.loadedSuccessfully && evidenceItemsHook.loadedSuccessfully;
+    && !whiteboardsLoading && !standaloneIOCsHook.loading && chatsHook.loadedSuccessfully && evidenceItemsHook.loadedSuccessfully
+    && identitiesHook.loadedSuccessfully;
   const visibility = useMemo(() => buildInvestigationVisibility({
     folders: allFolders, remoteInvestigations: allRemoteInvestigations,
     notes: notes.notes, tasks: tasks.tasks, timelineEvents: timeline.events, whiteboards,
     standaloneIOCs: standaloneIOCsHook.iocs, chatThreads: chatsHook.threads, evidenceItems: evidenceItemsHook.evidenceItems,
+    identities: identitiesHook.identities,
     maxLevel: screenshareMaxLevel, effectiveLevels: effectiveClsLevels, dataReady: privacyDataReady,
   }), [allFolders, allRemoteInvestigations, notes.notes, tasks.tasks, timeline.events, whiteboards,
-    standaloneIOCsHook.iocs, chatsHook.threads, evidenceItemsHook.evidenceItems, screenshareMaxLevel, effectiveClsLevels, privacyDataReady]);
+    standaloneIOCsHook.iocs, chatsHook.threads, evidenceItemsHook.evidenceItems, identitiesHook.identities, screenshareMaxLevel, effectiveClsLevels, privacyDataReady]);
   const folders = visibility.folders;
   const remoteInvestigations = visibility.remoteInvestigations;
   const selectedContextHidden = !!screenshareMaxLevel && !!underlyingFolderId
@@ -516,11 +522,11 @@ const AppInner = memo(function AppInner({
     if (!screenshareMaxLevel) return allTags;
     const visibleTags = new Set([
       ...notes.notes, ...tasks.tasks, ...timeline.events, ...whiteboards,
-      ...standaloneIOCsHook.iocs, ...chatsHook.threads, ...evidenceItemsHook.evidenceItems,
+      ...standaloneIOCsHook.iocs, ...chatsHook.threads, ...evidenceItemsHook.evidenceItems, ...identitiesHook.identities,
     ].filter(visibility.isEntityVisible).flatMap(entity => entity.tags ?? []));
     return allTags.filter(tag => visibleTags.has(tag.name));
   }, [allTags, screenshareMaxLevel, visibility, notes.notes, tasks.tasks, timeline.events, whiteboards,
-    standaloneIOCsHook.iocs, chatsHook.threads, evidenceItemsHook.evidenceItems]);
+    standaloneIOCsHook.iocs, chatsHook.threads, evidenceItemsHook.evidenceItems, identitiesHook.identities]);
   const selectedTag = !screenshareMaxLevel || tags.some(tag => tag.name === underlyingTag) ? underlyingTag : undefined;
 
   // Wrap InvestigationContext's handleOpenInvestigation to add navigation
@@ -563,6 +569,7 @@ const AppInner = memo(function AppInner({
     { whiteboards, createWhiteboard, deleteWhiteboard, trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard, emptyTrashWhiteboards, reload: reloadWhiteboards },
     standaloneIOCsHook,
     evidenceItemsHook,
+    identitiesHook,
     { createThread: chatsHook.createThread, reload: chatsHook.reload },
     { folders: allFolders, createFolder, deleteFolder, deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder },
     { tags: allTags, createTag, deleteTag },

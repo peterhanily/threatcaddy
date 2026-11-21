@@ -1,4 +1,4 @@
-import type { AgentDeployment, ConfidenceLevel, IOCType, Priority, TaskStatus, TimelineEventType } from '../types';
+import type { AgentDeployment, ConfidenceLevel, IdentityStatus, IOCType, Priority, TaskStatus, TimelineEventType } from '../types';
 
 /** The values backup-records.ts accepts. Kept free of runtime imports: db.ts uses them. */
 export const TASK_PRIORITIES: readonly Priority[] = ['none', 'low', 'medium', 'high'];
@@ -11,6 +11,7 @@ export const TIMELINE_EVENT_TYPES: readonly TimelineEventType[] = [
 export const IOC_TYPES: readonly IOCType[] = [
   'ipv4', 'ipv6', 'domain', 'url', 'email', 'md5', 'sha1', 'sha256', 'file-path', 'cve', 'mitre-attack', 'yara-rule', 'sigma-rule',
 ];
+export const IDENTITY_STATUSES: readonly IdentityStatus[] = ['compromised', 'suspicious', 'cleared'];
 export const AGENT_COMPETITIVENESS: readonly NonNullable<AgentDeployment['competitiveness']>[] = ['cooperative', 'competitive', 'independent'];
 
 /** Models write 'High' or 'lateral_movement'; anything else stays unsupported. */

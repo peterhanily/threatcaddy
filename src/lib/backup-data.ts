@@ -9,7 +9,7 @@ import { isSyncTable } from './sync-state';
 export type BackupRow = Record<string, unknown> & { id: string };
 export const INVESTIGATION_TABLES: readonly BackupTable[] = [
   'folders', 'notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs',
-  'evidenceItems', 'chatThreads', 'agentActions', 'agentDeployments', 'agentMeetings',
+  'evidenceItems', 'identities', 'chatThreads', 'agentActions', 'agentDeployments', 'agentMeetings',
 ];
 export const SHARED_TABLES: ReadonlySet<BackupTable> = new Set<BackupTable>(['tags', 'timelines']);
 

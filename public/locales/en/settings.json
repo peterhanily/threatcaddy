@@ -323,6 +323,7 @@
   "encryption.table.whiteboards": "Whiteboards",
   "encryption.table.standaloneIOCs": "Indicators",
   "encryption.table.evidenceItems": "Evidence",
+  "encryption.table.identities": "Identities",
   "encryption.table.chatThreads": "Chats",
   "encryption.table.agentActions": "Agent actions",
   "encryption.table.agentProfiles": "Agent profiles",

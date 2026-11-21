@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "व्हाइटबोर्ड",
   "encryption.table.standaloneIOCs": "संकेतक",
   "encryption.table.evidenceItems": "साक्ष्य",
+  "encryption.table.identities": "पहचानें",
   "encryption.table.chatThreads": "चैट",
   "encryption.table.agentActions": "एजेंट कार्रवाइयाँ",
   "encryption.table.agentProfiles": "एजेंट प्रोफ़ाइल",

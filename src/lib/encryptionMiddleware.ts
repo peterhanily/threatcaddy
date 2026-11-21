@@ -26,6 +26,7 @@ export const ENCRYPTED_FIELDS: Record<string, string[]> = {
   chatThreads: ['title', 'messages', 'contextSummary', 'clsLevel'],
   standaloneIOCs: ['value', 'analystNotes', 'clsLevel', 'attribution', 'enrichment', 'comments', 'assigneeName'],
   evidenceItems: ['title', 'fileName', 'content', 'imageData', 'imageAnalysis', 'imageOcrText', 'extractionWarning', 'clsLevel'],
+  identities: ['type', 'name', 'description', 'aliases', 'details', 'connections', 'clsLevel'],
   installedIntegrations: ['name', 'config', 'lastError'],
   integrationRuns: ['log', 'error', 'displayResults', 'inputSummary', 'outputSummary'],
   integrationTemplates: ['name', 'description', 'configSchema', 'steps', 'outputs', 'sourceUrl', 'requiredDomains'],

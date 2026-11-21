@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '../db';
-import { deleteEntitiesWithReferences, setInvestigationArchived } from '../lib/entity-relations';
+import { deleteEntitiesWithReferences, FOLDER_CONTENT_TABLES, setInvestigationArchived } from '../lib/entity-relations';
 import type { Folder } from '../types';
 import { nanoid } from 'nanoid';
 
@@ -54,18 +54,11 @@ export function useFolders() {
   }, [folders, createFolder]);
 
   const deleteFolder = useCallback(async (id: string) => {
-    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.evidenceItems, db.chatThreads], async () => {
+    await db.transaction('rw', [db.folders, ...FOLDER_CONTENT_TABLES.map(name => db.table(name))], async () => {
       await db.folders.delete(id);
-      // Unset folderId on notes, tasks, timeline events, whiteboards, IOCs, evidence, and chat threads in this folder
-      await Promise.all([
-        db.notes.where('folderId').equals(id).modify({ folderId: undefined, updatedAt: Date.now() }),
-        db.tasks.where('folderId').equals(id).modify({ folderId: undefined, updatedAt: Date.now() }),
-        db.timelineEvents.where('folderId').equals(id).modify({ folderId: undefined, updatedAt: Date.now() }),
-        db.whiteboards.where('folderId').equals(id).modify({ folderId: undefined, updatedAt: Date.now() }),
-        db.standaloneIOCs.where('folderId').equals(id).modify({ folderId: undefined, updatedAt: Date.now() }),
-        db.evidenceItems.where('folderId').equals(id).modify({ folderId: undefined, updatedAt: Date.now() }),
-        db.chatThreads.where('folderId').equals(id).modify({ folderId: undefined, updatedAt: Date.now() }),
-      ]);
+      // Unset folderId on everything in this folder
+      await Promise.all(FOLDER_CONTENT_TABLES.map(name =>
+        db.table(name).where('folderId').equals(id).modify({ folderId: undefined, updatedAt: Date.now() })));
     });
     setFolders((prev) => prev.filter((f) => f.id !== id));
   }, []);
@@ -77,15 +70,10 @@ export function useFolders() {
 
   const trashFolderContents = useCallback(async (id: string) => {
     const now = Date.now();
-    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.evidenceItems, db.chatThreads, db.agentDeployments], async () => {
+    await db.transaction('rw', [db.folders, ...FOLDER_CONTENT_TABLES.map(name => db.table(name)), db.agentDeployments], async () => {
       await Promise.all([
-        db.notes.where('folderId').equals(id).filter((n) => !n.trashed).modify({ trashed: true, trashedAt: now, updatedAt: now }),
-        db.tasks.where('folderId').equals(id).filter((t) => !t.trashed).modify({ trashed: true, trashedAt: now, updatedAt: now }),
-        db.timelineEvents.where('folderId').equals(id).filter((e) => !e.trashed).modify({ trashed: true, trashedAt: now, updatedAt: now }),
-        db.whiteboards.where('folderId').equals(id).filter((w) => !w.trashed).modify({ trashed: true, trashedAt: now, updatedAt: now }),
-        db.standaloneIOCs.where('folderId').equals(id).filter((i) => !i.trashed).modify({ trashed: true, trashedAt: now, updatedAt: now }),
-        db.evidenceItems.where('folderId').equals(id).filter((e) => !e.trashed).modify({ trashed: true, trashedAt: now, updatedAt: now }),
-        db.chatThreads.where('folderId').equals(id).filter((c) => !c.trashed).modify({ trashed: true, trashedAt: now, updatedAt: now }),
+        ...FOLDER_CONTENT_TABLES.map(name =>
+          db.table(name).where('folderId').equals(id).filter((row) => !row.trashed).modify({ trashed: true, trashedAt: now, updatedAt: now })),
         // Stop agent deployments for this investigation
         db.agentDeployments.where('investigationId').equals(id).modify({ shift: 'resting', status: 'idle', updatedAt: now }),
       ]);

@@ -5,10 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import { BACKUP_TABLES } from '../lib/backup-tables';
 import { INVESTIGATION_TABLES, SHARED_TABLES } from '../lib/backup-data';
-import { scopedTables, sharedTables } from '../lib/backup-restore';
 import { ENTITY_RELATIONS, FOLDER_CONTENT_TABLES, TAGGED_TABLES } from '../lib/entity-relations';
 import { ENCRYPTED_FIELDS } from '../lib/encryptionMiddleware';
-import { SYNC_TABLES } from '../lib/sync-state';
+import { isSyncTable, SYNC_TABLES } from '../lib/sync-state';
 import { TABLE_SANITIZERS } from '../lib/sync-sanitize';
 import { useFolders } from '../hooks/useFolders';
 import { ConflictDialog } from '../components/Common/ConflictDialog';
@@ -29,6 +28,13 @@ const NOT_BACKED_UP: Record<string, string> = {
   activityLog: 'local 30-day activity history, not user content',
   integrationRuns: 'per-device integration run records',
   checkpoints: 'per-device undo checkpoints for AI writes',
+};
+/** Investigation tables that never reach the team server. */
+const LOCAL_INVESTIGATION_TABLES: Record<string, string> = {
+  agentActions: 'agent records stay with the client that runs the agents',
+  agentDeployments: 'agent records stay with the client that runs the agents',
+  agentMeetings: 'agent records stay with the client that runs the agents',
+  identities: 'not synced until Phase 2 of the identities plan, which removes this entry',
 };
 /** Backed-up tables that belong to no investigation and are not shared catalogs. */
 const GLOBAL_TABLES: Record<string, string> = {
@@ -84,18 +90,20 @@ describe('table lists stay consistent with the Dexie schema', () => {
   it('puts every table indexed by folderId or investigationId in the investigation scope', () => {
     const expected = sorted(['folders', ...indexedBy('folderId'), ...indexedBy('investigationId')]);
     expect(sorted(INVESTIGATION_TABLES)).toEqual(expected);
-    expect(sorted(scopedTables)).toEqual(expected);
     expect(sorted(FOLDER_CONTENT_TABLES)).toEqual(sorted(indexedBy('folderId')));
     expect(sorted(TAGGED_TABLES)).toEqual(sorted(['folders', ...indexedBy('tags')]));
     for (const name of expected) expect(ENTITY_RELATIONS, name).toHaveProperty(name);
   });
 
   it('places every backup table in an investigation, a shared catalog or the global list', () => {
-    expect(sorted(SHARED_TABLES)).toEqual(sorted(sharedTables));
     for (const name of BACKUP_TABLES) {
       const homes = [INVESTIGATION_TABLES.includes(name), SHARED_TABLES.has(name), name in GLOBAL_TABLES].filter(Boolean);
       expect(homes, name).toHaveLength(1);
     }
+  });
+
+  it('syncs every investigation table unless it is exempt for a stated reason', () => {
+    expect(sorted(INVESTIGATION_TABLES.filter((name) => !isSyncTable(name)))).toEqual(sorted(Object.keys(LOCAL_INVESTIGATION_TABLES)));
   });
 
   it('gives every synced table a backup entry, a scope, a sanitizer and a sync-status label', () => {
@@ -135,7 +143,7 @@ describe('the server agrees with the client', () => {
   });
 
   it('scopes, shares and tombstones the same tables', () => {
-    expect(quoted(block('server/src/services/investigation-lifecycle.ts', 'export const INVESTIGATION_CONTENT_TABLES'))).toEqual(sorted(FOLDER_CONTENT_TABLES));
+    expect(quoted(block('server/src/services/investigation-lifecycle.ts', 'export const INVESTIGATION_CONTENT_TABLES'))).toEqual(sorted(FOLDER_CONTENT_TABLES.filter(isSyncTable)));
     expect(quoted(block('server/src/services/sync-service.ts', 'const GLOBAL_SYNC_TABLES'))).toEqual(sorted(SHARED_TABLES));
     expect(quoted(block('server/src/services/cleanup-service.ts', 'const TOMBSTONE_TABLES'))).toEqual(sorted(SYNC_TABLES.filter((name) => name !== 'folders')));
   });

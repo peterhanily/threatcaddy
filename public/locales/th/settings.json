@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "ไวท์บอร์ด",
   "encryption.table.standaloneIOCs": "ตัวบ่งชี้",
   "encryption.table.evidenceItems": "หลักฐาน",
+  "encryption.table.identities": "ข้อมูลประจำตัว",
   "encryption.table.chatThreads": "แชต",
   "encryption.table.agentActions": "การดำเนินการเอเจนต์",
   "encryption.table.agentProfiles": "โปรไฟล์เอเจนต์",

@@ -1,5 +1,5 @@
 import { db } from '../db';
-import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, EvidenceItem, ChatThread, ChatMessage, NoteTemplate, PlaybookTemplate, PlaybookStep, ExportData, TimelineExportData, TimelineEventType, ConfidenceLevel, IOCAnalysis, IOCEntry, IOCRelationship, TaskComment, NoteAnnotation, EntityComment, ChecklistItem, ToolCallRecord, ChatAttachment, AgentCycleSummary, AgentEntityRef, QuickLink, LLMProvider, IOCType, TemplateSource, PlaybookStepEntity, AgentAction, EvidenceExtractionStatus, EvidenceKind, ProductBaselineAsset, ProductBaselineMetadata, ProductBaselineSourceDocument, ProductBaselineTestFixture } from '../types';
+import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, EvidenceItem, Identity, IdentityConnection, IdentityDetail, ChatThread, ChatMessage, NoteTemplate, PlaybookTemplate, PlaybookStep, ExportData, TimelineExportData, TimelineEventType, ConfidenceLevel, IOCAnalysis, IOCEntry, IOCRelationship, TaskComment, NoteAnnotation, EntityComment, ChecklistItem, ToolCallRecord, ChatAttachment, AgentCycleSummary, AgentEntityRef, QuickLink, LLMProvider, IOCType, TemplateSource, PlaybookStepEntity, AgentAction, EvidenceExtractionStatus, EvidenceKind, ProductBaselineAsset, ProductBaselineMetadata, ProductBaselineSourceDocument, ProductBaselineTestFixture } from '../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_TYPE_LABELS } from '../types';
 import { nanoid } from 'nanoid';
 import { workspaceStorageKey } from './workspace-profiles';
@@ -16,6 +16,7 @@ import { previewRestore, restoreFullReplace, restoreMerge } from './backup-resto
 import { nextTimelineOrder } from './sync-capture-policy';
 import { findSupervisorFolder, supervisorProposalRationale } from './caddy-agent-supervisor';
 import { SUPERVISOR_ACTION_PROFILE } from './supervisor-tool-policy';
+import { IDENTITY_STATUSES } from './entity-enums';
 
 export async function exportJSON(): Promise<string> {
   const json = JSON.stringify(await portableSnapshot(false), null, 2);
@@ -555,6 +556,37 @@ export function sanitizeEvidenceItem(raw: unknown): EvidenceItem | null {
     archived: bool(r.archived),
     createdBy: r.createdBy != null ? str(r.createdBy) : undefined,
     updatedBy: r.updatedBy != null ? str(r.updatedBy) : undefined,
+    createdAt: num(r.createdAt, Date.now()),
+    updatedAt: num(r.updatedAt, Date.now()),
+  };
+}
+
+export function sanitizeIdentity(raw: unknown): Identity | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const objects = (v: unknown) => (Array.isArray(v) ? v : []).filter((x): x is Record<string, unknown> => !!x && typeof x === 'object');
+  const details: IdentityDetail[] = objects(r.details).map(d => ({
+    id: str(d.id) || nanoid(), label: str(d.label), value: str(d.value), ...(d.private === true ? { private: true } : {}),
+  }));
+  const connections: IdentityConnection[] = objects(r.connections)
+    .filter(c => typeof c.targetId === 'string' && c.targetId !== '').map(c => ({ targetId: str(c.targetId), label: str(c.label) }));
+  return {
+    id: str(r.id),
+    folderId: r.folderId != null ? str(r.folderId) : undefined,
+    type: str(r.type, 'person'),
+    name: str(r.name),
+    description: r.description != null ? str(r.description) : undefined,
+    aliases: strArr(r.aliases),
+    status: IDENTITY_STATUSES.find(value => value === r.status),
+    contact: r.contact === true ? true : undefined,
+    details,
+    connections,
+    tags: strArr(r.tags),
+    clsLevel: r.clsLevel != null ? str(r.clsLevel) : undefined,
+    trashed: bool(r.trashed),
+    trashedAt: r.trashedAt != null ? num(r.trashedAt) : undefined,
+    archived: bool(r.archived),
+    ...provenance(r),
     createdAt: num(r.createdAt, Date.now()),
     updatedAt: num(r.updatedAt, Date.now()),
   };
@@ -1245,7 +1277,7 @@ async function prepareJSONImport(json: string, password?: string) {
   const sanitizers: Partial<Record<BackupTable, (value: unknown) => object | null>> = {
     notes: sanitizeNote, tasks: sanitizeTask, folders: sanitizeFolder, tags: sanitizeTag,
     timelineEvents: sanitizeTimelineEvent, timelines: sanitizeTimeline, whiteboards: sanitizeWhiteboard,
-    standaloneIOCs: sanitizeStandaloneIOC, evidenceItems: sanitizeEvidenceItem, chatThreads: sanitizeChatThread,
+    standaloneIOCs: sanitizeStandaloneIOC, evidenceItems: sanitizeEvidenceItem, identities: sanitizeIdentity, chatThreads: sanitizeChatThread,
     agentActions: sanitizeAgentAction, agentProfiles: sanitizeAgentProfile, agentDeployments: sanitizeAgentDeployment,
     agentMeetings: sanitizeAgentMeeting, noteTemplates: sanitizeNoteTemplate, playbookTemplates: sanitizePlaybookTemplate,
   };
@@ -1330,7 +1362,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
   // and no result either: a refusal can quote that input.
   const supervisorRationale = (await findSupervisorFolder())?.id === folderId ? undefined : await supervisorProposalRationale();
   return db.transaction('r', [...Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), db.tags], async () => {
-  const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards, allIOCs, allEvidenceItems, allChats, allAgentActions, allAgentDeployments, allAgentMeetings, allAgentProfiles] = await Promise.all([
+  const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards, allIOCs, allEvidenceItems, allIdentities, allChats, allAgentActions, allAgentDeployments, allAgentMeetings, allAgentProfiles] = await Promise.all([
     db.folders.get(folderId),
     db.notes.where('folderId').equals(folderId).toArray(),
     db.tasks.where('folderId').equals(folderId).toArray(),
@@ -1340,6 +1372,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     db.whiteboards.where('folderId').equals(folderId).toArray(),
     db.standaloneIOCs.where('folderId').equals(folderId).toArray(),
     db.evidenceItems.where('folderId').equals(folderId).toArray(),
+    db.identities.where('folderId').equals(folderId).toArray(),
     db.chatThreads.where('folderId').equals(folderId).toArray(),
     db.agentActions.where('investigationId').equals(folderId).toArray(),
     db.agentDeployments.where('investigationId').equals(folderId).toArray(),
@@ -1360,6 +1393,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
   for (const w of allWhiteboards) w.tags.forEach((tg) => usedTagNames.add(tg));
   for (const i of allIOCs) i.tags.forEach((tg) => usedTagNames.add(tg));
   for (const evidence of evidenceItems) evidence.tags.forEach((tg) => usedTagNames.add(tg));
+  for (const identity of allIdentities) identity.tags.forEach((tg) => usedTagNames.add(tg));
   for (const c of allChats) c.tags.forEach((tg) => usedTagNames.add(tg));
   if (folder.tags) folder.tags.forEach((t) => usedTagNames.add(t));
 
@@ -1383,6 +1417,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     whiteboards: allWhiteboards,
     standaloneIOCs: allIOCs,
     evidenceItems: evidenceItems.length > 0 ? evidenceItems : undefined,
+    identities: allIdentities.length > 0 ? allIdentities : undefined,
     chatThreads: allChats,
     agentActions: allAgentActions.length > 0 ? allAgentActions.map(action => supervisorRationale && action.agentConfigId === SUPERVISOR_ACTION_PROFILE
       ? { ...action, rationale: supervisorRationale, ...(action.status === 'executed' ? {} : { toolInput: {}, resultSummary: undefined }) } : action) : undefined,
@@ -1538,7 +1573,7 @@ export async function mergeTimelineInto(parsed: TimelineExportData, targetTimeli
 
 // --- Merge / Investigation import ---
 
-export async function importInvestigationJSON(json: string): Promise<{ folderId: string; notes: number; tasks: number; timelineEvents: number; standaloneIOCs: number; evidenceItems: number; warnings: string[] }> {
+export async function importInvestigationJSON(json: string): Promise<{ folderId: string; notes: number; tasks: number; timelineEvents: number; standaloneIOCs: number; evidenceItems: number; identities: number; warnings: string[] }> {
   if (json.length > MAX_IMPORT_SIZE) throw new Error('File too large for an investigation import');
   const data = JSON.parse(json);
   if (!data || typeof data !== 'object' || !Array.isArray(data.folders) || data.folders.length !== 1) throw new Error('An investigation export must contain exactly one folder');
@@ -1556,6 +1591,7 @@ export async function importInvestigationJSON(json: string): Promise<{ folderId:
     timelines: rows('timelines', sanitizeTimeline), whiteboards: rows('whiteboards', sanitizeWhiteboard),
     standaloneIOCs: rows('standaloneIOCs', sanitizeStandaloneIOC),
     evidenceItems: mergeEvidenceItemLists(rows('evidenceItems', sanitizeEvidenceItem) as unknown as EvidenceItem[], evidenceItemsFromNotes(allNotes)) as unknown as EntityRecord[],
+    identities: rows('identities', sanitizeIdentity),
     chatThreads: rows('chatThreads', sanitizeChatThread), agentActions: rows('agentActions', sanitizeAgentAction),
     agentProfiles: rows('agentProfiles', sanitizeAgentProfile), agentDeployments: rows('agentDeployments', sanitizeAgentDeployment),
     agentMeetings: rows('agentMeetings', sanitizeAgentMeeting),
@@ -1588,7 +1624,7 @@ export async function importInvestigationJSON(json: string): Promise<{ folderId:
       return id; // No invented IDs for records that are not in the export.
     });
     row.id = maps.get(table)?.get(entity.id) ?? entity.id;
-    if (['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'chatThreads'].includes(table)) row.folderId = folderId;
+    if (['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'identities', 'chatThreads'].includes(table)) row.folderId = folderId;
     const analysis = row.iocAnalysis as IOCAnalysis | undefined;
     if (analysis) for (const ioc of analysis.iocs) ioc.id = iocMap.get(ioc.id) ?? ioc.id;
     if (table === 'folders') {
@@ -1618,7 +1654,7 @@ export async function importInvestigationJSON(json: string): Promise<{ folderId:
     }
   }));
   return { folderId, notes: collections.notes.length, tasks: collections.tasks.length, timelineEvents: collections.timelineEvents.length,
-    standaloneIOCs: collections.standaloneIOCs.length, evidenceItems: collections.evidenceItems.length, warnings: [...warnings] };
+    standaloneIOCs: collections.standaloneIOCs.length, evidenceItems: collections.evidenceItems.length, identities: collections.identities.length, warnings: [...warnings] };
 }
 
 export interface MergeImportTableResult {

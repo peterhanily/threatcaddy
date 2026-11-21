@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "לוחות ציור",
   "encryption.table.standaloneIOCs": "אינדיקטורים",
   "encryption.table.evidenceItems": "ראיות",
+  "encryption.table.identities": "זהויות",
   "encryption.table.chatThreads": "שיחות",
   "encryption.table.agentActions": "פעולות סוכנים",
   "encryption.table.agentProfiles": "פרופילי סוכנים",

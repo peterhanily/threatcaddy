@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "Дошки",
   "encryption.table.standaloneIOCs": "Індикатори",
   "encryption.table.evidenceItems": "Докази",
+  "encryption.table.identities": "Ідентичності",
   "encryption.table.chatThreads": "Чати",
   "encryption.table.agentActions": "Дії агентів",
   "encryption.table.agentProfiles": "Профілі агентів",

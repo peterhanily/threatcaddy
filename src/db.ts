@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ActivityLogEntry, StandaloneIOC, EvidenceItem, ChatThread, NoteTemplate, PlaybookTemplate, Checkpoint, CustomSlashCommand, AgentAction, AgentProfile, AgentDeployment, AgentMeeting, EvidenceKind, EvidenceExtractionStatus } from './types';
+import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ActivityLogEntry, StandaloneIOC, EvidenceItem, ChatThread, Identity, NoteTemplate, PlaybookTemplate, Checkpoint, CustomSlashCommand, AgentAction, AgentProfile, AgentDeployment, AgentMeeting, EvidenceKind, EvidenceExtractionStatus } from './types';
 import type { IntegrationTemplate, InstalledIntegration, IntegrationRun } from './types/integration-types';
 import { getSessionKey, installEncryptionMiddleware } from './lib/encryptionMiddleware';
 import { installSyncOutbox } from './lib/sync-outbox';
@@ -19,6 +19,7 @@ const db = new Dexie(getWorkspaceDatabaseName()) as Dexie & {
   activityLog: EntityTable<ActivityLogEntry, 'id'>;
   standaloneIOCs: EntityTable<StandaloneIOC, 'id'>;
   evidenceItems: EntityTable<EvidenceItem, 'id'>;
+  identities: EntityTable<Identity, 'id'>;
   chatThreads: EntityTable<ChatThread, 'id'>;
   noteTemplates: EntityTable<NoteTemplate, 'id'>;
   playbookTemplates: EntityTable<PlaybookTemplate, 'id'>;
@@ -217,6 +218,10 @@ db.version(33).stores({ _localMigrations: 'key' });
 // Workspace-local delivery receipts contain IDs, revisions and fingerprints,
 // never clip content. They are neither portable entities nor server sync data.
 db.version(34).stores({ _clipReceipts: 'key, clipId, committedAt' });
+
+// Version 35: identities (people, organizations, systems, accounts) in an investigation.
+// Names and details are matched in memory, so no content is indexed.
+db.version(35).stores({ identities: 'id, folderId, updatedAt, trashed, archived, *tags' });
 
 async function promoteLegacyEvidence(tx: Parameters<NonNullable<Parameters<ReturnType<typeof db.version>['upgrade']>[0]>>[0]) {
   const notesTable = tx.table('notes');

@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "Lavagne",
   "encryption.table.standaloneIOCs": "Indicatori",
   "encryption.table.evidenceItems": "Evidenze",
+  "encryption.table.identities": "Identità",
   "encryption.table.chatThreads": "Chat",
   "encryption.table.agentActions": "Azioni degli agenti",
   "encryption.table.agentProfiles": "Profili degli agenti",

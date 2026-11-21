@@ -1,0 +1,183 @@
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { nanoid } from 'nanoid';
+import { db } from '../db';
+import type { Identity, IdentityConnection } from '../types';
+import { purgeOldTrash } from '../lib/trash-purge';
+import { deleteEntitiesWithReferences } from '../lib/entity-relations';
+import { conservativeClsLevel } from '../lib/classification';
+
+const sameText = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/** One edge per target and label, and never to itself. */
+function distinctConnections(edges: IdentityConnection[], selfId: string): IdentityConnection[] {
+  return edges.filter((edge, index) => edge.targetId !== selfId
+    && edges.findIndex(other => other.targetId === edge.targetId && sameText(other.label, edge.label)) === index);
+}
+
+/** Manages the people, organizations, systems and accounts recorded in investigations. */
+export function useIdentities(folderId?: string) {
+  const [identities, setIdentities] = useState<Identity[]>([]);
+  const scope = useMemo(() => ({ folderId }), [folderId]);
+  const [loadState, setLoadState] = useState({ scope, loading: true, loadedSuccessfully: false });
+  const activeScopeRef = useRef<typeof scope | null>(null);
+  const loadRequestRef = useRef<symbol | null>(null);
+
+  useLayoutEffect(() => {
+    activeScopeRef.current = scope;
+    return () => { activeScopeRef.current = null; loadRequestRef.current = null; };
+  }, [scope]);
+
+  const loadIdentities = useCallback(async () => {
+    if (activeScopeRef.current !== scope) return;
+    const request = Symbol('identities-load');
+    loadRequestRef.current = request;
+    const current = () => activeScopeRef.current === scope && loadRequestRef.current === request;
+    setLoadState({ scope, loading: true, loadedSuccessfully: false });
+    try {
+      const all = folderId
+        ? await db.identities.where('folderId').equals(folderId).toArray()
+        : await db.identities.toArray();
+      if (!current()) return;
+      const remaining = await purgeOldTrash(all, db.identities);
+      if (!current()) return;
+      setIdentities(remaining.sort((a, b) => b.updatedAt - a.updatedAt));
+      setLoadState({ scope, loading: false, loadedSuccessfully: true });
+    } catch (err) {
+      if (current()) {
+        console.error('Failed to load identities:', err);
+        setLoadState({ scope, loading: false, loadedSuccessfully: false });
+      }
+    }
+  }, [folderId, scope]);
+
+  useEffect(() => {
+    // Initial IndexedDB hydration intentionally updates loading/data state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadIdentities();
+  }, [loadIdentities]);
+
+  const createIdentity = useCallback(async (partial?: Partial<Identity>): Promise<Identity> => {
+    const { getCurrentUserName } = await import('../lib/utils');
+    const now = Date.now();
+    const identity: Identity = {
+      id: nanoid(),
+      type: 'person',
+      name: '',
+      aliases: [],
+      details: [],
+      connections: [],
+      tags: [],
+      trashed: false,
+      archived: false,
+      createdBy: partial?.createdBy || getCurrentUserName(),
+      createdAt: now,
+      updatedAt: now,
+      ...partial,
+    };
+    await db.identities.add(identity);
+    setIdentities((prev) => [identity, ...prev]);
+    return identity;
+  }, []);
+
+  /** A rename keeps the old name as another name, so earlier mentions still match. */
+  const updateIdentity = useCallback(async (id: string, updates: Partial<Identity>) => {
+    const updated = await db.transaction('rw', db.identities, async () => {
+      const existing = await db.identities.get(id);
+      if (!existing) return undefined;
+      const patched: Partial<Identity> = { ...updates, updatedAt: Date.now() };
+      const name = patched.name;
+      if (name !== undefined && !sameText(name, existing.name)) {
+        const aliases = (patched.aliases ?? existing.aliases).filter(alias => !sameText(alias, name));
+        if (existing.name.trim() && !aliases.some(alias => sameText(alias, existing.name))) aliases.push(existing.name);
+        patched.aliases = aliases;
+      }
+      await db.identities.update(id, patched);
+      return patched;
+    });
+    if (updated) setIdentities((prev) => prev.map((identity) => (identity.id === id ? { ...identity, ...updated } : identity)));
+  }, []);
+
+  /** Also removes every connection that points to it. */
+  const deleteIdentity = useCallback(async (id: string) => {
+    await deleteEntitiesWithReferences({ identities: [id] });
+    await loadIdentities();
+  }, [loadIdentities]);
+
+  const trashIdentity = useCallback(async (id: string) => {
+    await updateIdentity(id, { trashed: true, trashedAt: Date.now() });
+  }, [updateIdentity]);
+
+  const restoreIdentity = useCallback(async (id: string) => {
+    await updateIdentity(id, { trashed: false, trashedAt: undefined });
+  }, [updateIdentity]);
+
+  const toggleArchiveIdentity = useCallback(async (id: string) => {
+    const identity = identities.find((candidate) => candidate.id === id);
+    if (identity) await updateIdentity(id, { archived: !identity.archived });
+  }, [identities, updateIdentity]);
+
+  const emptyTrashIdentities = useCallback(async () => {
+    const trashedIds = identities.filter((identity) => identity.trashed).map((identity) => identity.id);
+    if (trashedIds.length === 0) return;
+    await deleteEntitiesWithReferences({ identities: trashedIds });
+    await loadIdentities();
+  }, [identities, loadIdentities]);
+
+  /**
+   * Folds `goneId` into `keepId` and deletes it, in one transaction. The kept identity
+   * gains the other's names, details, connections and tags, and links to the removed
+   * one now point to it. Only identities in the same investigation can be merged.
+   */
+  const mergeIdentities = useCallback(async (keepId: string, goneId: string) => {
+    if (keepId === goneId) throw new Error('Choose two different identities to merge.');
+    await deleteEntitiesWithReferences({ identities: [goneId] }, undefined, undefined, undefined, undefined, async () => {
+      const [keep, gone] = await db.identities.bulkGet([keepId, goneId]);
+      if (!keep || !gone) throw new Error('Identity not found; nothing was merged.');
+      if (keep.folderId !== gone.folderId) throw new Error('Only identities in the same investigation can be merged.');
+      const now = Date.now();
+      const aliases = [...keep.aliases];
+      for (const name of [gone.name, ...gone.aliases]) {
+        if (name.trim() && !sameText(name, keep.name) && !aliases.some(alias => sameText(alias, name))) aliases.push(name);
+      }
+      const details = [...keep.details];
+      for (const detail of gone.details) {
+        if (!details.some(kept => sameText(kept.label, detail.label) && sameText(kept.value, detail.value))) {
+          details.push(details.some(kept => kept.id === detail.id) ? { ...detail, id: nanoid() } : detail);
+        }
+      }
+      const retarget = (edges: IdentityConnection[]) => edges.map(edge => edge.targetId === goneId ? { ...edge, targetId: keepId } : edge);
+      const merged: Identity = {
+        ...keep,
+        description: keep.description || gone.description,
+        aliases,
+        status: keep.status ?? gone.status,
+        contact: keep.contact || gone.contact || undefined,
+        details,
+        connections: distinctConnections(retarget([...keep.connections, ...gone.connections]), keepId),
+        tags: [...new Set([...keep.tags, ...gone.tags])],
+        clsLevel: conservativeClsLevel([keep.clsLevel, gone.clsLevel]),
+        updatedAt: now,
+      };
+      const others = (await db.identities.toArray())
+        .filter(row => row.id !== keepId && row.id !== goneId && row.connections.some(edge => edge.targetId === goneId))
+        .map(row => ({ ...row, connections: distinctConnections(retarget(row.connections), row.id), updatedAt: now }));
+      await db.identities.bulkPut([merged, ...others]);
+    });
+    await loadIdentities();
+  }, [loadIdentities]);
+
+  return {
+    identities,
+    loading: loadState.scope !== scope || loadState.loading,
+    loadedSuccessfully: loadState.scope === scope && loadState.loadedSuccessfully,
+    createIdentity,
+    updateIdentity,
+    deleteIdentity,
+    trashIdentity,
+    restoreIdentity,
+    toggleArchiveIdentity,
+    emptyTrashIdentities,
+    mergeIdentities,
+    reload: loadIdentities,
+  };
+}

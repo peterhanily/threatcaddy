@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { Note, Task, TimelineEvent, StandaloneIOC, EvidenceItem, ChatThread, Folder, Tag, Timeline, Whiteboard } from '../types';
+import type { Note, Task, TimelineEvent, StandaloneIOC, EvidenceItem, Identity, ChatThread, Folder, Tag, Timeline, Whiteboard } from '../types';
 
 import type { ActivityCategory, ActivityAction } from '../types';
 import type { NotePersistence } from './useNotes';
@@ -76,6 +76,17 @@ export function useLoggedActions(
     toggleArchiveEvidenceItem?(id: string): Promise<void>;
     deleteEvidenceItem?(id: string): Promise<void>;
     emptyTrashEvidenceItems(): Promise<void>;
+    reload(): void;
+  },
+  identities: {
+    identities: Identity[];
+    createIdentity(p?: Partial<Identity>): Promise<Identity>;
+    trashIdentity(id: string): Promise<void>;
+    restoreIdentity(id: string): Promise<void>;
+    toggleArchiveIdentity(id: string): Promise<void>;
+    deleteIdentity(id: string): Promise<void>;
+    mergeIdentities(keepId: string, goneId: string): Promise<void>;
+    emptyTrashIdentities(): Promise<void>;
     reload(): void;
   },
   chats: {
@@ -358,6 +369,52 @@ export function useLoggedActions(
     log('evidence', 'empty-trash', `Emptied evidence trash (${count} items)`);
   }, [evidenceItems, log]);
 
+  // ─── Identities ───────────────────────────────────────────────
+
+  const loggedCreateIdentity = useCallback(async (partial?: Partial<Identity>) => {
+    const identity = await identities.createIdentity(partial);
+    log('identity', 'create', `Created identity "${identity.name || 'Unnamed'}"`, identity.id, identity.name);
+    return identity;
+  }, [identities, log]);
+
+  const loggedTrashIdentity = useCallback(async (id: string) => {
+    const identity = identities.identities.find((i) => i.id === id);
+    await identities.trashIdentity(id);
+    log('identity', 'trash', `Trashed identity "${identity?.name || 'Unnamed'}"`, id, identity?.name);
+  }, [identities, log]);
+
+  const loggedRestoreIdentity = useCallback(async (id: string) => {
+    const identity = identities.identities.find((i) => i.id === id);
+    await identities.restoreIdentity(id);
+    log('identity', 'restore', `Restored identity "${identity?.name || 'Unnamed'}"`, id, identity?.name);
+  }, [identities, log]);
+
+  const loggedToggleArchiveIdentity = useCallback(async (id: string) => {
+    const identity = identities.identities.find((i) => i.id === id);
+    await identities.toggleArchiveIdentity(id);
+    const action = identity?.archived ? 'unarchive' : 'archive';
+    log('identity', action, `${action === 'archive' ? 'Archived' : 'Unarchived'} identity "${identity?.name || 'Unnamed'}"`, id, identity?.name);
+  }, [identities, log]);
+
+  const loggedDeleteIdentity = useCallback(async (id: string) => {
+    const identity = identities.identities.find((i) => i.id === id);
+    await identities.deleteIdentity(id);
+    log('identity', 'delete', `Deleted identity "${identity?.name || 'Unnamed'}"`, id, identity?.name);
+  }, [identities, log]);
+
+  const loggedMergeIdentities = useCallback(async (keepId: string, goneId: string) => {
+    const keep = identities.identities.find((i) => i.id === keepId);
+    const gone = identities.identities.find((i) => i.id === goneId);
+    await identities.mergeIdentities(keepId, goneId);
+    log('identity', 'update', `Merged identity "${gone?.name || 'Unnamed'}" into "${keep?.name || 'Unnamed'}"`, keepId, keep?.name);
+  }, [identities, log]);
+
+  const loggedEmptyTrashIdentities = useCallback(async () => {
+    const count = identities.identities.filter((i) => i.trashed).length;
+    await identities.emptyTrashIdentities();
+    log('identity', 'empty-trash', `Emptied identity trash (${count} identities)`);
+  }, [identities, log]);
+
   // ─── Folders ──────────────────────────────────────────────────
 
   const loggedCreateFolder = useCallback(async (name: string) => {
@@ -376,9 +433,10 @@ export function useLoggedActions(
     whiteboardOps.reload();
     standaloneIOCs.reload();
     evidenceItems.reload();
+    identities.reload();
     chats.reload();
     log('folder', 'delete', `Deleted investigation "${folder?.name || 'Untitled'}"`, id, folder?.name);
-  }, [foldersOps, notes, tasks, timeline, whiteboardOps, standaloneIOCs, evidenceItems, chats, log]);
+  }, [foldersOps, notes, tasks, timeline, whiteboardOps, standaloneIOCs, evidenceItems, identities, chats, log]);
 
   const loggedTrashFolderContents = useCallback(async (id: string) => {
     const folder = foldersOps.folders.find((f) => f.id === id);
@@ -390,8 +448,9 @@ export function useLoggedActions(
     whiteboardOps.reload();
     standaloneIOCs.reload();
     evidenceItems.reload();
+    identities.reload();
     chats.reload();
-  }, [foldersOps, log, notes, tasks, timeline, whiteboardOps, standaloneIOCs, evidenceItems, chats]);
+  }, [foldersOps, log, notes, tasks, timeline, whiteboardOps, standaloneIOCs, evidenceItems, identities, chats]);
 
   const loggedArchiveFolder = useCallback(async (id: string) => {
     const folder = foldersOps.folders.find((f) => f.id === id);
@@ -403,8 +462,9 @@ export function useLoggedActions(
     whiteboardOps.reload();
     standaloneIOCs.reload();
     evidenceItems.reload();
+    identities.reload();
     chats.reload();
-  }, [foldersOps, log, notes, tasks, timeline, whiteboardOps, standaloneIOCs, evidenceItems, chats]);
+  }, [foldersOps, log, notes, tasks, timeline, whiteboardOps, standaloneIOCs, evidenceItems, identities, chats]);
 
   const loggedUnarchiveFolder = useCallback(async (id: string) => {
     const folder = foldersOps.folders.find((f) => f.id === id);
@@ -416,8 +476,9 @@ export function useLoggedActions(
     whiteboardOps.reload();
     standaloneIOCs.reload();
     evidenceItems.reload();
+    identities.reload();
     chats.reload();
-  }, [foldersOps, log, notes, tasks, timeline, whiteboardOps, standaloneIOCs, evidenceItems, chats]);
+  }, [foldersOps, log, notes, tasks, timeline, whiteboardOps, standaloneIOCs, evidenceItems, identities, chats]);
 
   // ─── Tags ─────────────────────────────────────────────────────
 
@@ -450,7 +511,8 @@ export function useLoggedActions(
     await loggedEmptyTrashWhiteboards();
     await loggedEmptyTrashIOCs();
     await loggedEmptyTrashEvidenceItems();
-  }, [loggedEmptyTrash, loggedEmptyTrashTasks, loggedEmptyTrashEvents, loggedEmptyTrashWhiteboards, loggedEmptyTrashIOCs, loggedEmptyTrashEvidenceItems]);
+    await loggedEmptyTrashIdentities();
+  }, [loggedEmptyTrash, loggedEmptyTrashTasks, loggedEmptyTrashEvents, loggedEmptyTrashWhiteboards, loggedEmptyTrashIOCs, loggedEmptyTrashEvidenceItems, loggedEmptyTrashIdentities]);
 
   return {
     // Notes
@@ -473,6 +535,9 @@ export function useLoggedActions(
     // Evidence
     loggedTrashEvidenceItem, loggedRestoreEvidenceItem,
     loggedToggleArchiveEvidenceItem, loggedDeleteEvidenceItem, loggedEmptyTrashEvidenceItems,
+    // Identities
+    loggedCreateIdentity, loggedTrashIdentity, loggedRestoreIdentity, loggedToggleArchiveIdentity,
+    loggedDeleteIdentity, loggedMergeIdentities, loggedEmptyTrashIdentities,
     // Folders
     loggedCreateFolder, loggedDeleteFolder,
     loggedTrashFolderContents, loggedArchiveFolder, loggedUnarchiveFolder,

@@ -1,12 +1,16 @@
 /** Portable entity tables; internal queues and credentials cannot be selected by a caller-provided name. */
 export const BACKUP_TABLES = [
   'notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards',
-  'standaloneIOCs', 'evidenceItems', 'chatThreads', 'agentActions', 'agentProfiles',
+  'standaloneIOCs', 'evidenceItems', 'identities', 'chatThreads', 'agentActions', 'agentProfiles',
   'agentDeployments', 'agentMeetings', 'noteTemplates', 'playbookTemplates',
   'integrationTemplates', 'installedIntegrations', 'customSlashCommands',
 ] as const;
 
 export type BackupTable = typeof BACKUP_TABLES[number];
+
+/** Tables added after portable backup files began listing every table. A portable
+ * file without one was made before it existed, so it held none of its records. */
+export const TABLES_ADDED_AFTER_PORTABLE_BACKUPS: ReadonlySet<BackupTable> = new Set<BackupTable>(['identities']);
 
 export function isBackupTable(value: string): value is BackupTable {
   return (BACKUP_TABLES as readonly string[]).includes(value);

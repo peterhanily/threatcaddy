@@ -90,6 +90,7 @@
   "activityCategory.tag": "Tag",
   "activityCategory.ioc": "IOC",
   "activityCategory.evidence": "Evidence",
+  "activityCategory.identity": "Identity",
   "activityCategory.sync": "Sync",
   "activityCategory.data": "Data",
   "activityCategory.chat": "Chat",

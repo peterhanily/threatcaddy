@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "تخته‌های سفید",
   "encryption.table.standaloneIOCs": "شاخص‌ها",
   "encryption.table.evidenceItems": "شواهد",
+  "encryption.table.identities": "هویت‌ها",
   "encryption.table.chatThreads": "گفتگوها",
   "encryption.table.agentActions": "اقدام‌های عامل",
   "encryption.table.agentProfiles": "نمایه‌های عامل",

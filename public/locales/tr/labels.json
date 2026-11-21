@@ -128,5 +128,6 @@
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
   "model.group.mistral": "Mistral",
-  "activityCategory.evidence": "Kanıt"
+  "activityCategory.evidence": "Kanıt",
+  "activityCategory.identity": "Kimlik"
 }

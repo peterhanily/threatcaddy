@@ -16,6 +16,7 @@ export const ENTITY_RELATIONS: Record<string, Relation[]> = {
   timelineEvents: [folder, ...links, ...embeddedIOCs, relation('timelineId', 'timelines'), relation('linkedIOCIds', 'iocs', true)],
   standaloneIOCs: [folder, ...links, relation('linkedEvidenceIds', 'evidenceItems', true), relation('relationships.*.targetIOCId', 'iocs')],
   evidenceItems: [folder, relation('linkedIOCIds', 'iocs', true)],
+  identities: [folder, relation('connections.*.targetId', 'identities')],
   whiteboards: [folder],
   chatThreads: [folder, relation('parentThreadId', 'chatThreads')],
   folders: [relation('timelineId', 'timelines'), relation('agentThreadId', 'chatThreads'),
@@ -31,7 +32,7 @@ export const ENTITY_RELATIONS: Record<string, Relation[]> = {
 /** Agent history has no modification time and requires its thread edge; an
  * empty edge (as ask_human records use) keeps it valid for backup. */
 const HISTORY_TABLES = new Set(['agentActions', 'agentMeetings']);
-export const TAGGED_TABLES = ['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'chatThreads', 'folders'] as const;
+export const TAGGED_TABLES = ['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'identities', 'chatThreads', 'folders'] as const;
 export const FOLDER_CONTENT_TABLES = TAGGED_TABLES.filter(name => name !== 'folders');
 let lifecycleTail: Promise<void> = Promise.resolve();
 /** Mount-time purges can arrive together; serialize our draft barriers, not just DB writes. */
@@ -62,6 +63,7 @@ export function mapEntityReferences(table: string, row: EntityRecord, mapper: (t
   // A relationship is an edge, not an empty object after its target is removed.
   const prune = (value: Record<string, unknown>) => {
     if (Array.isArray(value.relationships)) value.relationships = value.relationships.filter(rel => rel && typeof rel.targetIOCId === 'string');
+    if (Array.isArray(value.connections)) value.connections = value.connections.filter(edge => edge && typeof edge.targetId === 'string');
   };
   prune(copy);
   const analysis = copy.iocAnalysis as { iocs?: Record<string, unknown>[] } | undefined;
@@ -110,14 +112,16 @@ export async function deleteEntitiesWithReferences(deletions: Record<string, str
         const now = Date.now();
         for (const table of Object.keys(ENTITY_RELATIONS)) {
           const rows = await db.table<EntityRecord>(table).toArray();
+          const changedRows: EntityRecord[] = [];
           for (const row of rows) {
             let changed = false;
             const updated = mapEntityReferences(table, row, (target, id, path) => {
               if (removed.get(target)?.has(id)) { changed = true; return HISTORY_TABLES.has(table) && path === 'threadId' ? '' : undefined; }
               return id;
             });
-            if (changed) await db.table(table).put(HISTORY_TABLES.has(table) ? updated : { ...updated, updatedAt: now });
+            if (changed) changedRows.push(HISTORY_TABLES.has(table) ? updated : { ...updated, updatedAt: now });
           }
+          if (changedRows.length) await db.table(table).bulkPut(changedRows);
         }
         assertCurrent();
       });

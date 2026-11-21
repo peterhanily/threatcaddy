@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "Bảng trắng",
   "encryption.table.standaloneIOCs": "Chỉ báo",
   "encryption.table.evidenceItems": "Bằng chứng",
+  "encryption.table.identities": "Danh tính",
   "encryption.table.chatThreads": "Trò chuyện",
   "encryption.table.agentActions": "Hành động tác tử",
   "encryption.table.agentProfiles": "Hồ sơ tác tử",

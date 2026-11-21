@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "ホワイトボード",
   "encryption.table.standaloneIOCs": "インジケーター",
   "encryption.table.evidenceItems": "証拠",
+  "encryption.table.identities": "アイデンティティ",
   "encryption.table.chatThreads": "チャット",
   "encryption.table.agentActions": "エージェントの操作",
   "encryption.table.agentProfiles": "エージェントのプロファイル",

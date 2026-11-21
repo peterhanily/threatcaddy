@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "Papan tulis",
   "encryption.table.standaloneIOCs": "Indikator",
   "encryption.table.evidenceItems": "Bukti",
+  "encryption.table.identities": "Identitas",
   "encryption.table.chatThreads": "Chat",
   "encryption.table.agentActions": "Tindakan agen",
   "encryption.table.agentProfiles": "Profil agen",

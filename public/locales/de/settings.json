@@ -512,6 +512,7 @@
   "encryption.table.whiteboards": "Whiteboards",
   "encryption.table.standaloneIOCs": "Indikatoren",
   "encryption.table.evidenceItems": "Beweismaterial",
+  "encryption.table.identities": "Identitäten",
   "encryption.table.chatThreads": "Chats",
   "encryption.table.agentActions": "Agentenaktionen",
   "encryption.table.agentProfiles": "Agentenprofile",

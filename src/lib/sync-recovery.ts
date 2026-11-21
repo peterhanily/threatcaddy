@@ -131,10 +131,13 @@ export async function restoreSyncRecovery(password: string, blob: EncryptedBacku
   if (!confirmed) throw new Error('Confirm recovery into an empty workspace first.');
   if (new TextEncoder().encode(JSON.stringify(blob)).byteLength > 512 * 1024 * 1024) throw new Error('Recovery archive exceeds 512 MiB.');
   const archive = await decryptBackup<RecoveryArchive>(password, blob).catch((cause: Error) => { throw coded(cause, 'wrongPassword'); });
-  if (archive?.version !== 1 || archive.kind !== 'threatcaddy-workspace-recovery' || archive.databaseVersion !== db.verno
-    || !archive.data || Array.isArray(archive.data) || Object.keys(archive.data).length !== db.tables.length) throw coded(new Error('Unsupported workspace recovery archive.'), 'unsupportedArchive');
+  // A version 34 archive predates the identities store and restores without it.
+  const beforeIdentities = archive?.databaseVersion === 34;
+  const stores = db.tables.filter(table => !(beforeIdentities && table.name === 'identities'));
+  if (archive?.version !== 1 || archive.kind !== 'threatcaddy-workspace-recovery' || (archive.databaseVersion !== db.verno && !beforeIdentities)
+    || !archive.data || Array.isArray(archive.data) || Object.keys(archive.data).length !== stores.length) throw coded(new Error('Unsupported workspace recovery archive.'), 'unsupportedArchive');
   for (const [name, rows] of Object.entries(archive.data)) {
-    const table = db.tables.find(table => table.name === name);
+    const table = stores.find(table => table.name === name);
     if (!table || !Array.isArray(rows)) throw coded(new Error('Unsupported recovery store.'), 'unsupportedArchive');
     const key = table.schema.primKey.keyPath;
     if (typeof key !== 'string' || rows.some(row => !row || typeof row !== 'object' || Array.isArray(row) || !['string', 'number'].includes(typeof row[key]))
