@@ -20,6 +20,7 @@ const {
     standaloneIOCs: [],
     chatThreads: [],
     evidenceItems: [],
+    identities: [],
   };
 
   function makeWhereChain(dataRef: () => unknown[]) {
@@ -51,6 +52,7 @@ vi.mock('../db', () => ({
     standaloneIOCs: makeWhereChain(() => mockDbTables.standaloneIOCs),
     chatThreads: makeWhereChain(() => mockDbTables.chatThreads),
     evidenceItems: makeWhereChain(() => mockDbTables.evidenceItems),
+    identities: makeWhereChain(() => mockDbTables.identities),
   },
 }));
 

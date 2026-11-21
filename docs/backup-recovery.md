@@ -29,12 +29,14 @@ download them from the team server:
 | Chat messages | Tool calls/results, image attachments and agent cycle summaries |
 
 The sync registry includes notes, tasks, investigations, tags, timeline events,
-timelines, whiteboards, standalone IOCs, chat threads and evidence items. Their
-supported shared fields include IOC/timeline comments and timeline coordinates.
-Agent actions/profiles/deployments/meetings, identities (people, organizations,
-systems and accounts), note/playbook/integration templates, installed
-integrations and custom slash commands are separate local entity tables; they
-are included in full portable backups, not team entity sync.
+timelines, whiteboards, standalone IOCs, chat threads, evidence items and
+identities (people, organizations, systems and accounts). Their supported shared
+fields include IOC/timeline comments and timeline coordinates. A team server from
+before identities does not store them: their changes stay on the device until the
+server is updated. Agent actions/profiles/deployments/meetings,
+note/playbook/integration templates, installed integrations and custom slash
+commands are separate local entity tables; they are included in full portable
+backups, not team entity sync.
 Unshared local investigations also require a client backup.
 
 Before **Remove Local Copy**, browser-storage clearing, or **Reset Workspace**,
@@ -204,6 +206,10 @@ describe that flow, not the plain JSON export.
 |------|-------------|
 | **Full** | Entities from the supported backup tables (or scoped to an investigation/entity) |
 | **Differential** | Snapshot differences against a verified full parent, including removed IDs; the matching full parent is required for restore |
+
+Encrypted backup payloads always list identities, even when there are none, so a
+ThreatCaddy version from before identities cannot restore a payload made after
+them. Restore it with this version or later.
 
 ### Backup Scopes
 

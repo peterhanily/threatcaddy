@@ -3,8 +3,9 @@ import i18n from '../i18n';
 import type { Dexie as DexieType } from 'dexie';
 import { syncPush, syncPull, type SyncChange, type SyncResult } from './server-api';
 import { SERVER_UNREPRESENTED_FIELDS, preserveUnsyncedFields, readableSyncRecord } from './sync-sanitize';
-import { MAX_SYNC_REQUEST_NODES, type OutgoingRefusal } from './sync-push-limits';
-import { MAX_PUSH_BYTES, agentDeploymentIds, outgoingChange, syncItemLabel, validVersion, type SyncQueueEntry } from './sync-outgoing';
+import { MAX_SYNC_REQUEST_NODES } from './sync-push-limits';
+import { MAX_PUSH_BYTES, SERVER_TABLES_KEY, agentDeploymentIds, outgoingChange, serverSyncTables, serverTablesOf, syncItemLabel, validVersion,
+  type HeldReason, type SyncQueueEntry } from './sync-outgoing';
 import { LEGACY_SYNC_TABLES, SYNC_TABLES, isSyncTable, onOutboxCommit, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
 import type { WSClient } from './ws-client';
 import { ensureSyncWorkspace, type SyncWorkspacePause } from './sync-workspace';
@@ -26,13 +27,14 @@ const entityKey = (table: string, id: string) => JSON.stringify([table, id]);
 /** Server rows this client could not read: { version, folderId } only, never their content. */
 const skippedKey = (table: string, id: string) => JSON.stringify(['syncSkipped', table, id]);
 const SKIPPED_PREFIX = '["syncSkipped",';
-const HELD_NOTICES: Readonly<Record<OutgoingRefusal | 'unsupported', string>> = {
+const HELD_NOTICES: Readonly<Record<Exclude<HeldReason, 'oversized'>, string>> = {
   limits: 'syncStatus.oversizedOutgoing', unreadable: 'syncStatus.unreadableOutgoing', previewType: 'syncStatus.previewTypeOutgoing',
   unsupported: 'syncStatus.unsupportedOutgoing',
 };
-/** The tables a pull says the server syncs. A server that does not say (2.0.4 and earlier) syncs the legacy set. */
-const serverTablesOf = (listed: unknown): ReadonlySet<string> =>
-  new Set(Array.isArray(listed) && listed.every(name => typeof name === 'string') ? listed : LEGACY_SYNC_TABLES);
+/** A newer server may sync tables this client does not know: their changes are skipped, and
+ * a later build that syncs them catches up. A table the server does not list is invalid. */
+const withoutNewerTables = (changes: RemoteChange[], serverTables: ReadonlySet<string>) =>
+  changes.filter(change => isSyncTable(change.table) || !serverTables.has(change.table));
 const WORKSPACE_NOTICES: Readonly<Record<SyncWorkspacePause, string>> = {
   workspaceMismatch: 'syncStatus.pausedWorkspaceMismatch', unboundHistory: 'syncStatus.pausedUnboundHistory',
 };
@@ -62,8 +64,6 @@ export class SyncEngine {
   private onError: ((message: string | null) => void) | null = null;
   /** The last push's held-back notice, repeated at the next cycle start so the banner does not flicker. */
   private heldNotice: string | null = null;
-  /** From the latest pull. Changes to other tables stay queued until the server supports them. */
-  private serverTables: ReadonlySet<string> = serverTablesOf(undefined);
   private workspace: { serverUrl: string; userId: string } | null = null;
 
   setConflictHandler(handler: (conflicts: SyncResult[]) => void) { this.onConflict = handler; }
@@ -130,7 +130,6 @@ export class SyncEngine {
     this.syncing = null;
     this.rerunRequested = false;
     this.heldNotice = null;
-    this.serverTables = serverTablesOf(undefined);
   }
 
   private scheduleSync() {
@@ -239,19 +238,15 @@ export class SyncEngine {
     const conflicts: SyncResult[] = [];
     const encoder = new TextEncoder();
     const agents = await agentDeploymentIds();
-    const refused: Array<{ table: string; entityId: string; refusal: OutgoingRefusal | 'unsupported' }> = [];
+    const serverTables = await serverSyncTables();
+    const refused: Array<{ table: string; entityId: string; refusal: Exclude<HeldReason, 'oversized'> }> = [];
     const batches: Array<{ entries: SyncQueueEntry[]; change: SyncChange }[]> = [];
     let current: { entries: SyncQueueEntry[]; change: SyncChange }[] = [];
     let bytes = encoder.encode('{"changes":[]}').byteLength;
     let nodes = 0;
     let oversized = false;
     for (const entries of ordered) {
-      // An older team server refuses a whole upload that names a table it does not know.
-      if (!this.serverTables.has(entries[0].table)) {
-        refused.push({ table: entries[0].table, entityId: entries[0].entityId, refusal: 'unsupported' });
-        continue;
-      }
-      const { change, nodes: changeNodes, size, asset, held: refusal } = outgoingChange(entries, agents);
+      const { change, nodes: changeNodes, size, asset, held: refusal } = outgoingChange(entries, agents, serverTables);
       if (refusal === 'oversized') {
         this.onError?.('Some local changes are too large to sync and remain saved on this device. Reduce their size or export them separately.');
         oversized = true;
@@ -360,15 +355,17 @@ export class SyncEngine {
         throw new Error(RECOVERY_MESSAGE);
       }
       if (page.hasMore && page.cursor === cursor) throw new Error('Server sync cursor did not advance');
-      this.serverTables = serverTablesOf(page.tables);
+      const serverTables = serverTablesOf(page.tables);
+      await this.recordServerTables(epoch, serverTables);
       if (uncovered.length) {
-        // A server without those tables has no history for them, so nothing was missed.
-        const replay = cursor !== '0' && uncovered.some(name => this.serverTables.has(name));
-        await this.recordCursorTables(epoch, replay);
+        // The server has accepted the saved cursor and history. A server without the
+        // missed tables has no history for them, and a fresh cursor misses nothing.
+        const missed = cursor === '0' ? [] : uncovered.filter(name => serverTables.has(name));
+        if (missed.length && !await this.catchUp(epoch, missed, page.generation)) return;
+        await this.recordCursorTables(epoch);
         uncovered = [];
-        if (replay) { cursor = '0'; continue; }
       }
-      const applied = await this.applyChanges(page.changes, epoch, page.cursor, generation, cursor, page.generation);
+      const applied = await this.applyChanges(withoutNewerTables(page.changes, serverTables), epoch, page.cursor, generation, cursor, page.generation);
       if (generation !== this.replayGeneration) { cursor = '0'; continue; }
       if (!applied) { cursor = (await dynamicDb.table('_syncMeta').get(CURSOR_KEY))?.value ?? '0'; continue; }
       cursor = page.cursor;
@@ -383,17 +380,40 @@ export class SyncEngine {
     return SYNC_TABLES.filter(name => !covered.includes(name));
   }
 
-  /** Records that the cursor covers every table this client syncs. With `replay`, the
-   * cursor restarts at 0 so the log is replayed once for the tables it missed. Pull calls
-   * this only after the server has accepted the saved cursor and history, so a restored
-   * server is still detected. Revisions already applied are skipped or rewritten
-   * unchanged, as after "Keep theirs". */
-  private async recordCursorTables(epoch: number, replay: boolean) {
+  private async recordCursorTables(epoch: number) {
     await dynamicDb.transaction('rw', '_syncMeta', '_localMigrations', async () => {
       await this.assertCurrentWorkspace(epoch);
-      if (replay) await dynamicDb.table('_syncMeta').put({ key: CURSOR_KEY, value: '0' });
       await dynamicDb.table('_syncMeta').put({ key: CURSOR_TABLES_KEY, value: [...SYNC_TABLES] });
     });
+  }
+
+  /** Kept durably, so restore and offline-copy removal know them while signed out. */
+  private async recordServerTables(epoch: number, tables: ReadonlySet<string>) {
+    const value = [...tables].sort();
+    if (JSON.stringify((await dynamicDb.table('_syncMeta').get(SERVER_TABLES_KEY))?.value) === JSON.stringify(value)) return;
+    await dynamicDb.transaction('rw', '_syncMeta', '_localMigrations', async () => {
+      await this.assertCurrentWorkspace(epoch);
+      await dynamicDb.table('_syncMeta').put({ key: SERVER_TABLES_KEY, value });
+    });
+  }
+
+  /** Pulls, from the start of the log, only the tables the saved cursor never received.
+   * The saved cursor stays: pulls now include these tables, and this reaches at least as
+   * far. Revisions older than those already applied are skipped. Returns whether it finished. */
+  private async catchUp(epoch: number, tables: string[], history: string): Promise<boolean> {
+    let cursor = '0';
+    while (epoch === this.epoch) {
+      await this.assertCurrentWorkspace(epoch);
+      const page = await syncPull(new Date(0).toISOString(), undefined, cursor, history, tables);
+      if (epoch !== this.epoch) return false;
+      if (page.generation !== history) throw Object.assign(new Error(RECOVERY_MESSAGE), { code: 'SYNC_CURSOR_RESET' });
+      if (typeof page.cursor !== 'string' || !/^\d+$/.test(page.cursor) || BigInt(page.cursor) < BigInt(cursor)
+        || (page.hasMore && page.cursor === cursor)) throw new Error('Invalid sync catch-up cursor');
+      if (!await this.applyChanges(withoutNewerTables(page.changes, serverTablesOf(page.tables)), epoch)) return false;
+      cursor = page.cursor;
+      if (!page.hasMore) return true;
+    }
+    return false;
   }
 
   private async applyChanges(changes: RemoteChange[], epoch: number, cursor?: string, generation?: number, expectedCursor?: string, history?: string, cacheFolder?: string, cacheOperation?: string) {
@@ -421,9 +441,7 @@ export class SyncEngine {
       const skipped = new Set(await dynamicDb.table('_syncMeta').where('key').startsWith(SKIPPED_PREFIX).primaryKeys());
       for (const change of changes) {
         const { table, op, id } = change;
-        if (typeof id !== 'string' || !['put', 'delete'].includes(op)) throw new Error('Invalid sync entity');
-        // A newer server's table: skipped, and replayed by a later build that syncs it.
-        if (!isSyncTable(table)) continue;
+        if (!isSyncTable(table) || typeof id !== 'string' || !['put', 'delete'].includes(op)) throw new Error('Invalid sync entity');
         if (await this.isLocalOnly(table, id, change)) continue;
         if (pending.has(entityKey(table, id))) continue;
         const version = change.version;
@@ -597,7 +615,7 @@ export class SyncEngine {
           || (page.hasMore && page.cursor === cursor)) throw new Error('Invalid investigation sync cursor');
         // Cache intent and each bounded page commit together. Never advance the
         // global cursor from a folder-filtered replay.
-        await this.applyChanges(page.changes, epoch, undefined, undefined, undefined, undefined, folderId, cacheOperation);
+        await this.applyChanges(withoutNewerTables(page.changes, serverTablesOf(page.tables)), epoch, undefined, undefined, undefined, undefined, folderId, cacheOperation);
         cursor = page.cursor;
         if (!page.hasMore) return;
       } catch (error) {

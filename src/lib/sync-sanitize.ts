@@ -153,8 +153,9 @@ export function outgoingSyncData(tableName: string, data: Record<string, unknown
 
 /**
  * Whether a pulled or conflict-accepted row keeps this device's value for a field.
- * Clients never push explicit nulls, so an absent or null server value means the
- * server has no value for it; only a concrete server value replaces local data.
+ * Clients never push explicit nulls for these fields (only CLEARABLE_FIELDS are sent as
+ * null), so an absent or null server value means the server has no value for it; only a
+ * concrete server value replaces local data.
  */
 export function keepsLocalValue(tableName: string, incoming: Record<string, unknown> | undefined, field: string): boolean {
   if (DEVICE_LOCAL_FIELDS[tableName]?.includes(field)) return true;

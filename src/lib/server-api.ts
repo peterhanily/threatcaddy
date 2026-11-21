@@ -228,13 +228,13 @@ export async function syncPush(changes: SyncChange[], generation: string): Promi
   return resp.json();
 }
 
-export async function syncPull(since: string, folderId?: string, cursor?: string, generation?: string): Promise<SyncPullResult> {
+export async function syncPull(since: string, folderId?: string, cursor?: string, generation?: string, tables: readonly string[] = SYNC_TABLES): Promise<SyncPullResult> {
   const params = new URLSearchParams({ since });
   if (folderId) params.set('folderId', folderId);
   if (cursor !== undefined) params.set('cursor', cursor);
   if (generation !== undefined) params.set('generation', generation);
   // Servers leave out tables a client does not list: older clients stop a pull at an unknown table.
-  params.set('tables', SYNC_TABLES.join(','));
+  params.set('tables', tables.join(','));
   const resp = await apiFetch(`/api/sync/pull?${params}`);
   if (!resp.ok) {
     const detail = await resp.json().catch(() => ({}));

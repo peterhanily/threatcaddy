@@ -31,7 +31,7 @@ interface ReloadFns {
   whiteboards: () => void;
   standaloneIOCs: () => void;
   evidenceItems?: () => void;
-  identities?: () => void;
+  identities: () => void;
   chats: () => void;
   folders: () => void;
   tags: () => void;
@@ -106,7 +106,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
           if (tables.has('whiteboards')) reloadFns.whiteboards();
           if (tables.has('standaloneIOCs')) reloadFns.standaloneIOCs();
           if (tables.has('evidenceItems')) reloadFns.evidenceItems?.();
-          if (tables.has('identities')) reloadFns.identities?.();
+          if (tables.has('identities')) reloadFns.identities();
           if (tables.has('chatThreads')) reloadFns.chats();
           if (tables.has('folders')) reloadFns.folders();
           if (tables.has('tags')) reloadFns.tags();

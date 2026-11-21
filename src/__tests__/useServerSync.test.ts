@@ -101,6 +101,7 @@ function makeReloadFns() {
     timelines: vi.fn(),
     whiteboards: vi.fn(),
     standaloneIOCs: vi.fn(),
+    identities: vi.fn(),
     chats: vi.fn(),
     folders: vi.fn(),
     tags: vi.fn(),
