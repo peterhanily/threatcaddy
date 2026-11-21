@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, ChevronDown, FileText, FilePlus, ListChecks, Clock, PenTool, Shield, Database, FolderOpen } from 'lucide-react';
+import { Plus, ChevronDown, FileText, FilePlus, ListChecks, Clock, PenTool, Shield, Database, FolderOpen, Contact } from 'lucide-react';
 import { useDropdownKeyboard } from '../../hooks/useDropdownKeyboard';
 
 interface CreateDropdownProps {
@@ -10,11 +10,12 @@ interface CreateDropdownProps {
   onNewTimelineEvent: () => void;
   onNewWhiteboard: () => void;
   onNewIOC?: () => void;
+  onNewIdentity?: () => void;
   onOpenFile?: () => void;
   onImportData?: () => void;
 }
 
-export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelineEvent, onNewWhiteboard, onNewIOC, onOpenFile, onImportData }: CreateDropdownProps) {
+export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelineEvent, onNewWhiteboard, onNewIOC, onNewIdentity, onOpenFile, onImportData }: CreateDropdownProps) {
   const { t } = useTranslation('common');
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -36,6 +37,7 @@ export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelin
     { icon: Clock, label: t('createDropdown.timelineEvent'), action: onNewTimelineEvent },
     { icon: PenTool, label: t('createDropdown.whiteboard'), action: onNewWhiteboard },
     ...(onNewIOC ? [{ icon: Shield, label: t('createDropdown.ioc'), action: onNewIOC }] : []),
+    ...(onNewIdentity ? [{ icon: Contact, label: t('createDropdown.identity'), action: onNewIdentity }] : []),
     ...(onOpenFile ? [{ icon: FolderOpen, label: t('createDropdown.openFile'), action: onOpenFile }] : []),
     ...(onImportData ? [{ icon: Database, label: t('createDropdown.importData'), action: onImportData }] : []),
   ];

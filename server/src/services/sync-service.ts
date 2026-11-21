@@ -597,10 +597,12 @@ export interface EntityCounts {
   whiteboards: number;
   chats: number;
   evidence: number;
+  identities: number;
 }
 
 const ENTITY_COUNT_TABLES = [
   { key: 'evidence' as const, table: schema.evidenceItems, folderId: schema.evidenceItems.folderId, deletedAt: schema.evidenceItems.deletedAt },
+  { key: 'identities' as const, table: schema.identities, folderId: schema.identities.folderId, deletedAt: schema.identities.deletedAt },
   { key: 'notes' as const, table: schema.notes, folderId: schema.notes.folderId, deletedAt: schema.notes.deletedAt },
   { key: 'tasks' as const, table: schema.tasks, folderId: schema.tasks.folderId, deletedAt: schema.tasks.deletedAt },
   { key: 'iocs' as const, table: schema.standaloneIOCs, folderId: schema.standaloneIOCs.folderId, deletedAt: schema.standaloneIOCs.deletedAt },
@@ -623,7 +625,7 @@ export async function getEntityCounts(folderId: string): Promise<EntityCounts> {
     )
   );
 
-  const counts: EntityCounts = { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0, evidence: 0 };
+  const counts: EntityCounts = { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0, evidence: 0, identities: 0 };
   for (let i = 0; i < ENTITY_COUNT_TABLES.length; i++) {
     counts[ENTITY_COUNT_TABLES[i].key] = results[i][0]?.count ?? 0;
   }
@@ -640,7 +642,7 @@ export async function getEntityCountsBatch(folderIds: string[]): Promise<Map<str
 
   // Initialize all folders with zero counts
   for (const folderId of folderIds) {
-    result.set(folderId, { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0, evidence: 0 });
+    result.set(folderId, { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0, evidence: 0, identities: 0 });
   }
 
   // Run one GROUP BY query per entity table in parallel

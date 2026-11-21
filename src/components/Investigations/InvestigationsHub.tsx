@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, WifiOff, Briefcase, Search } from 'lucide-react';
-import type { Folder, InvestigationSummary, InvestigationDataMode, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread } from '../../types';
+import type { Folder, InvestigationSummary, InvestigationDataMode, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread, EvidenceItem, Identity } from '../../types';
 import { cn } from '../../lib/utils';
 import { InvestigationCard } from './InvestigationCard';
 import { SupervisorSummary } from '../Agent/SupervisorSummary';
 import { FirstRunGuide } from './FirstRunGuide';
 
-const ZERO_COUNTS = { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0 };
+const ZERO_COUNTS = { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0, evidence: 0, identities: 0 };
 
 export interface InvestigationsHubProps {
   localFolders: Folder[];
@@ -33,6 +33,8 @@ export interface InvestigationsHubProps {
   allWhiteboards?: Whiteboard[];
   allIOCs?: StandaloneIOC[];
   allChats?: ChatThread[];
+  allEvidence?: EvidenceItem[];
+  allIdentities?: Identity[];
   syncingFolderId?: string | null;
 }
 
@@ -119,6 +121,8 @@ export function InvestigationsHub({
   allWhiteboards,
   allIOCs,
   allChats,
+  allEvidence,
+  allIdentities,
   syncingFolderId,
 }: InvestigationsHubProps) {
   const { t } = useTranslation('investigations');
@@ -142,16 +146,18 @@ export function InvestigationsHub({
 
   // Compute entity counts for local folders
   const localCountsMap = useMemo(() => {
-    const map = new Map<string, { notes: number; tasks: number; iocs: number; events: number; whiteboards: number; chats: number }>();
-    for (const f of localFolders) map.set(f.id, { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0 });
+    const map = new Map<string, { notes: number; tasks: number; iocs: number; events: number; whiteboards: number; chats: number; evidence: number; identities: number }>();
+    for (const f of localFolders) map.set(f.id, { ...ZERO_COUNTS });
     for (const n of (allNotes ?? [])) { if (!n.trashed && !n.archived && n.folderId) { const c = map.get(n.folderId); if (c) c.notes++; } }
     for (const t of (allTasks ?? [])) { if (!t.trashed && !t.archived && t.folderId) { const c = map.get(t.folderId); if (c) c.tasks++; } }
     for (const e of (allEvents ?? [])) { if (!e.trashed && !e.archived && e.folderId) { const c = map.get(e.folderId); if (c) c.events++; } }
     for (const w of (allWhiteboards ?? [])) { if (!w.trashed && !w.archived && w.folderId) { const c = map.get(w.folderId); if (c) c.whiteboards++; } }
     for (const i of (allIOCs ?? [])) { if (!i.trashed && !i.archived && i.folderId) { const c = map.get(i.folderId); if (c) c.iocs++; } }
     for (const ch of (allChats ?? [])) { if (!ch.trashed && !ch.archived && ch.folderId) { const c = map.get(ch.folderId); if (c) c.chats++; } }
+    for (const ev of (allEvidence ?? [])) { if (!ev.trashed && !ev.archived && ev.folderId) { const c = map.get(ev.folderId); if (c) c.evidence++; } }
+    for (const id of (allIdentities ?? [])) { if (!id.trashed && !id.archived && id.folderId) { const c = map.get(id.folderId); if (c) c.identities++; } }
     return map;
-  }, [localFolders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, allChats]);
+  }, [localFolders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, allChats, allEvidence, allIdentities]);
 
   // Remote-only investigations (not synced locally)
   const remoteOnlyInvestigations = remoteInvestigations.filter((r) => !syncedFolderIds.has(r.folderId) && matchesSearch(r.folder.name) && matchesStatus(r.folder.status));

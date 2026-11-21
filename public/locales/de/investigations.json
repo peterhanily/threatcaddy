@@ -131,6 +131,8 @@
   "card.entity.events": "Ereignisse",
   "card.entity.whiteboards": "Whiteboards",
   "card.entity.chats": "Chats",
+  "card.entity.evidence": "Beweismittel",
+  "card.entity.identities": "Identitäten",
   "firstRun.title": "Vom Fall zum Bericht",
   "firstRun.description": "Erstellen Sie einen Fall, importieren Sie freigegebene Quelldateien oder erkunden Sie einen fiktiven Postfachvorfall. Keine KI-Einrichtung nötig.",
   "firstRun.import": "Quelldateien importieren",

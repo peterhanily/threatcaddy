@@ -70,7 +70,7 @@ export async function loadSampleInvestigation(kind: SampleInvestigationKind, sig
     request.signal.throwIfAborted();
     assertSession();
     const tables = [db.folders, db.timelines, db.tags, db.notes, db.tasks, db.timelineEvents,
-      db.standaloneIOCs, db.evidenceItems, db.noteTemplates, db.whiteboards, db.chatThreads];
+      db.standaloneIOCs, db.evidenceItems, db.identities, db.noteTemplates, db.whiteboards, db.chatThreads];
     return await integrationWrite(tables, request.signal, async () => {
       assertSession();
       const existing = await db.folders.get(getSampleFolderId(kind));
@@ -92,6 +92,7 @@ export async function loadSampleInvestigation(kind: SampleInvestigationKind, sig
       await db.timelineEvents.bulkAdd(await absent(db.timelineEvents, data.timelineEvents));
       await db.standaloneIOCs.bulkAdd(await absent(db.standaloneIOCs, data.standaloneIOCs));
       await db.evidenceItems.bulkAdd(await absent(db.evidenceItems, data.evidenceItems));
+      await db.identities.bulkAdd(await absent(db.identities, data.identities));
       await db.whiteboards.bulkAdd(await absent(db.whiteboards, [data.whiteboard]));
       await db.chatThreads.bulkAdd(await absent(db.chatThreads, data.chatThreads));
       assertSession();
@@ -107,7 +108,7 @@ interface SampleSeed { createdAt: number; updatedAt: Map<string, number> }
 async function sampleSeed(kind: SampleInvestigationKind): Promise<SampleSeed> {
   const data = await generateSample(kind);
   const rows = [...data.notes, ...data.tasks, ...data.timelineEvents, ...data.standaloneIOCs, ...data.evidenceItems,
-    data.whiteboard, ...data.chatThreads];
+    ...data.identities, data.whiteboard, ...data.chatThreads];
   return { createdAt: data.folder.createdAt, updatedAt: new Map(rows.map(row => [row.id, row.updatedAt])) };
 }
 

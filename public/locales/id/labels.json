@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "Catatan Dibuat (Minggu)",
   "kpiMetric.timeline-events-week": "Kejadian Timeline (Minggu)",
   "kpiMetric.overdue-tasks": "Tugas Terlambat",
+  "kpiMetric.compromised-identities": "Identitas Terkompromi",
   "iocTableColumn.value": "Nilai",
   "iocTableColumn.type": "Jenis",
   "iocTableColumn.confidence": "Kepercayaan",

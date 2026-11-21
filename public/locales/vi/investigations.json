@@ -131,6 +131,8 @@
   "card.entity.events": "Sự kiện",
   "card.entity.whiteboards": "Bảng trắng",
   "card.entity.chats": "Trò chuyện",
+  "card.entity.evidence": "Bằng chứng",
+  "card.entity.identities": "Danh tính",
   "firstRun.title": "Từ vụ việc đến báo cáo",
   "firstRun.description": "Tạo vụ việc, nhập tệp nguồn được phép hoặc khám phá sự cố hộp thư hư cấu. Không cần thiết lập AI.",
   "firstRun.import": "Nhập tệp nguồn",

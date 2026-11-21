@@ -36,7 +36,7 @@ vi.mock('../components/Investigations/InvestigationsHub', () => ({
     <button onClick={() => onOpenInvestigation('remote-case', 'remote')}>Open synthetic remote investigation</button>,
 }));
 vi.mock('../hooks/useInvestigationData', () => {
-  const empty = { notes: [], tasks: [], events: [], whiteboards: [], iocs: [], chats: [], evidence: [], loading: false,
+  const empty = { notes: [], tasks: [], events: [], whiteboards: [], iocs: [], chats: [], evidence: [], identities: [], loading: false,
     loadedSuccessfully: true, error: null, refresh: async () => {}, isRemote: true };
   return { useInvestigationData: () => empty };
 });

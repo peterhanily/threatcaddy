@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "Створені нотатки (тиждень)",
   "kpiMetric.timeline-events-week": "Події хронології (тиждень)",
   "kpiMetric.overdue-tasks": "Прострочені завдання",
+  "kpiMetric.compromised-identities": "Скомпрометовані суб'єкти",
   "iocTableColumn.value": "Значення",
   "iocTableColumn.type": "Тип",
   "iocTableColumn.confidence": "Впевненість",
@@ -129,5 +130,5 @@
   "model.group.google": "Google",
   "model.group.mistral": "Mistral",
   "activityCategory.evidence": "Докази",
-  "activityCategory.identity": "Ідентичність"
+  "activityCategory.identity": "Суб'єкт"
 }

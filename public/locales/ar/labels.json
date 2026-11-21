@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "الملاحظات المنشأة (الأسبوع)",
   "kpiMetric.timeline-events-week": "أحداث الجدول الزمني (الأسبوع)",
   "kpiMetric.overdue-tasks": "المهام المتأخرة",
+  "kpiMetric.compromised-identities": "الهويات المخترقة",
   "iocTableColumn.value": "القيمة",
   "iocTableColumn.type": "النوع",
   "iocTableColumn.confidence": "الثقة",

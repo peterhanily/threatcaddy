@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "Ghi chú đã tạo (tuần)",
   "kpiMetric.timeline-events-week": "Sự kiện timeline (tuần)",
   "kpiMetric.overdue-tasks": "Nhiệm vụ trễ hạn",
+  "kpiMetric.compromised-identities": "Danh tính bị xâm phạm",
   "iocTableColumn.value": "Giá trị",
   "iocTableColumn.type": "Loại",
   "iocTableColumn.confidence": "Độ tin cậy",

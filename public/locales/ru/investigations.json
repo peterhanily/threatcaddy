@@ -145,6 +145,8 @@
   "card.entity.events": "События",
   "card.entity.whiteboards": "Доски",
   "card.entity.chats": "Чаты",
+  "card.entity.evidence": "Доказательства",
+  "card.entity.identities": "Субъекты",
   "card.members_few": "{{count}} участника",
   "card.members_many": "{{count}} участников",
   "firstRun.title": "От расследования к отчёту",

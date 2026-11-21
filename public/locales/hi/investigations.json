@@ -131,6 +131,8 @@
   "card.entity.events": "घटनाएँ",
   "card.entity.whiteboards": "व्हाइटबोर्ड",
   "card.entity.chats": "बातचीत",
+  "card.entity.evidence": "साक्ष्य",
+  "card.entity.identities": "पहचान",
   "firstRun.title": "मामले से रिपोर्ट तक",
   "firstRun.description": "मामला बनाएँ, अधिकृत स्रोत फ़ाइलें आयात करें या काल्पनिक मेलबॉक्स घटना देखें। AI सेटअप आवश्यक नहीं है।",
   "firstRun.import": "स्रोत फ़ाइलें आयात करें",

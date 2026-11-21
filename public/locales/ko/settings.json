@@ -512,7 +512,7 @@
   "encryption.table.whiteboards": "화이트보드",
   "encryption.table.standaloneIOCs": "지표",
   "encryption.table.evidenceItems": "증거",
-  "encryption.table.identities": "아이덴티티",
+  "encryption.table.identities": "신원",
   "encryption.table.chatThreads": "채팅",
   "encryption.table.agentActions": "에이전트 작업",
   "encryption.table.agentProfiles": "에이전트 프로필",

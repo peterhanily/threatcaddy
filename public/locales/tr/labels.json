@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "Oluşturulan Notlar (Hafta)",
   "kpiMetric.timeline-events-week": "Zaman Çizelgesi Olayları (Hafta)",
   "kpiMetric.overdue-tasks": "Gecikmiş Görevler",
+  "kpiMetric.compromised-identities": "Ele Geçirilmiş Kimlikler",
   "iocTableColumn.value": "Değer",
   "iocTableColumn.type": "Tür",
   "iocTableColumn.confidence": "Güven",

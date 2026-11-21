@@ -131,6 +131,8 @@
   "card.entity.events": "이벤트",
   "card.entity.whiteboards": "화이트보드",
   "card.entity.chats": "채팅",
+  "card.entity.evidence": "증거",
+  "card.entity.identities": "신원",
   "firstRun.title": "사건에서 보고서까지",
   "firstRun.description": "사건을 만들거나 승인된 원본 파일을 가져오거나 가상의 메일 침해 사례를 살펴보세요. AI 설정은 필요하지 않습니다.",
   "firstRun.import": "원본 파일 가져오기",

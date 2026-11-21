@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "今週作成したノート",
   "kpiMetric.timeline-events-week": "今週のタイムラインイベント",
   "kpiMetric.overdue-tasks": "期限超過タスク",
+  "kpiMetric.compromised-identities": "侵害されたアイデンティティ",
   "iocTableColumn.value": "値",
   "iocTableColumn.type": "タイプ",
   "iocTableColumn.confidence": "信頼度",

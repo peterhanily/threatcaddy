@@ -14,6 +14,7 @@
   "kpiMetric.notes-created-week": "Notes Created (Week)",
   "kpiMetric.timeline-events-week": "Timeline Events (Week)",
   "kpiMetric.overdue-tasks": "Overdue Tasks",
+  "kpiMetric.compromised-identities": "Compromised Identities",
 
   "iocTableColumn.value": "Value",
   "iocTableColumn.type": "Type",

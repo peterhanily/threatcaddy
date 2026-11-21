@@ -12,6 +12,12 @@ const TABLE_LABELS: Record<string, string> = {
   identities: 'Identity',
 };
 const conflictKey = (conflict: SyncResult) => JSON.stringify([conflict.table, conflict.entityId]);
+/** Private identity details stay hidden in the comparison, as on the identity's card. */
+function shownData(table: string | undefined, data: Record<string, unknown>): Record<string, unknown> {
+  if (table !== 'identities' || !Array.isArray(data.details)) return data;
+  return { ...data, details: data.details.map(detail => detail && typeof detail === 'object' && (detail as { private?: unknown }).private === true
+    ? { ...detail, value: '••••••' } : detail) };
+}
 const label = (conflict: SyncResult) => (TABLE_LABELS[conflict.table ?? ''] ?? 'Item') + ': ' +
   String(conflict.localData?.title ?? conflict.serverData?.title ?? conflict.localData?.name ?? conflict.serverData?.name ?? conflict.entityId.slice(0, 8));
 const LONG_VALUE_PREVIEW = 20_000;
@@ -82,7 +88,7 @@ export function ConflictDialog({ conflicts, onResolve, onResolveAll, onClose }: 
             const key = conflictKey(conflict);
             // Fields the server cannot supply stay on this device whichever version is kept.
             const kept = (field: string) => keepsLocalValue(conflict.table ?? '', conflict.serverData, field);
-            const diffs = (conflict.serverData ? computeFieldDiffs(conflict.localData ?? {}, conflict.serverData) : []).filter(diff => !kept(diff.field));
+            const diffs = (conflict.serverData ? computeFieldDiffs(shownData(conflict.table, conflict.localData ?? {}), shownData(conflict.table, conflict.serverData)) : []).filter(diff => !kept(diff.field));
             const longFields = longFieldChanges(conflict).filter(field => !kept(field));
             // Keeping a server version this device cannot read would leave the local edit queued to conflict again.
             const keepTheirs = canKeepServerVersion(conflict);

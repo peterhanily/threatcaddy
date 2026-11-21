@@ -1,4 +1,4 @@
-import type { Folder, Note, Task, TimelineEvent, Timeline, StandaloneIOC, Whiteboard, Tag, ChatThread, EvidenceItem, NoteTemplate } from '../types';
+import type { Folder, Note, Task, TimelineEvent, Timeline, StandaloneIOC, Whiteboard, Tag, ChatThread, EvidenceItem, Identity, NoteTemplate } from '../types';
 
 const SAMPLE_FOLDER_ID = 'sample-investigation';
 const SAMPLE_TIMELINE_ID = 'sample-timeline-1';
@@ -18,6 +18,7 @@ export function generateSampleInvestigation(): {
   tags: Tag[];
   chatThreads: ChatThread[];
   evidenceItems: EvidenceItem[];
+  identities: Identity[];
   noteTemplates: NoteTemplate[];
 } {
   const now = Date.now();
@@ -1888,5 +1889,30 @@ OpenSlaw.ai was compromised via indirect prompt injection through its customer-f
     ioc.tags = [...ioc.tags, 'auto-enrich:vt:checked'];
   }
 
-  return { folder, notes, tasks, timelineEvents, timeline, standaloneIOCs, whiteboard, tags, chatThreads, evidenceItems, noteTemplates };
+  // ─── Identities (people, organisations, systems and accounts) ─────
+  // Some timeline names (openslaw-api, slaw-advisor, VINEGAR PANDA…) are left out on
+  // purpose, so "Not yet in Identities" has something to show.
+  const identityBase = { folderId: SAMPLE_FOLDER_ID, aliases: [], tags: ['vinegar-panda'], clsLevel: 'TLP:AMBER', trashed: false, archived: false,
+    createdAt: baseTs + 9 * DAY, updatedAt: baseTs + 9 * DAY };
+  const openSlaw = sampleId('identity', 1);
+  const identities: Identity[] = [
+    { ...identityBase, id: openSlaw, type: 'organization', name: 'OpenSlaw.ai', description: 'AI-powered coleslaw optimization platform',
+      details: [{ id: sampleId('identity-detail', 1), label: 'Domain', value: 'openslaw.example' }], connections: [] },
+    { ...identityBase, id: sampleId('identity', 2), type: 'person', name: 'Cole Sloane', description: 'Head of Security', contact: true,
+      details: [{ id: sampleId('identity-detail', 2), label: 'Email', value: 'cole.sloane@openslaw.example' },
+        { id: sampleId('identity-detail', 3), label: 'Phone', value: '+1 555 0100', private: true }],
+      connections: [{ targetId: openSlaw, label: 'works at' }] },
+    { ...identityBase, id: sampleId('identity', 3), type: 'person', name: 'Rai Sinn', description: 'Platform engineer', status: 'suspicious',
+      details: [{ id: sampleId('identity-detail', 4), label: 'Email', value: 'rai.sinn@openslaw.example' }],
+      connections: [{ targetId: openSlaw, label: 'works at' }, { targetId: sampleId('identity', 2), label: 'reports to' }, { targetId: sampleId('identity', 4), label: 'administers' }] },
+    { ...identityBase, id: sampleId('identity', 4), type: 'system', name: 'recipe-server-01', description: 'Recipe pipeline server', status: 'compromised',
+      details: [{ id: sampleId('identity-detail', 5), label: 'Hostname', value: 'recipe-server-01' }], connections: [{ targetId: openSlaw, label: 'belongs to' }] },
+    { ...identityBase, id: sampleId('identity', 5), type: 'system', name: 'model-registry', description: 'Foundation model store', status: 'suspicious',
+      details: [{ id: sampleId('identity-detail', 6), label: 'Hostname', value: 'model-registry' }], connections: [{ targetId: openSlaw, label: 'belongs to' }] },
+    { ...identityBase, id: sampleId('identity', 6), type: 'account', name: 'svc_recipe', description: 'Service account', status: 'compromised',
+      details: [{ id: sampleId('identity-detail', 7), label: 'Username', value: 'svc_recipe' }],
+      connections: [{ targetId: openSlaw, label: 'belongs to' }, { targetId: sampleId('identity', 4), label: 'logs on to' }] },
+  ];
+
+  return { folder, notes, tasks, timelineEvents, timeline, standaloneIOCs, whiteboard, tags, chatThreads, evidenceItems, identities, noteTemplates };
 }

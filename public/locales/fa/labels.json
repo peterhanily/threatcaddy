@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "یادداشت‌های ایجاد شده (هفته)",
   "kpiMetric.timeline-events-week": "رویدادهای جدول زمانی (هفته)",
   "kpiMetric.overdue-tasks": "وظایف تاخیر داشته",
+  "kpiMetric.compromised-identities": "هویت‌های به خطر افتاده",
   "iocTableColumn.value": "مقدار",
   "iocTableColumn.type": "نوع",
   "iocTableColumn.confidence": "اطمینان",

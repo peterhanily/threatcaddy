@@ -212,7 +212,7 @@ export interface BackupDestination {
 }
 
 /** Top-level view/page the user can navigate to. */
-export type ViewMode = 'dashboard' | 'notes' | 'tasks' | 'timeline' | 'whiteboard' | 'evidence' | 'products' | 'activity' | 'graph' | 'ioc-stats' | 'chat' | 'caddyshack' | 'agent' | 'investigations';
+export type ViewMode = 'dashboard' | 'notes' | 'tasks' | 'timeline' | 'whiteboard' | 'evidence' | 'identities' | 'products' | 'activity' | 'graph' | 'ioc-stats' | 'chat' | 'caddyshack' | 'agent' | 'investigations';
 export type EditorMode = 'edit' | 'preview' | 'split';
 export type TaskViewMode = 'list' | 'kanban';
 
@@ -361,6 +361,7 @@ export const AVAILABLE_KPI_METRICS = [
   'notes-created-week',
   'timeline-events-week',
   'overdue-tasks',
+  'compromised-identities',
 ] as const;
 
 export type KPIMetricId = typeof AVAILABLE_KPI_METRICS[number];
@@ -1268,6 +1269,9 @@ export interface InvestigationSummary {
     events: number;
     whiteboards: number;
     chats: number;
+    /** Sent by servers since evidence and identities sync; older servers leave them out. */
+    evidence?: number;
+    identities?: number;
   };
   memberCount: number;
 }

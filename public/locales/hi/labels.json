@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "बनाए गए नोट्स (सप्ताह)",
   "kpiMetric.timeline-events-week": "टाइमलाइन इवेंट (सप्ताह)",
   "kpiMetric.overdue-tasks": "विलंबित कार्य",
+  "kpiMetric.compromised-identities": "समझौता-ग्रस्त पहचान",
   "iocTableColumn.value": "मान",
   "iocTableColumn.type": "प्रकार",
   "iocTableColumn.confidence": "विश्वसनीयता",

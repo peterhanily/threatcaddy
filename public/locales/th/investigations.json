@@ -131,6 +131,8 @@
   "card.entity.events": "เหตุการณ์",
   "card.entity.whiteboards": "ไวท์บอร์ด",
   "card.entity.chats": "แชต",
+  "card.entity.evidence": "หลักฐาน",
+  "card.entity.identities": "ตัวตน",
   "firstRun.title": "จากคดีสู่รายงาน",
   "firstRun.description": "สร้างคดี นำเข้าไฟล์ต้นฉบับที่ได้รับอนุญาต หรือสำรวจเหตุการณ์อีเมลสมมติ ไม่ต้องตั้งค่า AI",
   "firstRun.import": "นำเข้าไฟล์ต้นฉบับ",

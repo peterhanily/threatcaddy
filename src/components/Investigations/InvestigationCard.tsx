@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FileText, CheckSquare, Search, Clock, Layout, MessageSquare,
-  Download, CloudOff, MoreVertical, Settings, Archive, Trash2, Loader2,
+  Download, CloudOff, MoreVertical, Settings, Archive, Trash2, Loader2, Paperclip, Contact,
 } from 'lucide-react';
 import type { InvestigationDataMode } from '../../types';
 import { formatDate, cn } from '../../lib/utils';
@@ -22,6 +22,8 @@ export interface InvestigationCardProps {
     events: number;
     whiteboards: number;
     chats: number;
+    evidence?: number;
+    identities?: number;
   };
   memberCount?: number;
   role?: 'owner' | 'editor' | 'viewer';
@@ -57,6 +59,8 @@ const ENTITY_STATS = [
   { key: 'events'      as const, labelKey: 'card.entity.events',      icon: Clock,         color: 'text-purple',       bg: 'bg-purple/10' },
   { key: 'whiteboards' as const, labelKey: 'card.entity.whiteboards', icon: Layout,        color: 'text-accent-pink',  bg: 'bg-accent-pink/10' },
   { key: 'chats'       as const, labelKey: 'card.entity.chats',       icon: MessageSquare, color: 'text-purple',       bg: 'bg-purple/10' },
+  { key: 'evidence'    as const, labelKey: 'card.entity.evidence',    icon: Paperclip,     color: 'text-accent-blue',  bg: 'bg-accent-blue/10' },
+  { key: 'identities'  as const, labelKey: 'card.entity.identities',  icon: Contact,       color: 'text-accent-green', bg: 'bg-accent-green/10' },
 ];
 
 export function InvestigationCard({
@@ -232,11 +236,11 @@ export function InvestigationCard({
           </span>
         )}
 
-        {/* Entity counts 2x3 grid */}
-        <div className="grid grid-cols-3 gap-1 mt-2.5">
+        {/* Entity counts 2x4 grid */}
+        <div className="grid grid-cols-4 gap-1 mt-2.5">
           {ENTITY_STATS.map((s) => {
             const Icon = s.icon;
-            const val = entityCounts[s.key];
+            const val = entityCounts[s.key] ?? 0;
             return (
               <div
                 key={s.key}

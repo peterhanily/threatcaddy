@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "Aangemaakte notities (week)",
   "kpiMetric.timeline-events-week": "Tijdlijngebeurtenissen (week)",
   "kpiMetric.overdue-tasks": "Verlopen taken",
+  "kpiMetric.compromised-identities": "Gecompromitteerde identiteiten",
   "iocTableColumn.value": "Waarde",
   "iocTableColumn.type": "Type",
   "iocTableColumn.confidence": "Betrouwbaarheid",

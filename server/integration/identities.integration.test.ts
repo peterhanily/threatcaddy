@@ -12,7 +12,7 @@ vi.mock('../src/db/index.js', () => ({ db: new Proxy({}, { get(_target, property
 } }) }));
 vi.mock('../src/bots/event-bus.js', () => ({ emitEntityEvent: state.events }));
 
-import { clientSyncTables, getSnapshot, processPush, pullChanges, pullCursorChanges, SYNC_TABLE_NAMES } from '../src/services/sync-service.js';
+import { clientSyncTables, getEntityCounts, getEntityCountsBatch, getSnapshot, processPush, pullChanges, pullCursorChanges, SYNC_TABLE_NAMES } from '../src/services/sync-service.js';
 import { purgeExpiredInvestigation } from '../src/services/investigation-lifecycle.js';
 
 // Fail immediately when no isolated database was explicitly provided. Never silently skip integration.
@@ -184,6 +184,13 @@ describe('identity sync in PostgreSQL', () => {
     expect(kept.serverRecord).toMatchObject({ status: 'compromised', contact: true, clsLevel: 'TLP:RED', description: 'Finance' });
     const [cleared] = await processPush([putIdentity('dana', identity('Dana Okafor', { status: null, contact: null, clsLevel: null, description: null, trashedAt: null }), kept.serverVersion)], 'editor', { authorize: true });
     expect(cleared.serverRecord).toMatchObject({ status: null, contact: null, clsLevel: null, description: null, trashedAt: null });
+  });
+
+  it('counts an investigation\'s live identities', async () => {
+    await processPush([putIdentity('dana', identity('Dana Okafor')), putIdentity('lee', identity('Lee Park'))], 'editor', { authorize: true });
+    await processPush([{ table: 'identities', entityId: 'lee', op: 'delete', clientVersion: 1 }], 'editor', { authorize: true });
+    expect((await getEntityCounts('shared')).identities).toBe(1);
+    expect((await getEntityCountsBatch(['shared', 'other'])).get('other')?.identities).toBe(0);
   });
 
   it('gives bots no identity events', async () => {

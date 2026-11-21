@@ -145,6 +145,8 @@
   "card.entity.events": "Події",
   "card.entity.whiteboards": "Дошки",
   "card.entity.chats": "Чати",
+  "card.entity.evidence": "Докази",
+  "card.entity.identities": "Суб'єкти",
   "card.members_few": "{{count}} учасники",
   "card.members_many": "{{count}} учасників",
   "firstRun.title": "Від розслідування до звіту",

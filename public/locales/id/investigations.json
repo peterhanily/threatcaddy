@@ -131,6 +131,8 @@
   "card.entity.events": "Peristiwa",
   "card.entity.whiteboards": "Papan tulis",
   "card.entity.chats": "Obrolan",
+  "card.entity.evidence": "Bukti",
+  "card.entity.identities": "Identitas",
   "firstRun.title": "Dari kasus ke laporan",
   "firstRun.description": "Buat kasus, impor berkas sumber yang diizinkan, atau jelajahi insiden surel fiktif. Pengaturan AI tidak diperlukan.",
   "firstRun.import": "Impor berkas sumber",

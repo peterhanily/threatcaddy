@@ -51,6 +51,8 @@
   "card.entity.events": "Events",
   "card.entity.whiteboards": "Whiteboards",
   "card.entity.chats": "Chats",
+  "card.entity.evidence": "Evidence",
+  "card.entity.identities": "Identities",
 
   "create.title": "New Investigation",
   "create.quickCreate": "Quick Create",

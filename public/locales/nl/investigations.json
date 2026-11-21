@@ -131,6 +131,8 @@
   "card.entity.events": "Gebeurtenissen",
   "card.entity.whiteboards": "Whiteboards",
   "card.entity.chats": "Chats",
+  "card.entity.evidence": "Bewijs",
+  "card.entity.identities": "Identiteiten",
   "firstRun.title": "Van onderzoek naar rapport",
   "firstRun.description": "Maak een onderzoek, importeer toegestane bronbestanden of verken een fictief e-mailincident. AI instellen is niet nodig.",
   "firstRun.import": "Bronbestanden importeren",

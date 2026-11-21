@@ -131,6 +131,8 @@
   "card.entity.events": "رویدادها",
   "card.entity.whiteboards": "تخته‌ها",
   "card.entity.chats": "گفتگوها",
+  "card.entity.evidence": "شواهد",
+  "card.entity.identities": "هویت‌ها",
   "firstRun.title": "از پرونده تا گزارش",
   "firstRun.description": "پرونده بسازید، فایل‌های منبع مجاز را وارد کنید یا یک رخداد خیالی ایمیل را بررسی کنید. تنظیم هوش مصنوعی لازم نیست.",
   "firstRun.import": "وارد کردن فایل‌های منبع",

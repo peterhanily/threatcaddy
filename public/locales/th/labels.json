@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "บันทึกที่สร้างสัปดาห์นี้",
   "kpiMetric.timeline-events-week": "เหตุการณ์ไทม์ไลน์สัปดาห์นี้",
   "kpiMetric.overdue-tasks": "งานที่เกินกำหนด",
+  "kpiMetric.compromised-identities": "ตัวตนที่ถูกบุกรุก",
   "iocTableColumn.value": "ค่า",
   "iocTableColumn.type": "ประเภท",
   "iocTableColumn.confidence": "ความเชื่อมั่น",
@@ -129,5 +130,5 @@
   "model.group.google": "Google",
   "model.group.mistral": "Mistral",
   "activityCategory.evidence": "หลักฐาน",
-  "activityCategory.identity": "ข้อมูลประจำตัว"
+  "activityCategory.identity": "ตัวตน"
 }

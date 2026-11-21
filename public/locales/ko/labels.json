@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "이번 주 생성된 노트",
   "kpiMetric.timeline-events-week": "이번 주 타임라인 이벤트",
   "kpiMetric.overdue-tasks": "기한 초과 태스크",
+  "kpiMetric.compromised-identities": "침해된 신원",
   "iocTableColumn.value": "값",
   "iocTableColumn.type": "유형",
   "iocTableColumn.confidence": "신뢰도",
@@ -129,5 +130,5 @@
   "model.group.google": "Google",
   "model.group.mistral": "Mistral",
   "activityCategory.evidence": "증거",
-  "activityCategory.identity": "아이덴티티"
+  "activityCategory.identity": "신원"
 }

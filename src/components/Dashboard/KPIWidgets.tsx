@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Settings2, X, ChevronUp, ChevronDown, TrendingUp, TrendingDown } from 'lucide-react';
-import type { Folder, Note, Task, TimelineEvent, StandaloneIOC, KPIMetricId } from '../../types';
+import type { Folder, Note, Task, TimelineEvent, StandaloneIOC, Identity, KPIMetricId } from '../../types';
 import { AVAILABLE_KPI_METRICS, KPI_METRIC_LABELS, DEFAULT_DASHBOARD_KPIS } from '../../types';
 import { isOverdue } from '../../lib/utils';
 
@@ -11,6 +11,7 @@ interface KPIWidgetsProps {
   allTasks: Task[];
   allEvents: TimelineEvent[];
   allIOCs: StandaloneIOC[];
+  allIdentities?: Identity[];
   selectedKPIs: KPIMetricId[];
   onUpdateKPIs: (kpis: KPIMetricId[]) => void;
 }
@@ -25,6 +26,7 @@ const KPI_COLORS: Record<KPIMetricId, string> = {
   'notes-created-week': '#06b6d4',
   'timeline-events-week': '#ec4899',
   'overdue-tasks': '#f97316',
+  'compromised-identities': '#84cc16',
 };
 
 function computeKPIValue(
@@ -34,6 +36,7 @@ function computeKPIValue(
   tasks: Task[],
   events: TimelineEvent[],
   iocs: StandaloneIOC[],
+  identities: Identity[] = [],
 ): { value: string | number; trend?: 'up' | 'down' | 'neutral' } {
   const now = Date.now();
   const DAY = 86400000;
@@ -82,6 +85,10 @@ function computeKPIValue(
       const count = events.filter(e => !e.trashed && e.createdAt >= weekAgo).length;
       return { value: count };
     }
+    case 'compromised-identities': {
+      const count = identities.filter(i => !i.trashed && !i.archived && i.status === 'compromised').length;
+      return { value: count };
+    }
     case 'overdue-tasks': {
       const count = tasks.filter(t => !t.trashed && !t.completed && isOverdue(t.dueDate)).length;
       return { value: count, trend: count > 0 ? 'up' : 'neutral' };
@@ -91,20 +98,23 @@ function computeKPIValue(
   }
 }
 
-export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, selectedKPIs, onUpdateKPIs }: KPIWidgetsProps) {
+export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, allIdentities = [], selectedKPIs, onUpdateKPIs }: KPIWidgetsProps) {
   const { t } = useTranslation('dashboard');
   const [showConfig, setShowConfig] = useState(false);
 
-  const kpis = selectedKPIs.length > 0 ? selectedKPIs : DEFAULT_DASHBOARD_KPIS;
+  // Once a workspace has identities, the default tiles include how many are compromised.
+  const usesIdentities = allIdentities.some(i => !i.trashed);
+  const kpis = useMemo<KPIMetricId[]>(() => selectedKPIs.length > 0 ? selectedKPIs
+    : usesIdentities ? [...DEFAULT_DASHBOARD_KPIS, 'compromised-identities'] : DEFAULT_DASHBOARD_KPIS, [selectedKPIs, usesIdentities]);
 
   const kpiData = useMemo(() => {
     return kpis.map(metric => ({
       metric,
       label: KPI_METRIC_LABELS[metric],
       color: KPI_COLORS[metric],
-      ...computeKPIValue(metric, folders, allNotes, allTasks, allEvents, allIOCs),
+      ...computeKPIValue(metric, folders, allNotes, allTasks, allEvents, allIOCs, allIdentities),
     }));
-  }, [kpis, folders, allNotes, allTasks, allEvents, allIOCs]);
+  }, [kpis, folders, allNotes, allTasks, allEvents, allIOCs, allIdentities]);
 
   return (
     <div className="px-6 pt-4">

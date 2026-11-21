@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "Notes créées (semaine)",
   "kpiMetric.timeline-events-week": "Événements de chronologie (semaine)",
   "kpiMetric.overdue-tasks": "Tâches en retard",
+  "kpiMetric.compromised-identities": "Identités compromises",
   "iocTableColumn.value": "Valeur",
   "iocTableColumn.type": "Type",
   "iocTableColumn.confidence": "Confiance",

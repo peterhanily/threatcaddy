@@ -3,7 +3,7 @@ import {
   FileText, ListChecks, Clock, Trash2, Briefcase,
   Archive, Settings as SettingsIcon,
   PanelLeftClose, PanelLeft, CodeXml, Download, Puzzle, PenTool, Activity, Network, Search, Shield,
-  LayoutDashboard, MessageSquare, MessagesSquare, ChevronLeft, Bot, Paperclip, FileOutput,
+  LayoutDashboard, MessageSquare, MessagesSquare, ChevronLeft, Bot, Paperclip, FileOutput, Contact,
 } from 'lucide-react';
 import type { Timeline, Whiteboard, ViewMode } from '../../types';
 import { cn } from '../../lib/utils';
@@ -42,7 +42,7 @@ interface SidebarProps {
   onNavigate?: () => void;
   onRenameTag?: (id: string, name: string) => void | Promise<void>;
   onDeleteTag?: (id: string) => void | Promise<void>;
-  investigationScopedCounts?: { notes: number; tasks: number; events: number; whiteboards: number; iocs: number } | null;
+  investigationScopedCounts?: { notes: number; tasks: number; events: number; whiteboards: number; iocs: number; identities?: number } | null;
   chatCount?: number;
   agentStatus?: 'idle' | 'running' | 'waiting' | 'paused' | 'error';
   onToggleAgent?: () => void;
@@ -116,6 +116,7 @@ export function Sidebar({
     { view: 'evidence', icon: Paperclip, label: t('sidebar.evidence') },
     { view: 'products', icon: FileOutput, label: t('sidebar.products') },
     { view: 'ioc-stats', icon: Search, label: t('sidebar.iocs'), badge: investigationScopedCounts ? investigationScopedCounts.iocs : undefined, badgeColor: 'bg-accent-green' },
+    { view: 'identities', icon: Contact, label: t('sidebar.identities'), badge: investigationScopedCounts?.identities, badgeColor: 'bg-accent-blue' },
     { view: 'graph', icon: Network, label: t('sidebar.graph') },
     { view: 'activity', icon: Activity, label: t('sidebar.activity'), dataTour: 'activity' },
   ];
@@ -404,6 +405,15 @@ export function Sidebar({
           badgeColor="bg-accent-green/15 text-accent-green"
           active={activeView === 'ioc-stats'}
           onClick={() => nav(() => navToView('ioc-stats'))}
+          scopedColor={selectedFolder?.color || undefined}
+        />
+        <NavItem
+          icon={<Contact size={16} />}
+          label={t('sidebar.identities')}
+          badge={investigationScopedCounts?.identities}
+          badgeColor="bg-accent-blue/15 text-accent-blue"
+          active={activeView === 'identities'}
+          onClick={() => nav(() => navToView('identities'))}
           scopedColor={selectedFolder?.color || undefined}
         />
         <NavItem

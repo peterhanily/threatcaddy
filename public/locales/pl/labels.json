@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "Utworzone notatki (tydzień)",
   "kpiMetric.timeline-events-week": "Zdarzenia osi czasu (tydzień)",
   "kpiMetric.overdue-tasks": "Przeterminowane zadania",
+  "kpiMetric.compromised-identities": "Skompromitowane tożsamości",
   "iocTableColumn.value": "Wartość",
   "iocTableColumn.type": "Typ",
   "iocTableColumn.confidence": "Pewność",

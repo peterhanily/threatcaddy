@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "本周创建的笔记",
   "kpiMetric.timeline-events-week": "本周时间线事件",
   "kpiMetric.overdue-tasks": "逾期任务",
+  "kpiMetric.compromised-identities": "已失陷身份",
   "iocTableColumn.value": "值",
   "iocTableColumn.type": "类型",
   "iocTableColumn.confidence": "置信度",

@@ -40,7 +40,7 @@ const CATEGORY_ICONS: Record<ActivityCategory, typeof FileText> = {
 };
 
 const ALL_CATEGORIES: ActivityCategory[] = [
-  'note', 'task', 'timeline', 'whiteboard', 'folder', 'tag', 'ioc', 'evidence', 'sync', 'data', 'chat',
+  'note', 'task', 'timeline', 'whiteboard', 'folder', 'tag', 'ioc', 'evidence', 'identity', 'sync', 'data', 'chat',
 ];
 
 function getTimePeriod(timestamp: number): string {

@@ -138,6 +138,8 @@
   "card.entity.events": "אירועים",
   "card.entity.whiteboards": "לוחות",
   "card.entity.chats": "שיחות",
+  "card.entity.evidence": "ראיות",
+  "card.entity.identities": "זהויות",
   "card.members_two": "{{count}} חברים",
   "firstRun.title": "מחקירה לדוח",
   "firstRun.description": "צרו חקירה, ייבאו קובצי מקור מורשים או חקרו אירוע דואר בדיוני. אין צורך בהגדרת בינה מלאכותית.",

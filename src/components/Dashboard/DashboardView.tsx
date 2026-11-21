@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, FileText, ListChecks, Clock, PenTool, Search, Network, Activity, MessageSquare } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import type { QuickLink, ViewMode, Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, KPIMetricId } from '../../types';
+import type { QuickLink, ViewMode, Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, Identity, KPIMetricId } from '../../types';
 import { QuickLinkForm } from './QuickLinkForm';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { KPIWidgets } from './KPIWidgets';
@@ -29,6 +29,7 @@ interface DashboardViewProps {
   allEvents?: TimelineEvent[];
   allWhiteboards?: Whiteboard[];
   allIOCs?: StandaloneIOC[];
+  allIdentities?: Identity[];
   dashboardKPIs?: KPIMetricId[];
   onUpdateKPIs?: (kpis: KPIMetricId[]) => void;
   onCreateInvestigation?: () => void;
@@ -37,7 +38,7 @@ interface DashboardViewProps {
   showFirstRunGuide?: boolean;
 }
 
-export function DashboardView({ links, onUpdateLinks, onViewChange, folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, dashboardKPIs, onUpdateKPIs, onCreateInvestigation, onImportInvestigation, onLoadDemo, showFirstRunGuide = true }: DashboardViewProps) {
+export function DashboardView({ links, onUpdateLinks, onViewChange, folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, allIdentities, dashboardKPIs, onUpdateKPIs, onCreateInvestigation, onImportInvestigation, onLoadDemo, showFirstRunGuide = true }: DashboardViewProps) {
   const { t } = useTranslation('dashboard');
   const [formOpen, setFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<QuickLink | undefined>();
@@ -95,6 +96,7 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
           allTasks={allTasks}
           allEvents={allEvents}
           allIOCs={allIOCs}
+          allIdentities={allIdentities}
           selectedKPIs={dashboardKPIs ?? []}
           onUpdateKPIs={onUpdateKPIs}
         />

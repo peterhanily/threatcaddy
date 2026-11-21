@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "הערות שנוצרו (שבוע)",
   "kpiMetric.timeline-events-week": "אירועי ציר זמן (שבוע)",
   "kpiMetric.overdue-tasks": "משימות באיחור",
+  "kpiMetric.compromised-identities": "זהויות שנפגעו",
   "iocTableColumn.value": "ערך",
   "iocTableColumn.type": "סוג",
   "iocTableColumn.confidence": "ביטחון",

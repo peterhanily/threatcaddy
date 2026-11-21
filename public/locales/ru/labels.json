@@ -13,6 +13,7 @@
   "kpiMetric.notes-created-week": "Созданные заметки (неделя)",
   "kpiMetric.timeline-events-week": "События хронологии (неделя)",
   "kpiMetric.overdue-tasks": "Просроченные задачи",
+  "kpiMetric.compromised-identities": "Скомпрометированные субъекты",
   "iocTableColumn.value": "Значение",
   "iocTableColumn.type": "Тип",
   "iocTableColumn.confidence": "Уверенность",
@@ -129,5 +130,5 @@
   "model.group.google": "Google",
   "model.group.mistral": "Mistral",
   "activityCategory.evidence": "Доказательства",
-  "activityCategory.identity": "Удостоверение"
+  "activityCategory.identity": "Субъект"
 }

@@ -36,6 +36,7 @@ import { useIntegrations } from './hooks/useIntegrations';
 const PlaybookPicker = lazy(() => import('./components/Playbooks/PlaybookPicker').then(m => ({ default: m.PlaybookPicker })));
 const OperationNameGenerator = lazy(() => import('./components/Common/OperationNameGenerator').then(m => ({ default: m.OperationNameGenerator })));
 const EvidenceView = lazy(() => import('./components/Evidence/EvidenceView').then(m => ({ default: m.EvidenceView })));
+const IdentitiesView = lazy(() => import('./components/Identities/IdentitiesView').then(m => ({ default: m.IdentitiesView })));
 const ProductView = lazy(() => import('./components/Products/ProductView').then(m => ({ default: m.ProductView })));
 import { useActivityLog } from './hooks/useActivityLog';
 import { ActivityLogContext } from './hooks/ActivityLogContext';
@@ -202,11 +203,11 @@ function AppDataLayer() {
 
   // Reload UI when external agents write data via the agent bridge
   useEffect(() => {
-    const handler = () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); evidenceItemsHook.reload(); chatsHook.reload(); reloadTags(); };
+    const handler = () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); evidenceItemsHook.reload(); identitiesHook.reload(); chatsHook.reload(); reloadTags(); };
     window.addEventListener('threatcaddy:entities-changed', handler);
     return () => window.removeEventListener('threatcaddy:entities-changed', handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes.reload, tasks.reload, timeline.reload, standaloneIOCsHook.reload, evidenceItemsHook.reload]);
+  }, [notes.reload, tasks.reload, timeline.reload, standaloneIOCsHook.reload, evidenceItemsHook.reload, identitiesHook.reload]);
 
   const syncedFolderIds = useMemo(() => {
     const localIds = new Set(folders.map(f => f.id));
@@ -443,6 +444,8 @@ const AppInner = memo(function AppInner({
   const { t: tInvestigations } = useTranslation('investigations');
   const { t: tCommon } = useTranslation('common');
   const [evidenceSearchSelection, setEvidenceSearchSelection] = useState<{ id: string; request: number }>();
+  const [identitySelection, setIdentitySelection] = useState<{ id: string; request: number }>();
+  const [identityAddRequest, setIdentityAddRequest] = useState(0);
 
   // Destructure frequently-used context values
   const {
@@ -560,6 +563,8 @@ const AppInner = memo(function AppInner({
     loggedArchiveFolder, loggedUnarchiveFolder,
     loggedCreateTag, loggedDeleteTag,
     loggedCreateChatThread,
+    loggedCreateIdentity, loggedTrashIdentity, loggedRestoreIdentity, loggedToggleArchiveIdentity,
+    loggedDeleteIdentity, loggedMergeIdentities,
     emptyAllTrash,
   } = useLoggedActions(
     activityLog.log,
@@ -897,6 +902,10 @@ const AppInner = memo(function AppInner({
     () => evidenceItemsHook.evidenceItems.filter(visibility.isEntityVisible),
     [evidenceItemsHook.evidenceItems, visibility],
   );
+  const screensafeIdentities = useMemo(
+    () => identitiesHook.identities.filter(visibility.isEntityVisible),
+    [identitiesHook.identities, visibility],
+  );
 
   // Folder-filtered + screenshare-safe (for NoteList, TaskList, TimelineView)
   // Use resolved arrays (which pick remote vs local) instead of raw filtered arrays
@@ -936,6 +945,12 @@ const AppInner = memo(function AppInner({
     () => investigationMode === 'remote' ? remoteData.evidence.filter(visibility.isEntityVisible)
       : selectedFolderId ? screensafeEvidenceItems.filter((e) => e.folderId === selectedFolderId) : screensafeEvidenceItems,
     [investigationMode, remoteData.evidence, visibility, screensafeEvidenceItems, selectedFolderId]
+  );
+  // A remote investigation's identities come from the server and are read only.
+  const investigationIdentities = useMemo(
+    () => investigationMode === 'remote' ? remoteData.identities.filter(visibility.isEntityVisible)
+      : selectedFolderId ? screensafeIdentities.filter((i) => i.folderId === selectedFolderId) : screensafeIdentities,
+    [investigationMode, remoteData.identities, visibility, screensafeIdentities, selectedFolderId]
   );
   const productNotes = useMemo(
     () => investigationNotes.filter((n) => n.tags?.includes(PRODUCT_NOTE_TAG)),
@@ -1064,8 +1079,9 @@ const AppInner = memo(function AppInner({
       events: investigationTimelineEvents.filter(e => !e.trashed && !e.archived).length,
       whiteboards: investigationWhiteboards.filter(w => !w.trashed && !w.archived).length,
       iocs: iocKeys.size,
+      identities: investigationIdentities.filter(i => !i.trashed && !i.archived).length,
     };
-  }, [selectedFolderId, investigationNotes, investigationTasks, investigationTimelineEvents, investigationWhiteboards]);
+  }, [selectedFolderId, investigationNotes, investigationTasks, investigationTimelineEvents, investigationWhiteboards, investigationIdentities]);
 
   // Screenshare context value
   const screenshareCtx = useMemo(
@@ -1110,12 +1126,12 @@ const AppInner = memo(function AppInner({
 
   // Combined trash/archive counts across all entity types
   const combinedTrashedCount = useMemo(() =>
-    [...screensafeNotes, ...screensafeTasks, ...screensafeTimelineEvents, ...screensafeWhiteboards, ...screensafeStandaloneIOCs].filter(entity => entity.trashed).length,
-    [screensafeNotes, screensafeTasks, screensafeTimelineEvents, screensafeWhiteboards, screensafeStandaloneIOCs]
+    [...screensafeNotes, ...screensafeTasks, ...screensafeTimelineEvents, ...screensafeWhiteboards, ...screensafeStandaloneIOCs, ...screensafeIdentities].filter(entity => entity.trashed).length,
+    [screensafeNotes, screensafeTasks, screensafeTimelineEvents, screensafeWhiteboards, screensafeStandaloneIOCs, screensafeIdentities]
   );
   const combinedArchivedCount = useMemo(() =>
-    [...screensafeNotes, ...screensafeTasks, ...screensafeTimelineEvents, ...screensafeWhiteboards, ...screensafeStandaloneIOCs].filter(entity => entity.archived && !entity.trashed).length,
-    [screensafeNotes, screensafeTasks, screensafeTimelineEvents, screensafeWhiteboards, screensafeStandaloneIOCs]
+    [...screensafeNotes, ...screensafeTasks, ...screensafeTimelineEvents, ...screensafeWhiteboards, ...screensafeStandaloneIOCs, ...screensafeIdentities].filter(entity => entity.archived && !entity.trashed).length,
+    [screensafeNotes, screensafeTasks, screensafeTimelineEvents, screensafeWhiteboards, screensafeStandaloneIOCs, screensafeIdentities]
   );
 
   const handleNewNote = useCallback(async () => {
@@ -1157,6 +1173,12 @@ const AppInner = memo(function AppInner({
   const handleNewIOC = useCallback(() => {
     setShowIOCForm(true);
   }, [setShowIOCForm]);
+
+  const clearIdentityAddRequest = useCallback(() => setIdentityAddRequest(0), []);
+  const handleNewIdentity = useCallback(() => {
+    setIdentityAddRequest((request) => request + 1);
+    navigateTo('identities');
+  }, [navigateTo]);
 
   const handleShareNoteLink = useCallback((note: Note) => {
     setShareLinkPayload({ v: 1, s: 'note', t: Date.now(), d: note });
@@ -1400,6 +1422,15 @@ const AppInner = memo(function AppInner({
     setEvidenceSearchSelection(previous => ({ id, request: (previous?.request ?? 0) + 1 }));
     navigateTo('evidence');
   }, [screensafeEvidenceItems, navigateTo, setSelectedFolderId, setSelectedTag, setShowTrash, setShowArchive]);
+
+  const handleSearchNavigateToIdentity = useCallback((id: string) => {
+    const identity = screensafeIdentities.find(item => item.id === id && !item.trashed && !item.archived);
+    if (!identity) return;
+    setSelectedFolderId(identity.folderId);
+    setSelectedTag(undefined); setShowTrash(false); setShowArchive(false);
+    setIdentitySelection(previous => ({ id, request: (previous?.request ?? 0) + 1 }));
+    navigateTo('identities');
+  }, [screensafeIdentities, navigateTo, setSelectedFolderId, setSelectedTag, setShowTrash, setShowArchive]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSearchNavigateToTask = useCallback((_id: string) => {
@@ -1661,6 +1692,7 @@ const AppInner = memo(function AppInner({
             onNewTimelineEvent={handleNewTimelineEvent}
             onNewWhiteboard={handleNewWhiteboard}
             onNewIOC={handleNewIOC}
+            onNewIdentity={investigationMode === 'remote' ? undefined : handleNewIdentity}
             onOpenFile={openFilePicker}
             onImportData={() => setShowDataImport(true)}
             onToggleSidebar={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
@@ -1753,6 +1785,7 @@ const AppInner = memo(function AppInner({
             whiteboards={screensafeWhiteboards}
             standaloneIOCs={screensafeStandaloneIOCs}
             chatThreads={screensafeChatThreads}
+            identities={screensafeIdentities}
             folders={folders}
             onRestoreNote={loggedRestoreNote}
             onDeleteNotePermanently={(id) => { notes.deleteNote(id); activityLog.log('note', 'delete', 'Permanently deleted note', id); }}
@@ -1778,6 +1811,10 @@ const AppInner = memo(function AppInner({
             onDeleteThreadPermanently={chatsHook.deleteThread}
             onTrashThread={chatsHook.trashThread}
             onUnarchiveThread={chatsHook.restoreThread}
+            onRestoreIdentity={loggedRestoreIdentity}
+            onDeleteIdentityPermanently={loggedDeleteIdentity}
+            onTrashIdentity={loggedTrashIdentity}
+            onUnarchiveIdentity={loggedToggleArchiveIdentity}
             onEmptyAllTrash={async () => { if (screenshareMaxLevel) { addToast('info', 'Turn off screenshare mode before emptying all trash.'); return; } await emptyAllTrash(); addToast('success', tt('investigation.trashEmptied')); }}
           />
         ) : activeView === 'dashboard' ? (
@@ -1795,6 +1832,7 @@ const AppInner = memo(function AppInner({
             allTasks={screensafeTasks}
             allEvents={screensafeTimelineEvents}
             allIOCs={screensafeStandaloneIOCs}
+            allIdentities={screensafeIdentities}
             dashboardKPIs={settings.dashboardKPIs as import('./types').KPIMetricId[] | undefined}
             onUpdateKPIs={(kpis) => updateSettings({ dashboardKPIs: kpis })}
           />
@@ -1905,6 +1943,29 @@ const AppInner = memo(function AppInner({
             onDeduplicate={handleDeduplicateEvidence}
             onOpenChat={() => setActiveView('chat')}
           />
+        ) : activeView === 'identities' ? (
+          <IdentitiesView
+            identities={investigationIdentities}
+            allIdentities={screensafeIdentities}
+            folders={folders}
+            folderId={selectedFolderId}
+            events={investigationTimelineEvents}
+            iocs={investigationStandaloneIOCs}
+            threatActors={settings.attributionActors}
+            readOnly={investigationMode === 'remote'}
+            defaultFolderId={selectedFolderId}
+            selectRequest={identitySelection}
+            addRequest={identityAddRequest}
+            onAddHandled={clearIdentityAddRequest}
+            onCreate={(partial) => loggedCreateIdentity({ ...partial, clsLevel: partial.clsLevel ?? folders.find((f) => f.id === partial.folderId)?.clsLevel })}
+            onUpdate={identitiesHook.updateIdentity}
+            onTrash={loggedTrashIdentity}
+            onMerge={loggedMergeIdentities}
+            onOpenElsewhere={(identity) => {
+              setSelectedFolderId(identity.folderId);
+              setIdentitySelection((previous) => ({ id: identity.id, request: (previous?.request ?? 0) + 1 }));
+            }}
+          />
         ) : activeView === 'products' ? (
           null
         ) : activeView === 'chat' ? (
@@ -1940,6 +2001,8 @@ const AppInner = memo(function AppInner({
             allWhiteboards={screensafeWhiteboards}
             allIOCs={screensafeStandaloneIOCs}
             allChats={screensafeChatThreads}
+            allEvidence={screensafeEvidenceItems}
+            allIdentities={screensafeIdentities}
           />
         ) : activeView === 'caddyshack' ? (
           <CaddyShackView
@@ -2356,6 +2419,8 @@ const AppInner = memo(function AppInner({
         chatThreads={screensafeChatThreads.filter((c) => !c.trashed && !c.archived)}
         evidenceItems={screensafeEvidenceItems.filter(item => !item.trashed && !item.archived)}
         onNavigateToEvidence={handleSearchNavigateToEvidence}
+        identities={screensafeIdentities.filter(identity => !identity.trashed && !identity.archived)}
+        onNavigateToIdentity={handleSearchNavigateToIdentity}
         onNavigateToIOC={handleSearchNavigateToIOC}
         onNavigateToChat={handleSearchNavigateToChat}
         selectedFolderId={selectedFolderId}
