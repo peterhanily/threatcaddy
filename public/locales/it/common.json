@@ -309,6 +309,7 @@
   "bootGuard.framed": "Per la tua sicurezza, ThreatCaddy non funziona all’interno di un altro sito web.",
   "bootGuard.fileOnly": "Questa copia offline di ThreatCaddy funziona solo quando apri il file salvato sul tuo computer.",
   "bootGuard.open": "Apri ThreatCaddy",
-  "identityChip.open": "{{text}}, apri {{name}} in Identità",
-  "identityChip.notYet": "{{text}}, non ancora in Identità"
+  "identityChip.open": "{{text}} ({{role}}), apri {{name}} in Identità",
+  "identityChip.notYet": "{{text}} ({{role}}), non ancora in Identità",
+  "identityChip.ambiguous": "{{text}} ({{role}}), più di un'identità corrisponde"
 }

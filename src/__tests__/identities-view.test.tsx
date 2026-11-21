@@ -5,6 +5,7 @@ import type { ReactElement } from 'react';
 import { IdentitiesView, type IdentitiesViewProps } from '../components/Identities/IdentitiesView';
 import { ignoredHash } from '../lib/identity-model';
 import { ToastProvider } from '../contexts/ToastContext';
+import { ToastContainer } from '../components/Common/Toast';
 import { ScreenshareContext } from '../hooks/ScreenshareContext';
 import type { Folder, Identity, TimelineEvent } from '../types';
 
@@ -23,14 +24,14 @@ const event = (extra: Partial<TimelineEvent>) => ({ id: `ev-${Math.random()}`, t
   linkedIOCIds: [], linkedNoteIds: [], linkedTaskIds: [], mitreAttackIds: [], assets: [], tags: [], starred: false, folderId: 'case', timelineId: 't',
   trashed: false, archived: false, createdAt: 1, updatedAt: 1, ...extra }) as TimelineEvent;
 
-function setup(overrides: Partial<IdentitiesViewProps> = {}, wrap: (node: ReactElement) => ReactElement = node => node) {
+function setup(overrides: Partial<IdentitiesViewProps> = {}, wrap: (node: ReactElement) => ReactElement = node => node, toasts = false) {
   const props: IdentitiesViewProps = {
     identities: all, allIdentities: all, folders, folderId: 'case', events: [], iocs: [],
     onCreate: vi.fn(async partial => make('new', partial.name ?? '', partial)),
     onUpdate: vi.fn(async () => {}), onTrash: vi.fn(async () => {}), onMerge: vi.fn(async () => {}),
     ...overrides,
   };
-  render(wrap(<ToastProvider><IdentitiesView {...props} /></ToastProvider>));
+  render(wrap(<ToastProvider><IdentitiesView {...props} />{toasts && <ToastContainer />}</ToastProvider>));
   return { props, user: userEvent.setup(), list: () => screen.getByRole('region', { name: 'Identities' }) };
 }
 const profile = (name: string) => screen.getByRole('article', { name });
@@ -302,6 +303,19 @@ describe('read only and org charts', () => {
     expect(onOpenNote).toHaveBeenCalledWith(note);
     await user.click(within(activity).getByRole('button', { name: 'Add a note about Dana Okafor' }));
     expect(onAddNote).toHaveBeenCalledWith(dana);
+  });
+
+  it('opens the list filtered to text that more than one identity holds', () => {
+    setup({ selectRequest: { id: 'dana', request: 1, query: 'halvorsen' } });
+    expect(screen.getByRole('searchbox', { name: 'Search identities' })).toHaveValue('halvorsen');
+    expect(profile('Dana Okafor')).toBeInTheDocument();
+  });
+
+  it('says so when a note about an identity cannot be created', async () => {
+    const onAddNote = vi.fn(async () => { throw new Error('vault locked'); });
+    const { user } = setup({ selectRequest: { id: 'lee', request: 1 }, onAddNote }, node => <>{node}</>, true);
+    await user.click(within(profile('Lee Park')).getByRole('button', { name: 'Add a note about Lee Park' }));
+    expect(await screen.findByText(/vault locked/)).toBeInTheDocument();
   });
 
   it('offers no new note about an identity in a remote investigation', () => {

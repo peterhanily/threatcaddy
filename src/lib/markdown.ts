@@ -159,25 +159,47 @@ export function preprocessWikiLinks(content: string, notes: WikiLinkTarget[]): s
   }).join('');
 }
 
+/** Text inside these is never turned into identity links. */
+const NO_MENTIONS = 'a, code, pre, kbd, samp, script, style, textarea';
+
 /**
- * Turns `@Name` mentions of an investigation's identities into links, skipping code, [[note
- * links]] and HTML tags. The mention text is escaped, the ID is checked by SAFE_ID_RE, and the
- * result still goes through DOMPurify.
+ * Turns `@Name` mentions of an investigation's identities into links in already sanitised HTML.
+ * It works on text nodes, so code (fenced, indented or inline), existing links and attributes are
+ * never touched, and it builds the links with DOM calls rather than strings. `renderMarkdown`
+ * sanitises the result again, so DOMPurify stays the last step.
  */
-export function preprocessIdentityMentions(content: string, folder: FolderIndex): string {
-  return content.split(/(```[\s\S]*?```|`[^`]+`|\[\[[^\]]+\]\]|<[^>]+>)/).map((part, i) => {
-    if (i % 2 === 1) return part;
-    const mentions = findMentions(part, folder);
-    if (!mentions.length) return part;
-    let out = '';
+export function linkIdentityMentions(html: string, folder: FolderIndex): string {
+  if (!html.includes('@')) return html;
+  const template = document.createElement('template');
+  template.innerHTML = html;
+  const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_TEXT);
+  const texts: Text[] = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const text = node as Text;
+    if (text.data.includes('@') && !text.parentElement?.closest(NO_MENTIONS)) texts.push(text);
+  }
+  let changed = false;
+  for (const text of texts) {
+    const mentions = findMentions(text.data, folder);
+    if (!mentions.length) continue;
+    changed = true;
+    const parts = document.createDocumentFragment();
     let last = 0;
     for (const mention of mentions) {
-      out += part.slice(last, mention.start)
-        + `<a href="#" data-identity-link="true" data-identity-id="${escapeHtml(mention.identity.id)}" class="tclink">${escapeHtml(part.slice(mention.start, mention.end))}</a>`;
+      parts.append(text.data.slice(last, mention.start));
+      const link = document.createElement('a');
+      link.setAttribute('href', '#');
+      link.className = 'tclink';
+      link.dataset.identityLink = 'true';
+      link.dataset.identityId = mention.identity.id;
+      link.textContent = text.data.slice(mention.start, mention.end);
+      parts.append(link);
       last = mention.end;
     }
-    return out + part.slice(last);
-  }).join('');
+    parts.append(text.data.slice(last));
+    text.replaceWith(parts);
+  }
+  return changed ? template.innerHTML : html;
 }
 
 /** Shared DOMPurify config — single source of truth for all sanitization. */
@@ -211,8 +233,10 @@ export function renderMarkdown(content: string, wikiLinkTargets?: WikiLinkTarget
 }): string {
   // Load highlight.js CSS on first use (lazy-loaded to avoid blocking initial render)
   ensureHljsCss();
-  const mentioned = options?.identities ? preprocessIdentityMentions(content, options.identities) : content;
-  const processed = wikiLinkTargets ? preprocessWikiLinks(mentioned, wikiLinkTargets) : mentioned;
+  const processed = wikiLinkTargets ? preprocessWikiLinks(content, wikiLinkTargets) : content;
   const raw = marked.parse(processed) as string;
-  return sanitizeHtml(raw, options);
+  const html = sanitizeHtml(raw, options);
+  if (!options?.identities) return html;
+  const linked = linkIdentityMentions(html, options.identities);
+  return linked === html ? html : sanitizeHtml(linked, options);
 }

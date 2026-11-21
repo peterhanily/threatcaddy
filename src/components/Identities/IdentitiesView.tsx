@@ -5,7 +5,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { useScreenshare } from '../../hooks/ScreenshareContext';
 import { BUILTIN_TYPES, byName, foundNames, identityMatches, isBuiltinType, looseText, type FoundName } from '../../lib/identity-model';
 import { useIgnoredNames } from '../../hooks/useIgnoredNames';
-import { activityOf } from '../../lib/identity-match';
+import { activityOf, noteMatchText } from '../../lib/identity-match';
 import { IdentityActivitySection } from './IdentityActivity';
 import { cn } from '../../lib/utils';
 import { IdentityAvatar, InvestigationPill } from './identity-ui';
@@ -36,8 +36,8 @@ export interface IdentitiesViewProps {
   threatActors?: string[];
   readOnly?: boolean;
   defaultFolderId?: string;
-  /** Opens an identity, for example from search. */
-  selectRequest?: { id: string; request: number };
+  /** Opens an identity, for example from search; `query` filters the list (text more than one identity holds). */
+  selectRequest?: { id: string; request: number; query?: string };
   /** Opens Add, for example from the New menu; `onAddHandled` clears it so it opens once. */
   addRequest?: number;
   onAddHandled?: () => void;
@@ -52,7 +52,7 @@ export interface IdentitiesViewProps {
   onOpenNote?: (note: Note) => void;
   onOpenIOC?: (ioc: StandaloneIOC) => void;
   /** Starts a note about an identity; absent when read-only. */
-  onAddNote?: (identity: Identity) => void;
+  onAddNote?: (identity: Identity) => Promise<unknown>;
 }
 
 export function IdentitiesView(props: IdentitiesViewProps) {
@@ -66,7 +66,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const [tab, setTab] = useState<'rolodex' | 'org'>('rolodex');
   const [selectedId, setSelectedId] = useState(selectRequest?.id ?? '');
   const [organizationId, setOrganizationId] = useState('');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(selectRequest?.query ?? '');
   const [filter, setFilter] = useState<Filter>('all');
   const [form, setForm] = useState<{ editing?: Identity; prefill?: AddPrefill } | null>(null);
   const [picked, setPicked] = useState<FoundName | null>(null);
@@ -76,7 +76,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const [seenSelect, setSeenSelect] = useState(selectRequest);
   if (selectRequest !== seenSelect) {
     setSeenSelect(selectRequest);
-    if (selectRequest) { setSelectedId(selectRequest.id); setTab('rolodex'); setQuery(''); setFilter('all'); }
+    if (selectRequest) { setSelectedId(selectRequest.id); setTab('rolodex'); setQuery(selectRequest.query ?? ''); setFilter('all'); }
   }
   const [seenAdd, setSeenAdd] = useState<number>();
   if (addRequest !== seenAdd) {
@@ -98,7 +98,9 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const rows = live.filter(identity => matchesFilter(identity, filter) && identityMatches(identity, query, labels.typeLabel(identity.type)));
   const selected = live.find(identity => identity.id === selectedId) ?? rows[0] ?? live[0];
   const filters = FILTERS.filter(option => option === 'all' || option === filter || live.some(identity => matchesFilter(identity, option)));
-  const activity = useMemo(() => (selected ? activityOf(selected, { events, notes: notes ?? [], iocs }) : undefined), [selected, events, notes, iocs]);
+  // Note text is normalised once per change to the notes, not each time an identity is chosen.
+  const noteTexts = useMemo(() => new Map((notes ?? []).map(note => [note.id, noteMatchText(note)])), [notes]);
+  const activity = useMemo(() => (selected ? activityOf(selected, { events, notes: notes ?? [], iocs, noteTexts }) : undefined), [selected, events, notes, iocs, noteTexts]);
 
   /** Reports a failed save, then rejects, so a form that waits for it stays open. */
   const run = useCallback(async (action: () => Promise<unknown>, success?: string) => {
@@ -213,7 +215,8 @@ export function IdentitiesView(props: IdentitiesViewProps) {
                   >
                     {activity && (
                       <IdentityActivitySection identity={selected} activity={activity} labels={labels} onOpenEvent={onOpenEvent}
-                        onOpenNote={onOpenNote} onOpenIOC={onOpenIOC} onAddNote={readOnly ? undefined : onAddNote} />
+                        onOpenNote={onOpenNote} onOpenIOC={onOpenIOC}
+                        onAddNote={readOnly || !onAddNote ? undefined : identity => { void run(() => onAddNote(identity)).catch(() => { /* Reported. */ }); }} />
                     )}
                   </IdentityProfile>
                 ) : <p className="rounded-lg border border-border-subtle bg-bg-surface p-4 text-sm text-text-muted">{live.length ? t('profile.select') : t('list.empty')}</p>}

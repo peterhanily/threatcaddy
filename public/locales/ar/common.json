@@ -309,6 +309,7 @@
   "bootGuard.framed": "حفاظًا على أمانك، لا يعمل ThreatCaddy داخل موقع ويب آخر.",
   "bootGuard.fileOnly": "لا تعمل هذه النسخة غير المتصلة من ThreatCaddy إلا عند فتح الملف المحفوظ على جهاز الكمبيوتر لديك.",
   "bootGuard.open": "فتح ThreatCaddy",
-  "identityChip.open": "{{text}}، فتح {{name}} في الهويات",
-  "identityChip.notYet": "{{text}}، غير موجود في الهويات بعد"
+  "identityChip.open": "{{text}} ({{role}})، فتح {{name}} في الهويات",
+  "identityChip.notYet": "{{text}} ({{role}})، غير موجود في الهويات بعد",
+  "identityChip.ambiguous": "{{text}} ({{role}})، أكثر من هوية واحدة مطابقة"
 }

@@ -4,6 +4,7 @@ import type { WikiLinkTarget } from '../../lib/markdown';
 import { extractIOCs, refangToDefanged } from '../../lib/ioc-extractor';
 import type { Note, IOCEntry } from '../../types';
 import { useIdentityLinks } from '../Identities/identity-links';
+import { sameText } from '../../lib/identity-model';
 
 const NETWORK_IOC_TYPES = new Set(['url', 'domain', 'ipv4', 'ipv6', 'email']);
 
@@ -51,7 +52,10 @@ export function MarkdownPreview({ content, defanged, allNotes, onNavigateToNote,
     if (mention) {
       e.preventDefault();
       const identity = identityFolder?.identities.find((item) => item.id === mention.getAttribute('data-identity-id'));
-      if (identity) identityLinks?.open(identity);
+      // A name more than one identity holds opens the list filtered to it, so a person chooses.
+      const name = (mention.textContent ?? '').replace(/^@/, '');
+      const ambiguous = (identityFolder?.names.get(sameText(name))?.length ?? 0) > 1;
+      if (identity) identityLinks?.open(identity, ambiguous ? name : undefined);
       return;
     }
     if (!onNavigateToNote) return;

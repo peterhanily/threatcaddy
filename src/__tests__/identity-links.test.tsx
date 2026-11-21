@@ -48,11 +48,18 @@ afterEach(() => { vi.restoreAllMocks(); Element.prototype.scrollIntoView = origi
 describe('timeline chips', () => {
   it('links Actor and Assets that name an identity, and opens it', async () => {
     const { onOpen, user } = withLinks(card({ actor: 'tomas lindqvist', assets: ['fin-db01', 'APT29'] }));
-    await user.click(screen.getByRole('button', { name: 'tomas lindqvist, open Tomas Lindqvist in Identities' }));
-    expect(onOpen).toHaveBeenCalledWith(tomas);
-    expect(screen.getByRole('button', { name: 'fin-db01, open FIN-DB01 in Identities' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'tomas lindqvist (Actor), open Tomas Lindqvist in Identities' }));
+    expect(onOpen).toHaveBeenCalledWith(tomas, undefined);
+    expect(screen.getByRole('button', { name: 'fin-db01 (Asset), open FIN-DB01 in Identities' })).toBeInTheDocument();
     // A threat actor from Settings stays plain text.
     expect(screen.getByText('APT29').closest('button')).toBeNull();
+  });
+
+  it('opens the list filtered to text that more than one identity holds, so a person chooses', async () => {
+    const other = make('other', 'Tomas Lindqvist', { description: 'A different person' });
+    const { onOpen, user } = withLinks(card({ actor: 'Tomas Lindqvist' }), { identities: [tomas, other] });
+    await user.click(screen.getByRole('button', { name: 'Tomas Lindqvist (Actor), more than one identity matches' }));
+    expect(onOpen).toHaveBeenCalledWith(expect.objectContaining({ name: 'Tomas Lindqvist' }), 'Tomas Lindqvist');
   });
 
   it('keeps names of identities hidden while screensharing plain, so they are neither linked nor offered', () => {
@@ -62,7 +69,7 @@ describe('timeline chips', () => {
 
   it('adds a name that is not yet an identity as another name of one, from the timeline', async () => {
     const { onUpdate, user } = withLinks(card({ assets: ['Lindqvist, Tomas'] }));
-    await user.click(screen.getByRole('button', { name: 'Lindqvist, Tomas, not yet in Identities' }));
+    await user.click(screen.getByRole('button', { name: 'Lindqvist, Tomas (Asset), not yet in Identities' }));
     const dialog = await screen.findByRole('dialog', { name: '“Lindqvist, Tomas”' });
     expect(within(dialog).getByText('Asset on the timeline in Halvorsen BEC')).toBeInTheDocument();
     await user.selectOptions(within(dialog).getByRole('combobox'), 'tomas');
@@ -74,11 +81,11 @@ describe('timeline chips', () => {
 
   it('offers a name that differs by accents as another name first, and adds a new one as a system from Assets', async () => {
     const { onCreate, user } = withLinks(<>{card({ actor: 'Tomás Lindqvist' })}{card({ id: 'ev2', assets: ['FIN-WS-014'] })}</>);
-    await user.click(screen.getByRole('button', { name: 'Tomás Lindqvist, not yet in Identities' }));
+    await user.click(screen.getByRole('button', { name: 'Tomás Lindqvist (Actor), not yet in Identities' }));
     const near = await screen.findByRole('dialog', { name: '“Tomás Lindqvist”' });
     expect(within(near).getByRole('button', { name: 'Add as another name of Tomas Lindqvist' })).toHaveFocus();
     await user.click(within(near).getByRole('button', { name: 'Cancel' }));
-    await user.click(screen.getByRole('button', { name: 'FIN-WS-014, not yet in Identities' }));
+    await user.click(screen.getByRole('button', { name: 'FIN-WS-014 (Asset), not yet in Identities' }));
     await user.click(within(await screen.findByRole('dialog', { name: '“FIN-WS-014”' })).getByRole('button', { name: /Add as a new identity/ }));
     const form = await screen.findByRole('dialog', { name: 'Add “FIN-WS-014”' });
     expect(within(form).getByRole('combobox', { name: 'Type' })).toHaveValue('System');
@@ -88,7 +95,7 @@ describe('timeline chips', () => {
 
   it('ignores a name on this device: the chip turns plain and only a hash is stored', async () => {
     const { user } = withLinks(card({ actor: 'Unknown Caller' }));
-    await user.click(screen.getByRole('button', { name: 'Unknown Caller, not yet in Identities' }));
+    await user.click(screen.getByRole('button', { name: 'Unknown Caller (Actor), not yet in Identities' }));
     await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Ignore on this device' }));
     expect(screen.getByText('Unknown Caller').closest('button')).toBeNull();
     const stored = localStorage.getItem('threatcaddy-identities-ignored-v2') ?? '';
@@ -114,7 +121,8 @@ describe('the event Actor field', () => {
     await user.type(actor, 'lindq');
     const list = screen.getByRole('listbox');
     expect(within(list).getAllByRole('option').map(option => option.textContent)).toEqual(['Lindqvist Gang', 'Tomas Lindqvist']);
-    expect(list).toHaveTextContent(/Threat actors.*Lindqvist Gang.*Identities.*Tomas Lindqvist/);
+    expect(within(within(list).getByRole('group', { name: 'Threat actors' })).getByRole('option')).toHaveTextContent('Lindqvist Gang');
+    expect(within(within(list).getByRole('group', { name: 'Identities' })).getByRole('option')).toHaveTextContent('Tomas Lindqvist');
     await user.keyboard('{ArrowDown}{ArrowDown}');
     expect(actor).toHaveAttribute('aria-activedescendant', within(list).getByRole('option', { name: 'Tomas Lindqvist' }).id);
     await user.keyboard('{Enter}');
@@ -123,13 +131,25 @@ describe('the event Actor field', () => {
 });
 
 describe('@ mentions', () => {
-  it('links @Name in a note to the identity, not in code or an HTML attribute, and opens it', async () => {
-    const content = 'Call @Tomas Lindqvist today. `@Tomas Lindqvist` <span title="@Tomas Lindqvist">x</span> mail tomas@T. Lindqvist';
+  it('links @Name in a note to the identity, never in code, an existing link or an attribute, and opens it', async () => {
+    const content = [
+      'Call @Tomas Lindqvist today. `@Tomas Lindqvist` <span title="@Tomas Lindqvist">x</span> mail tomas@T. Lindqvist',
+      '', '    indented code @Tomas Lindqvist', '', '~~~', 'tilde fence @Tomas Lindqvist', '~~~', '',
+      '```', 'unclosed fence @Tomas Lindqvist',
+    ].join('\n');
     const { onOpen, user } = withLinks(<MarkdownPreview content={content} folderId="case" />);
     const links = screen.getAllByRole('link', { name: '@Tomas Lindqvist' });
     expect(links).toHaveLength(1);
+    expect(document.body.textContent).not.toContain('data-identity');
     await user.click(links[0]);
-    expect(onOpen).toHaveBeenCalledWith(tomas);
+    expect(onOpen).toHaveBeenCalledWith(tomas, undefined);
+  });
+
+  it('keeps an existing link whole when its text mentions an identity', () => {
+    withLinks(<MarkdownPreview content="[ask @Tomas Lindqvist](https://example.test/ask)" folderId="case" />);
+    const link = screen.getByRole('link', { name: 'ask @Tomas Lindqvist' });
+    expect(link).toHaveAttribute('href', 'https://example.test/ask');
+    expect(link.querySelector('a')).toBeNull();
   });
 
   it('links nothing in a note outside an investigation', () => {
@@ -142,8 +162,9 @@ describe('@ mentions', () => {
     const badId = make('bad"id onclick=alert(1)', 'Bad Id');
     const folder = buildIdentityIndex([sons, badId]).folders.get('case');
     const html = renderMarkdown('@Smith & "Sons" and @Bad Id <img src=x onerror=alert(1)>', undefined, { identities: folder });
-    expect(html).toContain('data-identity-id="ok_id" class="tclink">@Smith &amp; "Sons"</a>');
-    expect(html).toMatch(/<a href="#" data-identity-link="true" class="tclink">@Bad Id<\/a>/);
+    const links = [...new DOMParser().parseFromString(html, 'text/html').querySelectorAll('a')];
+    expect(links.map(link => [link.textContent, link.getAttribute('data-identity-id'), link.getAttribute('href'), link.className]))
+      .toEqual([['@Smith & "Sons"', 'ok_id', '#', 'tclink'], ['@Bad Id', null, '#', 'tclink']]);
     expect(html).not.toMatch(/onerror=|onclick/);
   });
 });
@@ -172,6 +193,26 @@ describe('the note editor\'s @ suggestions', () => {
     expect(screen.getByRole('textbox', { name: 'Note' })).toHaveValue('Spoke to @Tomas Lindqvist ');
     await user.type(screen.getByRole('textbox', { name: 'Note' }), 'and @t. lind');
     expect(screen.getByRole('list', { name: 'Mentions' })).toHaveTextContent('Tomas Lindqvist');
+    // Moving the cursor closes the menu rather than insert at a stale place.
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.queryByRole('list', { name: 'Mentions' })).not.toBeInTheDocument();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('textbox', { name: 'Note' })).toHaveValue('Spoke to @Tomas Lindqvist and @t. lin\nd');
+  });
+
+  it('inserts a handle stored with its @ once', async () => {
+    const user = userEvent.setup();
+    render(<MentionHarness folder={buildIdentityIndex([make('ghost', '@ghost_ledger', { type: 'account' })]).folders.get('case')} />);
+    await user.type(screen.getByRole('textbox', { name: 'Note' }), 'paid @ghost');
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('textbox', { name: 'Note' })).toHaveValue('paid @ghost_ledger ');
+  });
+
+  it('offers a name two identities share once', async () => {
+    const user = userEvent.setup();
+    render(<MentionHarness folder={buildIdentityIndex([tomas, make('twin', 'Tomas Lindqvist')]).folders.get('case')} />);
+    await user.type(screen.getByRole('textbox', { name: 'Note' }), '@tomas');
+    expect(within(screen.getByRole('list', { name: 'Mentions' })).getAllByRole('listitem')).toHaveLength(1);
   });
 
   it('suggests nothing for an email address or inside code', async () => {

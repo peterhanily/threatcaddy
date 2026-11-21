@@ -309,6 +309,7 @@
   "bootGuard.framed": "Güvenliğiniz için ThreatCaddy başka bir web sitesinin içinde çalışmaz.",
   "bootGuard.fileOnly": "ThreatCaddy'nin bu çevrimdışı kopyası yalnızca bilgisayarınıza kaydedilen dosyayı açtığınızda çalışır.",
   "bootGuard.open": "ThreatCaddy'yi aç",
-  "identityChip.open": "{{text}}, Kimlikler'de {{name}} öğesini aç",
-  "identityChip.notYet": "{{text}}, henüz Kimlikler'de yok"
+  "identityChip.open": "{{text}} ({{role}}), Kimlikler'de {{name}} öğesini aç",
+  "identityChip.notYet": "{{text}} ({{role}}), henüz Kimlikler'de yok",
+  "identityChip.ambiguous": "{{text}} ({{role}}), birden fazla kimlik eşleşiyor"
 }

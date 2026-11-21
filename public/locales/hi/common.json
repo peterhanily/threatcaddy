@@ -309,6 +309,7 @@
   "bootGuard.framed": "आपकी सुरक्षा के लिए, ThreatCaddy किसी दूसरी वेबसाइट के अंदर नहीं चलता।",
   "bootGuard.fileOnly": "ThreatCaddy की यह ऑफ़लाइन कॉपी केवल तभी चलती है जब आप अपने कंप्यूटर पर सहेजी गई फ़ाइल खोलते हैं।",
   "bootGuard.open": "ThreatCaddy खोलें",
-  "identityChip.open": "{{text}}, पहचान में {{name}} खोलें",
-  "identityChip.notYet": "{{text}}, अभी पहचान में नहीं है"
+  "identityChip.open": "{{text}} ({{role}}), पहचान में {{name}} खोलें",
+  "identityChip.notYet": "{{text}} ({{role}}), अभी पहचान में नहीं है",
+  "identityChip.ambiguous": "{{text}} ({{role}}), एक से अधिक पहचान मेल खाती हैं"
 }

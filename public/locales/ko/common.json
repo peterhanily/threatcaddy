@@ -414,6 +414,7 @@
   "bootGuard.framed": "보안을 위해 ThreatCaddy는 다른 웹사이트 안에서 실행되지 않습니다.",
   "bootGuard.fileOnly": "이 ThreatCaddy 오프라인 사본은 컴퓨터에 저장된 파일을 열 때만 실행됩니다.",
   "bootGuard.open": "ThreatCaddy 열기",
-  "identityChip.open": "{{text}}, 신원에서 {{name}} 열기",
-  "identityChip.notYet": "{{text}}, 아직 신원에 없음"
+  "identityChip.open": "{{text}} ({{role}}), 신원에서 {{name}} 열기",
+  "identityChip.notYet": "{{text}} ({{role}}), 아직 신원에 없음",
+  "identityChip.ambiguous": "{{text}} ({{role}}), 여러 신원이 일치함"
 }

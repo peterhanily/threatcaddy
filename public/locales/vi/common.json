@@ -309,6 +309,7 @@
   "bootGuard.framed": "Vì sự an toàn của bạn, ThreatCaddy không chạy bên trong một trang web khác.",
   "bootGuard.fileOnly": "Bản sao ngoại tuyến này của ThreatCaddy chỉ chạy khi bạn mở tệp đã lưu trên máy tính của mình.",
   "bootGuard.open": "Mở ThreatCaddy",
-  "identityChip.open": "{{text}}, mở {{name}} trong Danh tính",
-  "identityChip.notYet": "{{text}}, chưa có trong Danh tính"
+  "identityChip.open": "{{text}} ({{role}}), mở {{name}} trong Danh tính",
+  "identityChip.notYet": "{{text}} ({{role}}), chưa có trong Danh tính",
+  "identityChip.ambiguous": "{{text}} ({{role}}), có nhiều hơn một danh tính khớp"
 }

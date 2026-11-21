@@ -21,9 +21,11 @@ export function IdentityChip({ folderId, text, source, tone, role }: {
   const link = links?.linkFor(folderId, text) ?? { state: 'plain' as const };
   const base = 'inline-flex min-w-0 max-w-[140px] items-center gap-0.5 rounded-full px-1.5 text-[10px]';
   if (links && link.state === 'linked') {
+    // Text that names more than one identity opens the list filtered to it, so a person chooses.
+    const ambiguous = link.others > 0;
     return (
-      <button type="button" onClick={() => links.open(link.identity)} title={`${role}: ${link.identity.name}`}
-        aria-label={t('identityChip.open', { text, name: link.identity.name })}
+      <button type="button" onClick={() => links.open(link.identity, ambiguous ? text : undefined)} title={`${role}: ${link.identity.name}`}
+        aria-label={ambiguous ? t('identityChip.ambiguous', { text, role }) : t('identityChip.open', { text, role, name: link.identity.name })}
         className={cn(base, TONES[tone].linked, 'hover:underline focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent')}>
         <Contact size={9} aria-hidden="true" className="shrink-0" /><span className="truncate">{text}</span>
       </button>
@@ -32,7 +34,7 @@ export function IdentityChip({ folderId, text, source, tone, role }: {
   if (links?.resolve && folderId && link.state === 'notYet') {
     const resolve = links.resolve;
     return (
-      <button type="button" onClick={() => resolve(folderId, text, source)} title={role} aria-label={t('identityChip.notYet', { text })}
+      <button type="button" onClick={() => resolve(folderId, text, source)} title={role} aria-label={t('identityChip.notYet', { text, role })}
         className={cn(base, TONES[tone].notYet, 'border border-dashed hover:border-solid')}>
         <span className="truncate">{text}</span>
       </button>

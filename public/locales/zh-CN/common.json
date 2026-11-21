@@ -309,6 +309,7 @@
   "bootGuard.framed": "为了您的安全，ThreatCaddy 不会在其他网站内运行。",
   "bootGuard.fileOnly": "此 ThreatCaddy 离线副本仅在您打开保存在计算机上的文件时运行。",
   "bootGuard.open": "打开 ThreatCaddy",
-  "identityChip.open": "{{text}}，在身份中打开 {{name}}",
-  "identityChip.notYet": "{{text}}，尚未加入身份"
+  "identityChip.open": "{{text}}（{{role}}），在身份中打开 {{name}}",
+  "identityChip.notYet": "{{text}}（{{role}}），尚未加入身份",
+  "identityChip.ambiguous": "{{text}}（{{role}}），匹配到多个身份"
 }

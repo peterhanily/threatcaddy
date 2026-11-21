@@ -309,6 +309,7 @@
   "bootGuard.framed": "Demi keamanan Anda, ThreatCaddy tidak berjalan di dalam situs web lain.",
   "bootGuard.fileOnly": "Salinan offline ThreatCaddy ini hanya berjalan saat Anda membuka file yang tersimpan di komputer Anda.",
   "bootGuard.open": "Buka ThreatCaddy",
-  "identityChip.open": "{{text}}, buka {{name}} di Identitas",
-  "identityChip.notYet": "{{text}}, belum ada di Identitas"
+  "identityChip.open": "{{text}} ({{role}}), buka {{name}} di Identitas",
+  "identityChip.notYet": "{{text}} ({{role}}), belum ada di Identitas",
+  "identityChip.ambiguous": "{{text}} ({{role}}), lebih dari satu identitas cocok"
 }

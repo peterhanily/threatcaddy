@@ -414,6 +414,7 @@
   "bootGuard.framed": "เพื่อความปลอดภัยของคุณ ThreatCaddy จะไม่ทำงานภายในเว็บไซต์อื่น",
   "bootGuard.fileOnly": "สำเนาออฟไลน์ของ ThreatCaddy นี้ทำงานได้เฉพาะเมื่อคุณเปิดไฟล์ที่บันทึกไว้ในคอมพิวเตอร์ของคุณ",
   "bootGuard.open": "เปิด ThreatCaddy",
-  "identityChip.open": "{{text}}, เปิด {{name}} ในตัวตน",
-  "identityChip.notYet": "{{text}}, ยังไม่อยู่ในตัวตน"
+  "identityChip.open": "{{text}} ({{role}}), เปิด {{name}} ในตัวตน",
+  "identityChip.notYet": "{{text}} ({{role}}), ยังไม่อยู่ในตัวตน",
+  "identityChip.ambiguous": "{{text}} ({{role}}), มีตัวตนที่ตรงกันมากกว่าหนึ่งรายการ"
 }

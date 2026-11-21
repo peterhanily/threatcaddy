@@ -35,6 +35,8 @@ export const PRIVATE_DETAIL_LABELS = ['phone', 'address', 'personalEmail', 'home
 
 /** Lower case, single spaces, trimmed: how names and details are compared. */
 export const sameText = (text: string) => text.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
+/** How detail values are compared: also without spaces, so "GB33 BUKB 2020…" matches "GB33BUKB2020…". */
+export const detailKey = (text: string) => sameText(text).replace(/\s/g, '');
 /** Also ignores accents, for "looks like" suggestions that a person confirms. */
 export const looseText = (text: string) => sameText(text).normalize('NFKD').replace(/\p{M}/gu, '');
 
@@ -286,7 +288,7 @@ export function foundNames(input: {
     if (!live(identity) || !identity.folderId) continue;
     const texts = known.get(identity.folderId) ?? new Set<string>();
     knownTexts(identity).forEach(text => texts.add(text));
-    identity.details.filter(detail => detail.private).forEach(detail => texts.add(sameText(detail.value)));
+    identity.details.forEach(detail => { texts.add(sameText(detail.value)); texts.add(detailKey(detail.value)); });
     known.set(identity.folderId, texts);
     const near = loose.get(identity.folderId) ?? new Map<string, Identity>();
     [identity.name, ...identity.aliases].forEach(text => { if (!near.has(looseText(text))) near.set(looseText(text), identity); });
@@ -297,7 +299,7 @@ export function foundNames(input: {
     const text = raw?.trim();
     if (!folderId || !text || text.length > 200) return;
     const same = sameText(text);
-    if (actors.has(same) || known.get(folderId)?.has(same)) return;
+    if (actors.has(same) || known.get(folderId)?.has(same) || known.get(folderId)?.has(detailKey(text))) return;
     const key = foundKey(folderId, text);
     if (input.isIgnored?.(folderId, text)) return;
     const group = groups.get(key);

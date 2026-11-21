@@ -51,6 +51,9 @@ interface TimelineViewProps {
   selectedFolderId?: string;
   openNewForm?: boolean;
   onNewFormOpened?: () => void;
+  /** Opens one event, for example from an identity's Activity; `onOpenEventHandled` clears it. */
+  openEventRequest?: { id: string; request: number };
+  onOpenEventHandled?: () => void;
 }
 
 function ExportDropdown({ events, selectedTimelineId, timelines, onImportClick }: { events: TimelineEvent[]; selectedTimelineId?: string; timelines: Timeline[]; onImportClick: () => void }) {
@@ -168,9 +171,19 @@ export function TimelineView({
   selectedFolderId,
   openNewForm,
   onNewFormOpened,
+  openEventRequest,
+  onOpenEventHandled,
 }: TimelineViewProps) {
   const { t } = useTranslation('timeline');
-  const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null);
+  const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(() => events.find((e) => e.id === openEventRequest?.id) ?? null);
+  // A request from outside is applied once, while rendering.
+  const [seenEventRequest, setSeenEventRequest] = useState(openEventRequest?.request);
+  if (openEventRequest && openEventRequest.request !== seenEventRequest) {
+    setSeenEventRequest(openEventRequest.request);
+    const requested = events.find((e) => e.id === openEventRequest.id);
+    if (requested) setEditingEvent(requested);
+  }
+  useEffect(() => { if (openEventRequest) onOpenEventHandled?.(); }, [openEventRequest, onOpenEventHandled]);
   const [showNewEvent, setShowNewEvent] = useState(false);
 
   // Open creation form when triggered externally (e.g. from header "+ New" dropdown)

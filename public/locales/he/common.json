@@ -309,6 +309,7 @@
   "bootGuard.framed": "למען ביטחונך, ThreatCaddy אינו פועל בתוך אתר אחר.",
   "bootGuard.fileOnly": "עותק לא מקוון זה של ThreatCaddy פועל רק כשפותחים את הקובץ השמור במחשב שלך.",
   "bootGuard.open": "פתיחת ThreatCaddy",
-  "identityChip.open": "{{text}}, פתיחת {{name}} בזהויות",
-  "identityChip.notYet": "{{text}}, עדיין לא בזהויות"
+  "identityChip.open": "{{text}} ({{role}}), פתיחת {{name}} בזהויות",
+  "identityChip.notYet": "{{text}} ({{role}}), עדיין לא בזהויות",
+  "identityChip.ambiguous": "{{text}} ({{role}}), יותר מזהות אחת תואמת"
 }

@@ -309,6 +309,7 @@
   "bootGuard.framed": "安全のため、ThreatCaddy は他のウェブサイト内では動作しません。",
   "bootGuard.fileOnly": "この ThreatCaddy のオフライン版は、コンピューターに保存したファイルを開いた場合にのみ動作します。",
   "bootGuard.open": "ThreatCaddy を開く",
-  "identityChip.open": "{{text}}、アイデンティティで {{name}} を開く",
-  "identityChip.notYet": "{{text}}、まだアイデンティティにありません"
+  "identityChip.open": "{{text}}（{{role}}）、アイデンティティで {{name}} を開く",
+  "identityChip.notYet": "{{text}}（{{role}}）、まだアイデンティティにありません",
+  "identityChip.ambiguous": "{{text}}（{{role}}）、複数のアイデンティティが一致します"
 }

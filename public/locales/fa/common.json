@@ -309,6 +309,7 @@
   "bootGuard.framed": "برای امنیت شما، ThreatCaddy درون وب‌سایت دیگری اجرا نمی‌شود.",
   "bootGuard.fileOnly": "این نسخهٔ آفلاین ThreatCaddy فقط وقتی اجرا می‌شود که فایل ذخیره‌شده در رایانهٔ خود را باز کنید.",
   "bootGuard.open": "باز کردن ThreatCaddy",
-  "identityChip.open": "{{text}}، باز کردن {{name}} در هویت‌ها",
-  "identityChip.notYet": "{{text}}، هنوز در هویت‌ها نیست"
+  "identityChip.open": "{{text}} ({{role}})، باز کردن {{name}} در هویت‌ها",
+  "identityChip.notYet": "{{text}} ({{role}})، هنوز در هویت‌ها نیست",
+  "identityChip.ambiguous": "{{text}} ({{role}})، بیش از یک هویت مطابقت دارد"
 }

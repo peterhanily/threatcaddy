@@ -270,20 +270,35 @@ test('links timeline chips to identities, adds a new name without leaving the ti
   }, { view: 'timeline', selectedFolderId: 'case' });
 
   const payment = page.getByRole('group', { name: 'Payment approved' });
-  await expect(payment.getByRole('button', { name: 'dana@halvorsen.example, open Dana Okafor in Identities' })).toBeVisible();
-  await payment.getByRole('button', { name: 'FIN-WS-014, not yet in Identities' }).click();
+  await expect(payment.getByRole('button', { name: 'dana@halvorsen.example (Asset), open Dana Okafor in Identities' })).toBeVisible();
+  await payment.getByRole('button', { name: 'FIN-WS-014 (Asset), not yet in Identities' }).click();
   await page.getByRole('dialog', { name: '“FIN-WS-014”' }).getByRole('button', { name: /Add as a new identity/ }).click();
   const add = page.getByRole('dialog', { name: 'Add “FIN-WS-014”' });
   await expect(add.getByRole('combobox', { name: 'Type' })).toHaveValue('System');
   await add.getByRole('button', { name: 'Add' }).click();
   // Still on the timeline; the chip now links.
-  await expect(payment.getByRole('button', { name: 'FIN-WS-014, open FIN-WS-014 in Identities' })).toBeVisible();
+  await expect(payment.getByRole('button', { name: 'FIN-WS-014 (Asset), open FIN-WS-014 in Identities' })).toBeVisible();
 
-  await payment.getByRole('button', { name: 'Dana Okafor, open Dana Okafor in Identities' }).click();
+  await payment.getByRole('button', { name: 'Dana Okafor (Actor), open Dana Okafor in Identities' }).click();
   const activity = card(page, 'Dana Okafor').getByRole('region', { name: 'Activity (1)' });
   await expect(activity.getByRole('button', { name: /Payment approved/ })).toBeVisible();
+  // The event itself opens, not just its timeline.
   await activity.getByRole('button', { name: /Payment approved/ }).click();
-  await expect(page.getByRole('group', { name: 'Payment approved' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Edit Event' })).toBeVisible();
+});
+
+test('confirms a near match from a timeline chip, which then links', async ({ page }) => {
+  await seed(page, {
+    folders: [folder('case', 'Fictional BEC case')],
+    timelines: [{ id: 'tl', name: 'Main', order: 0, createdAt: now, updatedAt: now }],
+    timelineEvents: [event('e1', 'case', 'Wire approved', { actor: 'Tomás Lindqvist' })],
+    identities: [identity('tomas', 'case', 'Tomas Lindqvist')],
+  }, { view: 'timeline', selectedFolderId: 'case' });
+  const wire = page.getByRole('group', { name: 'Wire approved' });
+  await wire.getByRole('button', { name: 'Tomás Lindqvist (Actor), not yet in Identities' }).click();
+  const dialog = page.getByRole('dialog', { name: '“Tomás Lindqvist”' });
+  await dialog.getByRole('button', { name: 'Add as another name of Tomas Lindqvist' }).click();
+  await expect(wire.getByRole('button', { name: 'Tomás Lindqvist (Actor), open Tomas Lindqvist in Identities' })).toBeVisible();
 });
 
 test('mentions an identity in a note with @, links it in the preview, and shows the IOCs it owns', async ({ page }) => {
@@ -300,15 +315,17 @@ test('mentions an identity in a note with @, links it in the preview, and shows 
   await expect(page.getByText('Mention an identity')).toBeVisible();
   await page.keyboard.press('Enter');
   await expect(editor).toHaveValue('Spoke to @Lee Park ');
+  // Typing straight on continues after the mention.
   await editor.pressSequentially('about the invoice.');
+  await expect(editor).toHaveValue('Spoke to @Lee Park about the invoice.');
   await page.getByRole('button', { name: 'Preview mode' }).click();
   await page.getByRole('link', { name: '@Lee Park' }).click();
   const lee = card(page, 'Lee Park');
   await expect(lee.getByRole('region', { name: /^Activity/ }).getByRole('button', { name: /Call notes/ })).toBeVisible();
-  await expect(lee.getByRole('region', { name: /^Activity/ }).getByRole('button', { name: /lee@halvorsen\.example/ })).toBeVisible();
-
-  await navigateToView(page, 'IOCs');
+  // An IOC in Activity opens All IOCs filtered to it.
+  await lee.getByRole('region', { name: /^Activity/ }).getByRole('button', { name: /lee@halvorsen\.example/ }).click();
+  await expect(page.getByPlaceholder('Filter by value or source...')).toHaveValue('lee@halvorsen.example');
   await expect(page.getByRole('columnheader', { name: 'Belongs to' })).toBeVisible();
-  await page.getByRole('button', { name: 'Lee Park', exact: true }).click();
+  await page.getByRole('button', { name: 'lee@halvorsen.example (Belongs to), open Lee Park in Identities' }).click();
   await expect(card(page, 'Lee Park')).toBeVisible();
 });

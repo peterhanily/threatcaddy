@@ -49,7 +49,7 @@ import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile } from './li
 import { useOpenedFiles } from './hooks/useOpenedFiles';
 import { fileNotePersistence } from './lib/file-note-persistence';
 import { useInvestigationData } from './hooks/useInvestigationData';
-import type { ConfidenceLevel, Identity, Note, NoteTemplate, StandaloneIOC, ChatThread } from './types';
+import type { ConfidenceLevel, Identity, Note, NoteTemplate, StandaloneIOC, ChatThread, TimelineEvent } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
 const DashboardView = lazy(() => import('./components/Dashboard/DashboardView').then(m => ({ default: m.DashboardView })));
 import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
@@ -1432,22 +1432,39 @@ const AppInner = memo(function AppInner({
     }
   }, [setSelectedFolderId, investigationMode, folders, setInvestigationMode, syncedFolderIds]);
 
-  const handleSearchNavigateToIdentity = useCallback((id: string) => {
-    const identity = screensafeIdentities.find(item => item.id === id && !item.trashed && !item.archived);
-    if (!identity) return;
+  /** Opens an identity in its investigation: from search, a timeline chip, a note mention, an IOC or
+   * "Also in another investigation". `query` filters the list when text names more than one identity. */
+  const openIdentity = useCallback((identity: Identity, query?: string) => {
     openIdentityInvestigation(identity.folderId);
     setSelectedTag(undefined); setShowTrash(false); setShowArchive(false);
-    setIdentitySelection(previous => ({ id, request: (previous?.request ?? 0) + 1 }));
+    setIdentitySelection(previous => ({ id: identity.id, request: (previous?.request ?? 0) + 1, query }));
     navigateTo('identities');
-  }, [screensafeIdentities, navigateTo, openIdentityInvestigation, setSelectedTag, setShowTrash, setShowArchive]);
+  }, [openIdentityInvestigation, setSelectedTag, setShowTrash, setShowArchive, navigateTo]);
 
-  /** Opens an identity linked from a timeline chip, a note mention or an IOC, in its investigation. */
-  const handleOpenLinkedIdentity = useCallback((identity: Identity) => {
-    if (investigationMode !== 'remote') openIdentityInvestigation(identity.folderId);
+  const handleSearchNavigateToIdentity = useCallback((id: string) => {
+    const identity = screensafeIdentities.find(item => item.id === id && !item.trashed && !item.archived);
+    if (identity) openIdentity(identity);
+  }, [screensafeIdentities, openIdentity]);
+
+  /** Opens an item from a profile's Activity, keeping the investigation (it may be remote). */
+  const handleOpenNoteFromIdentity = useCallback((note: Note) => {
     setSelectedTag(undefined); setShowTrash(false); setShowArchive(false);
-    setIdentitySelection(previous => ({ id: identity.id, request: (previous?.request ?? 0) + 1 }));
-    navigateTo('identities');
-  }, [investigationMode, openIdentityInvestigation, setSelectedTag, setShowTrash, setShowArchive, navigateTo]);
+    setSelectedNoteId(note.id);
+    navigateTo('notes', { selectedNoteId: note.id });
+  }, [setSelectedTag, setShowTrash, setShowArchive, setSelectedNoteId, navigateTo]);
+  const [timelineEventRequest, setTimelineEventRequest] = useState<{ id: string; request: number }>();
+  const clearTimelineEventRequest = useCallback(() => setTimelineEventRequest(undefined), []);
+  const handleOpenEventFromIdentity = useCallback((event: TimelineEvent) => {
+    setSelectedTimelineId(event.timelineId);
+    setTimelineEventRequest({ id: event.id, request: Date.now() });
+    navigateTo('timeline', { selectedTimelineId: event.timelineId });
+  }, [setSelectedTimelineId, navigateTo]);
+  const [iocSearchRequest, setIocSearchRequest] = useState<{ text: string; request: number }>();
+  const clearIocSearchRequest = useCallback(() => setIocSearchRequest(undefined), []);
+  const handleOpenIOCFromIdentity = useCallback((ioc: StandaloneIOC) => {
+    setIocSearchRequest({ text: ioc.value, request: Date.now() });
+    navigateTo('ioc-stats');
+  }, [navigateTo]);
   const linkableIdentities = investigationMode === 'remote' ? remoteData.identities : identitiesHook.identities;
   /** Starts a note about an identity in its investigation, mentioning it so it links. */
   const handleAddNoteAboutIdentity = useCallback(async (identity: Identity) => {
@@ -1662,7 +1679,7 @@ const AppInner = memo(function AppInner({
     <ActivityLogContext.Provider value={activityLog.log}>
     <IdentityLinksProvider identities={linkableIdentities} isVisible={visibility.isEntityVisible} threatActors={settings.attributionActors}
       folders={folders} readOnly={investigationMode === 'remote'} onCreate={handleCreateIdentity} onUpdate={identitiesHook.updateIdentity}
-      onOpen={handleOpenLinkedIdentity}>
+      onOpen={openIdentity}>
       {/* Analyst mode banner on mobile */}
       {isMobile && forceAnalystMode && (
         <div className="bg-accent/10 border-b border-accent/20 px-3 py-2 flex items-center justify-between text-xs shrink-0">
@@ -1914,6 +1931,8 @@ const AppInner = memo(function AppInner({
             investigationMembers={investigationMembers}
             iocTableColumns={settings.iocTableColumns}
             onUpdateTableColumns={(columns) => updateSettings({ iocTableColumns: columns })}
+            searchRequest={iocSearchRequest}
+            onSearchHandled={clearIocSearchRequest}
           />
         ) : activeView === 'activity' ? (
           <ActivityLogView
@@ -1945,6 +1964,8 @@ const AppInner = memo(function AppInner({
             selectedFolderId={selectedFolderId}
             openNewForm={pendingNewEvent}
             onNewFormOpened={() => setPendingNewEvent(false)}
+            openEventRequest={timelineEventRequest}
+            onOpenEventHandled={clearTimelineEventRequest}
           />
         ) : activeView === 'whiteboard' ? (
           <WhiteboardView
@@ -1994,13 +2015,10 @@ const AppInner = memo(function AppInner({
             onUpdate={identitiesHook.updateIdentity}
             onTrash={loggedTrashIdentity}
             onMerge={loggedMergeIdentities}
-            onOpenElsewhere={(identity) => {
-              openIdentityInvestigation(identity.folderId);
-              setIdentitySelection((previous) => ({ id: identity.id, request: (previous?.request ?? 0) + 1 }));
-            }}
-            onOpenEvent={(event) => handleSearchNavigateToTimeline(event.id)}
-            onOpenNote={(note) => handleSearchNavigateToNote(note.id)}
-            onOpenIOC={() => handleSearchNavigateToIOC()}
+            onOpenElsewhere={openIdentity}
+            onOpenEvent={handleOpenEventFromIdentity}
+            onOpenNote={handleOpenNoteFromIdentity}
+            onOpenIOC={handleOpenIOCFromIdentity}
             onAddNote={investigationMode === 'remote' ? undefined : handleAddNoteAboutIdentity}
           />
         ) : activeView === 'products' ? (

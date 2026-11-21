@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Identity, Note, StandaloneIOC, TimelineEvent } from '../types';
-import { activityOf, belongsTo, buildIdentityIndex, findMentions, linkFor, MAX_MATCH_LENGTH } from '../lib/identity-match';
+import { activityOf, belongsTo, buildIdentityIndex, findMentions, linkFor, MAX_MATCH_LENGTH, noteMatchText } from '../lib/identity-match';
+import { foundNames } from '../lib/identity-model';
 
 let n = 0;
 const make = (name: string, extra: Partial<Identity> = {}): Identity => ({ id: extra.id ?? `id-${++n}`, folderId: 'case', type: 'person', name, aliases: [],
@@ -61,6 +62,34 @@ describe('linkFor', () => {
     expect(linkFor(shared, 'case', 'fin-db01')).toEqual({ state: 'linked', identity: server, others: 1 });
   });
 
+  it('prefers a name over a detail: "WS-01" is the system named WS-01, not an account listing it', () => {
+    const system = make('WS-01', { type: 'system' });
+    const account = make('admin', { type: 'account', details: [{ id: 'h', label: 'Hostname', value: 'WS-01' }] });
+    const index = buildIdentityIndex([account, system]);
+    expect(linkFor(index, 'case', 'ws-01')).toEqual({ state: 'linked', identity: system, others: 0 });
+    expect(belongsTo(index, ioc({ type: 'domain', value: 'WS-01' }))).toEqual({ identity: system, others: 0 });
+  });
+
+  it('keeps the index of an investigation whose identities did not change', () => {
+    const first = buildIdentityIndex([tomas, server, elsewhere]);
+    const renamed = { ...elsewhere, name: 'Tomas L.', updatedAt: 2 };
+    const second = buildIdentityIndex([tomas, server, renamed], { previous: first });
+    expect(second.folders.get('case')).toBe(first.folders.get('case'));
+    expect(second.folders.get('other')).not.toBe(first.folders.get('other'));
+    // Visibility counts as a change: a screenshare level hides or shows identities.
+    const hidden = buildIdentityIndex([tomas, server, renamed], { previous: second, isVisible: identity => identity !== tomas });
+    expect(hidden.folders.get('case')).not.toBe(second.folders.get('case'));
+  });
+
+  it('compares details without spaces, so a grouped IBAN matches an ungrouped one', () => {
+    const grouped = make('Supplier', { type: 'account', details: [{ id: 'i', label: 'IBAN', value: 'GB33 BUKB 2020 1555 5555 55' }] });
+    const index = buildIdentityIndex([grouped]);
+    expect(linkFor(index, 'case', 'GB33BUKB20201555555555')).toMatchObject({ state: 'linked', identity: grouped });
+    expect(foundNames({ identities: [grouped], events: [event({ assets: ['GB33BUKB20201555555555'] })], iocs: [] })).toEqual([]);
+    // Names keep their spaces: "DanaOkafor" is not "Dana Okafor".
+    expect(linkFor(buildIdentityIndex([make('Dana Okafor')]), 'case', 'DanaOkafor')).toMatchObject({ state: 'notYet' });
+  });
+
   it('ignores trashed identities entirely', () => {
     const trashed = make('Binned Person', { trashed: true });
     expect(linkFor(buildIdentityIndex([trashed]), 'case', 'Binned Person')).toEqual({ state: 'notYet', looksLike: undefined });
@@ -69,9 +98,14 @@ describe('linkFor', () => {
 
 describe('belongsTo', () => {
   const index = buildIdentityIndex([tomas, server]);
+  it('counts the other identities that hold the same value, so the table can say so', () => {
+    const lee = make('Lee Park', { details: [{ id: 'f', label: 'Email', value: 'finance@halvorsen.example' }] });
+    const dana = make('Dana Okafor', { details: [{ id: 'g', label: 'Email', value: 'finance@halvorsen.example' }] });
+    expect(belongsTo(buildIdentityIndex([lee, dana]), ioc({ type: 'email', value: 'finance@halvorsen.example' }))).toEqual({ identity: dana, others: 1 });
+  });
   it('finds the identity whose name or public detail is the IOC value, in the same investigation', () => {
-    expect(belongsTo(index, ioc({ type: 'email', value: 'tomas@halvorsen.example' }))).toBe(tomas);
-    expect(belongsTo(index, ioc({ type: 'ipv4', value: '10.20.14.88' }))).toBe(server);
+    expect(belongsTo(index, ioc({ type: 'email', value: 'tomas@halvorsen.example' }))).toEqual({ identity: tomas, others: 0 });
+    expect(belongsTo(index, ioc({ type: 'ipv4', value: '10.20.14.88' }))).toEqual({ identity: server, others: 0 });
     expect(belongsTo(index, ioc({ type: 'ipv4', value: '10.20.14.88', folderId: 'other' }))).toBeUndefined();
     expect(belongsTo(index, ioc({ type: 'domain', value: '+44 7700 900123' }))).toBeUndefined();
   });
@@ -99,11 +133,29 @@ describe('findMentions', () => {
     expect(findMentions('@Okafor, Dana', folder).map(m => m.identity.name)).toEqual(['Dana Okafor']);
   });
 
-  it('stays fast on long text full of @ signs', () => {
-    const text = '@'.repeat(50_000) + ' @Dana Okafor ' + 'word @a '.repeat(20_000);
+  it('stays fast on long text full of @ signs that could start a name', () => {
+    // Every "@" follows a space and starts with a letter some name starts with: the worst case.
+    const text = ' @a. @D @Ac'.repeat(30_000) + ' @Dana Okafor';
     const started = performance.now();
     expect(findMentions(text, folder).map(m => m.identity.name)).toEqual(['Dana Okafor']);
-    expect(performance.now() - started).toBeLessThan(1000);
+    expect(performance.now() - started).toBeLessThan(1500);
+  });
+
+  it('does not take part of a word: accents written as marks, and Hindi or Thai vowel signs', () => {
+    const names = buildIdentityIndex([make('Jose'), make('राम'), make('สม')]).folders.get('case');
+    expect(findMentions('@Jose\u0301 rang', names)).toEqual([]);
+    expect(findMentions('@रामा', names)).toEqual([]);
+    expect(findMentions('@สมัย', names)).toEqual([]);
+    expect(findMentions('@राम ने', names).map(m => m.identity.name)).toEqual(['राम']);
+    const activity = activityOf(make('राम', { id: 'ram' }), { events: [], iocs: [], notes: [note('रामा आया', { id: 'n-other' }), note('राम आया', { id: 'n-ram' })] });
+    expect(activity.notes.map(item => item.id)).toEqual(['n-ram']);
+  });
+
+  it('finds a mention after a quote mark and inside emphasis, and a handle stored with its @', () => {
+    const handle = make('@ghost_ledger', { type: 'account' });
+    const names = buildIdentityIndex([dana, handle]).folders.get('case');
+    expect(findMentions('He said "@Dana Okafor" and «@Dana Okafor»', names)).toHaveLength(2);
+    expect(findMentions('paid @ghost_ledger twice', names).map(m => m.identity)).toEqual([handle]);
   });
 });
 
@@ -132,6 +184,20 @@ describe('activityOf', () => {
 });
 
 describe('scale', () => {
+  it('lists Activity over 1,000 long notes and finds mentions in them quickly', () => {
+    const identities = Array.from({ length: 2000 }, (_, i) => make(`Person ${i}`, { aliases: [`P${i}`] }));
+    const notes = Array.from({ length: 1000 }, (_, i) => note(`Call with @Person ${i} and P${i + 1}. ${'Routine text about the case. '.repeat(150)}`, { id: `n${i}` }));
+    const noteTexts = new Map(notes.map(item => [item.id, noteMatchText(item)]));
+    const folder = buildIdentityIndex(identities).folders.get('case');
+    const started = performance.now();
+    const activity = activityOf(identities[10], { events: [], iocs: [], notes, noteTexts });
+    let mentions = 0;
+    for (const item of notes) mentions += findMentions(item.content, folder).length;
+    expect(performance.now() - started).toBeLessThan(1500);
+    expect(activity.notes.map(item => item.id).sort()).toEqual(['n10', 'n9']);
+    expect(mentions).toBe(1000);
+  });
+
   it('indexes 2,000 identities and links 5,000 events quickly', () => {
     const identities = Array.from({ length: 2000 }, (_, i) => make(`Person ${i}`, { folderId: `case-${i % 20}`, aliases: [`P${i}`],
       details: [{ id: `d${i}`, label: 'Email', value: `person${i}@example.test` }] }));

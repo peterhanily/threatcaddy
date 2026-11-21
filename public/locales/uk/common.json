@@ -309,6 +309,7 @@
   "bootGuard.framed": "З міркувань безпеки ThreatCaddy не працює всередині іншого вебсайту.",
   "bootGuard.fileOnly": "Ця офлайн-копія ThreatCaddy працює, лише коли ви відкриваєте файл, збережений на вашому комп’ютері.",
   "bootGuard.open": "Відкрити ThreatCaddy",
-  "identityChip.open": "{{text}}, відкрити {{name}} у розділі «Суб'єкти»",
-  "identityChip.notYet": "{{text}}, ще немає в розділі «Суб'єкти»"
+  "identityChip.open": "{{text}} ({{role}}), відкрити {{name}} у розділі «Суб'єкти»",
+  "identityChip.notYet": "{{text}} ({{role}}), ще немає в розділі «Суб'єкти»",
+  "identityChip.ambiguous": "{{text}} ({{role}}), збігається більше ніж один суб'єкт"
 }

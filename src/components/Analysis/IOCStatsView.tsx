@@ -74,6 +74,9 @@ interface IOCStatsViewProps {
   investigationMembers?: InvestigationMember[];
   iocTableColumns?: string[];
   onUpdateTableColumns?: (columns: string[]) => void;
+  /** Shows All IOCs filtered to a value, for example from an identity's Activity; `onSearchHandled` clears it. */
+  searchRequest?: { text: string; request: number };
+  onSearchHandled?: () => void;
 }
 
 interface UniqueIOC {
@@ -116,11 +119,14 @@ export function IOCStatsView({
   onCreateIOC, onUpdateIOC, onDeleteIOC,
   onTrashIOC, onRestoreIOC, onToggleArchiveIOC,
   onOpenSettings, onNavigateToSource, investigationMembers,
-  iocTableColumns, onUpdateTableColumns,
+  iocTableColumns, onUpdateTableColumns, searchRequest, onSearchHandled,
 }: IOCStatsViewProps) {
   const [actorsExpanded, setActorsExpanded] = useState(false);
   const [scopeMode, setScopeMode] = useState<'investigation' | 'global'>('investigation');
   const [activeTab, setActiveTab] = useState<TabId>('all-iocs');
+  const [seenSearchRequest, setSeenSearchRequest] = useState(searchRequest?.request);
+  if (searchRequest && searchRequest.request !== seenSearchRequest) { setSeenSearchRequest(searchRequest.request); setActiveTab('all-iocs'); }
+  useEffect(() => { if (searchRequest) onSearchHandled?.(); }, [searchRequest, onSearchHandled]);
   const [showHeaderForm, setShowHeaderForm] = useState(false);
   const [showHeaderBulkImport, setShowHeaderBulkImport] = useState(false);
   const [showHeaderSTIX, setShowHeaderSTIX] = useState(false);
@@ -619,6 +625,7 @@ export function IOCStatsView({
           investigationMembers={investigationMembers}
           iocTableColumns={iocTableColumns}
           onUpdateTableColumns={onUpdateTableColumns}
+          searchRequest={searchRequest}
         />
       )}
       {headerModals}
@@ -745,7 +752,7 @@ function AllIOCsTab({
   onTrashIOC, onRestoreIOC, onToggleArchiveIOC,
   defaultFolderId, currentFolderId, currentFolderName, resultScope,
   onOpenSettings, onNavigateToSource, investigationMembers,
-  iocTableColumns, onUpdateTableColumns,
+  iocTableColumns, onUpdateTableColumns, searchRequest,
 }: {
   rows: UnifiedIOCRow[];
   folders: Folder[];
@@ -766,16 +773,18 @@ function AllIOCsTab({
   investigationMembers?: InvestigationMember[];
   iocTableColumns?: string[];
   onUpdateTableColumns?: (columns: string[]) => void;
+  searchRequest?: { text: string; request: number };
 }) {
   const { getInstallationsForIOCType, addRun } = useIntegrations();
   const { resultRun, showResult, closeResult } = useIntegrationResult(currentFolderId, resultScope);
   const { addToast } = useToast();
   const { t: tt } = useTranslation('toast');
   const { t: ta } = useTranslation('analysis');
+  const { t: tc } = useTranslation('common');
   // The identity each IOC belongs to: one whose name or public detail is its value, in the same investigation.
   const identityLinks = useIdentityLinks();
   const owners = useMemo(() => {
-    const found = new Map<string, Identity>();
+    const found = new Map<string, { identity: Identity; others: number }>();
     if (identityLinks) for (const row of rows) { const owner = identityLinks.belongsTo(row.folderId, row.value); if (owner) found.set(row.id, owner); }
     return found;
   }, [identityLinks, rows]);
@@ -795,8 +804,14 @@ function AllIOCsTab({
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [confidenceFilter, setConfidenceFilter] = useState<ConfidenceLevel | null>(null);
   const [typeFilter, setTypeFilter] = useState<IOCType[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchText, setSearchText] = useState(searchRequest?.text ?? '');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchRequest?.text ?? '');
+  const [seenSearchRequest, setSeenSearchRequest] = useState(searchRequest?.request);
+  if (searchRequest && searchRequest.request !== seenSearchRequest) {
+    setSeenSearchRequest(searchRequest.request);
+    setSearchText(searchRequest.text);
+    setDebouncedSearch(searchRequest.text);
+  }
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(searchText), 150);
     return () => clearTimeout(id);
@@ -1564,12 +1579,18 @@ function AllIOCsTab({
                       <td className="py-2 px-2">
                         {(() => {
                           const owner = owners.get(row.id);
-                          return owner && identityLinks ? (
-                            <button type="button" onClick={() => identityLinks.open(owner)} title={ta('iocList.belongsToHeader')}
+                          if (!owner || !identityLinks) return <span className="text-gray-600">--</span>;
+                          // A value more than one identity holds opens the list filtered to it, so a person chooses.
+                          const ambiguous = owner.others > 0;
+                          const role = ta('iocList.belongsToHeader');
+                          return (
+                            <button type="button" onClick={() => identityLinks.open(owner.identity, ambiguous ? row.value : undefined)} title={role}
+                              aria-label={ambiguous ? tc('identityChip.ambiguous', { text: row.value, role }) : tc('identityChip.open', { text: row.value, role, name: owner.identity.name })}
                               className="inline-flex max-w-[160px] items-center gap-1 text-xs text-accent-blue hover:underline">
-                              <Contact size={10} aria-hidden="true" className="shrink-0" /><span className="truncate">{owner.name}</span>
+                              <Contact size={10} aria-hidden="true" className="shrink-0" /><span className="truncate">{owner.identity.name}</span>
+                              {ambiguous && <span className="shrink-0 text-text-muted">+{owner.others}</span>}
                             </button>
-                          ) : <span className="text-gray-600">--</span>;
+                          );
                         })()}
                       </td>
                     )}

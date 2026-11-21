@@ -120,13 +120,8 @@ export function AttributionComboInput({ value, onChange, actors, identities, pla
           role="listbox"
           className="absolute z-20 left-0 right-0 mt-1 max-h-40 overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg shadow-lg"
         >
-          {groups.map((group) => [
-            labelled && (
-              <li key={`${group.key}-label`} role="presentation" className="px-2 pt-1.5 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                {group.label}
-              </li>
-            ),
-            ...group.items.map((item) => {
+          {groups.map((group) => {
+            const options = group.items.map((item) => {
               const i = ++index;
               return (
                 <li
@@ -147,8 +142,17 @@ export function AttributionComboInput({ value, onChange, actors, identities, pla
                   {item}
                 </li>
               );
-            }),
-          ])}
+            });
+            // With headings, each group is a labelled group of options for assistive technology.
+            return labelled ? (
+              <li key={group.key} role="group" aria-labelledby={`${listId}-${group.key}`}>
+                <div id={`${listId}-${group.key}`} role="presentation" className="px-2 pt-1.5 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  {group.label}
+                </div>
+                <ul role="none">{options}</ul>
+              </li>
+            ) : options;
+          })}
         </ul>
       )}
     </div>
