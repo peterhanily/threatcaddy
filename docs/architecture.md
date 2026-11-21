@@ -120,7 +120,9 @@ A changed history generation or a cursor ahead of the server returns `409 SYNC_C
 
 ### 4.3 Snapshot
 
-`GET /api/sync/snapshot/:folderId` returns a currently authorized investigation as a map of tables to rows, limited to the `tables` the client lists, as for pull. This is not a portable backup or permission to overwrite pending local work. Current client recovery also checks workspace identity and history generation; see [server sync recovery](../server/docs/sync-recovery.md).
+`GET /api/sync/snapshot/:folderId` returns a currently authorized investigation as a map of tables to rows, limited to the `tables` the client lists, as for pull.
+
+The server's change log keeps every revision of every synced record, and history rotation does not compact it. A field removed from a record, including a private identity detail, can therefore still reach a member who joins later, or any device that pulls from the start, through an earlier revision. Members of the investigation at the time already received it. This is not a portable backup or permission to overwrite pending local work. Current client recovery also checks workspace identity and history generation; see [server sync recovery](../server/docs/sync-recovery.md).
 
 ### 4.4 Conflict Resolution
 
