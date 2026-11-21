@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "קשר להערה"
   },
+  "mentionMenu": {
+    "header": "אזכור זהות"
+  },
   "slashCommands": {
     "heading1": "כותרת 1",
     "heading1Desc": "כותרת גדולה",

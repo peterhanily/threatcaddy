@@ -252,6 +252,7 @@
   "iocList.confidenceHeader": "اطمینان",
   "iocList.statusHeader": "وضعیت",
   "iocList.attributionHeader": "انتساب",
+  "iocList.belongsToHeader": "متعلق به",
   "iocList.updatedHeader": "به‌روزرسانی",
 
   "bulkImport.inputTitle": "ورود انبوه IOCها",
@@ -377,5 +378,7 @@
   "stixImport.relationshipsDetected": "{{count}} رابطه شناسایی شد",
   "stixImport.relationshipsDetected_other": "{{count}} رابطه شناسایی شد",
 
-  "attribution.placeholder": "مثلاً APT29، Lazarus Group..."
+  "attribution.placeholder": "مثلاً APT29، Lazarus Group...",
+  "attribution.groupActors": "عاملان تهدید",
+  "attribution.groupIdentities": "هویت‌ها"
 }

@@ -252,6 +252,7 @@
   "iocList.confidenceHeader": "Betrouwbaarheid",
   "iocList.statusHeader": "Status",
   "iocList.attributionHeader": "Attributie",
+  "iocList.belongsToHeader": "Hoort bij",
   "iocList.updatedHeader": "Bijgewerkt",
 
   "bulkImport.inputTitle": "IOC's bulksgewijs importeren",
@@ -377,5 +378,7 @@
   "stixImport.relationshipsDetected": "{{count}} relatie gedetecteerd",
   "stixImport.relationshipsDetected_other": "{{count}} relaties gedetecteerd",
 
-  "attribution.placeholder": "bijv. APT29, Lazarus Group..."
+  "attribution.placeholder": "bijv. APT29, Lazarus Group...",
+  "attribution.groupActors": "Dreigingsactoren",
+  "attribution.groupIdentities": "Identiteiten"
 }

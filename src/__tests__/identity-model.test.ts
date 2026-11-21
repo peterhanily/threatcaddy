@@ -178,7 +178,7 @@ describe('names found in an investigation', () => {
   it('leaves out ignored names and suggests an identity whose name differs only by accents', () => {
     const tomas = make('Tomás Ruiz');
     const found = foundNames({ identities: [tomas], events: [event({ actor: 'Tomas Ruiz' }), event({ actor: 'Noise' })], iocs: [],
-      isIgnored: key => key === foundKey('case', 'noise') });
+      isIgnored: (folderId, text) => foundKey(folderId, text) === foundKey('case', 'noise') });
     expect(found.map(f => f.text)).toEqual(['Tomas Ruiz']);
     expect(found[0].looksLike?.id).toBe(tomas.id);
   });

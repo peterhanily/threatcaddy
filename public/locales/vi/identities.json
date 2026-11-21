@@ -117,6 +117,14 @@
 
   "also.heading": "Cũng có trong cuộc điều tra khác:",
 
+  "activity.heading": "Hoạt động ({{count}})",
+  "activity.none": "Chưa có mục nào trong timeline, ghi chú hoặc IOC nhắc đến {{name}}.",
+  "activity.addNote": "Thêm ghi chú về {{name}}",
+  "activity.untitled": "Chưa có tiêu đề",
+  "activity.kind.event": "Sự kiện",
+  "activity.kind.note": "Ghi chú",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "Thêm danh tính",
   "form.addFromTitle": "Thêm “{{text}}”",
   "form.addFromHint": "Đã điền từ cuộc điều tra này. Hãy sửa bất kỳ thông tin nào chưa đúng.",

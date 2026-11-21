@@ -281,6 +281,35 @@ describe('read only and org charts', () => {
     expect(within(card).getByRole('button', { name: 'Add a detail' })).toHaveFocus();
   });
 
+  it('lists where an identity appears, opens each item, and starts a note about it', async () => {
+    const note = { id: 'n1', title: 'Call notes', content: 'Spoke to Dana Okafor about the invoice.', folderId: 'case', tags: [], pinned: false,
+      archived: false, trashed: false, createdAt: 1, updatedAt: 5 };
+    const payment = event({ id: 'pay', title: 'Payment approved', actor: 'dana okafor', timestamp: 9 });
+    const onOpenEvent = vi.fn();
+    const onOpenNote = vi.fn();
+    const onAddNote = vi.fn();
+    const { user } = setup({ selectRequest: { id: 'dana', request: 1 }, notes: [note], events: [payment, event({ title: 'Unrelated', actor: 'Lee Park' })],
+      iocs: [{ id: 'ioc', type: 'email', value: 'dana@halvorsen.example', confidence: 'medium', folderId: 'case', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 3 }],
+      onOpenEvent, onOpenNote, onAddNote });
+    const activity = within(profile('Dana Okafor')).getByRole('region', { name: 'Activity (3)' });
+    const items = within(activity).getAllByRole('listitem').map(item => item.textContent ?? '');
+    expect(items[0]).toContain('Payment approved');
+    expect(items[1]).toContain('Call notes');
+    expect(items[2]).toContain('dana@halvorsen.example');
+    await user.click(within(activity).getByRole('button', { name: /Payment approved/ }));
+    expect(onOpenEvent).toHaveBeenCalledWith(payment);
+    await user.click(within(activity).getByRole('button', { name: /Call notes/ }));
+    expect(onOpenNote).toHaveBeenCalledWith(note);
+    await user.click(within(activity).getByRole('button', { name: 'Add a note about Dana Okafor' }));
+    expect(onAddNote).toHaveBeenCalledWith(dana);
+  });
+
+  it('offers no new note about an identity in a remote investigation', () => {
+    setup({ selectRequest: { id: 'lee', request: 1 }, readOnly: true, onAddNote: vi.fn() });
+    expect(within(profile('Lee Park')).getByText('Nothing on the timeline, in notes or in IOCs names Lee Park yet.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Add a note about/ })).not.toBeInTheDocument();
+  });
+
   it('does not open Add from the New menu when there is no investigation to add to', () => {
     setup({ folders: [], addRequest: 1 });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

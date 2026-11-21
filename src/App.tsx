@@ -37,6 +37,7 @@ const PlaybookPicker = lazy(() => import('./components/Playbooks/PlaybookPicker'
 const OperationNameGenerator = lazy(() => import('./components/Common/OperationNameGenerator').then(m => ({ default: m.OperationNameGenerator })));
 const EvidenceView = lazy(() => import('./components/Evidence/EvidenceView').then(m => ({ default: m.EvidenceView })));
 const IdentitiesView = lazy(() => import('./components/Identities/IdentitiesView').then(m => ({ default: m.IdentitiesView })));
+import { IdentityLinksProvider } from './components/Identities/IdentityLinksProvider';
 const ProductView = lazy(() => import('./components/Products/ProductView').then(m => ({ default: m.ProductView })));
 import { useActivityLog } from './hooks/useActivityLog';
 import { ActivityLogContext } from './hooks/ActivityLogContext';
@@ -48,7 +49,7 @@ import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile } from './li
 import { useOpenedFiles } from './hooks/useOpenedFiles';
 import { fileNotePersistence } from './lib/file-note-persistence';
 import { useInvestigationData } from './hooks/useInvestigationData';
-import type { ConfidenceLevel, Note, NoteTemplate, StandaloneIOC, ChatThread } from './types';
+import type { ConfidenceLevel, Identity, Note, NoteTemplate, StandaloneIOC, ChatThread } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
 const DashboardView = lazy(() => import('./components/Dashboard/DashboardView').then(m => ({ default: m.DashboardView })));
 import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
@@ -1440,6 +1441,26 @@ const AppInner = memo(function AppInner({
     navigateTo('identities');
   }, [screensafeIdentities, navigateTo, openIdentityInvestigation, setSelectedTag, setShowTrash, setShowArchive]);
 
+  /** Opens an identity linked from a timeline chip, a note mention or an IOC, in its investigation. */
+  const handleOpenLinkedIdentity = useCallback((identity: Identity) => {
+    if (investigationMode !== 'remote') openIdentityInvestigation(identity.folderId);
+    setSelectedTag(undefined); setShowTrash(false); setShowArchive(false);
+    setIdentitySelection(previous => ({ id: identity.id, request: (previous?.request ?? 0) + 1 }));
+    navigateTo('identities');
+  }, [investigationMode, openIdentityInvestigation, setSelectedTag, setShowTrash, setShowArchive, navigateTo]);
+  const linkableIdentities = investigationMode === 'remote' ? remoteData.identities : identitiesHook.identities;
+  /** Starts a note about an identity in its investigation, mentioning it so it links. */
+  const handleAddNoteAboutIdentity = useCallback(async (identity: Identity) => {
+    const folder = folders.find((f) => f.id === identity.folderId);
+    const note = await loggedCreateNote({ folderId: identity.folderId, clsLevel: folder?.clsLevel, title: identity.name, content: `@${identity.name} ` });
+    setShowTrash(false); setShowArchive(false);
+    setSelectedNoteId(note.id);
+    navigateTo('notes', { selectedNoteId: note.id });
+  }, [folders, loggedCreateNote, setShowTrash, setShowArchive, setSelectedNoteId, navigateTo]);
+  const handleCreateIdentity = useCallback((partial: Partial<Identity>) =>
+    loggedCreateIdentity({ ...partial, clsLevel: partial.clsLevel ?? folders.find((f) => f.id === partial.folderId)?.clsLevel }),
+  [loggedCreateIdentity, folders]);
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSearchNavigateToTask = useCallback((_id: string) => {
     setSelectedFolderId(undefined);
@@ -1639,6 +1660,9 @@ const AppInner = memo(function AppInner({
     <ScreenshareContext.Provider value={screenshareCtx}>
     <InvestigationVisibilityScope folders={folders} tags={tags}>
     <ActivityLogContext.Provider value={activityLog.log}>
+    <IdentityLinksProvider identities={linkableIdentities} isVisible={visibility.isEntityVisible} threatActors={settings.attributionActors}
+      folders={folders} readOnly={investigationMode === 'remote'} onCreate={handleCreateIdentity} onUpdate={identitiesHook.updateIdentity}
+      onOpen={handleOpenLinkedIdentity}>
       {/* Analyst mode banner on mobile */}
       {isMobile && forceAnalystMode && (
         <div className="bg-accent/10 border-b border-accent/20 px-3 py-2 flex items-center justify-between text-xs shrink-0">
@@ -1959,13 +1983,14 @@ const AppInner = memo(function AppInner({
             folderId={selectedFolderId}
             events={investigationTimelineEvents}
             iocs={investigationStandaloneIOCs}
+            notes={investigationNotes}
             threatActors={settings.attributionActors}
             readOnly={investigationMode === 'remote'}
             defaultFolderId={selectedFolderId}
             selectRequest={identitySelection}
             addRequest={identityAddRequest}
             onAddHandled={clearIdentityAddRequest}
-            onCreate={(partial) => loggedCreateIdentity({ ...partial, clsLevel: partial.clsLevel ?? folders.find((f) => f.id === partial.folderId)?.clsLevel })}
+            onCreate={handleCreateIdentity}
             onUpdate={identitiesHook.updateIdentity}
             onTrash={loggedTrashIdentity}
             onMerge={loggedMergeIdentities}
@@ -1973,6 +1998,10 @@ const AppInner = memo(function AppInner({
               openIdentityInvestigation(identity.folderId);
               setIdentitySelection((previous) => ({ id: identity.id, request: (previous?.request ?? 0) + 1 }));
             }}
+            onOpenEvent={(event) => handleSearchNavigateToTimeline(event.id)}
+            onOpenNote={(note) => handleSearchNavigateToNote(note.id)}
+            onOpenIOC={() => handleSearchNavigateToIOC()}
+            onAddNote={investigationMode === 'remote' ? undefined : handleAddNoteAboutIdentity}
           />
         ) : activeView === 'products' ? (
           null
@@ -2573,6 +2602,7 @@ const AppInner = memo(function AppInner({
           serverName={serverOnboardingName}
         />
       </Suspense>
+    </IdentityLinksProvider>
     </ActivityLogContext.Provider>
     <ToastContainer />
     <DraftRecoveryNotice />

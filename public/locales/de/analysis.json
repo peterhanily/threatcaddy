@@ -252,6 +252,7 @@
   "iocList.confidenceHeader": "Konfidenz",
   "iocList.statusHeader": "Status",
   "iocList.attributionHeader": "Attribution",
+  "iocList.belongsToHeader": "Gehört zu",
   "iocList.updatedHeader": "Aktualisiert",
 
   "bulkImport.inputTitle": "IOCs massenimportieren",
@@ -377,5 +378,7 @@
   "stixImport.relationshipsDetected": "{{count}} Beziehung erkannt",
   "stixImport.relationshipsDetected_other": "{{count}} Beziehungen erkannt",
 
-  "attribution.placeholder": "z.B. APT29, Lazarus Group..."
+  "attribution.placeholder": "z.B. APT29, Lazarus Group...",
+  "attribution.groupActors": "Bedrohungsakteure",
+  "attribution.groupIdentities": "Identitäten"
 }

@@ -308,5 +308,7 @@
   "demoModal.reportWorkflow": "עקבו אחר ההערות המקושרות מהראיות לטיוטת הדוח. בדקו מסקנות והורידו את הדוח כ-Markdown; שמרו גיבוי של כל סביבת העבודה.",
   "bootGuard.framed": "למען ביטחונך, ThreatCaddy אינו פועל בתוך אתר אחר.",
   "bootGuard.fileOnly": "עותק לא מקוון זה של ThreatCaddy פועל רק כשפותחים את הקובץ השמור במחשב שלך.",
-  "bootGuard.open": "פתיחת ThreatCaddy"
+  "bootGuard.open": "פתיחת ThreatCaddy",
+  "identityChip.open": "{{text}}, פתיחת {{name}} בזהויות",
+  "identityChip.notYet": "{{text}}, עדיין לא בזהויות"
 }

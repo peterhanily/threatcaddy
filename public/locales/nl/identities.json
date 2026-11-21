@@ -117,6 +117,14 @@
 
   "also.heading": "Ook in een ander onderzoek:",
 
+  "activity.heading": "Activiteit ({{count}})",
+  "activity.none": "Nog niets in de tijdlijn, notities of IOC's noemt {{name}}.",
+  "activity.addNote": "Notitie over {{name}} toevoegen",
+  "activity.untitled": "Zonder titel",
+  "activity.kind.event": "Gebeurtenis",
+  "activity.kind.note": "Notitie",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "Identiteit toevoegen",
   "form.addFromTitle": "“{{text}}” toevoegen",
   "form.addFromHint": "Ingevuld vanuit dit onderzoek. Pas aan wat niet klopt.",

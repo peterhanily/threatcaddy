@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Lock, Pencil, Star, X } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import type { Folder, Identity, IdentityStatus } from '../../types';
@@ -33,9 +33,11 @@ interface Props {
   onEdit: () => void;
   onOpen: (identity: Identity) => void;
   onOpenChart: (organization: Identity) => void;
+  /** Shown below details and connections (the Activity list). */
+  children?: ReactNode;
 }
 
-export function IdentityProfile({ identity, byId, sameInvestigation, everywhere, folders, showInvestigation, readOnly, screensharing, labels, onUpdate, onEdit, onOpen, onOpenChart }: Props) {
+export function IdentityProfile({ identity, byId, sameInvestigation, everywhere, folders, showInvestigation, readOnly, screensharing, labels, onUpdate, onEdit, onOpen, onOpenChart, children }: Props) {
   const { t } = labels;
   const ids = useId();
   const [shown, setShown] = useState<ReadonlySet<string>>(new Set());
@@ -250,6 +252,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
           ) : <button ref={connectionButton} type="button" className={cn(linkButton, 'self-start')} onClick={() => { setConnectionForm({ phrase: '', to: '' }); setDetailForm(null); }}>{t('connections.add')}</button>)}
         </section>
       </div>
+      {children}
     </article>
   );
 }

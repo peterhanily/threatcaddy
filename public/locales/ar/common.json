@@ -308,5 +308,7 @@
   "demoModal.reportWorkflow": "اتبع الملاحظات المرتبطة من الأدلة إلى مسودة التقرير. راجع الاستنتاجات ونزّل ملاحظة التقرير بصيغة Markdown؛ واحفظ نسخة احتياطية لمساحة العمل كاملة.",
   "bootGuard.framed": "حفاظًا على أمانك، لا يعمل ThreatCaddy داخل موقع ويب آخر.",
   "bootGuard.fileOnly": "لا تعمل هذه النسخة غير المتصلة من ThreatCaddy إلا عند فتح الملف المحفوظ على جهاز الكمبيوتر لديك.",
-  "bootGuard.open": "فتح ThreatCaddy"
+  "bootGuard.open": "فتح ThreatCaddy",
+  "identityChip.open": "{{text}}، فتح {{name}} في الهويات",
+  "identityChip.notYet": "{{text}}، غير موجود في الهويات بعد"
 }

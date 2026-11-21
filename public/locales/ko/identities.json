@@ -117,6 +117,14 @@
 
   "also.heading": "다른 조사에도 있음:",
 
+  "activity.heading": "활동 ({{count}})",
+  "activity.none": "아직 타임라인, 노트, IOC 어디에도 {{name}}이(가) 언급되지 않았습니다.",
+  "activity.addNote": "{{name}}에 대한 노트 추가",
+  "activity.untitled": "제목 없음",
+  "activity.kind.event": "이벤트",
+  "activity.kind.note": "노트",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "신원 추가",
   "form.addFromTitle": "“{{text}}” 추가",
   "form.addFromHint": "이 조사의 내용으로 채웠습니다. 잘못된 부분은 수정하세요.",

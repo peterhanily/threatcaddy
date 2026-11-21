@@ -117,6 +117,14 @@
 
   "also.heading": "מופיע גם בחקירה אחרת:",
 
+  "activity.heading": "פעילות ({{count}})",
+  "activity.none": "שום דבר בציר הזמן, בהערות או ב-IOCs עדיין לא מזכיר את {{name}}.",
+  "activity.addNote": "הוסף הערה על {{name}}",
+  "activity.untitled": "ללא כותרת",
+  "activity.kind.event": "אירוע",
+  "activity.kind.note": "הערה",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "הוסף זהות",
   "form.addFromTitle": "הוסף את „{{text}}”",
   "form.addFromHint": "מולא מתוך חקירה זו. שנה כל מה שאינו נכון.",

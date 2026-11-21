@@ -308,5 +308,7 @@
   "demoModal.reportWorkflow": "Suivez les notes liées, des preuves au brouillon du rapport. Vérifiez les conclusions et téléchargez la note en Markdown ; sauvegardez séparément tout l’espace de travail.",
   "bootGuard.framed": "Pour votre sécurité, ThreatCaddy ne s’exécute pas à l’intérieur d’un autre site web.",
   "bootGuard.fileOnly": "Cette copie hors ligne de ThreatCaddy ne fonctionne que lorsque vous ouvrez le fichier enregistré sur votre ordinateur.",
-  "bootGuard.open": "Ouvrir ThreatCaddy"
+  "bootGuard.open": "Ouvrir ThreatCaddy",
+  "identityChip.open": "{{text}}, ouvrir {{name}} dans Identités",
+  "identityChip.notYet": "{{text}}, pas encore dans Identités"
 }

@@ -44,8 +44,9 @@ describe('AttributionComboInput today', () => {
     const input = screen.getByPlaceholderText('Actor');
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: 'ARUS' } }); // mid-name and upper case
-    // Today the list is plain <li> items with no listbox/option roles (an accessibility gap Phase 4 replaces).
-    expect(screen.getByText('Lazarus Group').tagName).toBe('LI');
+    // Phase 4 made it a combobox: the suggestions are listbox options (it was plain <li> items before).
+    expect(input).toHaveAttribute('role', 'combobox');
+    expect(screen.getByRole('option', { name: 'Lazarus Group' })).toBeInTheDocument();
     expect(screen.queryByText('APT29')).toBeNull();
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     fireEvent.keyDown(input, { key: 'Enter' });
@@ -79,12 +80,16 @@ describe('TimelineEventForm today', () => {
   });
 });
 
-describe('TimelineEventCard today', () => {
-  it('shows the actor as text and only a count of assets', () => {
-    render(<TimelineEventCard event={event({ actor: 'ghost_ledger', assets: ['Dana Okafor', 'FIN-WS-014'] })} onSelect={vi.fn()} onToggleStar={vi.fn()} />);
-    expect(screen.getByText('ghost_ledger')).toBeInTheDocument();
-    expect(screen.queryByText('FIN-WS-014')).toBeNull();
-    expect(screen.getByText(/2 assets/i)).toBeInTheDocument();
+describe('TimelineEventCard without identity links', () => {
+  // Phase 4: the card shows Actor and the first three Assets as chips (it showed only a count of
+  // assets before). Without the identity link layer they are plain text; identity-links.test.tsx
+  // covers linked and dashed chips.
+  it('shows the actor and the first three assets as plain chips, and counts the rest', () => {
+    render(<TimelineEventCard event={event({ actor: 'ghost_ledger', assets: ['Dana Okafor', 'FIN-WS-014', 'DC01', '10.20.14.88', 'WS-0231'] })} onSelect={vi.fn()} onToggleStar={vi.fn()} />);
+    expect(screen.getByText('ghost_ledger').closest('button')).toBeNull();
+    for (const asset of ['Dana Okafor', 'FIN-WS-014', 'DC01']) expect(screen.getByText(asset).closest('button')).toBeNull();
+    expect(screen.queryByText('10.20.14.88')).toBeNull();
+    expect(screen.getByText('+2')).toHaveAttribute('title', '10.20.14.88, WS-0231');
   });
 });
 

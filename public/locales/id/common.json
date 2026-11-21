@@ -308,5 +308,7 @@
   "demoModal.reportWorkflow": "Ikuti catatan tertaut dari bukti sumber ke draf laporan. Periksa kesimpulan dan unduh catatan laporan sebagai Markdown; simpan cadangan seluruh ruang kerja.",
   "bootGuard.framed": "Demi keamanan Anda, ThreatCaddy tidak berjalan di dalam situs web lain.",
   "bootGuard.fileOnly": "Salinan offline ThreatCaddy ini hanya berjalan saat Anda membuka file yang tersimpan di komputer Anda.",
-  "bootGuard.open": "Buka ThreatCaddy"
+  "bootGuard.open": "Buka ThreatCaddy",
+  "identityChip.open": "{{text}}, buka {{name}} di Identitas",
+  "identityChip.notYet": "{{text}}, belum ada di Identitas"
 }

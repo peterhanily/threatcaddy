@@ -276,8 +276,8 @@ export function foundNames(input: {
   events: readonly TimelineEvent[];
   iocs: readonly StandaloneIOC[];
   threatActors?: readonly string[];
-  /** Whether the analyst ignored a name, by its `foundKey`. */
-  isIgnored?: (key: string) => boolean;
+  /** Whether the analyst ignored a name in an investigation. */
+  isIgnored?: (folderId: string, text: string) => boolean;
 }): FoundName[] {
   const actors = new Set((input.threatActors ?? []).map(sameText));
   const known = new Map<string, Set<string>>();
@@ -299,7 +299,7 @@ export function foundNames(input: {
     const same = sameText(text);
     if (actors.has(same) || known.get(folderId)?.has(same)) return;
     const key = foundKey(folderId, text);
-    if (input.isIgnored?.(key)) return;
+    if (input.isIgnored?.(folderId, text)) return;
     const group = groups.get(key);
     if (group) { if (!group.sources.some(seen => seen.kind === source.kind && seen.id === source.id)) group.sources.push(source); return; }
     groups.set(key, { key, folderId, text, sources: [source], guess: guessIdentity(text), looksLike: loose.get(folderId)?.get(looseText(text)) });

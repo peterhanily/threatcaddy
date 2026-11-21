@@ -117,6 +117,14 @@
 
   "also.heading": "همچنین در تحقیقی دیگر:",
 
+  "activity.heading": "فعالیت ({{count}})",
+  "activity.none": "هنوز چیزی در جدول زمانی، یادداشت‌ها یا IOC‌ها به {{name}} اشاره نمی‌کند.",
+  "activity.addNote": "افزودن یادداشت درباره {{name}}",
+  "activity.untitled": "بی‌عنوان",
+  "activity.kind.event": "رویداد",
+  "activity.kind.note": "یادداشت",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "افزودن هویت",
   "form.addFromTitle": "افزودن «{{text}}»",
   "form.addFromHint": "از این تحقیق پر شده است. هر چیزی را که نادرست است تغییر دهید.",

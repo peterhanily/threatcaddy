@@ -125,6 +125,9 @@
   "linkMenu": {
     "header": "Link to note"
   },
+  "mentionMenu": {
+    "header": "Mention an identity"
+  },
   "slashCommands": {
     "heading1": "Heading 1",
     "heading1Desc": "Large heading",

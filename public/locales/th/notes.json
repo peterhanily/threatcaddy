@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "ลิงก์ไปยังบันทึก"
   },
+  "mentionMenu": {
+    "header": "กล่าวถึงตัวตน"
+  },
   "slashCommands": {
     "heading1": "หัวข้อ 1",
     "heading1Desc": "หัวข้อขนาดใหญ่",

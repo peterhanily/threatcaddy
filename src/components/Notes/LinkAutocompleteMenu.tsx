@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText } from 'lucide-react';
+import { FileText, type LucideIcon } from 'lucide-react';
 
 const MAX_VISIBLE = 8;
 const LINE_HEIGHT = 24;
@@ -17,9 +17,12 @@ interface LinkAutocompleteMenuProps {
   position: { top: number; left: number };
   onSelect: (candidate: LinkCandidate) => void;
   menuRef: RefObject<HTMLDivElement | null>;
+  /** Defaults to linking a note. */
+  header?: string;
+  icon?: LucideIcon;
 }
 
-export function LinkAutocompleteMenu({ items, activeIndex, position, onSelect, menuRef }: LinkAutocompleteMenuProps) {
+export function LinkAutocompleteMenu({ items, activeIndex, position, onSelect, menuRef, header, icon: Icon = FileText }: LinkAutocompleteMenuProps) {
   const { t } = useTranslation('notes');
   const listRef = useRef<HTMLDivElement>(null);
   const [adjustedPos, setAdjustedPos] = useState<{ top: number; left: number } | null>(null);
@@ -72,7 +75,7 @@ export function LinkAutocompleteMenu({ items, activeIndex, position, onSelect, m
       }}
     >
       <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold sticky top-0 bg-gray-800">
-        {t('linkMenu.header')}
+        {header ?? t('linkMenu.header')}
       </div>
       <div ref={listRef}>
         {items.map((item, index) => (
@@ -87,7 +90,7 @@ export function LinkAutocompleteMenu({ items, activeIndex, position, onSelect, m
               onSelect(item);
             }}
           >
-            <FileText size={14} className="shrink-0 text-gray-400" />
+            <Icon size={14} className="shrink-0 text-gray-400" />
             <span className="truncate">{item.title}</span>
           </button>
         ))}

@@ -117,6 +117,14 @@
 
   "also.heading": "也出现在其他调查中：",
 
+  "activity.heading": "活动（{{count}}）",
+  "activity.none": "时间线、笔记和 IOC 中尚未提及 {{name}}。",
+  "activity.addNote": "添加关于 {{name}} 的笔记",
+  "activity.untitled": "未命名",
+  "activity.kind.event": "事件",
+  "activity.kind.note": "笔记",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "添加身份",
   "form.addFromTitle": "添加“{{text}}”",
   "form.addFromHint": "已根据此调查填写。如有错误请修改。",

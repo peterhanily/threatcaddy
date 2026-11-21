@@ -308,5 +308,7 @@
   "demoModal.reportWorkflow": "Volg de gekoppelde notities van bewijs naar conceptrapport. Controleer de conclusies en download de rapportnotitie als Markdown; gebruik Back-up opslaan voor de volledige werkruimte.",
   "bootGuard.framed": "Voor je veiligheid draait ThreatCaddy niet binnen een andere website.",
   "bootGuard.fileOnly": "Deze offline kopie van ThreatCaddy werkt alleen als je het bestand opent dat op je computer is opgeslagen.",
-  "bootGuard.open": "ThreatCaddy openen"
+  "bootGuard.open": "ThreatCaddy openen",
+  "identityChip.open": "{{text}}, {{name}} openen in Identiteiten",
+  "identityChip.notYet": "{{text}}, nog niet in Identiteiten"
 }

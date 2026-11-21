@@ -117,6 +117,14 @@
 
   "also.heading": "Również w innym dochodzeniu:",
 
+  "activity.heading": "Aktywność ({{count}})",
+  "activity.none": "Nic na osi czasu, w notatkach ani w IOC nie wymienia jeszcze {{name}}.",
+  "activity.addNote": "Dodaj notatkę o {{name}}",
+  "activity.untitled": "Bez tytułu",
+  "activity.kind.event": "Zdarzenie",
+  "activity.kind.note": "Notatka",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "Dodaj tożsamość",
   "form.addFromTitle": "Dodaj „{{text}}”",
   "form.addFromHint": "Wypełniono na podstawie tego dochodzenia. Popraw to, co się nie zgadza.",

@@ -308,5 +308,7 @@
   "demoModal.reportWorkflow": "जुड़े नोटों से स्रोत साक्ष्य से रिपोर्ट मसौदे तक जाएँ। निष्कर्ष जाँचें और रिपोर्ट नोट Markdown में डाउनलोड करें; पूरे कार्यक्षेत्र का बैकअप सहेजें।",
   "bootGuard.framed": "आपकी सुरक्षा के लिए, ThreatCaddy किसी दूसरी वेबसाइट के अंदर नहीं चलता।",
   "bootGuard.fileOnly": "ThreatCaddy की यह ऑफ़लाइन कॉपी केवल तभी चलती है जब आप अपने कंप्यूटर पर सहेजी गई फ़ाइल खोलते हैं।",
-  "bootGuard.open": "ThreatCaddy खोलें"
+  "bootGuard.open": "ThreatCaddy खोलें",
+  "identityChip.open": "{{text}}, पहचान में {{name}} खोलें",
+  "identityChip.notYet": "{{text}}, अभी पहचान में नहीं है"
 }

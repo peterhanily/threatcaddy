@@ -308,5 +308,7 @@
   "demoModal.reportWorkflow": "Kaynak kanıtlardan rapor taslağına bağlantılı notları izleyin. Sonuçları inceleyin ve raporu Markdown olarak indirin; tüm çalışma alanının yedeğini kaydedin.",
   "bootGuard.framed": "Güvenliğiniz için ThreatCaddy başka bir web sitesinin içinde çalışmaz.",
   "bootGuard.fileOnly": "ThreatCaddy'nin bu çevrimdışı kopyası yalnızca bilgisayarınıza kaydedilen dosyayı açtığınızda çalışır.",
-  "bootGuard.open": "ThreatCaddy'yi aç"
+  "bootGuard.open": "ThreatCaddy'yi aç",
+  "identityChip.open": "{{text}}, Kimlikler'de {{name}} öğesini aç",
+  "identityChip.notYet": "{{text}}, henüz Kimlikler'de yok"
 }

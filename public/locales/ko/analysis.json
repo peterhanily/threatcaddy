@@ -390,6 +390,7 @@
   "iocList.confidenceHeader": "신뢰도",
   "iocList.statusHeader": "상태",
   "iocList.attributionHeader": "귀속",
+  "iocList.belongsToHeader": "소유자",
   "iocList.updatedHeader": "업데이트됨",
 
   "bulkImport.inputTitle": "IOC 일괄 가져오기",
@@ -504,5 +505,7 @@
   "stixImport.relationshipsDetected": "{{count}}개 관계 감지됨",
   "stixImport.relationshipsDetected_other": "{{count}}개 관계 감지됨",
 
-  "attribution.placeholder": "예: APT29, Lazarus Group..."
+  "attribution.placeholder": "예: APT29, Lazarus Group...",
+  "attribution.groupActors": "위협 행위자",
+  "attribution.groupIdentities": "신원"
 }

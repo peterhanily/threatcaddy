@@ -308,5 +308,7 @@
   "demoModal.reportWorkflow": "リンクされたノートで証拠からレポート案まで確認できます。結論を検証し、レポートを Markdown でダウンロードしてください。作業領域全体は別途バックアップを保存します。",
   "bootGuard.framed": "安全のため、ThreatCaddy は他のウェブサイト内では動作しません。",
   "bootGuard.fileOnly": "この ThreatCaddy のオフライン版は、コンピューターに保存したファイルを開いた場合にのみ動作します。",
-  "bootGuard.open": "ThreatCaddy を開く"
+  "bootGuard.open": "ThreatCaddy を開く",
+  "identityChip.open": "{{text}}、アイデンティティで {{name}} を開く",
+  "identityChip.notYet": "{{text}}、まだアイデンティティにありません"
 }

@@ -117,6 +117,14 @@
 
   "also.heading": "Also in another investigation:",
 
+  "activity.heading": "Activity ({{count}})",
+  "activity.none": "Nothing on the timeline, in notes or in IOCs names {{name}} yet.",
+  "activity.addNote": "Add a note about {{name}}",
+  "activity.untitled": "Untitled",
+  "activity.kind.event": "Event",
+  "activity.kind.note": "Note",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "Add an identity",
   "form.addFromTitle": "Add “{{text}}”",
   "form.addFromHint": "Filled in from this investigation. Change anything that's wrong.",

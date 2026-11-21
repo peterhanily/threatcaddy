@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "Nota bağla"
   },
+  "mentionMenu": {
+    "header": "Bir kimliği etiketle"
+  },
   "slashCommands": {
     "heading1": "Başlık 1",
     "heading1Desc": "Büyük başlık",

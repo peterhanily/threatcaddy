@@ -252,6 +252,7 @@
   "iocList.confidenceHeader": "信頼度",
   "iocList.statusHeader": "ステータス",
   "iocList.attributionHeader": "帰属",
+  "iocList.belongsToHeader": "所属先",
   "iocList.updatedHeader": "更新日時",
 
   "bulkImport.inputTitle": "IOCを一括インポート",
@@ -377,5 +378,7 @@
   "stixImport.relationshipsDetected": "{{count}} 件の関係を検出しました",
   "stixImport.relationshipsDetected_other": "{{count}} 件の関係を検出しました",
 
-  "attribution.placeholder": "例：APT29, Lazarus Group..."
+  "attribution.placeholder": "例：APT29, Lazarus Group...",
+  "attribution.groupActors": "脅威アクター",
+  "attribution.groupIdentities": "アイデンティティ"
 }

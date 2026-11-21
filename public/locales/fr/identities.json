@@ -117,6 +117,14 @@
 
   "also.heading": "Aussi dans une autre enquête :",
 
+  "activity.heading": "Activité ({{count}})",
+  "activity.none": "Rien dans la chronologie, les notes ou les IOCs ne mentionne encore {{name}}.",
+  "activity.addNote": "Ajouter une note sur {{name}}",
+  "activity.untitled": "Sans titre",
+  "activity.kind.event": "Événement",
+  "activity.kind.note": "Note",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "Ajouter une identité",
   "form.addFromTitle": "Ajouter « {{text}} »",
   "form.addFromHint": "Prérempli à partir de cette enquête. Corrigez ce qui est inexact.",

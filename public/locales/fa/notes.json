@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "پیوند به یادداشت"
   },
+  "mentionMenu": {
+    "header": "اشاره به یک هویت"
+  },
   "slashCommands": {
     "heading1": "سرتیتر ۱",
     "heading1Desc": "سرتیتر بزرگ",

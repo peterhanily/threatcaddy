@@ -117,6 +117,14 @@
 
   "also.heading": "موجود أيضًا في تحقيق آخر:",
 
+  "activity.heading": "النشاط ({{count}})",
+  "activity.none": "لا شيء في الجدول الزمني أو الملاحظات أو IOCs يذكر {{name}} بعد.",
+  "activity.addNote": "إضافة ملاحظة عن {{name}}",
+  "activity.untitled": "بدون عنوان",
+  "activity.kind.event": "حدث",
+  "activity.kind.note": "ملاحظة",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "إضافة هوية",
   "form.addFromTitle": "إضافة «{{text}}»",
   "form.addFromHint": "مُعبّأ من هذا التحقيق. غيّر أي شيء غير صحيح.",

@@ -117,6 +117,14 @@
 
   "also.heading": "Também em outra investigação:",
 
+  "activity.heading": "Atividade ({{count}})",
+  "activity.none": "Nada na linha do tempo, nas notas ou nos IOCs menciona {{name}} ainda.",
+  "activity.addNote": "Adicionar uma nota sobre {{name}}",
+  "activity.untitled": "Sem título",
+  "activity.kind.event": "Evento",
+  "activity.kind.note": "Nota",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "Adicionar uma identidade",
   "form.addFromTitle": "Adicionar “{{text}}”",
   "form.addFromHint": "Preenchido a partir desta investigação. Corrija o que estiver errado.",

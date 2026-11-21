@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import type { Identity, IdentityStatus } from '../../types';
 import {
   BUILTIN_TYPES, CONNECTION_PHRASES, DETAIL_LABELS, PRIVATE_DETAIL_LABELS, isBuiltinType, isConnectionPhrase, isPerson,
-  organizationOf, sameText, type BuiltinType, type ConnectionPhrase,
+  organizationOf, sameText, type BuiltinType, type ConnectionPhrase, type FoundName,
 } from '../../lib/identity-model';
+import type { AddPrefill } from './IdentityFormModal';
 
 /** Translated labels for types, statuses, connection phrases and detail labels. */
 export function useIdentityLabels() {
@@ -38,6 +39,17 @@ export function useIdentityLabels() {
 export type IdentityLabels = ReturnType<typeof useIdentityLabels>;
 /** An identity's new field values, or a function that computes them from the stored row. */
 export type IdentityChange = Partial<Identity> | ((current: Identity) => Partial<Identity>);
+
+/** The Add form filled in from a name found in an investigation. */
+export function prefillFromFound(found: Pick<FoundName, 'text' | 'guess' | 'folderId'>, labels: Pick<IdentityLabels, 't'>): AddPrefill {
+  const { guess } = found;
+  return { name: found.text, type: guess.type, folderId: found.folderId, fromText: found.text,
+    ...(guess.detailLabel ? { detailLabel: labels.t(`detailLabel.${guess.detailLabel}`), detailValue: found.text } : {}) };
+}
+
+/** Adds text as another name of an identity, unless it already has it. */
+export const withOtherName = (text: string) => (current: Identity): Partial<Identity> =>
+  ({ aliases: current.aliases.some(alias => sameText(alias) === sameText(text)) ? current.aliases : [...current.aliases, text] });
 
 export const STATUS_DOT: Record<IdentityStatus, string> = {
   compromised: 'bg-red-500', suspicious: 'bg-amber-500', cleared: 'bg-green-500',

@@ -117,6 +117,14 @@
 
   "also.heading": "Також є в іншому розслідуванні:",
 
+  "activity.heading": "Активність ({{count}})",
+  "activity.none": "Поки ніщо в хронології, нотатках чи IOC не згадує {{name}}.",
+  "activity.addNote": "Додати нотатку про {{name}}",
+  "activity.untitled": "Без назви",
+  "activity.kind.event": "Подія",
+  "activity.kind.note": "Нотатка",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "Додати суб'єкт",
   "form.addFromTitle": "Додати «{{text}}»",
   "form.addFromHint": "Заповнено з цього розслідування. Змініть усе, що неправильно.",

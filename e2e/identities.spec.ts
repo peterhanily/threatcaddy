@@ -260,3 +260,55 @@ test('reaches the list with the Tab key and opens a profile with Enter', async (
   await page.keyboard.press('Enter');
   await expect(card(page, 'Lee Park')).toBeVisible();
 });
+
+test('links timeline chips to identities, adds a new name without leaving the timeline, and lists it in Activity', async ({ page }) => {
+  await seed(page, {
+    folders: [folder('case', 'Fictional BEC case')],
+    timelines: [{ id: 'tl', name: 'Main', order: 0, createdAt: now, updatedAt: now }],
+    timelineEvents: [event('e1', 'case', 'Payment approved', { actor: 'Dana Okafor', assets: ['FIN-WS-014', 'dana@halvorsen.example'] })],
+    identities: [identity('dana', 'case', 'Dana Okafor', { details: [{ id: 'email', label: 'Email', value: 'dana@halvorsen.example' }] })],
+  }, { view: 'timeline', selectedFolderId: 'case' });
+
+  const payment = page.getByRole('group', { name: 'Payment approved' });
+  await expect(payment.getByRole('button', { name: 'dana@halvorsen.example, open Dana Okafor in Identities' })).toBeVisible();
+  await payment.getByRole('button', { name: 'FIN-WS-014, not yet in Identities' }).click();
+  await page.getByRole('dialog', { name: '“FIN-WS-014”' }).getByRole('button', { name: /Add as a new identity/ }).click();
+  const add = page.getByRole('dialog', { name: 'Add “FIN-WS-014”' });
+  await expect(add.getByRole('combobox', { name: 'Type' })).toHaveValue('System');
+  await add.getByRole('button', { name: 'Add' }).click();
+  // Still on the timeline; the chip now links.
+  await expect(payment.getByRole('button', { name: 'FIN-WS-014, open FIN-WS-014 in Identities' })).toBeVisible();
+
+  await payment.getByRole('button', { name: 'Dana Okafor, open Dana Okafor in Identities' }).click();
+  const activity = card(page, 'Dana Okafor').getByRole('region', { name: 'Activity (1)' });
+  await expect(activity.getByRole('button', { name: /Payment approved/ })).toBeVisible();
+  await activity.getByRole('button', { name: /Payment approved/ }).click();
+  await expect(page.getByRole('group', { name: 'Payment approved' })).toBeVisible();
+});
+
+test('mentions an identity in a note with @, links it in the preview, and shows the IOCs it owns', async ({ page }) => {
+  await seed(page, {
+    folders: [folder('case', 'Fictional BEC case')],
+    notes: [{ id: 'n1', folderId: 'case', title: 'Call notes', content: '', tags: [], pinned: false, archived: false, trashed: false, createdAt: now, updatedAt: now }],
+    standaloneIOCs: [{ id: 'ioc1', folderId: 'case', type: 'email', value: 'lee@halvorsen.example', confidence: 'medium', tags: [], trashed: false, archived: false, createdAt: now, updatedAt: now }],
+    identities: [identity('lee', 'case', 'Lee Park', { details: [{ id: 'email', label: 'Email', value: 'lee@halvorsen.example' }] })],
+  }, { view: 'notes', selectedFolderId: 'case', selectedNoteId: 'n1' });
+
+  const editor = page.locator('textarea.note-editor');
+  await editor.click();
+  await editor.pressSequentially('Spoke to @lee');
+  await expect(page.getByText('Mention an identity')).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(editor).toHaveValue('Spoke to @Lee Park ');
+  await editor.pressSequentially('about the invoice.');
+  await page.getByRole('button', { name: 'Preview mode' }).click();
+  await page.getByRole('link', { name: '@Lee Park' }).click();
+  const lee = card(page, 'Lee Park');
+  await expect(lee.getByRole('region', { name: /^Activity/ }).getByRole('button', { name: /Call notes/ })).toBeVisible();
+  await expect(lee.getByRole('region', { name: /^Activity/ }).getByRole('button', { name: /lee@halvorsen\.example/ })).toBeVisible();
+
+  await navigateToView(page, 'IOCs');
+  await expect(page.getByRole('columnheader', { name: 'Belongs to' })).toBeVisible();
+  await page.getByRole('button', { name: 'Lee Park', exact: true }).click();
+  await expect(card(page, 'Lee Park')).toBeVisible();
+});

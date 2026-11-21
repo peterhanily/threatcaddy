@@ -117,6 +117,14 @@
 
   "also.heading": "Juga ada di investigasi lain:",
 
+  "activity.heading": "Aktivitas ({{count}})",
+  "activity.none": "Belum ada apa pun di timeline, catatan, atau IOC yang menyebut {{name}}.",
+  "activity.addNote": "Tambah catatan tentang {{name}}",
+  "activity.untitled": "Tanpa judul",
+  "activity.kind.event": "Kejadian",
+  "activity.kind.note": "Catatan",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "Tambah identitas",
   "form.addFromTitle": "Tambah “{{text}}”",
   "form.addFromHint": "Diisi dari investigasi ini. Ubah apa pun yang salah.",

@@ -1,6 +1,7 @@
 import { Marked } from 'marked';
 import hljs from 'highlight.js/lib/core';
 import DOMPurify from 'dompurify';
+import { findMentions, type FolderIndex } from './identity-match';
 
 // Load highlight.js CSS on first use (removed from index.css to avoid blocking initial render)
 let hljsCssLoaded = false;
@@ -100,7 +101,7 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
 // Validate data-entity-id and data-note-id values to safe ID format (nanoid: alphanumeric + _-)
 const SAFE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 DOMPurify.addHook('afterSanitizeAttributes', (node) => {
-  for (const attr of ['data-entity-id', 'data-note-id'] as const) {
+  for (const attr of ['data-entity-id', 'data-note-id', 'data-identity-id'] as const) {
     const val = node.getAttribute(attr);
     if (val !== null && !SAFE_ID_RE.test(val)) {
       node.removeAttribute(attr);
@@ -158,12 +159,33 @@ export function preprocessWikiLinks(content: string, notes: WikiLinkTarget[]): s
   }).join('');
 }
 
+/**
+ * Turns `@Name` mentions of an investigation's identities into links, skipping code, [[note
+ * links]] and HTML tags. The mention text is escaped, the ID is checked by SAFE_ID_RE, and the
+ * result still goes through DOMPurify.
+ */
+export function preprocessIdentityMentions(content: string, folder: FolderIndex): string {
+  return content.split(/(```[\s\S]*?```|`[^`]+`|\[\[[^\]]+\]\]|<[^>]+>)/).map((part, i) => {
+    if (i % 2 === 1) return part;
+    const mentions = findMentions(part, folder);
+    if (!mentions.length) return part;
+    let out = '';
+    let last = 0;
+    for (const mention of mentions) {
+      out += part.slice(last, mention.start)
+        + `<a href="#" data-identity-link="true" data-identity-id="${escapeHtml(mention.identity.id)}" class="tclink">${escapeHtml(part.slice(mention.start, mention.end))}</a>`;
+      last = mention.end;
+    }
+    return out + part.slice(last);
+  }).join('');
+}
+
 /** Shared DOMPurify config — single source of truth for all sanitization. */
 const SANITIZE_CONFIG = {
   RETURN_DOM_FRAGMENT: false,
   RETURN_DOM: false,
   ADD_TAGS: ['input'],
-  ADD_ATTR: ['type', 'checked', 'disabled', 'class', 'data-note-link', 'data-note-id', 'data-entity-type', 'data-entity-id'],
+  ADD_ATTR: ['type', 'checked', 'disabled', 'class', 'data-note-link', 'data-note-id', 'data-entity-type', 'data-entity-id', 'data-identity-link', 'data-identity-id'],
   FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'base', 'meta', 'link', 'style'],
   FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onsubmit'],
 };
@@ -182,10 +204,15 @@ export function sanitizeHtml(html: string, options?: { disableMedia?: boolean })
   return DOMPurify.sanitize(html, options?.disableMedia ? NO_MEDIA_SANITIZE_CONFIG : SANITIZE_CONFIG) as string;
 }
 
-export function renderMarkdown(content: string, wikiLinkTargets?: WikiLinkTarget[], options?: { disableMedia?: boolean }): string {
+export function renderMarkdown(content: string, wikiLinkTargets?: WikiLinkTarget[], options?: {
+  disableMedia?: boolean;
+  /** The note's investigation, so `@Name` mentions of its identities become links. */
+  identities?: FolderIndex;
+}): string {
   // Load highlight.js CSS on first use (lazy-loaded to avoid blocking initial render)
   ensureHljsCss();
-  const processed = wikiLinkTargets ? preprocessWikiLinks(content, wikiLinkTargets) : content;
+  const mentioned = options?.identities ? preprocessIdentityMentions(content, options.identities) : content;
+  const processed = wikiLinkTargets ? preprocessWikiLinks(mentioned, wikiLinkTargets) : mentioned;
   const raw = marked.parse(processed) as string;
   return sanitizeHtml(raw, options);
 }

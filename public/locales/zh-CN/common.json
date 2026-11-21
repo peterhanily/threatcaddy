@@ -308,5 +308,7 @@
   "demoModal.reportWorkflow": "通过关联笔记从源证据了解报告草稿。审阅结论并将报告笔记下载为 Markdown；使用“保存备份”保留整个工作区。",
   "bootGuard.framed": "为了您的安全，ThreatCaddy 不会在其他网站内运行。",
   "bootGuard.fileOnly": "此 ThreatCaddy 离线副本仅在您打开保存在计算机上的文件时运行。",
-  "bootGuard.open": "打开 ThreatCaddy"
+  "bootGuard.open": "打开 ThreatCaddy",
+  "identityChip.open": "{{text}}，在身份中打开 {{name}}",
+  "identityChip.notYet": "{{text}}，尚未加入身份"
 }

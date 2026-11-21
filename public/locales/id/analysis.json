@@ -252,6 +252,7 @@
   "iocList.confidenceHeader": "Kepercayaan",
   "iocList.statusHeader": "Status",
   "iocList.attributionHeader": "Atribusi",
+  "iocList.belongsToHeader": "Milik",
   "iocList.updatedHeader": "Diperbarui",
 
   "bulkImport.inputTitle": "Impor Massal IOC",
@@ -377,5 +378,7 @@
   "stixImport.relationshipsDetected": "{{count}} hubungan terdeteksi",
   "stixImport.relationshipsDetected_other": "{{count}} hubungan terdeteksi",
 
-  "attribution.placeholder": "misal APT29, Lazarus Group..."
+  "attribution.placeholder": "misal APT29, Lazarus Group...",
+  "attribution.groupActors": "Aktor ancaman",
+  "attribution.groupIdentities": "Identitas"
 }

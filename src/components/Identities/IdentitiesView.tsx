@@ -1,33 +1,19 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Contact, Plus, Star } from 'lucide-react';
-import type { Folder, Identity, StandaloneIOC, TimelineEvent } from '../../types';
+import type { Folder, Identity, Note, StandaloneIOC, TimelineEvent } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { useScreenshare } from '../../hooks/ScreenshareContext';
-import { BUILTIN_TYPES, byName, foundNames, identityMatches, ignoredHash, isBuiltinType, looseText, sameText, type FoundName } from '../../lib/identity-model';
-import { workspaceStorageKey } from '../../lib/workspace-profiles';
+import { BUILTIN_TYPES, byName, foundNames, identityMatches, isBuiltinType, looseText, type FoundName } from '../../lib/identity-model';
+import { useIgnoredNames } from '../../hooks/useIgnoredNames';
+import { activityOf } from '../../lib/identity-match';
+import { IdentityActivitySection } from './IdentityActivity';
 import { cn } from '../../lib/utils';
 import { IdentityAvatar, InvestigationPill } from './identity-ui';
-import { STATUS_DOT, identitySubtitle, useIdentityLabels, type IdentityChange } from './identity-labels';
+import { STATUS_DOT, identitySubtitle, prefillFromFound, useIdentityLabels, withOtherName, type IdentityChange } from './identity-labels';
 import { IdentityProfile } from './IdentityProfile';
 import { IdentityFormModal, type AddPrefill } from './IdentityFormModal';
 import { FoundNameDialog, FoundNamesPanel } from './FoundNames';
 import { OrgCharts } from './OrgCharts';
-
-/**
- * Names the analyst chose to ignore: a per-device UI preference, kept per workspace like other
- * view settings. Only a hash of each name is stored: the names come from encrypted fields, so
- * readable text must not sit in browser storage.
- */
-const ignoredStorageKey = () => workspaceStorageKey('threatcaddy-identities-ignored-v2');
-function readIgnored(): Set<string> {
-  try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(ignoredStorageKey()) ?? '[]');
-    return new Set(Array.isArray(parsed) ? parsed.filter((key): key is string => typeof key === 'string') : []);
-  } catch { return new Set(); }
-}
-function writeIgnored(hashes: ReadonlySet<string>) {
-  try { localStorage.setItem(ignoredStorageKey(), JSON.stringify([...hashes])); } catch { /* Storage is unavailable; it lasts for this session. */ }
-}
 
 type Filter = 'all' | 'contact' | 'other' | (typeof BUILTIN_TYPES)[number];
 const FILTERS: Filter[] = ['all', 'person', 'contact', 'organization', 'system', 'account', 'other'];
@@ -44,6 +30,8 @@ export interface IdentitiesViewProps {
   /** Timeline events and IOCs in the same scope, for the names not yet in Identities. */
   events: TimelineEvent[];
   iocs: StandaloneIOC[];
+  /** Notes in the same scope, for each profile's Activity. */
+  notes?: Note[];
   /** Threat actor names from Settings, tracked separately from identities. */
   threatActors?: string[];
   readOnly?: boolean;
@@ -59,11 +47,17 @@ export interface IdentitiesViewProps {
   onMerge: (keepId: string, goneId: string) => Promise<void>;
   /** Shows an identity that belongs to another investigation. */
   onOpenElsewhere?: (identity: Identity) => void;
+  /** Open an item from a profile's Activity. */
+  onOpenEvent?: (event: TimelineEvent) => void;
+  onOpenNote?: (note: Note) => void;
+  onOpenIOC?: (ioc: StandaloneIOC) => void;
+  /** Starts a note about an identity; absent when read-only. */
+  onAddNote?: (identity: Identity) => void;
 }
 
 export function IdentitiesView(props: IdentitiesViewProps) {
-  const { identities, allIdentities, folders, folderId, events, iocs, threatActors, readOnly = false, defaultFolderId, selectRequest, addRequest,
-    onAddHandled, onCreate, onUpdate, onTrash, onMerge, onOpenElsewhere } = props;
+  const { identities, allIdentities, folders, folderId, events, iocs, notes, threatActors, readOnly = false, defaultFolderId, selectRequest, addRequest,
+    onAddHandled, onCreate, onUpdate, onTrash, onMerge, onOpenElsewhere, onOpenEvent, onOpenNote, onOpenIOC, onAddNote } = props;
   const labels = useIdentityLabels();
   const { t } = labels;
   const ids = useId();
@@ -76,7 +70,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const [filter, setFilter] = useState<Filter>('all');
   const [form, setForm] = useState<{ editing?: Identity; prefill?: AddPrefill } | null>(null);
   const [picked, setPicked] = useState<FoundName | null>(null);
-  const [ignored, setIgnored] = useState(readIgnored);
+  const { isIgnored, ignore: ignoreName } = useIgnoredNames();
 
   // Requests from outside (search, the New menu) are applied once, while rendering.
   const [seenSelect, setSeenSelect] = useState(selectRequest);
@@ -98,12 +92,13 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const byId = useMemo(() => new Map([...allIdentities, ...identities].map(identity => [identity.id, identity])), [allIdentities, identities]);
   // Archived identities still name things, so their names are not "found" again.
   const known = useMemo(() => identities.filter(identity => !identity.trashed), [identities]);
-  const found = useMemo(() => (readOnly ? [] : foundNames({ identities: known, events, iocs, threatActors, isIgnored: key => ignored.has(ignoredHash(key)) })),
-    [readOnly, known, events, iocs, threatActors, ignored]);
+  const found = useMemo(() => (readOnly ? [] : foundNames({ identities: known, events, iocs, threatActors, isIgnored })),
+    [readOnly, known, events, iocs, threatActors, isIgnored]);
 
   const rows = live.filter(identity => matchesFilter(identity, filter) && identityMatches(identity, query, labels.typeLabel(identity.type)));
   const selected = live.find(identity => identity.id === selectedId) ?? rows[0] ?? live[0];
   const filters = FILTERS.filter(option => option === 'all' || option === filter || live.some(identity => matchesFilter(identity, option)));
+  const activity = useMemo(() => (selected ? activityOf(selected, { events, notes: notes ?? [], iocs }) : undefined), [selected, events, notes, iocs]);
 
   /** Reports a failed save, then rejects, so a form that waits for it stays open. */
   const run = useCallback(async (action: () => Promise<unknown>, success?: string) => {
@@ -117,8 +112,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
     if (!rows.some(row => row.id === identity.id)) { setQuery(''); setFilter('all'); }
   }, [folderId, onOpenElsewhere, rows]);
   const ignore = (name: FoundName) => {
-    const next = new Set(ignored).add(ignoredHash(name.key));
-    setIgnored(next); writeIgnored(next); setPicked(null);
+    ignoreName(name.folderId, name.text); setPicked(null);
     addToast('info', t('toast.ignored', { text: name.text }));
   };
 
@@ -216,7 +210,12 @@ export function IdentitiesView(props: IdentitiesViewProps) {
                     onEdit={() => setForm({ editing: selected })}
                     onOpen={open}
                     onOpenChart={organization => { setOrganizationId(organization.id); setTab('org'); }}
-                  />
+                  >
+                    {activity && (
+                      <IdentityActivitySection identity={selected} activity={activity} labels={labels} onOpenEvent={onOpenEvent}
+                        onOpenNote={onOpenNote} onOpenIOC={onOpenIOC} onAddNote={readOnly ? undefined : onAddNote} />
+                    )}
+                  </IdentityProfile>
                 ) : <p className="rounded-lg border border-border-subtle bg-bg-surface p-4 text-sm text-text-muted">{live.length ? t('profile.select') : t('list.empty')}</p>}
               </div>
             </>
@@ -259,17 +258,11 @@ export function IdentitiesView(props: IdentitiesViewProps) {
           labels={labels}
           onClose={() => setPicked(null)}
           onIgnore={() => ignore(picked)}
-          onAddNew={() => {
-            const guess = picked.guess;
-            setPicked(null);
-            setForm({ prefill: { name: picked.text, type: guess.type, folderId: picked.folderId, fromText: picked.text,
-              ...(guess.detailLabel ? { detailLabel: t(`detailLabel.${guess.detailLabel}`), detailValue: picked.text } : {}) } });
-          }}
+          onAddNew={() => { setPicked(null); setForm({ prefill: prefillFromFound(picked, labels) }); }}
           onAddAsOtherName={identity => {
             const text = picked.text;
             setPicked(null);
-            void run(() => onUpdate(identity.id, current => ({ aliases: current.aliases.some(alias => sameText(alias) === sameText(text)) ? current.aliases : [...current.aliases, text] })),
-              t('toast.otherNameAdded', { text, name: identity.name })).catch(() => { /* Reported. */ });
+            void run(() => onUpdate(identity.id, withOtherName(text)), t('toast.otherNameAdded', { text, name: identity.name })).catch(() => { /* Reported. */ });
             setSelectedId(identity.id);
           }}
         />

@@ -308,5 +308,7 @@
   "demoModal.reportWorkflow": "Folgen Sie den verknüpften Notizen von den Belegen zum Berichtsentwurf. Prüfen Sie die Schlussfolgerungen und laden Sie die Berichtsnotiz als Markdown herunter; sichern Sie den gesamten Arbeitsbereich mit „Backup speichern“.",
   "bootGuard.framed": "Zu Ihrer Sicherheit läuft ThreatCaddy nicht innerhalb einer anderen Website.",
   "bootGuard.fileOnly": "Diese Offline-Kopie von ThreatCaddy läuft nur, wenn Sie die auf Ihrem Computer gespeicherte Datei öffnen.",
-  "bootGuard.open": "ThreatCaddy öffnen"
+  "bootGuard.open": "ThreatCaddy öffnen",
+  "identityChip.open": "{{text}}, {{name}} in Identitäten öffnen",
+  "identityChip.notYet": "{{text}}, noch nicht in Identitäten"
 }

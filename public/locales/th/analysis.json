@@ -390,6 +390,7 @@
   "iocList.confidenceHeader": "ความเชื่อมั่น",
   "iocList.statusHeader": "สถานะ",
   "iocList.attributionHeader": "การระบุที่มา",
+  "iocList.belongsToHeader": "เป็นของ",
   "iocList.updatedHeader": "อัปเดตแล้ว",
 
   "bulkImport.inputTitle": "นำเข้า IOC จำนวนมาก",
@@ -504,5 +505,7 @@
   "stixImport.relationshipsDetected": "ตรวจพบ {{count}} ความสัมพันธ์",
   "stixImport.relationshipsDetected_other": "ตรวจพบ {{count}} ความสัมพันธ์",
 
-  "attribution.placeholder": "เช่น APT29, Lazarus Group..."
+  "attribution.placeholder": "เช่น APT29, Lazarus Group...",
+  "attribution.groupActors": "ผู้กระทำภัยคุกคาม",
+  "attribution.groupIdentities": "ตัวตน"
 }

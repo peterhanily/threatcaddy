@@ -308,5 +308,7 @@
   "demoModal.reportWorkflow": "Следуйте связанным заметкам от доказательств к проекту отчёта. Проверьте выводы и скачайте заметку в Markdown; отдельно сохраните резервную копию всего рабочего пространства.",
   "bootGuard.framed": "В целях безопасности ThreatCaddy не работает внутри другого веб-сайта.",
   "bootGuard.fileOnly": "Эта офлайн-копия ThreatCaddy работает, только если открыть файл, сохранённый на вашем компьютере.",
-  "bootGuard.open": "Открыть ThreatCaddy"
+  "bootGuard.open": "Открыть ThreatCaddy",
+  "identityChip.open": "{{text}}, открыть {{name}} в разделе «Субъекты»",
+  "identityChip.notYet": "{{text}}, ещё нет в разделе «Субъекты»"
 }

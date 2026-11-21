@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "노트에 링크"
   },
+  "mentionMenu": {
+    "header": "신원 언급"
+  },
   "slashCommands": {
     "heading1": "제목 1",
     "heading1Desc": "큰 제목",

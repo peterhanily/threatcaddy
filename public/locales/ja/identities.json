@@ -117,6 +117,14 @@
 
   "also.heading": "他の調査にも存在:",
 
+  "activity.heading": "アクティビティ（{{count}}）",
+  "activity.none": "タイムライン、ノート、IOC のいずれにも {{name}} はまだ記載されていません。",
+  "activity.addNote": "{{name}} についてのノートを追加",
+  "activity.untitled": "無題",
+  "activity.kind.event": "イベント",
+  "activity.kind.note": "ノート",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "アイデンティティを追加",
   "form.addFromTitle": "「{{text}}」を追加",
   "form.addFromHint": "この調査の内容から入力しました。誤りがあれば修正してください。",

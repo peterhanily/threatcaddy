@@ -117,6 +117,14 @@
 
   "also.heading": "Также в другом расследовании:",
 
+  "activity.heading": "Активность ({{count}})",
+  "activity.none": "Пока ничто в хронологии, заметках или IOC не упоминает {{name}}.",
+  "activity.addNote": "Добавить заметку о {{name}}",
+  "activity.untitled": "Без названия",
+  "activity.kind.event": "Событие",
+  "activity.kind.note": "Заметка",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "Добавить субъект",
   "form.addFromTitle": "Добавить «{{text}}»",
   "form.addFromHint": "Заполнено по данным этого расследования. Исправьте, если что-то не так.",

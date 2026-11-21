@@ -308,5 +308,7 @@
   "demoModal.reportWorkflow": "Siga as notas vinculadas das evidências ao rascunho do relatório. Revise as conclusões e baixe a nota em Markdown; use Salvar backup para todo o espaço de trabalho.",
   "bootGuard.framed": "Para sua segurança, o ThreatCaddy não é executado dentro de outro site.",
   "bootGuard.fileOnly": "Esta cópia offline do ThreatCaddy só funciona quando você abre o arquivo salvo no seu computador.",
-  "bootGuard.open": "Abrir o ThreatCaddy"
+  "bootGuard.open": "Abrir o ThreatCaddy",
+  "identityChip.open": "{{text}}, abrir {{name}} em Identidades",
+  "identityChip.notYet": "{{text}}, ainda não está em Identidades"
 }

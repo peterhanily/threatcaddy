@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "Liên kết đến ghi chú"
   },
+  "mentionMenu": {
+    "header": "Đề cập một danh tính"
+  },
   "slashCommands": {
     "heading1": "Tiêu đề 1",
     "heading1Desc": "Tiêu đề lớn",

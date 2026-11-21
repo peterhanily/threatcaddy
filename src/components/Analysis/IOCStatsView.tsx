@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, forwardRef } from 'react';
-import { ChevronDown, ChevronRight, Search, BarChart3, List, Plus, ListPlus, Clipboard, X, ChevronUp, Pencil, Trash2, Archive, RotateCcw, ExternalLink, Columns, GitMerge, Tag as TagIcon, Download } from 'lucide-react';
-import type { Note, Task, TimelineEvent, StandaloneIOC, Settings, IOCEntry, IOCType, ConfidenceLevel, Folder, Tag, InvestigationMember } from '../../types';
+import { ChevronDown, ChevronRight, Search, BarChart3, List, Plus, ListPlus, Clipboard, X, ChevronUp, Pencil, Trash2, Archive, RotateCcw, ExternalLink, Columns, GitMerge, Tag as TagIcon, Download, Contact } from 'lucide-react';
+import type { Note, Task, TimelineEvent, StandaloneIOC, Settings, IOCEntry, IOCType, ConfidenceLevel, Folder, Tag, InvestigationMember, Identity } from '../../types';
+import { useIdentityLinks } from '../Identities/identity-links';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, ALL_IOC_TABLE_COLUMNS, DEFAULT_IOC_TABLE_COLUMNS, IOC_STATUS_VALUES, IOC_STATUS_LABELS, IOC_STATUS_COLORS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { StandaloneIOCForm } from './StandaloneIOCForm';
@@ -94,6 +95,8 @@ interface UnifiedIOCRow {
   source: string;
   sourceType: 'note' | 'task' | 'event' | 'standalone';
   sourceId: string;
+  /** The investigation of the IOC or the record it was found in, for "Belongs to". */
+  folderId?: string;
   iocStatus?: string;
   attribution?: string;
   standaloneIOC?: StandaloneIOC;
@@ -282,7 +285,7 @@ export function IOCStatsView({
           id: `note-${note.id}-${ioc.id}`,
           value: ioc.value, type: ioc.type, confidence: ioc.confidence,
           source: `Note: ${note.title || 'Untitled'}`,
-          sourceType: 'note', sourceId: note.id,
+          sourceType: 'note', sourceId: note.id, folderId: note.folderId,
           iocStatus: ioc.iocStatus, attribution: ioc.attribution,
           updatedAt: note.updatedAt,
         });
@@ -298,7 +301,7 @@ export function IOCStatsView({
           id: `task-${task.id}-${ioc.id}`,
           value: ioc.value, type: ioc.type, confidence: ioc.confidence,
           source: `Task: ${task.title || 'Untitled'}`,
-          sourceType: 'task', sourceId: task.id,
+          sourceType: 'task', sourceId: task.id, folderId: task.folderId,
           iocStatus: ioc.iocStatus, attribution: ioc.attribution,
           updatedAt: task.updatedAt,
         });
@@ -314,7 +317,7 @@ export function IOCStatsView({
           id: `event-${event.id}-${ioc.id}`,
           value: ioc.value, type: ioc.type, confidence: ioc.confidence,
           source: `Event: ${event.title || 'Untitled'}`,
-          sourceType: 'event', sourceId: event.id,
+          sourceType: 'event', sourceId: event.id, folderId: event.folderId,
           iocStatus: ioc.iocStatus, attribution: ioc.attribution,
           updatedAt: event.updatedAt,
         });
@@ -328,7 +331,7 @@ export function IOCStatsView({
         id: `standalone-${si.id}`,
         value: si.value, type: si.type, confidence: si.confidence,
         source: 'Standalone',
-        sourceType: 'standalone', sourceId: si.id,
+        sourceType: 'standalone', sourceId: si.id, folderId: si.folderId,
         iocStatus: si.iocStatus, attribution: si.attribution,
         standaloneIOC: si,
         updatedAt: si.updatedAt,
@@ -768,6 +771,14 @@ function AllIOCsTab({
   const { resultRun, showResult, closeResult } = useIntegrationResult(currentFolderId, resultScope);
   const { addToast } = useToast();
   const { t: tt } = useTranslation('toast');
+  const { t: ta } = useTranslation('analysis');
+  // The identity each IOC belongs to: one whose name or public detail is its value, in the same investigation.
+  const identityLinks = useIdentityLinks();
+  const owners = useMemo(() => {
+    const found = new Map<string, Identity>();
+    if (identityLinks) for (const row of rows) { const owner = identityLinks.belongsTo(row.folderId, row.value); if (owner) found.set(row.id, owner); }
+    return found;
+  }, [identityLinks, rows]);
 
   const [showForm, setShowForm] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
@@ -1481,6 +1492,7 @@ function AllIOCsTab({
                   {isColVisible('source') && <SortHeader field="source" label="Source" className="text-start text-gray-500 font-medium py-2 px-2" />}
                   {isColVisible('iocStatus') && <SortHeader field="iocStatus" label="Status" className="text-start text-gray-500 font-medium py-2 px-2" />}
                   {isColVisible('attribution') && <SortHeader field="attribution" label="Attribution" className="text-start text-gray-500 font-medium py-2 px-2" />}
+                  {owners.size > 0 && <th className="text-start text-gray-500 font-medium py-2 px-2">{ta('iocList.belongsToHeader')}</th>}
                   {isColVisible('clsLevel') && <th className="text-start text-gray-500 font-medium py-2 px-2" title="Classification">CLS</th>}
                   {isColVisible('updatedAt') && <th className="text-start text-gray-500 font-medium py-2 px-2">Updated</th>}
                   {isColVisible('analystNotes') && <th className="text-start text-gray-500 font-medium py-2 px-2">Notes</th>}
@@ -1547,6 +1559,19 @@ function AllIOCsTab({
                     )}
                     {isColVisible('attribution') && (
                       <td className="py-2 px-2 text-gray-400 max-w-[120px] truncate">{row.attribution || '--'}</td>
+                    )}
+                    {owners.size > 0 && (
+                      <td className="py-2 px-2">
+                        {(() => {
+                          const owner = owners.get(row.id);
+                          return owner && identityLinks ? (
+                            <button type="button" onClick={() => identityLinks.open(owner)} title={ta('iocList.belongsToHeader')}
+                              className="inline-flex max-w-[160px] items-center gap-1 text-xs text-accent-blue hover:underline">
+                              <Contact size={10} aria-hidden="true" className="shrink-0" /><span className="truncate">{owner.name}</span>
+                            </button>
+                          ) : <span className="text-gray-600">--</span>;
+                        })()}
+                      </td>
                     )}
                     {isColVisible('clsLevel') && (
                       <td className="py-2 px-2">

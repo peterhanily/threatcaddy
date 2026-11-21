@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "Link naar notitie"
   },
+  "mentionMenu": {
+    "header": "Een identiteit vermelden"
+  },
   "slashCommands": {
     "heading1": "Kop 1",
     "heading1Desc": "Grote kop",

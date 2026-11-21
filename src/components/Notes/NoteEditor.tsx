@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Upload, Briefcase, MessageSquare, Search, Lock, LockOpen, Share2, FileText, Download, AlertTriangle } from 'lucide-react';
+import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Upload, Briefcase, MessageSquare, Search, Lock, LockOpen, Share2, FileText, Download, AlertTriangle, Contact } from 'lucide-react';
 import type { Note, Task, TimelineEvent, Tag, Folder, EditorMode, Settings, NoteAnnotation } from '../../types';
 import { NOTE_COLORS } from '../../types';
 import { nanoid } from 'nanoid';
@@ -16,6 +16,8 @@ import { EntityLinker } from '../Common/EntityLinker';
 import { SlashCommandMenu } from './SlashCommandMenu';
 import { LinkAutocompleteMenu } from './LinkAutocompleteMenu';
 import type { LinkCandidate } from './LinkAutocompleteMenu';
+import { useMentionAutocomplete } from './useMentionAutocomplete';
+import { useIdentityLinks } from '../Identities/identity-links';
 import { SLASH_COMMANDS, getCaretCoordinates } from './slashCommands';
 import { useCloudSync } from '../../hooks/useCloudSync';
 import { useResizable } from '../../hooks/useResizable';
@@ -356,7 +358,13 @@ export function NoteEditor({
     scheduleSave({ content: value });
   }, [scheduleSave]);
 
+  // "@" suggests the identities of the note's investigation.
+  const identityLinks = useIdentityLinks();
+  const mention = useMentionAutocomplete({ textareaRef, content, folder: note.trashed ? undefined : identityLinks?.folder(note.folderId),
+    onContentChange: handleContentChange });
+
   const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mention.handleKeyDown(e)) return;
     // Link autocomplete menu keyboard navigation
     if (linkMenuOpen && linkCandidates.length > 0) {
       if (e.key === 'ArrowDown') {
@@ -1026,6 +1034,7 @@ export function NoteEditor({
                       const pos = textareaRef.current.selectionStart;
                       detectSlashTrigger(val, pos);
                       detectLinkTrigger(val, pos);
+                      mention.detect(val, pos);
                     }
                   }, 0);
                 }}
@@ -1051,6 +1060,17 @@ export function NoteEditor({
                   position={linkMenuPosition}
                   onSelect={executeLinkSelection}
                   menuRef={linkMenuRef}
+                />
+              )}
+              {mention.open && (
+                <LinkAutocompleteMenu
+                  items={mention.items}
+                  activeIndex={mention.activeIndex}
+                  position={mention.position}
+                  onSelect={mention.select}
+                  menuRef={mention.menuRef}
+                  header={t('mentionMenu.header')}
+                  icon={Contact}
                 />
               )}
             </div>
@@ -1079,7 +1099,7 @@ export function NoteEditor({
               style={editorMode === 'split' ? { width: `${(1 - editorPreview.ratio) * 100}%` } : { flex: 1 }}
             >
               {content ? (
-                <MarkdownPreview content={content} defanged={defangPreview} allNotes={allNotes} onNavigateToNote={onNavigateToNote} iocs={note.iocAnalysis?.iocs} />
+                <MarkdownPreview content={content} defanged={defangPreview} allNotes={allNotes} onNavigateToNote={onNavigateToNote} iocs={note.iocAnalysis?.iocs} folderId={note.folderId} />
               ) : (
                 <p className="text-gray-600 text-sm italic">{t('editor.nothingToPreview')}</p>
               )}

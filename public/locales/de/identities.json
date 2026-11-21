@@ -117,6 +117,14 @@
 
   "also.heading": "Auch in einer anderen Untersuchung:",
 
+  "activity.heading": "Aktivität ({{count}})",
+  "activity.none": "Bisher nennt nichts in der Zeitleiste, in Notizen oder in IOCs {{name}}.",
+  "activity.addNote": "Notiz zu {{name}} hinzufügen",
+  "activity.untitled": "Ohne Titel",
+  "activity.kind.event": "Ereignis",
+  "activity.kind.note": "Notiz",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "Identität hinzufügen",
   "form.addFromTitle": "„{{text}}“ hinzufügen",
   "form.addFromHint": "Aus dieser Untersuchung ausgefüllt. Ändern Sie, was nicht stimmt.",

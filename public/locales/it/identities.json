@@ -117,6 +117,14 @@
 
   "also.heading": "Presente anche in un'altra indagine:",
 
+  "activity.heading": "Attività ({{count}})",
+  "activity.none": "Nulla nella timeline, nelle note o negli IOC menziona ancora {{name}}.",
+  "activity.addNote": "Aggiungi una nota su {{name}}",
+  "activity.untitled": "Senza titolo",
+  "activity.kind.event": "Evento",
+  "activity.kind.note": "Nota",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "Aggiungi un'identità",
   "form.addFromTitle": "Aggiungi «{{text}}»",
   "form.addFromHint": "Compilato a partire da questa indagine. Correggi ciò che è sbagliato.",

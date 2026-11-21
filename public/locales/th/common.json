@@ -413,5 +413,7 @@
   "demoModal.reportWorkflow": "ติดตามบันทึกที่เชื่อมโยงจากหลักฐานไปยังร่างรายงาน ตรวจสอบข้อสรุปและดาวน์โหลดบันทึกเป็น Markdown พร้อมสำรองพื้นที่ทำงานทั้งหมด",
   "bootGuard.framed": "เพื่อความปลอดภัยของคุณ ThreatCaddy จะไม่ทำงานภายในเว็บไซต์อื่น",
   "bootGuard.fileOnly": "สำเนาออฟไลน์ของ ThreatCaddy นี้ทำงานได้เฉพาะเมื่อคุณเปิดไฟล์ที่บันทึกไว้ในคอมพิวเตอร์ของคุณ",
-  "bootGuard.open": "เปิด ThreatCaddy"
+  "bootGuard.open": "เปิด ThreatCaddy",
+  "identityChip.open": "{{text}}, เปิด {{name}} ในตัวตน",
+  "identityChip.notYet": "{{text}}, ยังไม่อยู่ในตัวตน"
 }

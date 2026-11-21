@@ -42,8 +42,9 @@
   "eventCard.unstarEvent": "Unstar event",
   "eventCard.starEvent": "Star event",
   "eventCard.untitledEvent": "Untitled Event",
-  "eventCard.assetCount": "{{count}} asset",
-  "eventCard.assetCount_other": "{{count}} assets",
+  "eventCard.actor": "Actor",
+  "eventCard.asset": "Asset",
+  "eventCard.moreAssets": "+{{count}}",
 
   "eventForm.title": "Title",
   "eventForm.titlePlaceholder": "Event title...",

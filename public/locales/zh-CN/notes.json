@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "链接到笔记"
   },
+  "mentionMenu": {
+    "header": "提及身份"
+  },
   "slashCommands": {
     "heading1": "一级标题",
     "heading1Desc": "大标题",

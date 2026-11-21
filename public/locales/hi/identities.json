@@ -117,6 +117,14 @@
 
   "also.heading": "किसी दूसरी जाँच में भी:",
 
+  "activity.heading": "गतिविधि ({{count}})",
+  "activity.none": "टाइमलाइन, नोट्स या IOCs में अभी तक कहीं भी {{name}} का नाम नहीं है।",
+  "activity.addNote": "{{name}} के बारे में नोट जोड़ें",
+  "activity.untitled": "बिना शीर्षक",
+  "activity.kind.event": "इवेंट",
+  "activity.kind.note": "नोट",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "पहचान जोड़ें",
   "form.addFromTitle": "«{{text}}» जोड़ें",
   "form.addFromHint": "इस जाँच से भरा गया। जो गलत हो उसे बदलें।",

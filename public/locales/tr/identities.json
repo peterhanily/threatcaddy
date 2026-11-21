@@ -117,6 +117,14 @@
 
   "also.heading": "Başka bir soruşturmada da var:",
 
+  "activity.heading": "Etkinlik ({{count}})",
+  "activity.none": "Zaman çizelgesinde, notlarda veya IOC'lerde henüz {{name}} adı geçmiyor.",
+  "activity.addNote": "{{name}} hakkında not ekle",
+  "activity.untitled": "Başlıksız",
+  "activity.kind.event": "Olay",
+  "activity.kind.note": "Not",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "Kimlik ekle",
   "form.addFromTitle": "Ekle: “{{text}}”",
   "form.addFromHint": "Bu soruşturmadan dolduruldu. Yanlış olanları değiştirin.",

@@ -7,6 +7,10 @@ import { cn, truncate, currentLocale } from '../../lib/utils';
 import { getTechniqueLabel } from '../../lib/mitre-attack';
 import { ClsBadge } from '../Common/ClsBadge';
 import { TagPills } from '../Common/TagPills';
+import { IdentityChip } from '../Identities/IdentityChip';
+
+/** Assets shown as chips on a card; the rest are counted. */
+const SHOWN_ASSETS = 3;
 
 interface TimelineEventCardProps {
   event: TimelineEvent;
@@ -108,9 +112,8 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
         )}
         {event.clsLevel && <ClsBadge level={event.clsLevel} />}
         {event.actor && (
-          <span className="text-[10px] px-1.5 rounded-full bg-purple-500/15 text-purple-400 truncate max-w-[100px]">
-            {event.actor}
-          </span>
+          <IdentityChip folderId={event.folderId} text={event.actor} tone="actor" role={t('eventCard.actor')}
+            source={{ kind: 'actor', id: event.id, title: event.title }} />
         )}
         {event.mitreAttackIds.length > 0 && (
           <>
@@ -152,8 +155,14 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
             <Search size={9} />{event.linkedIOCIds.length}
           </span>
         )}
-        {event.assets.length > 0 && (
-          <span className="text-[10px] text-gray-500">{t('eventCard.assetCount', { count: event.assets.length })}</span>
+        {event.assets.slice(0, SHOWN_ASSETS).map((asset, index) => (
+          <IdentityChip key={`${index}:${asset}`} folderId={event.folderId} text={asset} tone="asset" role={t('eventCard.asset')}
+            source={{ kind: 'asset', id: event.id, title: event.title }} />
+        ))}
+        {event.assets.length > SHOWN_ASSETS && (
+          <span className="text-[10px] text-gray-500" title={event.assets.slice(SHOWN_ASSETS).join(', ')}>
+            {t('eventCard.moreAssets', { count: event.assets.length - SHOWN_ASSETS })}
+          </span>
         )}
         <TagPills tags={event.tags} />
       </div>

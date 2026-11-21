@@ -252,6 +252,7 @@
   "iocList.confidenceHeader": "置信度",
   "iocList.statusHeader": "状态",
   "iocList.attributionHeader": "归因",
+  "iocList.belongsToHeader": "所属",
   "iocList.updatedHeader": "更新时间",
 
   "bulkImport.inputTitle": "批量导入 IOC",
@@ -377,5 +378,7 @@
   "stixImport.relationshipsDetected": "检测到 {{count}} 个关系",
   "stixImport.relationshipsDetected_other": "检测到 {{count}} 个关系",
 
-  "attribution.placeholder": "例如：APT29, Lazarus Group..."
+  "attribution.placeholder": "例如：APT29, Lazarus Group...",
+  "attribution.groupActors": "威胁行为者",
+  "attribution.groupIdentities": "身份"
 }

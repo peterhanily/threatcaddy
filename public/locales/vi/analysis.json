@@ -252,6 +252,7 @@
   "iocList.confidenceHeader": "Độ tin cậy",
   "iocList.statusHeader": "Trạng thái",
   "iocList.attributionHeader": "Quy gán",
+  "iocList.belongsToHeader": "Thuộc về",
   "iocList.updatedHeader": "Cập nhật",
 
   "bulkImport.inputTitle": "Nhập IOC hàng loạt",
@@ -377,5 +378,7 @@
   "stixImport.relationshipsDetected": "Phát hiện {{count}} mối quan hệ",
   "stixImport.relationshipsDetected_other": "Phát hiện {{count}} mối quan hệ",
 
-  "attribution.placeholder": "vd. APT29, Lazarus Group..."
+  "attribution.placeholder": "vd. APT29, Lazarus Group...",
+  "attribution.groupActors": "Tác nhân mối đe dọa",
+  "attribution.groupIdentities": "Danh tính"
 }

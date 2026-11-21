@@ -117,6 +117,14 @@
 
   "also.heading": "อยู่ในการสืบสวนอื่นด้วย:",
 
+  "activity.heading": "กิจกรรม ({{count}})",
+  "activity.none": "ยังไม่มีสิ่งใดในไทม์ไลน์ บันทึก หรือ IOC ที่ระบุชื่อ {{name}}",
+  "activity.addNote": "เพิ่มบันทึกเกี่ยวกับ {{name}}",
+  "activity.untitled": "ไม่มีชื่อ",
+  "activity.kind.event": "เหตุการณ์",
+  "activity.kind.note": "บันทึก",
+  "activity.kind.ioc": "IOC",
+
   "form.addTitle": "เพิ่มตัวตน",
   "form.addFromTitle": "เพิ่ม “{{text}}”",
   "form.addFromHint": "กรอกข้อมูลจากการสืบสวนนี้แล้ว แก้ไขส่วนที่ไม่ถูกต้องได้",
