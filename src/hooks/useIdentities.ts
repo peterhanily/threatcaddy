@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { db } from '../db';
-import type { Identity, IdentityConnection } from '../types';
+import type { Identity, IdentityConnection, IdentityStatus } from '../types';
 import { purgeOldTrash } from '../lib/trash-purge';
 import { deleteEntitiesWithReferences } from '../lib/entity-relations';
 import { conservativeClsLevel } from '../lib/classification';
+import { IDENTITY_STATUSES } from '../lib/entity-enums';
 
 const sameText = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+/** Lower is more serious; no status ranks last. */
+const statusRank = (status?: IdentityStatus) => (status ? IDENTITY_STATUSES.indexOf(status) : IDENTITY_STATUSES.length);
 
 /** One edge per target and label, and never to itself. */
 function distinctConnections(edges: IdentityConnection[], selfId: string): IdentityConnection[] {
@@ -126,7 +129,8 @@ export function useIdentities(folderId?: string) {
   /**
    * Folds `goneId` into `keepId` and deletes it, in one transaction. The kept identity
    * gains the other's names, details, connections and tags, and links to the removed
-   * one now point to it. Only identities in the same investigation can be merged.
+   * one now point to it. The more serious status, the stricter classification and any
+   * privacy marking are kept. Only identities in the same investigation can be merged.
    */
   const mergeIdentities = useCallback(async (keepId: string, goneId: string) => {
     if (keepId === goneId) throw new Error('Choose two different identities to merge.');
@@ -141,16 +145,17 @@ export function useIdentities(folderId?: string) {
       }
       const details = [...keep.details];
       for (const detail of gone.details) {
-        if (!details.some(kept => sameText(kept.label, detail.label) && sameText(kept.value, detail.value))) {
-          details.push(details.some(kept => kept.id === detail.id) ? { ...detail, id: nanoid() } : detail);
-        }
+        const same = details.findIndex(kept => sameText(kept.label, detail.label) && sameText(kept.value, detail.value));
+        // The same detail stays private if either identity marked it private.
+        if (same >= 0) { if (detail.private) details[same] = { ...details[same], private: true }; continue; }
+        details.push(details.some(kept => kept.id === detail.id) ? { ...detail, id: nanoid() } : detail);
       }
       const retarget = (edges: IdentityConnection[]) => edges.map(edge => edge.targetId === goneId ? { ...edge, targetId: keepId } : edge);
       const merged: Identity = {
         ...keep,
         description: keep.description || gone.description,
         aliases,
-        status: keep.status ?? gone.status,
+        status: statusRank(gone.status) < statusRank(keep.status) ? gone.status : keep.status,
         contact: keep.contact || gone.contact || undefined,
         details,
         connections: distinctConnections(retarget([...keep.connections, ...gone.connections]), keepId),

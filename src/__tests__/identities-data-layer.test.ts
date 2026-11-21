@@ -4,11 +4,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db';
 import type { Identity } from '../types';
 import { buildDifferentialPayload, buildFullBackupPayload } from '../lib/backup-data';
-import { encryptBackup } from '../lib/backup-crypto';
+import { backupFingerprint, backupStateFingerprint, encryptBackup, type BackupPayload } from '../lib/backup-crypto';
 import { previewRestore, restoreFullReplace, restoreMerge } from '../lib/backup-restore';
 import { validatePortableTables } from '../lib/backup-records';
 import { deleteEntitiesWithReferences, setInvestigationArchived } from '../lib/entity-relations';
-import { exportEncryptedJSON, exportInvestigationJSON, exportJSON, importInvestigationJSON, importJSON, sanitizeIdentity } from '../lib/export';
+import { exportEncryptedJSON, exportInvestigationJSON, exportJSON, importInvestigationJSON, importJSON, mergeImportJSON, sanitizeIdentity } from '../lib/export';
 import { restoreSyncRecovery } from '../lib/sync-recovery';
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { clearEncryptionMeta, setEncryptionMeta } from '../lib/encryptionStore';
@@ -82,6 +82,18 @@ describe('backups', () => {
     }
   });
 
+  it('leaves an empty identities table out of portable files, so older versions can still read them', async () => {
+    await db.folders.add(folder);
+    // The tables a version 34 reader accepts: its own list, with no identities.
+    const olderReader = new Set(['version', 'format', 'exportedAt', 'quickLinks', 'redactions', 'notes', 'tasks', 'folders', 'tags', 'timelineEvents',
+      'timelines', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'chatThreads', 'agentActions', 'agentProfiles', 'agentDeployments', 'agentMeetings',
+      'noteTemplates', 'playbookTemplates', 'integrationTemplates', 'installedIntegrations', 'customSlashCommands']);
+    const document = JSON.parse(await exportJSON());
+    expect(Object.keys(document).filter(key => !olderReader.has(key))).toEqual([]);
+    await db.identities.add(dana);
+    expect(JSON.parse(await exportJSON()).identities).toEqual([dana]);
+  });
+
   it('round-trips identities through full and differential backups', async () => {
     await seed();
     const base = await buildFullBackupPayload('all');
@@ -135,6 +147,39 @@ describe('backups', () => {
     expect(await db.identities.count()).toBe(2);
   });
 
+  it('restores a differential chain made before identities existed and leaves identities alone', async () => {
+    await seed();
+    await db.notes.add({ id: 'note', folderId: 'case', title: 'Draft', content: 'v1', tags: [], pinned: false, archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
+    // Rebuild the chain as version 34 wrote it: no identities table anywhere.
+    const legacy = <T extends { data: BackupPayload['data'] }>(payload: T): T => {
+      const data = { ...payload.data };
+      delete data.identities;
+      return { ...payload, data };
+    };
+    const complete = await buildFullBackupPayload('all');
+    const base = legacy(complete);
+    await db.notes.update('note', { content: 'v2' });
+    const current = legacy(await buildFullBackupPayload('all'));
+    const delta = legacy(await buildDifferentialPayload('all', complete, 'base-id'));
+    expect(delta.data).toEqual({ notes: [expect.objectContaining({ id: 'note', content: 'v2' })] });
+    Object.assign(delta, { baseFingerprint: await backupFingerprint(base), baseStateFingerprint: await backupStateFingerprint(base),
+      lastBackupAt: base.createdAt, resultFingerprint: await backupStateFingerprint(current) });
+    await db.notes.update('note', { content: 'v1' });
+    await db.identities.update('dana', { status: 'cleared' }); // an identity edited after the chain was made
+    const preview = await previewRestore(delta, 'merge', base);
+    expect(preview.tables).toEqual(['notes']);
+    await restoreMerge(delta, preview, base);
+    expect((await db.notes.get('note'))?.content).toBe('v2');
+    expect((await db.identities.get('dana'))?.status).toBe('cleared');
+    // A differential cannot change a table its full parent never held.
+    const forged = { ...delta, data: { ...delta.data, identities: [dana] } };
+    await expect(previewRestore(forged, 'merge', base)).rejects.toThrow('its full parent does not contain');
+    // Only tables added since may be missing: a parent without an older table is still incomplete.
+    const incomplete = { ...base, data: { ...base.data } };
+    delete incomplete.data.tasks;
+    await expect(previewRestore(delta, 'merge', incomplete)).rejects.toThrow('complete supported snapshot');
+  });
+
   it('asks for a new full backup when a differential\'s parent predates identities', async () => {
     await seed();
     const base = await buildFullBackupPayload('all');
@@ -159,14 +204,29 @@ describe('investigation export and import', () => {
     await seed();
     const exported = JSON.parse(await exportInvestigationJSON('case'));
     expect(exported.identities).toEqual([dana, org]);
+    // A row written without an investigation still lands in the imported one.
+    exported.identities.push(identity('unfiled', { folderId: undefined, name: 'Unfiled contact' }));
     expect(exported.tags.map((tag: { name: string }) => tag.name)).toEqual(['client']);
     const result = await importInvestigationJSON(JSON.stringify(exported));
-    expect(result.identities).toBe(2);
+    expect(result.identities).toBe(3);
     const copies = await db.identities.where('folderId').equals(result.folderId).toArray();
+    expect(copies.map(row => row.name).sort()).toEqual(['Dana Okafor', 'Halvorsen Logistics', 'Unfiled contact']);
     const copiedOrg = copies.find(row => row.name === 'Halvorsen Logistics');
     const copiedDana = copies.find(row => row.name === 'Dana Okafor');
     expect(copiedOrg?.id).not.toBe('org');
     expect(copiedDana).toMatchObject({ details: dana.details, aliases: dana.aliases, status: 'compromised', connections: [{ targetId: copiedOrg?.id, label: 'works at' }] });
+  });
+
+  it('brings identities back through the Load Backup dialog paths', async () => {
+    await seed();
+    const json = await exportInvestigationJSON('case');
+    await clearAll();
+    await importJSON(json); // an investigation file is merged, never a replacement
+    expect(await db.identities.toArray()).toEqual([dana, org]);
+    await clearAll();
+    const result = await mergeImportJSON(json);
+    expect(result.tables.identities).toMatchObject({ incoming: 2, added: 2 });
+    expect(await db.identities.toArray()).toEqual([dana, org]);
   });
 
   it('omits identities from an investigation export that has none', async () => {
@@ -208,9 +268,9 @@ describe('local encryption', () => {
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
-    for (const field of ['type', 'name', 'description', 'aliases', 'details', 'connections', 'clsLevel']) expect(isEncryptedEnvelope(raw[field]), field).toBe(true);
+    for (const field of ['type', 'name', 'description', 'aliases', 'status', 'contact', 'details', 'connections', 'clsLevel']) expect(isEncryptedEnvelope(raw[field]), field).toBe(true);
     expect(JSON.stringify(raw)).not.toContain('Okafor');
-    expect(raw).toMatchObject({ id: 'dana', folderId: 'case', tags: ['client'], trashed: false, archived: false, status: 'compromised' });
+    expect(raw).toMatchObject({ id: 'dana', folderId: 'case', tags: ['client'], trashed: false, archived: false });
     expect(await db.identities.get('dana')).toEqual(dana);
 
     const { result } = renderHook(() => useIdentities('case'));

@@ -3,11 +3,11 @@ import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, Stan
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_TYPE_LABELS } from '../types';
 import { nanoid } from 'nanoid';
 import { workspaceStorageKey } from './workspace-profiles';
-import { ENTITY_RELATIONS, mapEntityReferences, type EntityRecord } from './entity-relations';
+import { ENTITY_RELATIONS, FOLDER_CONTENT_TABLES, mapEntityReferences, type EntityRecord } from './entity-relations';
 import { withEntityDraftBarrier } from './entity-drafts';
 import { buildFullBackupPayload, portableRows, type BackupRow } from './backup-data';
 import { canonicalBackupJSON, encryptBackup, type BackupPayload } from './backup-crypto';
-import { BACKUP_TABLES, investigationOf, type BackupTable } from './backup-tables';
+import { BACKUP_TABLES, investigationOf, TABLES_ADDED_AFTER_PORTABLE_BACKUPS, type BackupTable } from './backup-tables';
 import { assertBackupSize, isBackupObject, validateBackupJSON, validateBackupQuickLinks, validatePortableTables, type PortableRow } from './backup-records';
 import { isBase64Data, isChatImageMime } from './backup-media-validation';
 import { decodePortableBackup, INVESTIGATION_EXPORT_FORMAT, PORTABLE_BACKUP_FORMAT, portableTableCounts, suspendRestoredAutomation } from './portable-backup';
@@ -42,6 +42,9 @@ async function portableSnapshot(includeConfiguration: boolean): Promise<ExportDa
   if (!includeConfiguration) {
     data.installedIntegrations = (data.installedIntegrations ?? []).map(row => ({ ...row, config: {} }));
   }
+  // Older versions refuse a file with a table they do not know; when it is empty, leave
+  // it out. A portable file without it restores as holding none (portable-backup.ts).
+  for (const name of TABLES_ADDED_AFTER_PORTABLE_BACKUPS) if (!data[name]?.length) delete data[name];
   let quickLinks: QuickLink[] | undefined;
   const stored = localStorage.getItem(workspaceStorageKey('threatcaddy-settings'));
   if (stored) {
@@ -1624,7 +1627,7 @@ export async function importInvestigationJSON(json: string): Promise<{ folderId:
       return id; // No invented IDs for records that are not in the export.
     });
     row.id = maps.get(table)?.get(entity.id) ?? entity.id;
-    if (['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'identities', 'chatThreads'].includes(table)) row.folderId = folderId;
+    if ((FOLDER_CONTENT_TABLES as readonly string[]).includes(table)) row.folderId = folderId;
     const analysis = row.iocAnalysis as IOCAnalysis | undefined;
     if (analysis) for (const ioc of analysis.iocs) ioc.id = iocMap.get(ioc.id) ?? ioc.id;
     if (table === 'folders') {

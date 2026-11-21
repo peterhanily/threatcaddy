@@ -37,6 +37,11 @@ const previewSnapshots = new WeakMap<RestorePreview, string>();
 function table(name: BackupTable): Table<Row, string> { return db.table(name); }
 const scopedTables: ReadonlySet<BackupTable> = new Set(INVESTIGATION_TABLES);
 
+/** A chain whose full parent predates a table is verified on the tables it covers. */
+function coveredBy(parent: BackupPayload | undefined, data: BackupPayload['data']): BackupPayload['data'] {
+  return parent ? Object.fromEntries(Object.entries(data).filter(([name]) => Object.hasOwn(parent.data, name))) : data;
+}
+
 function isRow(item: unknown): item is Row {
   if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
   const id = (item as Record<string, unknown>).id;
@@ -153,11 +158,14 @@ async function prepare(payload: BackupPayload, mode: Mode, parent?: BackupPayloa
   if (payload.type === 'differential') {
     if (!parent) throw new Error('Supply the matching full parent backup before applying a differential.');
     validate(parent, 'replace');
-    requireDifferentialBase(parent, payload.scope, payload.scopeId);
+    requireDifferentialBase(parent, payload.scope, payload.scopeId, true);
+    for (const name of new Set([...Object.keys(payload.data), ...Object.keys(payload.deletedIds ?? {})])) {
+      if (!Object.hasOwn(parent.data, name)) throw new Error(`The differential changes ${name}, which its full parent does not contain.`);
+    }
     // Keep IndexedDB alive while Web Crypto verifies the consistent transaction snapshot.
     const [parentHash, parentState, currentState] = await Dexie.waitFor(Promise.all([
       backupFingerprint(parent), backupStateFingerprint(parent),
-      backupStateFingerprint({ ...payload, data: selectBackupData(before, payload.scope, payload.scopeId, true) }),
+      backupStateFingerprint({ ...payload, data: coveredBy(parent, selectBackupData(before, payload.scope, payload.scopeId, true)) }),
     ]));
     if (parentHash !== payload.baseFingerprint || parentState !== payload.baseStateFingerprint
       || parent.createdAt !== payload.lastBackupAt) throw new Error('This is not the matching full parent backup for the differential.');
@@ -221,7 +229,7 @@ async function prepare(payload: BackupPayload, mode: Mode, parent?: BackupPayloa
     }
     const projected = new Map([...after].map(([name, rows]) => [name, [...rows.values()]]));
     const resultHash = await Dexie.waitFor(backupStateFingerprint({ ...payload,
-      data: selectBackupData(projected, payload.scope, payload.scopeId, true),
+      data: coveredBy(parent, selectBackupData(projected, payload.scope, payload.scopeId, true)),
     }));
     if (resultHash !== payload.resultFingerprint) throw new Error('Differential backup does not reproduce its verified result; nothing was restored.');
   }

@@ -124,6 +124,26 @@ describe('useIdentities', () => {
     expect(result.current.identities.map(row => row.id).sort()).toEqual(['keep', 'laptop', 'manager', 'org']);
   });
 
+  it('keeps a detail private if either copy was private, and the more serious status', async () => {
+    await db.identities.bulkAdd([
+      identity('keep', { status: 'cleared', details: [{ id: 'p', label: 'Phone', value: '+44 20 7946 0000' }] }),
+      identity('gone', { status: 'compromised', details: [{ id: 'q', label: 'phone', value: '+44 20 7946 0000', private: true }] }),
+      identity('keep-2', { status: 'suspicious' }),
+      identity('gone-2', { status: 'cleared' }),
+      identity('keep-3'),
+      identity('gone-3', { status: 'cleared' }),
+    ]);
+    const { result } = await mount('case');
+    await act(async () => {
+      await result.current.mergeIdentities('keep', 'gone');
+      await result.current.mergeIdentities('keep-2', 'gone-2');
+      await result.current.mergeIdentities('keep-3', 'gone-3');
+    });
+    expect(await db.identities.get('keep')).toMatchObject({ status: 'compromised', details: [{ id: 'p', label: 'Phone', value: '+44 20 7946 0000', private: true }] });
+    expect((await db.identities.get('keep-2'))?.status).toBe('suspicious');
+    expect((await db.identities.get('keep-3'))?.status).toBe('cleared');
+  });
+
   it('refuses to merge across investigations or into itself and changes nothing', async () => {
     const here = identity('here', { name: 'Dana Okafor' });
     const there = identity('there', { folderId: 'another-case', name: 'Dana Okafor' });

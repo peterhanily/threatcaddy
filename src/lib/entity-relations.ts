@@ -63,7 +63,7 @@ export function mapEntityReferences(table: string, row: EntityRecord, mapper: (t
   // A relationship is an edge, not an empty object after its target is removed.
   const prune = (value: Record<string, unknown>) => {
     if (Array.isArray(value.relationships)) value.relationships = value.relationships.filter(rel => rel && typeof rel.targetIOCId === 'string');
-    if (Array.isArray(value.connections)) value.connections = value.connections.filter(edge => edge && typeof edge.targetId === 'string');
+    if (table === 'identities' && Array.isArray(value.connections)) value.connections = value.connections.filter(edge => edge && typeof edge.targetId === 'string');
   };
   prune(copy);
   const analysis = copy.iocAnalysis as { iocs?: Record<string, unknown>[] } | undefined;

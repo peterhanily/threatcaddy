@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import { exportEncryptedJSON, exportJSON, importJSON, mergeImportJSON } from '../lib/export';
-import { BACKUP_TABLES } from '../lib/backup-tables';
+import { BACKUP_TABLES, TABLES_ADDED_AFTER_PORTABLE_BACKUPS } from '../lib/backup-tables';
 import { buildFullBackupPayload } from '../lib/backup-data';
 import { backupFingerprint, decryptBackup, encryptBackup } from '../lib/backup-crypto';
 import { BackupPasswordRequiredError, decodePortableBackup } from '../lib/portable-backup';
@@ -27,12 +27,14 @@ beforeEach(async () => { await clear(); localStorage.removeItem(settingsKey); })
 afterEach(() => vi.restoreAllMocks());
 
 describe('portable backup contracts', () => {
-  it('uses exactly the shared19-table registry and retains the established flat version1 fields', async () => {
+  it('uses exactly the shared table registry and retains the established flat version1 fields', async () => {
     const document = JSON.parse(await exportJSON());
     expect(document).toMatchObject({ format: 'threatcaddy-backup', version: 1 });
-    expect(Object.keys(document).filter(name => BACKUP_TABLES.includes(name as typeof BACKUP_TABLES[number]))).toEqual([...BACKUP_TABLES]);
-    for (const name of BACKUP_TABLES) expect(document[name]).toEqual([]);
-    expect(Object.keys((await decodePortableBackup(JSON.stringify(document))).payload.data)).toEqual([...BACKUP_TABLES]);
+    // An empty table added since portable files began is left out, so older versions can still read the file.
+    const written = BACKUP_TABLES.filter(name => !TABLES_ADDED_AFTER_PORTABLE_BACKUPS.has(name));
+    expect(Object.keys(document).filter(name => BACKUP_TABLES.includes(name as typeof BACKUP_TABLES[number]))).toEqual(written);
+    for (const name of written) expect(document[name]).toEqual([]);
+    expect(Object.keys((await decodePortableBackup(JSON.stringify(document))).payload.data).sort()).toEqual([...BACKUP_TABLES].sort());
   });
 
   it('accepts every bundled integration schema without inventing a second incompatible template format', () => {

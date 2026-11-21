@@ -31,9 +31,10 @@ download them from the team server:
 The sync registry includes notes, tasks, investigations, tags, timeline events,
 timelines, whiteboards, standalone IOCs, chat threads and evidence items. Their
 supported shared fields include IOC/timeline comments and timeline coordinates.
-Agent actions/profiles/deployments/meetings, note/playbook/integration templates,
-installed integrations and custom slash commands are separate local entity
-tables; they are included in full portable backups, not team entity sync.
+Agent actions/profiles/deployments/meetings, identities (people, organizations,
+systems and accounts), note/playbook/integration templates, installed
+integrations and custom slash commands are separate local entity tables; they
+are included in full portable backups, not team entity sync.
 Unshared local investigations also require a client backup.
 
 Before **Remove Local Copy**, browser-storage clearing, or **Reset Workspace**,
@@ -43,11 +44,16 @@ unencrypted JSON, even when local encryption is enabled. Use the separate
 encrypted-backup flow when a password-protected archive is required. A
 server/PostgreSQL backup cannot recover details that were never uploaded.
 
-The export includes all 19 portable entity tables and flushes registered drafts
+The export includes all 20 portable entity tables and flushes registered drafts
 before capturing a consistent snapshot; an unsaved draft that cannot be
 persisted blocks export. Transport revisions are kept separately from portable
 content. Older sync rows with a stored server revision remain exportable without
 discarding supported local fields or authorship metadata.
+
+A backup with no identities leaves that table out, so versions of ThreatCaddy
+from before identities can still read it. A backup that contains identities
+can only be restored by a version that has them. Backups made before
+identities existed restore normally and hold none.
 
 ### Hosted App: JSON Backup and a Restore Drill
 
@@ -62,7 +68,8 @@ Verify recovery in a new temporary browser profile before relying on a backup:
 2. Open the app in a separate, empty profile. Do not clear your working profile.
 3. Import the JSON backup. Use **Replace All** only in that empty profile; it
    replaces the entity types included in the file at the destination. An empty
-   list clears that type; an omitted type is preserved. The header also offers
+   list clears that type; an omitted type is preserved, except identities: a
+   backup file without them has none, so Replace All clears them. The header also offers
    **Merge** for a populated destination; back that destination up first.
 4. Compare investigation names, note and chat content, classifications, source
    associations, and any templates or whiteboard content you depend on.
