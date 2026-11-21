@@ -44,7 +44,6 @@
   "profile.select": "यहाँ देखने के लिए कोई पहचान चुनें।",
   "profile.otherNames": "अन्य नाम: {{names}}",
   "profile.contact": "संपर्क",
-  "profile.markContact": "संपर्क के रूप में चिह्नित करें",
   "profile.edit": "संपादित करें",
 
   "details.heading": "जानकारी",
@@ -81,7 +80,7 @@
   "connections.heading": "संबंध",
   "connections.none": "अभी कोई नहीं।",
   "connections.add": "संबंध जोड़ें",
-  "connections.remove": "यह संबंध हटाएँ",
+  "connections.removeAria": "संबंध हटाएँ: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "कार्यस्थल",
@@ -137,7 +136,7 @@
   "form.contact": "संपर्क: कोई जिसके साथ आप काम करते हैं",
   "form.detail": "जानकारी",
   "form.detailValue": "मान",
-  "form.otherNames": "अन्य नाम (अल्पविराम से अलग करें)",
+  "form.otherNames": "अन्य नाम (हर पंक्ति में एक)",
   "form.add": "जोड़ें",
   "form.save": "सहेजें",
   "form.cancel": "रद्द करें",
@@ -154,8 +153,12 @@
   "trash.button": "ट्रैश में भेजें",
   "trash.confirmTitle": "{{name}} को ट्रैश में भेजें?",
   "trash.confirmMessage": "आप इसे ट्रैश से पुनर्स्थापित कर सकते हैं। वहाँ से इसे स्थायी रूप से हटाने पर इसके संबंध भी हट जाते हैं।",
+  "permanentDelete.title": "{{name}} को स्थायी रूप से हटाएँ?",
+  "permanentDelete.message": "यह क्रिया पूर्ववत नहीं की जा सकती। अन्य पहचानों से इसके संबंध भी हटा दिए जाते हैं।",
+  "permanentDelete.confirm": "स्थायी रूप से हटाएँ",
 
   "found.heading": "अभी पहचान में नहीं",
+  "found.dialogTitle": "«{{text}}»",
   "found.hint": "टाइमलाइन और IOCs पर मौजूद ऐसे नाम जो यहाँ किसी से मेल नहीं खाते। किसी नाम पर क्लिक करके उसे जोड़ें, या किसी पहचान के दूसरे नाम के रूप में जोड़ें।",
   "found.more": "{{count}} और",
   "found.fewer": "कम",

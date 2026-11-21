@@ -200,3 +200,63 @@ test('works from the keyboard alone', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(card(page, 'Lee Park').getByText('lee@halvorsen.example')).toBeVisible();
 });
+
+test('switches between one investigation and all of them, and follows "Also in another investigation"', async ({ page }) => {
+  await seed(page, {
+    folders: [folder('case', 'Fictional BEC case'), folder('other', 'Fictional second case')],
+    identities: [identity('dana', 'case', 'Dana Okafor', { details: [{ id: 'e', label: 'Email', value: 'dana@halvorsen.example' }] }),
+      identity('dana2', 'other', 'Dana O.', { details: [{ id: 'e2', label: 'Email', value: 'dana@halvorsen.example' }] }),
+      identity('lee', 'other', 'Lee Park')],
+  }, { view: 'identities', selectedFolderId: 'case' });
+  await expect(page.getByText('The people, organizations, systems and accounts in this investigation.')).toBeVisible();
+  await expect(row(page, 'Lee Park')).toHaveCount(0);
+  await row(page, 'Dana Okafor').click();
+  // The same email in the other investigation: follow it there.
+  await card(page, 'Dana Okafor').getByRole('button', { name: /Dana O\./ }).click();
+  await expect(card(page, 'Dana O.')).toBeVisible();
+  await expect(row(page, 'Lee Park')).toBeVisible();
+  await expect(row(page, 'Dana Okafor')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Show all', exact: true }).click();
+  await expect(page.getByText('The people, organizations, systems and accounts in every investigation.')).toBeVisible();
+  await expect(row(page, 'Dana Okafor')).toContainText('Fictional BEC case');
+  await expect(row(page, 'Lee Park')).toContainText('Fictional second case');
+});
+
+test('deletes an identity for good only after confirmation, removing connections to it', async ({ page }) => {
+  await seed(page, {
+    folders: [folder('case', 'Fictional BEC case')],
+    identities: [identity('lee', 'case', 'Lee Park'), identity('dana', 'case', 'Dana Okafor', { connections: [{ targetId: 'lee', label: 'reports to' }] })],
+  }, { view: 'identities', selectedFolderId: 'case' });
+  await row(page, 'Lee Park').click();
+  await card(page, 'Lee Park').getByRole('button', { name: 'Edit' }).click();
+  await page.getByRole('dialog', { name: 'Edit Lee Park' }).getByRole('button', { name: 'Move to trash' }).click();
+  await page.getByRole('dialog', { name: 'Move Lee Park to the trash?' }).getByRole('button', { name: 'Move to trash' }).click();
+  await page.getByRole('button', { name: 'Trash', exact: true }).click();
+  await page.getByRole('button', { name: 'Delete permanently' }).first().click();
+  const confirm = page.getByRole('dialog', { name: 'Delete Lee Park for good?' });
+  await confirm.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByText('Lee Park (Person)')).toBeVisible();
+  await page.getByRole('button', { name: 'Delete permanently' }).first().click();
+  await page.getByRole('dialog', { name: 'Delete Lee Park for good?' }).getByRole('button', { name: 'Delete for good' }).click();
+  await expect(page.getByText('Lee Park (Person)')).toHaveCount(0);
+  await navigateToView(page, 'Identities');
+  await row(page, 'Dana Okafor').click();
+  await expect(card(page, 'Dana Okafor').getByText('reports to')).toHaveCount(0);
+});
+
+test('reaches the list with the Tab key and opens a profile with Enter', async ({ page, browserName }) => {
+  // Like Safari on macOS, WebKit's Tab skips buttons by default; Alt+Tab reaches them (as the accessibility specs do).
+  const nextControl = browserName === 'webkit' && process.platform === 'darwin' ? 'Alt+Tab' : 'Tab';
+  await seed(page, { folders: [folder('case', 'Fictional BEC case')], identities: [identity('lee', 'case', 'Lee Park'), identity('ana', 'case', 'Ana Silva')] },
+    { view: 'identities', selectedFolderId: 'case' });
+  await list(page).getByRole('searchbox', { name: 'Search identities' }).focus();
+  for (let presses = 0; presses < 12; presses++) {
+    await page.keyboard.press(nextControl);
+    if (await row(page, 'Lee Park').evaluate(element => element === document.activeElement)) break;
+    if (await row(page, 'Ana Silva').evaluate(element => element === document.activeElement)) { await page.keyboard.press(nextControl); break; }
+  }
+  await expect(row(page, 'Lee Park')).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(card(page, 'Lee Park')).toBeVisible();
+});

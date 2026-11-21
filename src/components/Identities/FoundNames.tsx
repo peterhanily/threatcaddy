@@ -37,7 +37,7 @@ export function FoundNamesPanel({ found, folders, showInvestigation, labels, onP
           </button>
         ))}
         {found.length > SHOWN && (
-          <button type="button" className="text-xs font-medium text-accent hover:underline" onClick={() => setAll(value => !value)}>
+          <button type="button" aria-expanded={all} className="text-xs font-medium text-accent hover:underline" onClick={() => setAll(value => !value)}>
             {all ? t('found.fewer') : t('found.more', { count: found.length - SHOWN })}
           </button>
         )}
@@ -60,11 +60,12 @@ export function FoundNameDialog({ found, folders, identities, labels, onClose, o
   const near = found.looksLike;
   const titles = [...new Set(found.sources.map(source => source.title))];
   return (
-    <Modal open onClose={onClose} title={`“${found.text}”`}>
+    <Modal open onClose={onClose} title={t('found.dialogTitle', { text: found.text })}>
       <div className="flex flex-col gap-3 text-sm">
-        <p className="text-text-secondary">
-          {t('found.pickWhere', { where: whereOf(found, labels), investigation })}: {titles.slice(0, 2).map(title => `“${title}”`).join(', ')}{titles.length > 2 ? '…' : ''}
-        </p>
+        <div className="text-text-secondary">
+          <p>{t('found.pickWhere', { where: whereOf(found, labels), investigation })}</p>
+          <ul className="mt-1 list-disc ps-5 text-xs text-text-muted">{titles.slice(0, 3).map(title => <li key={title} className="break-words">{title}</li>)}</ul>
+        </div>
         {near ? (
           <>
             <div className="flex flex-wrap items-center gap-2">
@@ -72,7 +73,7 @@ export function FoundNameDialog({ found, folders, identities, labels, onClose, o
               <span className="text-xs text-text-muted">{t('found.looksLikeHint')}</span>
             </div>
             <p className="text-xs text-text-muted">{t('found.or')}</p>
-            <div><button type="button" className={button} onClick={onAddNew}><Plus size={14} className="mr-1 inline" />{t('found.addNew')}</button></div>
+            <div><button type="button" className={button} onClick={onAddNew}><Plus size={14} className="me-1 inline" />{t('found.addNew')}</button></div>
           </>
         ) : (
           <div className="flex flex-wrap items-center gap-2">

@@ -4,7 +4,7 @@ import type { Folder, Identity } from '../../types';
 import { Modal } from '../Common/Modal';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { byName, canonicalType, isOrganization, organizationOf, sameText, withOrganization } from '../../lib/identity-model';
-import type { IdentityLabels } from './identity-labels';
+import type { IdentityChange, IdentityLabels } from './identity-labels';
 
 const field = 'w-full rounded-md border border-border-subtle bg-bg-primary px-2 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none';
 const label = 'flex flex-col gap-1 text-xs text-text-secondary';
@@ -24,7 +24,7 @@ interface Props {
   labels: IdentityLabels;
   onClose: () => void;
   onCreate: (partial: Partial<Identity>) => Promise<Identity>;
-  onUpdate: (id: string, updates: Partial<Identity>) => Promise<void>;
+  onUpdate: (id: string, change: IdentityChange) => Promise<void>;
   onMerge: (keepId: string, goneId: string) => Promise<void>;
   onTrash: (identity: Identity) => Promise<void>;
   onSaved: (identity: Identity, message?: string) => void;
@@ -37,11 +37,14 @@ export function IdentityFormModal({ editing, prefill, folders, defaultFolderId, 
   const [type, setType] = useState(editing ? labels.typeLabel(editing.type) : labels.typeLabel(prefill?.type ?? 'person'));
   const [folderId, setFolderId] = useState(editing?.folderId ?? prefill?.folderId ?? defaultFolderId ?? '');
   const [description, setDescription] = useState(editing?.description ?? '');
-  const [organizationId, setOrganizationId] = useState(editing ? organizationOf(editing, byId)?.id ?? '' : '');
+  // The organisation shown when editing began: only an edge to it is ever replaced.
+  const [initialOrganizationId] = useState(editing ? organizationOf(editing, byId)?.id ?? '' : '');
+  const [organizationId, setOrganizationId] = useState(initialOrganizationId);
   const [contact, setContact] = useState(false);
   const [detailLabel, setDetailLabel] = useState(prefill?.detailLabel ?? '');
   const [detailValue, setDetailValue] = useState(prefill?.detailValue ?? '');
-  const [otherNames, setOtherNames] = useState(editing?.aliases.join(', ') ?? '');
+  // One per line: names such as "Okafor, Dana" or "Acme, Inc." contain commas.
+  const [otherNames, setOtherNames] = useState(editing?.aliases.join('\n') ?? '');
   const [mergeWith, setMergeWith] = useState('');
   const [confirm, setConfirm] = useState<'merge' | 'trash' | null>(null);
   const [error, setError] = useState('');
@@ -64,11 +67,13 @@ export function IdentityFormModal({ editing, prefill, folders, defaultFolderId, 
     setBusy(true);
     try {
       if (editing) {
-        const aliases = [...new Set(otherNames.split(',').map(alias => alias.trim()).filter(alias => alias && sameText(alias) !== sameText(name)))];
-        await onUpdate(editing.id, {
+        const aliases = otherNames.split('\n').map(alias => alias.trim())
+          .filter((alias, index, all) => alias && sameText(alias) !== sameText(name) && all.findIndex(other => sameText(other) === sameText(alias)) === index);
+        const organizationChanged = !isOrganization({ type: resolvedType }) && organizationId !== initialOrganizationId;
+        await onUpdate(editing.id, current => ({
           name: name.trim(), type: resolvedType, description: description.trim() || undefined, aliases,
-          connections: isOrganization({ type: resolvedType }) ? editing.connections : withOrganization({ ...editing, type: resolvedType }, organizationId || undefined, byId),
-        });
+          ...(organizationChanged ? { connections: withOrganization({ ...current, type: resolvedType }, initialOrganizationId || undefined, organizationId || undefined) } : {}),
+        }));
         onSaved({ ...editing, name: name.trim() });
       } else {
         const details = detailValue.trim() ? [{ id: nanoid(), label: detailLabel.trim(), value: detailValue.trim(), ...(labels.privateByDefault(detailLabel) ? { private: true } : {}) }] : [];
@@ -137,7 +142,8 @@ export function IdentityFormModal({ editing, prefill, folders, defaultFolderId, 
           )}
           {editing && (
             <label className={label}>{t('form.otherNames')}
-              <input value={otherNames} onChange={event => setOtherNames(event.target.value)} className={field} />
+              <textarea rows={Math.min(6, Math.max(2, otherNames.split('\n').length + 1))} value={otherNames}
+                onChange={event => setOtherNames(event.target.value)} className={field} />
             </label>
           )}
           {error && <p id={`${ids}-error`} role="alert" className="text-sm text-red-400">{error}</p>}

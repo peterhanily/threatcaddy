@@ -44,7 +44,6 @@
   "profile.select": "Scegli un'identità per vederla qui.",
   "profile.otherNames": "Altri nomi: {{names}}",
   "profile.contact": "Contatto",
-  "profile.markContact": "Segna come contatto",
   "profile.edit": "Modifica",
 
   "details.heading": "Dettagli",
@@ -81,7 +80,7 @@
   "connections.heading": "Collegamenti",
   "connections.none": "Ancora nessuno.",
   "connections.add": "Aggiungi un collegamento",
-  "connections.remove": "Rimuovi questo collegamento",
+  "connections.removeAria": "Rimuovi collegamento: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "lavora presso",
@@ -137,7 +136,7 @@
   "form.contact": "Un contatto: una persona con cui lavori",
   "form.detail": "Dettaglio",
   "form.detailValue": "Valore",
-  "form.otherNames": "Altri nomi (separati da virgole)",
+  "form.otherNames": "Altri nomi (uno per riga)",
   "form.add": "Aggiungi",
   "form.save": "Salva",
   "form.cancel": "Annulla",
@@ -154,8 +153,12 @@
   "trash.button": "Sposta nel cestino",
   "trash.confirmTitle": "Spostare {{name}} nel cestino?",
   "trash.confirmMessage": "Puoi ripristinarla dal Cestino. Se la elimini definitivamente da lì, vengono rimossi anche i suoi collegamenti.",
+  "permanentDelete.title": "Eliminare definitivamente {{name}}?",
+  "permanentDelete.message": "Questa azione non può essere annullata. Vengono rimossi anche i collegamenti di altre identità verso di essa.",
+  "permanentDelete.confirm": "Elimina definitivamente",
 
   "found.heading": "Non ancora nelle Identità",
+  "found.dialogTitle": "«{{text}}»",
   "found.hint": "Nomi nella timeline e negli IOC che non corrispondono a nulla qui. Fai clic su uno per aggiungerlo, o per aggiungerlo come altro nome di un'identità.",
   "found.more": "Altri {{count}}",
   "found.fewer": "Meno",

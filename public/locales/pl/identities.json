@@ -44,7 +44,6 @@
   "profile.select": "Wybierz tożsamość, aby ją tu wyświetlić.",
   "profile.otherNames": "Inne nazwy: {{names}}",
   "profile.contact": "Kontakt",
-  "profile.markContact": "Oznacz jako kontakt",
   "profile.edit": "Edytuj",
 
   "details.heading": "Szczegóły",
@@ -81,7 +80,7 @@
   "connections.heading": "Powiązania",
   "connections.none": "Jeszcze brak.",
   "connections.add": "Dodaj powiązanie",
-  "connections.remove": "Usuń to powiązanie",
+  "connections.removeAria": "Usuń powiązanie: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "pracuje w",
@@ -137,7 +136,7 @@
   "form.contact": "Kontakt: osoba, z którą współpracujesz",
   "form.detail": "Szczegół",
   "form.detailValue": "Wartość",
-  "form.otherNames": "Inne nazwy (oddzielone przecinkami)",
+  "form.otherNames": "Inne nazwy (jedna w wierszu)",
   "form.add": "Dodaj",
   "form.save": "Zapisz",
   "form.cancel": "Anuluj",
@@ -154,8 +153,12 @@
   "trash.button": "Przenieś do kosza",
   "trash.confirmTitle": "Przenieść {{name}} do kosza?",
   "trash.confirmMessage": "Tożsamość można przywrócić z Kosza. Trwałe usunięcie jej w Koszu usuwa też jej powiązania.",
+  "permanentDelete.title": "Trwale usunąć {{name}}?",
+  "permanentDelete.message": "Tej operacji nie można cofnąć. Powiązania innych tożsamości z nią też zostaną usunięte.",
+  "permanentDelete.confirm": "Usuń trwale",
 
   "found.heading": "Nie ma jeszcze w Tożsamościach",
+  "found.dialogTitle": "„{{text}}”",
   "found.hint": "Nazwy z osi czasu i z IOC, które nie pasują tu do niczego. Kliknij nazwę, aby ją dodać albo dodać jako inną nazwę tożsamości.",
   "found.more": "Jeszcze {{count}}",
   "found.fewer": "Mniej",

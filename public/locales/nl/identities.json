@@ -44,7 +44,6 @@
   "profile.select": "Kies een identiteit om die hier te bekijken.",
   "profile.otherNames": "Ook bekend als {{names}}",
   "profile.contact": "Contactpersoon",
-  "profile.markContact": "Markeren als contactpersoon",
   "profile.edit": "Bewerken",
 
   "details.heading": "Details",
@@ -81,7 +80,7 @@
   "connections.heading": "Relaties",
   "connections.none": "Nog geen.",
   "connections.add": "Relatie toevoegen",
-  "connections.remove": "Deze relatie verwijderen",
+  "connections.removeAria": "Relatie verwijderen: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "werkt bij",
@@ -137,7 +136,7 @@
   "form.contact": "Een contactpersoon: iemand met wie je samenwerkt",
   "form.detail": "Detail",
   "form.detailValue": "Waarde",
-  "form.otherNames": "Andere namen (kommagescheiden)",
+  "form.otherNames": "Andere namen (één per regel)",
   "form.add": "Toevoegen",
   "form.save": "Opslaan",
   "form.cancel": "Annuleren",
@@ -154,8 +153,12 @@
   "trash.button": "Naar prullenbak",
   "trash.confirmTitle": "{{name}} naar de prullenbak verplaatsen?",
   "trash.confirmMessage": "Je kunt het terugzetten vanuit de Prullenbak. Als je het daar definitief verwijdert, worden ook de relaties verwijderd.",
+  "permanentDelete.title": "{{name}} definitief verwijderen?",
+  "permanentDelete.message": "Dit kan niet ongedaan worden gemaakt. Relaties van andere identiteiten naar deze identiteit worden ook verwijderd.",
+  "permanentDelete.confirm": "Definitief verwijderen",
 
   "found.heading": "Nog niet in Identiteiten",
+  "found.dialogTitle": "“{{text}}”",
   "found.hint": "Namen op de tijdlijn en bij IOC's die hier nergens mee overeenkomen. Klik op een naam om die toe te voegen, of om die toe te voegen als andere naam van een identiteit.",
   "found.more": "Nog {{count}}",
   "found.fewer": "Minder",

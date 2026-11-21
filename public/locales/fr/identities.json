@@ -44,7 +44,6 @@
   "profile.select": "Choisissez une identité pour l'afficher ici.",
   "profile.otherNames": "Autres noms : {{names}}",
   "profile.contact": "Contact",
-  "profile.markContact": "Marquer comme contact",
   "profile.edit": "Modifier",
 
   "details.heading": "Détails",
@@ -81,7 +80,7 @@
   "connections.heading": "Relations",
   "connections.none": "Aucune pour l'instant.",
   "connections.add": "Ajouter une relation",
-  "connections.remove": "Supprimer cette relation",
+  "connections.removeAria": "Supprimer la relation : {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "travaille chez",
@@ -137,7 +136,7 @@
   "form.contact": "Un contact : quelqu'un avec qui vous travaillez",
   "form.detail": "Détail",
   "form.detailValue": "Valeur",
-  "form.otherNames": "Autres noms (séparés par des virgules)",
+  "form.otherNames": "Autres noms (un par ligne)",
   "form.add": "Ajouter",
   "form.save": "Enregistrer",
   "form.cancel": "Annuler",
@@ -154,8 +153,12 @@
   "trash.button": "Mettre à la corbeille",
   "trash.confirmTitle": "Mettre {{name}} à la corbeille ?",
   "trash.confirmMessage": "Vous pourrez la restaurer depuis la Corbeille. La supprimer définitivement depuis la Corbeille supprime aussi ses relations.",
+  "permanentDelete.title": "Supprimer {{name}} définitivement ?",
+  "permanentDelete.message": "Cette action est irréversible. Les relations des autres identités vers elle sont aussi supprimées.",
+  "permanentDelete.confirm": "Supprimer définitivement",
 
   "found.heading": "Pas encore dans Identités",
+  "found.dialogTitle": "« {{text}} »",
   "found.hint": "Noms de la chronologie et des IOCs qui ne correspondent à rien ici. Cliquez sur l'un d'eux pour l'ajouter, ou pour l'ajouter comme autre nom d'une identité.",
   "found.more": "{{count}} de plus",
   "found.fewer": "Moins",

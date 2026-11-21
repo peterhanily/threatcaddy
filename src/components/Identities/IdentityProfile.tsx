@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Lock, Pencil, Star, X } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import type { Folder, Identity, IdentityStatus } from '../../types';
@@ -7,6 +7,7 @@ import {
   CONNECTION_PHRASES, alsoElsewhere, byName, canonicalPhrase, connectionsOf, isOrganization, isPerson, maskDetail, membersOf,
 } from '../../lib/identity-model';
 import { cn } from '../../lib/utils';
+import type { IdentityChange } from './identity-labels';
 import { IdentityAvatar, InvestigationPill } from './identity-ui';
 import { STATUS_DOT, identitySubtitle, type IdentityLabels } from './identity-labels';
 
@@ -28,7 +29,7 @@ interface Props {
   readOnly: boolean;
   screensharing: boolean;
   labels: IdentityLabels;
-  onUpdate: (id: string, updates: Partial<Identity>) => Promise<void>;
+  onUpdate: (id: string, change: IdentityChange) => Promise<void>;
   onEdit: () => void;
   onOpen: (identity: Identity) => void;
   onOpenChart: (organization: Identity) => void;
@@ -40,12 +41,26 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
   const [shown, setShown] = useState<ReadonlySet<string>>(new Set());
   const [detailForm, setDetailForm] = useState<{ label: string; value: string; private: boolean; error?: string } | null>(null);
   const [connectionForm, setConnectionForm] = useState<{ phrase: string; to: string; error?: string } | null>(null);
+  // Closing an inline form returns focus to the button that opened it.
+  const detailButton = useRef<HTMLButtonElement>(null);
+  const connectionButton = useRef<HTMLButtonElement>(null);
+  // Used once, after the form has gone and its button is back.
+  const returnFocus = useRef<'detail' | 'connection' | null>(null);
+  useEffect(() => {
+    const button = returnFocus.current === 'detail' ? detailButton.current : returnFocus.current === 'connection' ? connectionButton.current : null;
+    if (button) { button.focus(); returnFocus.current = null; }
+  });
+  const closeDetail = () => { setDetailForm(null); returnFocus.current = 'detail'; };
+  const closeConnection = () => { setConnectionForm(null); returnFocus.current = 'connection'; };
+  /** A failed save keeps the form and what was typed; the view has already said why. */
+  const save = async (id: string, change: IdentityChange) => { try { await onUpdate(id, change); return true; } catch { return false; } };
 
   const folder = folders.find(candidate => candidate.id === identity.folderId);
-  const connections = connectionsOf(identity, byId, sameInvestigation);
-  const others = alsoElsewhere(identity, everywhere);
-  const members = isOrganization(identity) ? membersOf(identity, sameInvestigation) : null;
-  const targets = sameInvestigation.filter(other => other.id !== identity.id).sort(byName);
+  const connections = useMemo(() => connectionsOf(identity, byId, sameInvestigation), [identity, byId, sameInvestigation]);
+  const others = useMemo(() => alsoElsewhere(identity, everywhere), [identity, everywhere]);
+  const members = useMemo(() => (isOrganization(identity) ? membersOf(identity, sameInvestigation) : null), [identity, sameInvestigation]);
+  const chartable = members !== null && members.people.length > 0;
+  const targets = useMemo(() => sameInvestigation.filter(other => other.id !== identity.id).sort(byName), [identity.id, sameInvestigation]);
 
   const addDetail = async (event: FormEvent) => {
     event.preventDefault();
@@ -53,21 +68,25 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
     const label = detailForm.label.trim(), value = detailForm.value.trim();
     if (!label) { setDetailForm({ ...detailForm, error: t('detailForm.errorLabel') }); return; }
     if (!value) { setDetailForm({ ...detailForm, error: t('detailForm.errorValue') }); return; }
-    await onUpdate(identity.id, { details: [...identity.details, { id: nanoid(), label, value, ...(detailForm.private ? { private: true } : {}) }] });
-    setDetailForm(null);
+    const detail = { id: nanoid(), label, value, ...(detailForm.private ? { private: true } : {}) };
+    if (await save(identity.id, current => ({ details: [...current.details, detail] }))) closeDetail();
   };
   const addConnection = async (event: FormEvent) => {
     event.preventDefault();
     if (!connectionForm) return;
-    const label = canonicalPhrase(connectionForm.phrase, labels.phraseLabels);
+    const { label, reversed } = canonicalPhrase(connectionForm.phrase, labels.phraseLabels, labels.reverseLabels);
     if (!label) { setConnectionForm({ ...connectionForm, error: t('connectionForm.errorPhrase') }); return; }
     if (!connectionForm.to) { setConnectionForm({ ...connectionForm, error: t('connectionForm.errorTarget') }); return; }
-    await onUpdate(identity.id, { connections: [...identity.connections, { targetId: connectionForm.to, label }] });
-    setConnectionForm(null);
+    // "Lee manages Dana" is stored as "Dana reports to Lee", so charts and both sides read it.
+    const [owner, edge] = reversed ? [connectionForm.to, { targetId: identity.id, label }] : [identity.id, { targetId: connectionForm.to, label }];
+    if (await save(owner, current => ({ connections: [...current.connections, edge] }))) closeConnection();
   };
-  const removeConnection = async (ownerId: string, index: number) => {
-    const owner = ownerId === identity.id ? identity : byId.get(ownerId);
-    if (owner) await onUpdate(owner.id, { connections: owner.connections.filter((_, position) => position !== index) });
+  /** Removes the edge from whichever identity holds it, matched in the stored row rather than by position. */
+  const removeConnection = async (ownerId: string, edge: { targetId: string; label: string }) => {
+    await save(ownerId, current => {
+      const position = current.connections.findIndex(candidate => candidate.targetId === edge.targetId && candidate.label === edge.label);
+      return { connections: position < 0 ? current.connections : current.connections.filter((_, index) => index !== position) };
+    });
   };
 
   const chip = (other: Identity) => (
@@ -90,7 +109,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
               id={`${ids}-status`}
               value={identity.status ?? ''}
               disabled={readOnly}
-              onChange={event => void onUpdate(identity.id, { status: (event.target.value || undefined) as IdentityStatus | undefined })}
+              onChange={event => void save(identity.id, { status: (event.target.value || undefined) as IdentityStatus | undefined })}
               className="rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-xs text-text-primary disabled:opacity-60"
             >
               <option value="">{labels.statusLabel()}</option>
@@ -98,9 +117,9 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
             </select>
             {identity.status && <span aria-hidden="true" className={cn('h-2 w-2 rounded-full', STATUS_DOT[identity.status])} />}
             {isPerson(identity) && (
-              <button type="button" aria-pressed={!!identity.contact} disabled={readOnly} onClick={() => void onUpdate(identity.id, { contact: identity.contact ? undefined : true })}
+              <button type="button" aria-pressed={!!identity.contact} disabled={readOnly} onClick={() => void save(identity.id, { contact: identity.contact ? undefined : true })}
                 className={cn(smallButton, identity.contact && 'border-amber-500/60 text-amber-400')}>
-                <Star size={13} className={identity.contact ? 'fill-current' : ''} />{identity.contact ? t('profile.contact') : t('profile.markContact')}
+                <Star size={13} className={identity.contact ? 'fill-current' : ''} />{t('profile.contact')}
               </button>
             )}
             {showInvestigation && <InvestigationPill folder={folder} missingLabel={t('list.orphan')} />}
@@ -113,7 +132,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
         <section aria-labelledby={`${ids}-people`} className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-3">
             <h3 id={`${ids}-people`} className="text-xs font-semibold uppercase tracking-wide text-text-muted">{t('people.heading', { count: members.people.length })}</h3>
-            {members.people.length > 0 && <button type="button" className={linkButton} onClick={() => onOpenChart(identity)}>{t('people.openChart')}</button>}
+            {chartable && <button type="button" className={linkButton} onClick={() => onOpenChart(identity)}>{t('people.openChart')}</button>}
           </div>
           {members.people.length ? (
             <ul className="flex flex-col gap-1">
@@ -143,7 +162,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                 <li key={detail.id} className="grid grid-cols-[minmax(5rem,auto)_1fr_auto] items-start gap-2 text-sm">
                   <span className="text-xs text-text-muted">{detail.label}</span>
                   <span className="flex min-w-0 flex-wrap items-center gap-1.5">
-                    <span className={cn('break-all text-text-primary', MONO_LABEL.test(detail.label) && 'font-mono text-xs')}>{visible ? detail.value : maskDetail(detail)}</span>
+                    <span className={cn('break-all text-text-primary', MONO_LABEL.test(detail.label) && 'font-mono text-xs')}>{visible ? detail.value : maskDetail(detail, screensharing)}</span>
                     {detail.private && (visible
                       ? <span className="inline-flex items-center gap-0.5 rounded bg-bg-raised px-1 text-[10px] text-text-muted"><Lock size={10} />{t('details.private')}</span>
                       : <button type="button" disabled={screensharing} title={screensharing ? t('details.hiddenWhileSharing') : undefined}
@@ -151,7 +170,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                           onClick={() => setShown(previous => new Set(previous).add(detail.id))}>{t('details.show')}</button>)}
                   </span>
                   {!readOnly && <button type="button" aria-label={t('details.remove', { label: detail.label })} className="rounded p-0.5 text-text-muted hover:text-text-primary"
-                    onClick={() => void onUpdate(identity.id, { details: identity.details.filter(other => other.id !== detail.id) })}><X size={13} /></button>}
+                    onClick={() => void save(identity.id, current => ({ details: current.details.filter(other => other.id !== detail.id) }))}><X size={13} /></button>}
                 </li>
               );
             })}
@@ -176,10 +195,10 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
               {detailForm.error && <p role="alert" className="text-xs text-red-400">{detailForm.error}</p>}
               <div className="flex gap-2">
                 <button type="submit" className="rounded-md bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent-hover">{t('form.add')}</button>
-                <button type="button" className={smallButton} onClick={() => setDetailForm(null)}>{t('form.cancel')}</button>
+                <button type="button" className={smallButton} onClick={closeDetail}>{t('form.cancel')}</button>
               </div>
             </form>
-          ) : <button type="button" className={cn(linkButton, 'self-start')} onClick={() => { setDetailForm({ label: '', value: '', private: false }); setConnectionForm(null); }}>{t('details.add')}</button>)}
+          ) : <button ref={detailButton} type="button" className={cn(linkButton, 'self-start')} onClick={() => { setDetailForm({ label: '', value: '', private: false }); setConnectionForm(null); }}>{t('details.add')}</button>)}
           {others.length > 0 && (
             <p className="flex flex-wrap items-center gap-1.5 text-xs text-text-muted">{t('also.heading')}
               {others.map(other => (
@@ -199,8 +218,8 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                 ) : (
                   <>{chip(connection.other)}<span className="text-text-secondary">{t('connections.incomingCustom', { label: connection.label, name: identity.name })}</span></>
                 )}
-                {!readOnly && <button type="button" aria-label={t('connections.remove')} className="ml-auto rounded p-0.5 text-text-muted hover:text-text-primary"
-                  onClick={() => void removeConnection(connection.ownerId, connection.index)}><X size={13} /></button>}
+                {!readOnly && <button type="button" aria-label={t('connections.removeAria', { phrase: labels.phrase(connection.label, connection.outgoing), name: connection.other.name })} className="ms-auto rounded p-0.5 text-text-muted hover:text-text-primary"
+                  onClick={() => void removeConnection(connection.ownerId, { targetId: connection.outgoing ? connection.other.id : identity.id, label: connection.label })}><X size={13} /></button>}
               </li>
             ))}
             {!connections.length && <li className="text-xs text-text-muted">{t('connections.none')}</li>}
@@ -225,10 +244,10 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
               {connectionForm.error && <p role="alert" className="text-xs text-red-400">{connectionForm.error}</p>}
               <div className="flex gap-2">
                 {targets.length > 0 && <button type="submit" className="rounded-md bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent-hover">{t('form.add')}</button>}
-                <button type="button" className={smallButton} onClick={() => setConnectionForm(null)}>{t('form.cancel')}</button>
+                <button type="button" className={smallButton} onClick={closeConnection}>{t('form.cancel')}</button>
               </div>
             </form>
-          ) : <button type="button" className={cn(linkButton, 'self-start')} onClick={() => { setConnectionForm({ phrase: '', to: '' }); setDetailForm(null); }}>{t('connections.add')}</button>)}
+          ) : <button ref={connectionButton} type="button" className={cn(linkButton, 'self-start')} onClick={() => { setConnectionForm({ phrase: '', to: '' }); setDetailForm(null); }}>{t('connections.add')}</button>)}
         </section>
       </div>
     </article>

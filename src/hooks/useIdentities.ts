@@ -6,8 +6,9 @@ import { purgeOldTrash } from '../lib/trash-purge';
 import { deleteEntitiesWithReferences } from '../lib/entity-relations';
 import { conservativeClsLevel } from '../lib/classification';
 import { IDENTITY_STATUSES } from '../lib/entity-enums';
+import { sameText as normalized } from '../lib/identity-model';
 
-const sameText = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+const sameText = (a: string, b: string) => normalized(a) === normalized(b);
 /** Lower is more serious; no status ranks last. */
 const statusRank = (status?: IdentityStatus) => (status ? IDENTITY_STATUSES.indexOf(status) : IDENTITY_STATUSES.length);
 
@@ -82,12 +83,13 @@ export function useIdentities(folderId?: string) {
     return identity;
   }, []);
 
-  /** A rename keeps the old name as another name, so earlier mentions still match. */
-  const updateIdentity = useCallback(async (id: string, updates: Partial<Identity>) => {
+  /** A rename keeps the old name as another name, so earlier mentions still match. `updates`
+   * may be computed from the stored row, so changes made in quick succession build on each other. */
+  const updateIdentity = useCallback(async (id: string, updates: Partial<Identity> | ((current: Identity) => Partial<Identity>)) => {
     const updated = await db.transaction('rw', db.identities, async () => {
       const existing = await db.identities.get(id);
       if (!existing) return undefined;
-      const patched: Partial<Identity> = { ...updates, updatedAt: Date.now() };
+      const patched: Partial<Identity> = { ...(typeof updates === 'function' ? updates(existing) : updates), updatedAt: Date.now() };
       const name = patched.name;
       if (name !== undefined && !sameText(name, existing.name)) {
         const aliases = (patched.aliases ?? existing.aliases).filter(alias => !sameText(alias, name));

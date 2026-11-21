@@ -44,7 +44,6 @@
   "profile.select": "여기에서 볼 신원을 선택하세요.",
   "profile.otherNames": "다른 이름: {{names}}",
   "profile.contact": "연락 담당자",
-  "profile.markContact": "연락 담당자로 표시",
   "profile.edit": "편집",
 
   "details.heading": "세부 정보",
@@ -81,7 +80,7 @@
   "connections.heading": "연결",
   "connections.none": "아직 없습니다.",
   "connections.add": "연결 추가",
-  "connections.remove": "이 연결 제거",
+  "connections.removeAria": "연결 제거: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "근무처",
@@ -137,7 +136,7 @@
   "form.contact": "연락 담당자: 함께 일하는 사람",
   "form.detail": "세부 정보",
   "form.detailValue": "값",
-  "form.otherNames": "다른 이름 (쉼표로 구분)",
+  "form.otherNames": "다른 이름 (한 줄에 하나씩)",
   "form.add": "추가",
   "form.save": "저장",
   "form.cancel": "취소",
@@ -154,8 +153,12 @@
   "trash.button": "휴지통으로 이동",
   "trash.confirmTitle": "{{name}}을(를) 휴지통으로 이동할까요?",
   "trash.confirmMessage": "휴지통에서 복원할 수 있습니다. 휴지통에서 영구 삭제하면 연결도 함께 제거됩니다.",
+  "permanentDelete.title": "{{name}}을(를) 영구 삭제할까요?",
+  "permanentDelete.message": "이 작업은 취소할 수 없습니다. 다른 신원에서 이 신원으로의 연결도 제거됩니다.",
+  "permanentDelete.confirm": "영구 삭제",
 
   "found.heading": "아직 신원에 없음",
+  "found.dialogTitle": "“{{text}}”",
   "found.hint": "타임라인과 IOC에 있지만 여기 있는 항목과 일치하지 않는 이름입니다. 이름을 클릭하여 추가하거나 기존 신원의 다른 이름으로 추가하세요.",
   "found.more": "{{count}}개 더 보기",
   "found.fewer": "간단히 보기",

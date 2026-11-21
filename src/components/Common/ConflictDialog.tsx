@@ -12,11 +12,16 @@ const TABLE_LABELS: Record<string, string> = {
   identities: 'Identity',
 };
 const conflictKey = (conflict: SyncResult) => JSON.stringify([conflict.table, conflict.entityId]);
-/** Private identity details stay hidden in the comparison, as on the identity's card. */
-function shownData(table: string | undefined, data: Record<string, unknown>): Record<string, unknown> {
+/** Private identity details stay hidden in the comparison, as on the identity's card. Each
+ * distinct value gets its own numbered mask, so a changed private value still shows as a change. */
+function shownData(table: string | undefined, data: Record<string, unknown>, masks: Map<unknown, string>): Record<string, unknown> {
   if (table !== 'identities' || !Array.isArray(data.details)) return data;
-  return { ...data, details: data.details.map(detail => detail && typeof detail === 'object' && (detail as { private?: unknown }).private === true
-    ? { ...detail, value: '••••••' } : detail) };
+  return { ...data, details: data.details.map(detail => {
+    if (!detail || typeof detail !== 'object' || (detail as { private?: unknown }).private !== true) return detail;
+    const value = (detail as { value?: unknown }).value;
+    if (!masks.has(value)) masks.set(value, `•••••• ${masks.size + 1}`);
+    return { ...detail, value: masks.get(value) };
+  }) };
 }
 const label = (conflict: SyncResult) => (TABLE_LABELS[conflict.table ?? ''] ?? 'Item') + ': ' +
   String(conflict.localData?.title ?? conflict.serverData?.title ?? conflict.localData?.name ?? conflict.serverData?.name ?? conflict.entityId.slice(0, 8));
@@ -34,8 +39,9 @@ function longFieldChanges(conflict: SyncResult) {
 }
 const textValue = (value: unknown): string => value == null ? '' : typeof value === 'string' ? value : JSON.stringify(value);
 function downloadFullComparison(conflict: SyncResult) {
+  const masks = new Map<unknown, string>();
   const blob = new Blob([JSON.stringify({ table: conflict.table, entityId: conflict.entityId,
-    local: conflict.localData ?? {}, remote: conflict.serverData ?? {} }, null, 2)], { type: 'application/json' });
+    local: shownData(conflict.table, conflict.localData ?? {}, masks), remote: shownData(conflict.table, conflict.serverData ?? {}, masks) }, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url; anchor.download = 'threatcaddy-conflict-comparison.json'; anchor.click();
@@ -88,7 +94,8 @@ export function ConflictDialog({ conflicts, onResolve, onResolveAll, onClose }: 
             const key = conflictKey(conflict);
             // Fields the server cannot supply stay on this device whichever version is kept.
             const kept = (field: string) => keepsLocalValue(conflict.table ?? '', conflict.serverData, field);
-            const diffs = (conflict.serverData ? computeFieldDiffs(shownData(conflict.table, conflict.localData ?? {}), shownData(conflict.table, conflict.serverData)) : []).filter(diff => !kept(diff.field));
+            const masks = new Map<unknown, string>();
+            const diffs = (conflict.serverData ? computeFieldDiffs(shownData(conflict.table, conflict.localData ?? {}, masks), shownData(conflict.table, conflict.serverData, masks)) : []).filter(diff => !kept(diff.field));
             const longFields = longFieldChanges(conflict).filter(field => !kept(field));
             // Keeping a server version this device cannot read would leave the local edit queued to conflict again.
             const keepTheirs = canKeepServerVersion(conflict);

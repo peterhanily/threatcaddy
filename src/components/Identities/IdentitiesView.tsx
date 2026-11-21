@@ -1,27 +1,32 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Contact, Plus, Star } from 'lucide-react';
 import type { Folder, Identity, StandaloneIOC, TimelineEvent } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { useScreenshare } from '../../hooks/ScreenshareContext';
-import { BUILTIN_TYPES, byName, foundNames, identityMatches, isBuiltinType, sameText, type FoundName } from '../../lib/identity-model';
+import { BUILTIN_TYPES, byName, foundNames, identityMatches, ignoredHash, isBuiltinType, looseText, sameText, type FoundName } from '../../lib/identity-model';
+import { workspaceStorageKey } from '../../lib/workspace-profiles';
 import { cn } from '../../lib/utils';
 import { IdentityAvatar, InvestigationPill } from './identity-ui';
-import { STATUS_DOT, identitySubtitle, useIdentityLabels } from './identity-labels';
+import { STATUS_DOT, identitySubtitle, useIdentityLabels, type IdentityChange } from './identity-labels';
 import { IdentityProfile } from './IdentityProfile';
 import { IdentityFormModal, type AddPrefill } from './IdentityFormModal';
 import { FoundNameDialog, FoundNamesPanel } from './FoundNames';
 import { OrgCharts } from './OrgCharts';
 
-/** Names the analyst chose to ignore, per device: a UI preference, like other view settings. */
-const IGNORED_KEY = 'threatcaddy-identities-ignored-v1';
+/**
+ * Names the analyst chose to ignore: a per-device UI preference, kept per workspace like other
+ * view settings. Only a hash of each name is stored: the names come from encrypted fields, so
+ * readable text must not sit in browser storage.
+ */
+const ignoredStorageKey = () => workspaceStorageKey('threatcaddy-identities-ignored-v2');
 function readIgnored(): Set<string> {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(IGNORED_KEY) ?? '[]');
+    const parsed: unknown = JSON.parse(localStorage.getItem(ignoredStorageKey()) ?? '[]');
     return new Set(Array.isArray(parsed) ? parsed.filter((key): key is string => typeof key === 'string') : []);
   } catch { return new Set(); }
 }
-function writeIgnored(keys: ReadonlySet<string>) {
-  try { localStorage.setItem(IGNORED_KEY, JSON.stringify([...keys])); } catch { /* Storage is unavailable; it lasts for this session. */ }
+function writeIgnored(hashes: ReadonlySet<string>) {
+  try { localStorage.setItem(ignoredStorageKey(), JSON.stringify([...hashes])); } catch { /* Storage is unavailable; it lasts for this session. */ }
 }
 
 type Filter = 'all' | 'contact' | 'other' | (typeof BUILTIN_TYPES)[number];
@@ -49,7 +54,7 @@ export interface IdentitiesViewProps {
   addRequest?: number;
   onAddHandled?: () => void;
   onCreate: (partial: Partial<Identity>) => Promise<Identity>;
-  onUpdate: (id: string, updates: Partial<Identity>) => Promise<void>;
+  onUpdate: (id: string, change: IdentityChange) => Promise<void>;
   onTrash: (id: string) => Promise<void>;
   onMerge: (keepId: string, goneId: string) => Promise<void>;
   /** Shows an identity that belongs to another investigation. */
@@ -82,7 +87,8 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const [seenAdd, setSeenAdd] = useState<number>();
   if (addRequest !== seenAdd) {
     setSeenAdd(addRequest);
-    if (addRequest && !readOnly) setForm({});
+    // Adding needs an investigation to put the identity in.
+    if (addRequest && !readOnly && folders.length > 0) setForm({});
   }
   useEffect(() => { if (addRequest) onAddHandled?.(); }, [addRequest, onAddHandled]);
 
@@ -90,33 +96,35 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const live = useMemo(() => identities.filter(identity => !identity.trashed && !identity.archived).sort(byName), [identities]);
   const everywhere = useMemo(() => allIdentities.filter(identity => !identity.trashed && !identity.archived), [allIdentities]);
   const byId = useMemo(() => new Map([...allIdentities, ...identities].map(identity => [identity.id, identity])), [allIdentities, identities]);
-  const found = useMemo(() => (readOnly ? [] : foundNames({ identities: live, events, iocs, threatActors, ignored })),
-    [readOnly, live, events, iocs, threatActors, ignored]);
+  // Archived identities still name things, so their names are not "found" again.
+  const known = useMemo(() => identities.filter(identity => !identity.trashed), [identities]);
+  const found = useMemo(() => (readOnly ? [] : foundNames({ identities: known, events, iocs, threatActors, isIgnored: key => ignored.has(ignoredHash(key)) })),
+    [readOnly, known, events, iocs, threatActors, ignored]);
 
   const rows = live.filter(identity => matchesFilter(identity, filter) && identityMatches(identity, query, labels.typeLabel(identity.type)));
   const selected = live.find(identity => identity.id === selectedId) ?? rows[0] ?? live[0];
   const filters = FILTERS.filter(option => option === 'all' || option === filter || live.some(identity => matchesFilter(identity, option)));
 
+  /** Reports a failed save, then rejects, so a form that waits for it stays open. */
   const run = useCallback(async (action: () => Promise<unknown>, success?: string) => {
     try { await action(); if (success) addToast('success', success); }
-    catch (cause) { addToast('error', t('toast.failed', { error: cause instanceof Error ? cause.message : String(cause) })); }
+    catch (cause) { addToast('error', t('toast.failed', { error: cause instanceof Error ? cause.message : String(cause) })); throw cause; }
   }, [addToast, t]);
+  const searchBox = useRef<HTMLInputElement>(null);
   const open = useCallback((identity: Identity) => {
     if (folderId && identity.folderId !== folderId) { onOpenElsewhere?.(identity); return; }
     setSelectedId(identity.id); setTab('rolodex');
     if (!rows.some(row => row.id === identity.id)) { setQuery(''); setFilter('all'); }
   }, [folderId, onOpenElsewhere, rows]);
   const ignore = (name: FoundName) => {
-    const next = new Set(ignored).add(name.key);
+    const next = new Set(ignored).add(ignoredHash(name.key));
     setIgnored(next); writeIgnored(next); setPicked(null);
     addToast('info', t('toast.ignored', { text: name.text }));
   };
 
-  // A letter heading before the first name that starts with it.
-  const headings = rows.map((identity, index) => {
-    const initial = [...sameText(identity.name)][0]?.toUpperCase() ?? '';
-    return index === 0 || initial !== ([...sameText(rows[index - 1].name)][0]?.toUpperCase() ?? '') ? initial : null;
-  });
+  // A letter heading before the first name that starts with it; accents do not split a letter (Ö goes under O).
+  const initialOf = (identity: Identity) => [...looseText(identity.name)][0]?.toUpperCase() ?? '';
+  const headings = rows.map((identity, index) => (index === 0 || initialOf(identity) !== initialOf(rows[index - 1]) ? initialOf(identity) : null));
   const canAdd = !readOnly && folders.length > 0;
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bg-primary">
@@ -155,7 +163,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
               <div className="grid items-start gap-4 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.6fr)]">
                 <section aria-label={t('list.label')} className="flex min-w-0 flex-col gap-2">
                   <label htmlFor={`${ids}-search`} className="sr-only">{t('search.label')}</label>
-                  <input id={`${ids}-search`} type="search" value={query} placeholder={t('search.placeholder')} onChange={event => setQuery(event.target.value)}
+                  <input ref={searchBox} id={`${ids}-search`} type="search" value={query} placeholder={t('search.placeholder')} onChange={event => setQuery(event.target.value)}
                     className="w-full rounded-md border border-border-subtle bg-bg-surface px-3 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none" />
                   <div role="group" aria-label={t('filter.label')} className="flex flex-wrap gap-1">
                     {filters.map(option => (
@@ -165,14 +173,14 @@ export function IdentitiesView(props: IdentitiesViewProps) {
                       </button>
                     ))}
                   </div>
-                  <div className="max-h-[70vh] overflow-y-auto rounded-lg border border-border-subtle bg-bg-surface p-1">
+                  <div role="list" className="max-h-[70vh] overflow-y-auto rounded-lg border border-border-subtle bg-bg-surface p-1">
                     {rows.map((identity, index) => {
                       const heading = headings[index];
                       return (
-                        <div key={identity.id}>
+                        <div key={identity.id} role="listitem">
                           {heading && <div aria-hidden="true" className="px-2 pt-2 text-[10px] font-semibold text-text-muted">{heading}</div>}
                           <button type="button" aria-current={selected?.id === identity.id ? 'true' : undefined} onClick={() => setSelectedId(identity.id)}
-                            className={cn('flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-bg-hover', selected?.id === identity.id && 'bg-accent/10')}>
+                            className={cn('flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-start hover:bg-bg-hover', selected?.id === identity.id && 'bg-accent/10')}>
                             <IdentityAvatar identity={identity} />
                             <span className="min-w-0 flex-1">
                               <span className="flex items-center gap-1 truncate text-sm text-text-primary">
@@ -189,7 +197,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
                         </div>
                       );
                     })}
-                    {!rows.length && <p className="p-3 text-xs text-text-muted">{live.length ? t('list.noMatches') : t('list.empty')}</p>}
+                    {!rows.length && <p role="listitem" className="p-3 text-xs text-text-muted">{live.length ? t('list.noMatches') : t('list.empty')}</p>}
                   </div>
                 </section>
                 {selected ? (
@@ -233,6 +241,8 @@ export function IdentitiesView(props: IdentitiesViewProps) {
             setForm(null);
             if (selectedId === identity.id) setSelectedId('');
             addToast('success', t('toast.trashed', { name: identity.name }));
+            // Its profile is gone; continue from the list.
+            searchBox.current?.focus();
           }}
           onSaved={(identity, message) => {
             setForm(null);
@@ -258,7 +268,8 @@ export function IdentitiesView(props: IdentitiesViewProps) {
           onAddAsOtherName={identity => {
             const text = picked.text;
             setPicked(null);
-            void run(() => onUpdate(identity.id, { aliases: [...identity.aliases, text] }), t('toast.otherNameAdded', { text, name: identity.name }));
+            void run(() => onUpdate(identity.id, current => ({ aliases: current.aliases.some(alias => sameText(alias) === sameText(text)) ? current.aliases : [...current.aliases, text] })),
+              t('toast.otherNameAdded', { text, name: identity.name })).catch(() => { /* Reported. */ });
             setSelectedId(identity.id);
           }}
         />

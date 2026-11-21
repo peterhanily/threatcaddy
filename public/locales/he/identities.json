@@ -44,7 +44,6 @@
   "profile.select": "בחר זהות כדי להציג אותה כאן.",
   "profile.otherNames": "שמות נוספים: {{names}}",
   "profile.contact": "איש קשר",
-  "profile.markContact": "סמן כאיש קשר",
   "profile.edit": "ערוך",
 
   "details.heading": "פרטים",
@@ -81,7 +80,7 @@
   "connections.heading": "קשרים",
   "connections.none": "אין עדיין.",
   "connections.add": "הוסף קשר",
-  "connections.remove": "הסר קשר זה",
+  "connections.removeAria": "הסר קשר: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "עובד אצל",
@@ -137,7 +136,7 @@
   "form.contact": "איש קשר: מישהו שאתה עובד איתו",
   "form.detail": "פרט",
   "form.detailValue": "ערך",
-  "form.otherNames": "שמות נוספים (מופרדים בפסיקים)",
+  "form.otherNames": "שמות נוספים (שם אחד בכל שורה)",
   "form.add": "הוסף",
   "form.save": "שמור",
   "form.cancel": "בטל",
@@ -154,8 +153,12 @@
   "trash.button": "העבר לאשפה",
   "trash.confirmTitle": "להעביר את {{name}} לאשפה?",
   "trash.confirmMessage": "ניתן לשחזר אותו מהאשפה. מחיקה לצמיתות משם מסירה גם את הקשרים שלו.",
+  "permanentDelete.title": "למחוק את {{name}} לצמיתות?",
+  "permanentDelete.message": "לא ניתן לבטל פעולה זו. גם קשרים מזהויות אחרות אליו יוסרו.",
+  "permanentDelete.confirm": "מחק לצמיתות",
 
   "found.heading": "עדיין לא בזהויות",
+  "found.dialogTitle": "„{{text}}”",
   "found.hint": "שמות בציר הזמן וב-IOCs שאינם תואמים לשום דבר כאן. לחץ על שם כדי להוסיף אותו, או כדי להוסיף אותו כשם נוסף של זהות.",
   "found.more": "עוד {{count}}",
   "found.fewer": "פחות",

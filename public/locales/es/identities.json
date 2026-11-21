@@ -44,7 +44,6 @@
   "profile.select": "Elija una identidad para verla aquí.",
   "profile.otherNames": "Otros nombres: {{names}}",
   "profile.contact": "Contacto",
-  "profile.markContact": "Marcar como contacto",
   "profile.edit": "Editar",
 
   "details.heading": "Detalles",
@@ -81,7 +80,7 @@
   "connections.heading": "Relaciones",
   "connections.none": "Ninguna todavía.",
   "connections.add": "Agregar una relación",
-  "connections.remove": "Eliminar esta relación",
+  "connections.removeAria": "Eliminar relación: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "trabaja en",
@@ -137,7 +136,7 @@
   "form.contact": "Un contacto: alguien con quien trabaja",
   "form.detail": "Detalle",
   "form.detailValue": "Valor",
-  "form.otherNames": "Otros nombres (separados por comas)",
+  "form.otherNames": "Otros nombres (uno por línea)",
   "form.add": "Agregar",
   "form.save": "Guardar",
   "form.cancel": "Cancelar",
@@ -154,8 +153,12 @@
   "trash.button": "Mover a la papelera",
   "trash.confirmTitle": "¿Mover {{name}} a la papelera?",
   "trash.confirmMessage": "Puede restaurarla desde la Papelera. Si la elimina allí de forma definitiva, también se eliminan sus relaciones.",
+  "permanentDelete.title": "¿Eliminar {{name}} definitivamente?",
+  "permanentDelete.message": "Esta acción no se puede deshacer. También se eliminan las relaciones de otras identidades con ella.",
+  "permanentDelete.confirm": "Eliminar definitivamente",
 
   "found.heading": "Aún no están en Identidades",
+  "found.dialogTitle": "«{{text}}»",
   "found.hint": "Nombres de la cronología y de los IOCs que no coinciden con nada de aquí. Haga clic en uno para agregarlo, o para agregarlo como otro nombre de una identidad.",
   "found.more": "{{count}} más",
   "found.fewer": "Menos",

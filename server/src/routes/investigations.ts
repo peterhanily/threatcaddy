@@ -83,7 +83,7 @@ app.get('/', async (c) => {
       createdAt: m.folderCreatedAt,
       updatedAt: m.folderUpdatedAt,
     },
-    entityCounts: entityCountsMap.get(m.folderId) ?? { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0, evidence: 0 },
+    entityCounts: entityCountsMap.get(m.folderId) ?? { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0, evidence: 0, identities: 0 },
     memberCount: m.memberCount,
   }));
 

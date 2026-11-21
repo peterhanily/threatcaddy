@@ -309,7 +309,7 @@ export function InvestigationsHub({
                     icon={f.icon}
                     description={f.description}
                     clsLevel={f.clsLevel}
-                    entityCounts={remote?.entityCounts ?? localCountsMap.get(f.id) ?? ZERO_COUNTS}
+                    entityCounts={remote ? { ...(localCountsMap.get(f.id) ?? ZERO_COUNTS), ...remote.entityCounts } : localCountsMap.get(f.id) ?? ZERO_COUNTS}
                     memberCount={remote?.memberCount}
                     role={remote?.role}
                     dataMode="synced"

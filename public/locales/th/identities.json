@@ -44,7 +44,6 @@
   "profile.select": "เลือกตัวตนเพื่อดูที่นี่",
   "profile.otherNames": "หรือที่รู้จักในชื่อ {{names}}",
   "profile.contact": "ผู้ติดต่อ",
-  "profile.markContact": "ทำเครื่องหมายเป็นผู้ติดต่อ",
   "profile.edit": "แก้ไข",
 
   "details.heading": "รายละเอียด",
@@ -81,7 +80,7 @@
   "connections.heading": "ความเชื่อมโยง",
   "connections.none": "ยังไม่มี",
   "connections.add": "เพิ่มความเชื่อมโยง",
-  "connections.remove": "ลบความเชื่อมโยงนี้",
+  "connections.removeAria": "ลบความเชื่อมโยง: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "ทำงานที่",
@@ -137,7 +136,7 @@
   "form.contact": "ผู้ติดต่อ: คนที่คุณทำงานด้วย",
   "form.detail": "รายละเอียด",
   "form.detailValue": "ค่า",
-  "form.otherNames": "ชื่ออื่น (คั่นด้วยจุลภาค)",
+  "form.otherNames": "ชื่ออื่น (บรรทัดละหนึ่งชื่อ)",
   "form.add": "เพิ่ม",
   "form.save": "บันทึก",
   "form.cancel": "ยกเลิก",
@@ -154,8 +153,12 @@
   "trash.button": "ย้ายไปถังขยะ",
   "trash.confirmTitle": "ย้าย {{name}} ไปถังขยะ?",
   "trash.confirmMessage": "คุณกู้คืนได้จากถังขยะ หากลบถาวรจากที่นั่น ความเชื่อมโยงของตัวตนนี้จะถูกลบด้วย",
+  "permanentDelete.title": "ลบ {{name}} อย่างถาวร?",
+  "permanentDelete.message": "การดำเนินการนี้ไม่สามารถยกเลิกได้ ความเชื่อมโยงจากตัวตนอื่นมายังตัวตนนี้จะถูกลบด้วย",
+  "permanentDelete.confirm": "ลบถาวร",
 
   "found.heading": "ยังไม่อยู่ในรายการตัวตน",
+  "found.dialogTitle": "“{{text}}”",
   "found.hint": "ชื่อบนไทม์ไลน์และใน IOC ที่ไม่ตรงกับรายการใดที่นี่ คลิกชื่อเพื่อเพิ่ม หรือเพื่อเพิ่มเป็นชื่ออื่นของตัวตน",
   "found.more": "อีก {{count}} รายการ",
   "found.fewer": "แสดงน้อยลง",

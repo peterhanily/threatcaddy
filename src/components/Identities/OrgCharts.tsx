@@ -22,7 +22,7 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
   const chart = orgChart(organization, identities);
 
   const card = (person: Identity) => (
-    <button type="button" onClick={() => onOpen(person)} className="flex w-full min-w-0 items-center gap-2 rounded-md border border-border-subtle bg-bg-raised p-2 text-left hover:border-accent">
+    <button type="button" onClick={() => onOpen(person)} className="flex w-full min-w-0 items-center gap-2 rounded-md border border-border-subtle bg-bg-raised p-2 text-start hover:border-accent">
       <IdentityAvatar identity={person} size="md" />
       <span className="min-w-0">
         <span className="flex items-center gap-1 truncate text-sm font-medium text-text-primary">
@@ -45,7 +45,7 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
           {expanded ? t('org.hideTeam', { count: size }) : t('org.showTeam', { count: size })}
         </button>
         {expanded && (
-          <ul className="mt-1 flex flex-col gap-1.5 border-l border-border-subtle pl-3">
+          <ul className="mt-1 flex flex-col gap-1.5 border-s border-border-subtle ps-3">
             {reports.map(report => <li key={report.id}>{card(report)}{team(report, current)}</li>)}
           </ul>
         )}

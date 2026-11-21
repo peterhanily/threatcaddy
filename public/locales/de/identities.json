@@ -44,7 +44,6 @@
   "profile.select": "Wählen Sie eine Identität aus, um sie hier anzuzeigen.",
   "profile.otherNames": "Auch bekannt als {{names}}",
   "profile.contact": "Kontakt",
-  "profile.markContact": "Als Kontakt markieren",
   "profile.edit": "Bearbeiten",
 
   "details.heading": "Details",
@@ -81,7 +80,7 @@
   "connections.heading": "Verbindungen",
   "connections.none": "Noch keine.",
   "connections.add": "Verbindung hinzufügen",
-  "connections.remove": "Diese Verbindung entfernen",
+  "connections.removeAria": "Verbindung entfernen: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "arbeitet bei",
@@ -137,7 +136,7 @@
   "form.contact": "Ein Kontakt: jemand, mit dem Sie zusammenarbeiten",
   "form.detail": "Detail",
   "form.detailValue": "Wert",
-  "form.otherNames": "Weitere Namen (durch Kommas getrennt)",
+  "form.otherNames": "Weitere Namen (einer pro Zeile)",
   "form.add": "Hinzufügen",
   "form.save": "Speichern",
   "form.cancel": "Abbrechen",
@@ -154,8 +153,12 @@
   "trash.button": "In Papierkorb verschieben",
   "trash.confirmTitle": "{{name}} in den Papierkorb verschieben?",
   "trash.confirmMessage": "Sie lässt sich aus dem Papierkorb wiederherstellen. Wird sie dort endgültig gelöscht, werden auch ihre Verbindungen entfernt.",
+  "permanentDelete.title": "{{name}} endgültig löschen?",
+  "permanentDelete.message": "Dies kann nicht rückgängig gemacht werden. Verbindungen anderer Identitäten zu ihr werden ebenfalls entfernt.",
+  "permanentDelete.confirm": "Endgültig löschen",
 
   "found.heading": "Noch nicht in Identitäten",
+  "found.dialogTitle": "„{{text}}“",
   "found.hint": "Namen aus der Zeitleiste und von IOCs, die hier zu nichts passen. Klicken Sie auf einen, um ihn hinzuzufügen oder als weiteren Namen einer Identität zu übernehmen.",
   "found.more": "{{count}} weitere",
   "found.fewer": "Weniger",

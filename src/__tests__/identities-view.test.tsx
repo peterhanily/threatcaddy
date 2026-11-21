@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { IdentitiesView, type IdentitiesViewProps } from '../components/Identities/IdentitiesView';
+import { ignoredHash } from '../lib/identity-model';
 import { ToastProvider } from '../contexts/ToastContext';
 import { ScreenshareContext } from '../hooks/ScreenshareContext';
 import type { Folder, Identity, TimelineEvent } from '../types';
@@ -33,6 +34,11 @@ function setup(overrides: Partial<IdentitiesViewProps> = {}, wrap: (node: ReactE
   return { props, user: userEvent.setup(), list: () => screen.getByRole('region', { name: 'Identities' }) };
 }
 const profile = (name: string) => screen.getByRole('article', { name });
+/** The last update, applied to the stored row the way useIdentities applies a function. */
+function lastUpdate(onUpdate: IdentitiesViewProps['onUpdate'], stored: Identity) {
+  const [id, change] = vi.mocked(onUpdate).mock.lastCall ?? [];
+  return { id, fields: typeof change === 'function' ? change(stored) : change };
+}
 
 beforeEach(() => localStorage.clear());
 afterEach(() => vi.restoreAllMocks());
@@ -61,7 +67,7 @@ describe('the rolodex', () => {
 });
 
 describe('an identity\'s profile', () => {
-  it('hides a private detail until Show, and keeps it hidden while screensharing', async () => {
+  it('hides a private detail until Show', async () => {
     const { user, list } = setup();
     await user.click(within(list()).getByRole('button', { name: /Dana Okafor/ }));
     expect(within(profile('Dana Okafor')).getByText('dana@halvorsen.example')).toBeInTheDocument();
@@ -76,6 +82,9 @@ describe('an identity\'s profile', () => {
       node => <ScreenshareContext.Provider value={{ maxLevel: 'TLP:GREEN', effectiveLevels: [] }}>{node}</ScreenshareContext.Provider>);
     expect(within(profile('Dana Okafor')).getByRole('button', { name: 'Show private phone' })).toBeDisabled();
     expect(within(profile('Dana Okafor')).queryByText('+44 7700 900123')).not.toBeInTheDocument();
+    // Not even the last digits while sharing.
+    expect(within(profile('Dana Okafor')).queryByText(/0123/)).not.toBeInTheDocument();
+    expect(within(profile('Dana Okafor')).getByText('•••••••')).toBeInTheDocument();
   });
 
   it('reads connections from both sides and lists an organisation\'s people, contacts first', async () => {
@@ -101,18 +110,24 @@ describe('an identity\'s profile', () => {
     expect(within(card).getByRole('checkbox')).toBeChecked();
     await user.type(within(card).getByRole('textbox', { name: 'Value' }), '+1 555 0100');
     await user.click(within(card).getByRole('button', { name: 'Add' }));
-    expect(props.onUpdate).toHaveBeenLastCalledWith('lee', { details: [expect.objectContaining({ label: 'Phone', value: '+1 555 0100', private: true })] });
+    expect(lastUpdate(props.onUpdate, lee)).toEqual({ id: 'lee', fields: { details: [expect.objectContaining({ label: 'Phone', value: '+1 555 0100', private: true })] } });
+    // Built on the stored row: a detail added meanwhile (on another device or tab) is kept.
+    const meanwhile = { ...lee, details: [{ id: 'x', label: 'Email', value: 'lee@example.test' }] };
+    expect(lastUpdate(props.onUpdate, meanwhile).fields?.details).toHaveLength(2);
     await user.click(within(card).getByRole('button', { name: 'Add a connection' }));
     await user.type(within(card).getByRole('combobox', { name: 'Lee Park…' }), 'administers');
     await user.selectOptions(within(card).getByRole('combobox', { name: '…whom or what' }), 'laptop');
     await user.click(within(card).getByRole('button', { name: 'Add' }));
-    expect(props.onUpdate).toHaveBeenLastCalledWith('lee', { connections: [...lee.connections, { targetId: 'laptop', label: 'administers' }] });
+    expect(lastUpdate(props.onUpdate, lee)).toEqual({ id: 'lee', fields: { connections: [...lee.connections, { targetId: 'laptop', label: 'administers' }] } });
   });
 
   it('removes an incoming connection from the identity that holds it', async () => {
     const { user, props } = setup({ selectRequest: { id: 'lee', request: 1 } });
-    await user.click(within(profile('Lee Park')).getAllByRole('button', { name: 'Remove this connection' })[1]);
-    expect(props.onUpdate).toHaveBeenLastCalledWith('dana', { connections: dana.connections.filter(edge => edge.targetId !== 'lee') });
+    await user.click(within(profile('Lee Park')).getByRole('button', { name: 'Remove connection: manages Dana Okafor' }));
+    expect(lastUpdate(props.onUpdate, dana)).toEqual({ id: 'dana', fields: { connections: dana.connections.filter(edge => edge.targetId !== 'lee') } });
+    // The edge is found in the stored row, not by position: an edge added first does not shift it.
+    const shifted = { ...dana, connections: [{ targetId: 'laptop', label: 'uses' }, ...dana.connections] };
+    expect(lastUpdate(props.onUpdate, shifted).fields?.connections).toEqual(shifted.connections.filter(edge => edge.targetId !== 'lee'));
   });
 });
 
@@ -138,7 +153,7 @@ describe('adding, editing, merging and trashing', () => {
     expect(onAddHandled).toHaveBeenCalledOnce();
   });
 
-  it('merges only after confirmation, and moves to the trash only after confirmation', async () => {
+  it('merges only after confirmation', async () => {
     const { user, props } = setup({ selectRequest: { id: 'dana', request: 1 } });
     await user.click(within(profile('Dana Okafor')).getByRole('button', { name: 'Edit' }));
     const dialog = screen.getByRole('dialog', { name: 'Edit Dana Okafor' });
@@ -169,7 +184,8 @@ describe('names found in the investigation', () => {
     const panel = screen.getByRole('region', { name: /^Not yet in Identities/ });
     await user.click(within(panel).getByRole('button', { name: /Tomas Ruiz/ }));
     await user.click(screen.getByRole('button', { name: 'Add as another name of Tomás Ruiz' }));
-    expect(props.onUpdate).toHaveBeenCalledWith('tomas', { aliases: ['Tomas Ruiz'] });
+    expect(lastUpdate(props.onUpdate, tomas)).toEqual({ id: 'tomas', fields: { aliases: ['Tomas Ruiz'] } });
+    expect(lastUpdate(props.onUpdate, { ...tomas, aliases: ['tomas ruiz'] }).fields).toEqual({ aliases: ['tomas ruiz'] });
     await user.click(within(panel).getByRole('button', { name: /fin-db01/ }));
     await user.click(screen.getByRole('button', { name: /Add as a new identity/ }));
     const dialog = screen.getByRole('dialog', { name: 'Add “fin-db01”' });
@@ -177,12 +193,24 @@ describe('names found in the investigation', () => {
     expect(within(dialog).getByRole('combobox', { name: 'Detail' })).toHaveValue('Hostname');
   });
 
+  it('does not offer names an archived identity holds, or values held as private details', () => {
+    const archived = make('archived', 'Archived Person', { archived: true });
+    const holder = make('holder', 'Holder', { details: [{ id: 'p', label: 'Personal email', value: 'secret@example.test', private: true }] });
+    setup({ identities: [...all, archived, holder], allIdentities: [...all, archived, holder],
+      events: [event({ actor: 'Archived Person', assets: ['secret@example.test', 'fin-db01'] })] });
+    const panel = screen.getByRole('region', { name: /^Not yet in Identities/ });
+    expect(within(panel).getAllByRole('button').map(button => button.textContent)).toEqual([expect.stringContaining('fin-db01')]);
+  });
+
   it('remembers an ignored name on this device', async () => {
     const { user } = setup({ events });
     await user.click(within(screen.getByRole('region', { name: /^Not yet in Identities/ })).getByRole('button', { name: /fin-db01/ }));
     await user.click(screen.getByRole('button', { name: 'Ignore on this device' }));
     expect(within(screen.getByRole('region', { name: /^Not yet in Identities/ })).queryByRole('button', { name: /fin-db01/ })).not.toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem('threatcaddy-identities-ignored-v1') ?? '[]')).toEqual([JSON.stringify(['case', 'fin-db01'])]);
+    // Only a hash is kept, never the readable name.
+    const stored = localStorage.getItem('threatcaddy-identities-ignored-v2') ?? '';
+    expect(JSON.parse(stored)).toEqual([ignoredHash(JSON.stringify(['case', 'fin-db01']))]);
+    expect(stored).not.toContain('fin-db01');
   });
 });
 
@@ -197,12 +225,64 @@ describe('read only and org charts', () => {
     expect(screen.getByText(/can't be edited here/)).toBeInTheDocument();
   });
 
-  it('opens an organisation\'s chart from its profile and shows the team that holds a flagged person', async () => {
-    const { user, list } = setup();
-    await user.click(within(list()).getByRole('button', { name: /^Halvorsen Shipping/ }));
-    await user.click(within(profile('Halvorsen Shipping')).getByRole('button', { name: 'Open the org chart' }));
-    expect(screen.getByRole('combobox', { name: 'Organization' })).toHaveValue('org');
-    // Lee heads the chart; Dana (compromised) reports to Lee, so the team is shown.
-    expect(screen.getByRole('region', { name: "Dana Okafor's team" })).toBeInTheDocument();
+  it('opens an organisation\'s chart from its profile, with a team open only when someone in it is flagged', async () => {
+    const ana = make('ana', 'Ana Silva', { connections: [{ targetId: 'org', label: 'works at' }, { targetId: 'dana', label: 'reports to' }] });
+    const calm = { ...dana, status: undefined, contact: undefined };
+    for (const [people, open] of [[[org, lee, calm, ana], false], [[org, lee, calm, { ...ana, status: 'compromised' as const }], true]] as const) {
+      const { user, list } = setup({ identities: [...people], allIdentities: [...people] });
+      await user.click(within(list()).getByRole('button', { name: /^Halvorsen Shipping/ }));
+      await user.click(within(profile('Halvorsen Shipping')).getByRole('button', { name: 'Open the org chart' }));
+      expect(screen.getByRole('combobox', { name: 'Organization' })).toHaveValue('org');
+      // Lee heads the chart; Dana's card sits under Lee, and Ana under Dana.
+      const team = screen.getByRole('region', { name: "Dana Okafor's team" });
+      expect(within(team).getByRole('button', { name: open ? 'Hide team (1)' : 'Show team (1)' })).toHaveAttribute('aria-expanded', String(open));
+      expect(within(team).queryByRole('button', { name: /^Ana Silva/ }) !== null).toBe(open);
+      cleanup();
+    }
+  });
+
+  it('keeps every organisation and every other name when an edit only changes the job title', async () => {
+    const beta = make('beta', 'Beta Holdings', { type: 'organization' });
+    const twoJobs = make('dana', 'Dana Okafor', { aliases: ['Okafor, Dana', 'Acme, Inc.'],
+      connections: [{ targetId: 'org', label: 'works at' }, { targetId: 'beta', label: 'works at' }, { targetId: 'lee', label: 'reports to' }] });
+    const people = [org, beta, lee, twoJobs];
+    const { user, props } = setup({ identities: people, allIdentities: people, selectRequest: { id: 'dana', request: 1 } });
+    await user.click(within(profile('Dana Okafor')).getByRole('button', { name: 'Edit' }));
+    const dialog = screen.getByRole('dialog', { name: 'Edit Dana Okafor' });
+    await user.type(within(dialog).getByRole('textbox', { name: 'Job title' }), 'Accounts payable');
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+    const { fields } = lastUpdate(props.onUpdate, twoJobs);
+    expect(fields).toEqual({ name: 'Dana Okafor', type: 'person', description: 'Accounts payable', aliases: ['Okafor, Dana', 'Acme, Inc.'] });
+    expect(fields).not.toHaveProperty('connections');
+  });
+
+  it('stores a typed reverse phrase on the other identity, so "manages" becomes "reports to"', async () => {
+    const { user, props } = setup({ selectRequest: { id: 'lee', request: 1 } });
+    const card = profile('Lee Park');
+    await user.click(within(card).getByRole('button', { name: 'Add a connection' }));
+    await user.type(within(card).getByRole('combobox', { name: 'Lee Park…' }), 'manages');
+    await user.selectOptions(within(card).getByRole('combobox', { name: '…whom or what' }), 'laptop');
+    await user.click(within(card).getByRole('button', { name: 'Add' }));
+    expect(lastUpdate(props.onUpdate, laptop)).toEqual({ id: 'laptop', fields: { connections: [...laptop.connections, { targetId: 'lee', label: 'reports to' }] } });
+  });
+
+  it('returns focus to the button that opened a form, and keeps the form when saving fails', async () => {
+    const failing = vi.fn(async () => { throw new Error('disk full'); });
+    const { user } = setup({ selectRequest: { id: 'lee', request: 1 }, onUpdate: failing });
+    const card = profile('Lee Park');
+    await user.click(within(card).getByRole('button', { name: 'Add a detail' }));
+    await user.type(within(card).getByRole('combobox', { name: 'Label' }), 'Email');
+    await user.type(within(card).getByRole('textbox', { name: 'Value' }), 'lee@example.test');
+    await user.click(within(card).getByRole('button', { name: 'Add' }));
+    expect(failing).toHaveBeenCalledOnce();
+    // The view reports the failure; the form and what was typed stay.
+    expect(within(card).getByRole('textbox', { name: 'Value' })).toHaveValue('lee@example.test');
+    await user.click(within(card).getByRole('button', { name: 'Cancel' }));
+    expect(within(card).getByRole('button', { name: 'Add a detail' })).toHaveFocus();
+  });
+
+  it('does not open Add from the New menu when there is no investigation to add to', () => {
+    setup({ folders: [], addRequest: 1 });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

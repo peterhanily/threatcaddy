@@ -44,7 +44,6 @@
   "profile.select": "Pilih identitas untuk melihatnya di sini.",
   "profile.otherNames": "Juga dikenal sebagai {{names}}",
   "profile.contact": "Kontak",
-  "profile.markContact": "Tandai sebagai kontak",
   "profile.edit": "Edit",
 
   "details.heading": "Detail",
@@ -81,7 +80,7 @@
   "connections.heading": "Hubungan",
   "connections.none": "Belum ada.",
   "connections.add": "Tambah hubungan",
-  "connections.remove": "Hapus hubungan ini",
+  "connections.removeAria": "Hapus hubungan: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "bekerja di",
@@ -137,7 +136,7 @@
   "form.contact": "Kontak: seseorang yang bekerja dengan Anda",
   "form.detail": "Detail",
   "form.detailValue": "Nilai",
-  "form.otherNames": "Nama lain (pisahkan dengan koma)",
+  "form.otherNames": "Nama lain (satu per baris)",
   "form.add": "Tambah",
   "form.save": "Simpan",
   "form.cancel": "Batal",
@@ -154,8 +153,12 @@
   "trash.button": "Pindah ke sampah",
   "trash.confirmTitle": "Pindahkan {{name}} ke sampah?",
   "trash.confirmMessage": "Anda dapat memulihkannya dari Sampah. Menghapusnya secara permanen di sana juga menghapus hubungannya.",
+  "permanentDelete.title": "Hapus {{name}} secara permanen?",
+  "permanentDelete.message": "Tindakan ini tidak dapat dibatalkan. Hubungan dari identitas lain ke identitas ini juga dihapus.",
+  "permanentDelete.confirm": "Hapus permanen",
 
   "found.heading": "Belum ada di Identitas",
+  "found.dialogTitle": "“{{text}}”",
   "found.hint": "Nama di timeline dan di IOC yang tidak cocok dengan apa pun di sini. Klik salah satu untuk menambahkannya, atau untuk menambahkannya sebagai nama lain dari suatu identitas.",
   "found.more": "{{count}} lainnya",
   "found.fewer": "Lebih sedikit",

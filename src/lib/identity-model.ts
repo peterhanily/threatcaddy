@@ -19,6 +19,11 @@ export const CONNECTION_PHRASES = {
   'logs on to': 'logsOnTo', 'communicated with': 'communicatedWith', impersonated: 'impersonated', paid: 'paid',
 } as const;
 export type ConnectionPhrase = keyof typeof CONNECTION_PHRASES;
+/** How each built-in phrase reads from the other side. "communicated with" reads the same. */
+const REVERSE_PHRASES: Readonly<Record<ConnectionPhrase, string>> = {
+  'works at': 'employs', 'reports to': 'manages', uses: 'used by', administers: 'administered by', 'belongs to': 'owns',
+  'logs on to': 'logged on to by', 'communicated with': 'communicated with', impersonated: 'impersonated by', paid: 'paid by',
+};
 export const isConnectionPhrase = (label: string): label is ConnectionPhrase => Object.hasOwn(CONNECTION_PHRASES, label);
 /** Phrases that tie a person, system or account to an organisation. */
 const MEMBERSHIP: readonly string[] = ['works at', 'belongs to'];
@@ -33,20 +38,33 @@ export const sameText = (text: string) => text.normalize('NFC').toLowerCase().re
 /** Also ignores accents, for "looks like" suggestions that a person confirms. */
 export const looseText = (text: string) => sameText(text).normalize('NFKD').replace(/\p{M}/gu, '');
 
+/** English spellings of built-in types besides their keys. */
+const TYPE_SPELLINGS: Readonly<Record<string, BuiltinType>> = { organisation: 'organization' };
+
 /** The type a person typed or picked: a built-in key when it names one (in English or in
  * the interface language), otherwise a type already in use with other letter case, otherwise as typed. */
 export function canonicalType(input: string, builtinLabels: Readonly<Record<BuiltinType, string>>, typesInUse: readonly string[]): string {
   const text = input.trim();
   const key = sameText(text);
-  const builtin = BUILTIN_TYPES.find(type => type === key || sameText(builtinLabels[type]) === key);
+  const builtin = TYPE_SPELLINGS[key] ?? BUILTIN_TYPES.find(type => type === key || sameText(builtinLabels[type]) === key);
   if (builtin) return builtin;
   return typesInUse.find(type => sameText(type) === key) ?? text;
 }
 
-/** The built-in phrase a person typed or picked (in English or the interface language), or the text as typed. */
-export function canonicalPhrase(input: string, phraseLabels: Readonly<Record<ConnectionPhrase, string>>): string {
+/**
+ * The built-in phrase a person typed or picked (in English or the interface language), or the
+ * text as typed. Typing the other side's wording ("manages", as the profile shows it) gives the
+ * built-in phrase with `reversed`, so the edge is stored on the other identity ("reports to").
+ */
+export function canonicalPhrase(input: string, phraseLabels: Readonly<Record<ConnectionPhrase, string>>,
+  reverseLabels?: Readonly<Record<ConnectionPhrase, string>>): { label: string; reversed: boolean } {
   const key = sameText(input);
-  return (Object.keys(CONNECTION_PHRASES) as ConnectionPhrase[]).find(phrase => phrase === key || sameText(phraseLabels[phrase]) === key) ?? input.trim();
+  const phrases = Object.keys(CONNECTION_PHRASES) as ConnectionPhrase[];
+  const forward = phrases.find(phrase => phrase === key || sameText(phraseLabels[phrase]) === key);
+  if (forward) return { label: forward, reversed: false };
+  const backward = phrases.find(phrase => sameText(REVERSE_PHRASES[phrase]) === key || (reverseLabels && sameText(reverseLabels[phrase]) === key));
+  if (backward) return { label: backward, reversed: backward !== 'communicated with' };
+  return { label: input.trim(), reversed: false };
 }
 
 export function initials(name: string): string {
@@ -57,12 +75,14 @@ export function initials(name: string): string {
   return (first[0] + second).toUpperCase();
 }
 
-/** What a hidden private detail shows: enough to recognise it, never the whole value. */
-export function maskDetail(detail: Pick<IdentityDetail, 'label' | 'value'>): string {
+/** What a hidden private detail shows: enough to recognise it, never the whole value.
+ * `full` hides every character, for screensharing. */
+export function maskDetail(detail: Pick<IdentityDetail, 'label' | 'value'>, full = false): string {
+  if (full) return '•••••••';
   const digits = detail.value.replace(/\D/g, '');
   if (/phone|tel|mobile/i.test(detail.label) && digits.length >= 6) return `•••• ${digits.slice(-4)}`;
-  const at = detail.value.indexOf('@');
-  return at > 0 ? `${[...detail.value][0]}•••••${detail.value.slice(at)}` : '•••••••';
+  // Only a real email address keeps its domain; any other value shows nothing.
+  return EMAIL.test(detail.value.trim()) ? `${[...detail.value][0]}•••••${detail.value.slice(detail.value.indexOf('@'))}` : '•••••••';
 }
 
 const live = (identity: Identity) => !identity.trashed;
@@ -76,11 +96,13 @@ export function organizationOf(identity: Identity, byId: ReadonlyMap<string, Ide
   return undefined;
 }
 
-/** Replaces the membership edge to an organisation, keeping every other connection. */
-export function withOrganization(identity: Identity, organizationId: string | undefined, byId: ReadonlyMap<string, Identity>) {
-  const kept = identity.connections.filter(edge => !(MEMBERSHIP.includes(edge.label) && byId.get(edge.targetId)?.type === 'organization'));
-  if (!organizationId || organizationId === identity.id) return kept;
-  return [...kept, { targetId: organizationId, label: isPerson(identity) ? 'works at' : 'belongs to' }];
+/** Moves the membership edge from one organisation to another, leaving every other connection
+ * (including membership of further organisations) untouched. */
+export function withOrganization(identity: Identity, previousId: string | undefined, nextId: string | undefined) {
+  if (previousId === nextId) return identity.connections;
+  const kept = identity.connections.filter(edge => !(previousId && edge.targetId === previousId && MEMBERSHIP.includes(edge.label)));
+  if (!nextId || nextId === identity.id || kept.some(edge => edge.targetId === nextId && MEMBERSHIP.includes(edge.label))) return kept;
+  return [...kept, { targetId: nextId, label: isPerson(identity) ? 'works at' : 'belongs to' }];
 }
 
 export const byName = (a: Identity, b: Identity) => sameText(a.name).localeCompare(sameText(b.name)) || a.id.localeCompare(b.id);
@@ -137,10 +159,9 @@ export interface OrgChart {
   flagged: (person: Identity) => boolean;
 }
 
-/** Everyone who works at an organisation, arranged by "reports to" between them. */
+/** Everyone at an organisation (as listed under its People), arranged by "reports to" between them. */
 export function orgChart(organization: Identity, identities: readonly Identity[]): OrgChart {
-  const people = identities.filter(identity => live(identity) && isPerson(identity) && identity.folderId === organization.folderId
-    && identity.connections.some(edge => edge.label === 'works at' && edge.targetId === organization.id));
+  const people = membersOf(organization, identities).people;
   const ids = new Set(people.map(person => person.id));
   const manager = new Map<string, string>();
   for (const person of people) {
@@ -174,11 +195,9 @@ export function orgChart(organization: Identity, identities: readonly Identity[]
   };
 }
 
-/** Organisations with at least one person who works there. */
+/** Organisations with at least one person, as listed under their People. */
 export function chartableOrganizations(identities: readonly Identity[]): Identity[] {
-  return identities.filter(organization => live(organization) && isOrganization(organization)
-    && identities.some(person => live(person) && isPerson(person) && person.folderId === organization.folderId
-      && person.connections.some(edge => edge.label === 'works at' && edge.targetId === organization.id))).sort(byName);
+  return identities.filter(organization => live(organization) && isOrganization(organization) && membersOf(organization, identities).people.length > 0).sort(byName);
 }
 
 /** Search over the name, other names, description, type and details that are not private. */
@@ -216,35 +235,49 @@ export interface FoundName {
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const IPV4 = /^(?:\d{1,3}\.){3}\d{1,3}$/;
-const IPV6 = /^[0-9a-f:]+:[0-9a-f:]*$/i;
+/** At least two colons (fe80::1), so a port (DC01:443) or a time (12:30) is not an address. */
+const IPV6 = /^(?=(?:[^:]*:){2})[0-9a-f:]{2,39}$/i;
 const IBAN = /^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/;
 const SERVICE_ACCOUNT = /^(svc|srv|sa)[_-]|\$$/i;
-const HOSTNAME = /^(?=.*[a-z])(?=.*[\d.-])[a-z0-9][a-z0-9.-]{1,62}$/i;
+/** A dotted name (fin-db01.corp.local) or letters, digits and a hyphen (WS-0231, recipe-server-01).
+ * Group names such as APT29 and hyphenated names such as Jean-Luc are not hostnames. */
+const HOSTNAME = /^(?=.{2,63}$)(?:[a-z0-9-]+\.)+[a-z][a-z0-9-]*$|^(?=.{2,63}$)(?=.*\d)(?=.*[a-z])[a-z0-9]+(?:-[a-z0-9]+)+$/i;
 
-/** A first guess at what a name is; the person adding it can change it. */
-export function guessIdentity(text: string): FoundName['guess'] {
+/** A first guess at what a name is; the person adding it can change it. `thing` says it was
+ * listed as an asset, which names a system or an account, never a person. */
+export function guessIdentity(text: string, thing = false): FoundName['guess'] {
   const compact = text.replace(/\s+/g, '');
   if (EMAIL.test(text)) return { type: 'account', detailLabel: 'email' };
   if (IBAN.test(compact)) return { type: 'account', detailLabel: 'iban' };
   if (SERVICE_ACCOUNT.test(text)) return { type: 'account' };
-  if (IPV4.test(text) || (IPV6.test(text) && text.includes(':'))) return { type: 'system', detailLabel: 'ipAddress' };
-  if (!/\s/.test(text) && HOSTNAME.test(text)) return { type: 'system', detailLabel: 'hostname' };
-  return { type: 'person' };
+  if (IPV4.test(text) || IPV6.test(text)) return { type: 'system', detailLabel: 'ipAddress' };
+  if (HOSTNAME.test(text)) return { type: 'system', detailLabel: 'hostname' };
+  return { type: thing ? 'system' : 'person' };
 }
 
 export const foundKey = (folderId: string, text: string) => JSON.stringify([folderId, sameText(text)]);
+/** How an ignored found name is stored: FNV-1a, 64-bit, as hex. Stable and fast; a short name
+ * could still be guessed from it, but it is never readable in browser storage. */
+export function ignoredHash(key: string): string {
+  let hash = 0xcbf29ce484222325n;
+  for (const byte of new TextEncoder().encode(key)) hash = BigInt.asUintN(64, (hash ^ BigInt(byte)) * 0x100000001b3n);
+  return hash.toString(16).padStart(16, '0');
+}
 
 /**
  * Names on timeline events (Actor, Assets), IOC attribution and email IOCs that match no
- * identity in their investigation. Threat actors from Settings are tracked separately and
- * left out, as are names the analyst chose to ignore. Most-mentioned first.
+ * identity in their investigation (archived ones included). Threat actors from Settings are
+ * tracked separately and left out, as are names the analyst chose to ignore, and values an
+ * identity already holds as a private detail (left out silently: private details never
+ * link or show anything). Most-mentioned first.
  */
 export function foundNames(input: {
   identities: readonly Identity[];
   events: readonly TimelineEvent[];
   iocs: readonly StandaloneIOC[];
   threatActors?: readonly string[];
-  ignored?: ReadonlySet<string>;
+  /** Whether the analyst ignored a name, by its `foundKey`. */
+  isIgnored?: (key: string) => boolean;
 }): FoundName[] {
   const actors = new Set((input.threatActors ?? []).map(sameText));
   const known = new Map<string, Set<string>>();
@@ -253,6 +286,7 @@ export function foundNames(input: {
     if (!live(identity) || !identity.folderId) continue;
     const texts = known.get(identity.folderId) ?? new Set<string>();
     knownTexts(identity).forEach(text => texts.add(text));
+    identity.details.filter(detail => detail.private).forEach(detail => texts.add(sameText(detail.value)));
     known.set(identity.folderId, texts);
     const near = loose.get(identity.folderId) ?? new Map<string, Identity>();
     [identity.name, ...identity.aliases].forEach(text => { if (!near.has(looseText(text))) near.set(looseText(text), identity); });
@@ -265,7 +299,7 @@ export function foundNames(input: {
     const same = sameText(text);
     if (actors.has(same) || known.get(folderId)?.has(same)) return;
     const key = foundKey(folderId, text);
-    if (input.ignored?.has(key)) return;
+    if (input.isIgnored?.(key)) return;
     const group = groups.get(key);
     if (group) { if (!group.sources.some(seen => seen.kind === source.kind && seen.id === source.id)) group.sources.push(source); return; }
     groups.set(key, { key, folderId, text, sources: [source], guess: guessIdentity(text), looksLike: loose.get(folderId)?.get(looseText(text)) });
@@ -280,5 +314,6 @@ export function foundNames(input: {
     add(ioc.folderId, ioc.attribution, { kind: 'attribution', id: ioc.id, title: ioc.value });
     if (ioc.type === 'email') add(ioc.folderId, ioc.value, { kind: 'email', id: ioc.id, title: ioc.value });
   }
+  for (const group of groups.values()) group.guess = guessIdentity(group.text, group.sources.some(source => source.kind === 'asset'));
   return [...groups.values()].sort((a, b) => b.sources.length - a.sources.length || sameText(a.text).localeCompare(sameText(b.text)));
 }

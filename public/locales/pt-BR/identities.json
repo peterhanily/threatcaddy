@@ -44,7 +44,6 @@
   "profile.select": "Escolha uma identidade para vê-la aqui.",
   "profile.otherNames": "Outros nomes: {{names}}",
   "profile.contact": "Contato",
-  "profile.markContact": "Marcar como contato",
   "profile.edit": "Editar",
 
   "details.heading": "Detalhes",
@@ -81,7 +80,7 @@
   "connections.heading": "Conexões",
   "connections.none": "Nenhuma ainda.",
   "connections.add": "Adicionar uma conexão",
-  "connections.remove": "Remover esta conexão",
+  "connections.removeAria": "Remover conexão: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "trabalha em",
@@ -137,7 +136,7 @@
   "form.contact": "Um contato: alguém com quem você trabalha",
   "form.detail": "Detalhe",
   "form.detailValue": "Valor",
-  "form.otherNames": "Outros nomes (separados por vírgula)",
+  "form.otherNames": "Outros nomes (um por linha)",
   "form.add": "Adicionar",
   "form.save": "Salvar",
   "form.cancel": "Cancelar",
@@ -154,8 +153,12 @@
   "trash.button": "Mover para lixeira",
   "trash.confirmTitle": "Mover {{name}} para a lixeira?",
   "trash.confirmMessage": "É possível restaurar a identidade pela Lixeira. Excluí-la definitivamente lá também remove as conexões dela.",
+  "permanentDelete.title": "Excluir {{name}} definitivamente?",
+  "permanentDelete.message": "Essa ação não pode ser desfeita. As conexões de outras identidades com ela também são removidas.",
+  "permanentDelete.confirm": "Excluir definitivamente",
 
   "found.heading": "Ainda não está em Identidades",
+  "found.dialogTitle": "“{{text}}”",
   "found.hint": "Nomes na linha do tempo e em IOCs que não correspondem a nada aqui. Clique em um para adicioná-lo ou para adicioná-lo como outro nome de uma identidade.",
   "found.more": "Mais {{count}}",
   "found.fewer": "Menos",

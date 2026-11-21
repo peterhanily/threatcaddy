@@ -44,7 +44,6 @@
   "profile.select": "یک هویت را انتخاب کنید تا اینجا نمایش داده شود.",
   "profile.otherNames": "معروف به {{names}}",
   "profile.contact": "مخاطب",
-  "profile.markContact": "علامت‌گذاری به‌عنوان مخاطب",
   "profile.edit": "ویرایش",
 
   "details.heading": "مشخصات",
@@ -81,7 +80,7 @@
   "connections.heading": "ارتباط‌ها",
   "connections.none": "هنوز موردی نیست.",
   "connections.add": "افزودن ارتباط",
-  "connections.remove": "حذف این ارتباط",
+  "connections.removeAria": "حذف ارتباط: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "شاغل در",
@@ -137,7 +136,7 @@
   "form.contact": "مخاطب: کسی که با او کار می‌کنید",
   "form.detail": "مشخصه",
   "form.detailValue": "مقدار",
-  "form.otherNames": "نام‌های دیگر (جداشده با ویرگول)",
+  "form.otherNames": "نام‌های دیگر (هر نام در یک خط)",
   "form.add": "افزودن",
   "form.save": "ذخیره",
   "form.cancel": "لغو",
@@ -154,8 +153,12 @@
   "trash.button": "انتقال به سطل زباله",
   "trash.confirmTitle": "{{name}} به سطل زباله منتقل شود؟",
   "trash.confirmMessage": "می‌توانید آن را از سطل زباله بازیابی کنید. حذف دائمی آن در سطل زباله، ارتباط‌هایش را هم حذف می‌کند.",
+  "permanentDelete.title": "{{name}} به‌طور دائمی حذف شود؟",
+  "permanentDelete.message": "این کار قابل بازگشت نیست. ارتباط‌های هویت‌های دیگر با آن هم حذف می‌شوند.",
+  "permanentDelete.confirm": "حذف دائمی",
 
   "found.heading": "هنوز در هویت‌ها نیستند",
+  "found.dialogTitle": "«{{text}}»",
   "found.hint": "نام‌هایی از جدول زمانی و IOCها که با هیچ موردی در اینجا مطابقت ندارند. روی یکی کلیک کنید تا آن را اضافه کنید، یا به‌عنوان نام دیگر یک هویت اضافه کنید.",
   "found.more": "{{count}} مورد دیگر",
   "found.fewer": "کمتر",

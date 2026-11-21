@@ -462,7 +462,7 @@ const AppInner = memo(function AppInner({
 
   const {
     selectedFolderId: underlyingFolderId, setSelectedFolderId,
-    investigationMode,
+    investigationMode, setInvestigationMode,
     selectedTag: underlyingTag, setSelectedTag,
     showTrash, setShowTrash, showArchive, setShowArchive,
     selectedIOCTypes, setSelectedIOCTypes,
@@ -1423,14 +1423,22 @@ const AppInner = memo(function AppInner({
     navigateTo('evidence');
   }, [screensafeEvidenceItems, navigateTo, setSelectedFolderId, setSelectedTag, setShowTrash, setShowArchive]);
 
+  /** Opening an identity in one of this device's investigations shows the local copy, even from a remote investigation. */
+  const openIdentityInvestigation = useCallback((folderId?: string) => {
+    setSelectedFolderId(folderId);
+    if (folderId && investigationMode === 'remote' && folders.some((folder) => folder.id === folderId)) {
+      setInvestigationMode(syncedFolderIds.has(folderId) ? 'synced' : 'local');
+    }
+  }, [setSelectedFolderId, investigationMode, folders, setInvestigationMode, syncedFolderIds]);
+
   const handleSearchNavigateToIdentity = useCallback((id: string) => {
     const identity = screensafeIdentities.find(item => item.id === id && !item.trashed && !item.archived);
     if (!identity) return;
-    setSelectedFolderId(identity.folderId);
+    openIdentityInvestigation(identity.folderId);
     setSelectedTag(undefined); setShowTrash(false); setShowArchive(false);
     setIdentitySelection(previous => ({ id, request: (previous?.request ?? 0) + 1 }));
     navigateTo('identities');
-  }, [screensafeIdentities, navigateTo, setSelectedFolderId, setSelectedTag, setShowTrash, setShowArchive]);
+  }, [screensafeIdentities, navigateTo, openIdentityInvestigation, setSelectedTag, setShowTrash, setShowArchive]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSearchNavigateToTask = useCallback((_id: string) => {
@@ -1962,7 +1970,7 @@ const AppInner = memo(function AppInner({
             onTrash={loggedTrashIdentity}
             onMerge={loggedMergeIdentities}
             onOpenElsewhere={(identity) => {
-              setSelectedFolderId(identity.folderId);
+              openIdentityInvestigation(identity.folderId);
               setIdentitySelection((previous) => ({ id: identity.id, request: (previous?.request ?? 0) + 1 }));
             }}
           />

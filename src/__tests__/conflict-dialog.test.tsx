@@ -113,4 +113,19 @@ describe('ConflictDialog real diff and resolution contracts', () => {
     expect(text).toContain('remote');
     expect(text).not.toMatch(/Collect logs|Checklist|Escalated|Agent Enabled/);
   });
+
+  it('shows a change to a private identity detail without showing either value', () => {
+    const base = { id: 'dana', folderId: 'case', type: 'person', name: 'Dana Okafor', aliases: [], connections: [], tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 };
+    const identity: SyncResult = { table: 'identities', entityId: 'dana', status: 'conflict', serverVersion: 3,
+      localData: { ...base, details: [{ id: 'phone', label: 'Phone', value: '+1 555 0199', private: true }] },
+      serverData: { ...base, details: [{ id: 'phone', label: 'Phone', value: '+1 555 0100', private: true }] } };
+    render(<ConflictDialog conflicts={[identity]} onResolve={vi.fn()} onResolveAll={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Diff' }));
+    const shown = document.body.textContent ?? '';
+    expect(shown).not.toContain('555 0199');
+    expect(shown).not.toContain('555 0100');
+    // Two different values get two different masks, so the change is still visible.
+    expect(shown).toContain('•••••• 1');
+    expect(shown).toContain('•••••• 2');
+  });
 });

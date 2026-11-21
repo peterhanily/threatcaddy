@@ -498,6 +498,7 @@ describe('investigation user routes', () => {
         whiteboards: 0,
         chats: 0,
         evidence: 0,
+        identities: 0,
       });
     });
   });
@@ -739,6 +740,7 @@ describe('investigation user routes', () => {
         whiteboards: 0,
         chats: 0,
         evidence: 0,
+        identities: 0,
       });
     });
 

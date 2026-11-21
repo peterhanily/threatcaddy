@@ -44,7 +44,6 @@
   "profile.select": "Choose an identity to see it here.",
   "profile.otherNames": "Also known as {{names}}",
   "profile.contact": "Contact",
-  "profile.markContact": "Mark as contact",
   "profile.edit": "Edit",
 
   "details.heading": "Details",
@@ -81,7 +80,7 @@
   "connections.heading": "Connections",
   "connections.none": "None yet.",
   "connections.add": "Add a connection",
-  "connections.remove": "Remove this connection",
+  "connections.removeAria": "Remove connection: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "works at",
@@ -137,7 +136,7 @@
   "form.contact": "A contact: someone you work with",
   "form.detail": "Detail",
   "form.detailValue": "Value",
-  "form.otherNames": "Other names (comma separated)",
+  "form.otherNames": "Other names (one per line)",
   "form.add": "Add",
   "form.save": "Save",
   "form.cancel": "Cancel",
@@ -154,8 +153,12 @@
   "trash.button": "Move to trash",
   "trash.confirmTitle": "Move {{name}} to the trash?",
   "trash.confirmMessage": "You can restore it from the Trash. Deleting it there for good also removes its connections.",
+  "permanentDelete.title": "Delete {{name}} for good?",
+  "permanentDelete.message": "This can't be undone. Connections from other identities to it are removed too.",
+  "permanentDelete.confirm": "Delete for good",
 
   "found.heading": "Not yet in Identities",
+  "found.dialogTitle": "“{{text}}”",
   "found.hint": "Names on the timeline and on IOCs that match nothing here. Click one to add it, or to add it as another name of an identity.",
   "found.more": "{{count}} more",
   "found.fewer": "Fewer",

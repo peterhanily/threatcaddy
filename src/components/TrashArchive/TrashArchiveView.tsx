@@ -7,6 +7,7 @@ import {
 import type { Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread, Folder, Identity } from '../../types';
 import { IOC_TYPE_LABELS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
+import { isBuiltinType } from '../../lib/identity-model';
 import { formatDate, cn } from '../../lib/utils';
 
 interface TrashArchiveViewProps {
@@ -180,6 +181,8 @@ export function TrashArchiveView({
   const { t } = useTranslation('trash');
   const { t: tIdentities } = useTranslation('identities');
   const [showEmptyConfirm, setShowEmptyConfirm] = useState(false);
+  // Deleting an identity for good also removes other identities' connections to it, so it is confirmed.
+  const [identityToDelete, setIdentityToDelete] = useState<Identity | null>(null);
 
   const isTrash = mode === 'trash';
 
@@ -386,8 +389,8 @@ export function TrashArchiveView({
 
             <EntitySection icon={<Contact size={14} />} label={tIdentities('header.title')} count={items.identities.length}>
               {items.identities.map((identity) => {
-                const actions = makeActions(identity.id, onRestoreIdentity, onDeleteIdentityPermanently, onUnarchiveIdentity, onTrashIdentity);
-                const typeLabel = ['person', 'organization', 'system', 'account'].includes(identity.type) ? tIdentities(`type.${identity.type}`) : identity.type;
+                const actions = makeActions(identity.id, onRestoreIdentity, () => setIdentityToDelete(identity), onUnarchiveIdentity, onTrashIdentity);
+                const typeLabel = isBuiltinType(identity.type) ? tIdentities(`type.${identity.type}`) : identity.type;
                 return (
                   <ItemRow
                     key={identity.id}
@@ -405,6 +408,15 @@ export function TrashArchiveView({
         )}
       </div>
 
+      <ConfirmDialog
+        open={identityToDelete !== null}
+        onClose={() => setIdentityToDelete(null)}
+        onConfirm={() => { if (identityToDelete) onDeleteIdentityPermanently(identityToDelete.id); setIdentityToDelete(null); }}
+        title={tIdentities('permanentDelete.title', { name: identityToDelete?.name ?? '' })}
+        message={tIdentities('permanentDelete.message')}
+        confirmLabel={tIdentities('permanentDelete.confirm')}
+        danger
+      />
       <ConfirmDialog
         open={showEmptyConfirm}
         onClose={() => setShowEmptyConfirm(false)}

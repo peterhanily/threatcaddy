@@ -13,11 +13,14 @@ export function useIdentityLabels() {
     const typeLabels = Object.fromEntries(BUILTIN_TYPES.map(type => [type, t(`type.${type}`)])) as Record<BuiltinType, string>;
     const phraseLabels = Object.fromEntries((Object.keys(CONNECTION_PHRASES) as ConnectionPhrase[])
       .map(phrase => [phrase, t(`connection.${CONNECTION_PHRASES[phrase]}`)])) as Record<ConnectionPhrase, string>;
+    const reverseLabels = Object.fromEntries((Object.keys(CONNECTION_PHRASES) as ConnectionPhrase[])
+      .map(phrase => [phrase, t(`connectionReverse.${CONNECTION_PHRASES[phrase]}`)])) as Record<ConnectionPhrase, string>;
     const privateLabels = PRIVATE_DETAIL_LABELS.map(key => t(`detailLabel.${key}`));
     return {
       t,
       typeLabels,
       phraseLabels,
+      reverseLabels,
       detailLabels: DETAIL_LABELS.map(key => t(`detailLabel.${key}`)),
       typeLabel: (type: string) => (isBuiltinType(type) ? typeLabels[type] : type),
       statusLabel: (status?: IdentityStatus) => t(`status.${status ?? 'none'}`),
@@ -33,6 +36,8 @@ export function useIdentityLabels() {
   }, [t]);
 }
 export type IdentityLabels = ReturnType<typeof useIdentityLabels>;
+/** An identity's new field values, or a function that computes them from the stored row. */
+export type IdentityChange = Partial<Identity> | ((current: Identity) => Partial<Identity>);
 
 export const STATUS_DOT: Record<IdentityStatus, string> = {
   compromised: 'bg-red-500', suspicious: 'bg-amber-500', cleared: 'bg-green-500',

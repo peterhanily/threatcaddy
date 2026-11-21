@@ -44,7 +44,6 @@
   "profile.select": "Chọn một danh tính để xem tại đây.",
   "profile.otherNames": "Còn gọi là {{names}}",
   "profile.contact": "Người liên hệ",
-  "profile.markContact": "Đánh dấu là người liên hệ",
   "profile.edit": "Chỉnh sửa",
 
   "details.heading": "Chi tiết",
@@ -81,7 +80,7 @@
   "connections.heading": "Mối liên kết",
   "connections.none": "Chưa có.",
   "connections.add": "Thêm mối liên kết",
-  "connections.remove": "Xóa mối liên kết này",
+  "connections.removeAria": "Xóa mối liên kết: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "làm việc tại",
@@ -137,7 +136,7 @@
   "form.contact": "Người liên hệ: người bạn làm việc cùng",
   "form.detail": "Chi tiết",
   "form.detailValue": "Giá trị",
-  "form.otherNames": "Tên khác (cách nhau bằng dấu phẩy)",
+  "form.otherNames": "Tên khác (mỗi dòng một tên)",
   "form.add": "Thêm",
   "form.save": "Lưu",
   "form.cancel": "Hủy",
@@ -154,8 +153,12 @@
   "trash.button": "Chuyển vào thùng rác",
   "trash.confirmTitle": "Chuyển {{name}} vào thùng rác?",
   "trash.confirmMessage": "Bạn có thể khôi phục từ Thùng rác. Xóa vĩnh viễn ở đó cũng sẽ xóa các mối liên kết của nó.",
+  "permanentDelete.title": "Xóa vĩnh viễn {{name}}?",
+  "permanentDelete.message": "Không thể hoàn tác thao tác này. Các mối liên kết từ danh tính khác đến danh tính này cũng sẽ bị xóa.",
+  "permanentDelete.confirm": "Xóa vĩnh viễn",
 
   "found.heading": "Chưa có trong Danh tính",
+  "found.dialogTitle": "“{{text}}”",
   "found.hint": "Các tên trên timeline và trong IOC không khớp với mục nào ở đây. Nhấp vào một tên để thêm, hoặc để thêm làm tên khác của một danh tính.",
   "found.more": "Xem thêm {{count}}",
   "found.fewer": "Thu gọn",

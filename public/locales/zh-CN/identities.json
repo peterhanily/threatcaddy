@@ -44,7 +44,6 @@
   "profile.select": "选择一个身份以在此查看。",
   "profile.otherNames": "又名 {{names}}",
   "profile.contact": "联系人",
-  "profile.markContact": "标记为联系人",
   "profile.edit": "编辑",
 
   "details.heading": "详细信息",
@@ -81,7 +80,7 @@
   "connections.heading": "关联",
   "connections.none": "暂无。",
   "connections.add": "添加关联",
-  "connections.remove": "移除此关联",
+  "connections.removeAria": "移除关联：{{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "就职于",
@@ -137,7 +136,7 @@
   "form.contact": "联系人：与您合作的人",
   "form.detail": "详细信息",
   "form.detailValue": "值",
-  "form.otherNames": "其他名称（逗号分隔）",
+  "form.otherNames": "其他名称（每行一个）",
   "form.add": "添加",
   "form.save": "保存",
   "form.cancel": "取消",
@@ -154,8 +153,12 @@
   "trash.button": "移至回收站",
   "trash.confirmTitle": "将 {{name}} 移至回收站？",
   "trash.confirmMessage": "您可以从回收站恢复。在回收站中永久删除时，其关联也会一并移除。",
+  "permanentDelete.title": "永久删除 {{name}}？",
+  "permanentDelete.message": "此操作无法撤销。其他身份与它的关联也会一并移除。",
+  "permanentDelete.confirm": "永久删除",
 
   "found.heading": "尚未加入身份",
+  "found.dialogTitle": "“{{text}}”",
   "found.hint": "时间线和 IOC 中与此处任何条目都不匹配的名称。点击一个名称即可添加，或将其添加为某个身份的其他名称。",
   "found.more": "还有 {{count}} 个",
   "found.fewer": "收起",

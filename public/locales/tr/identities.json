@@ -44,7 +44,6 @@
   "profile.select": "Burada görmek için bir kimlik seçin.",
   "profile.otherNames": "Diğer adları: {{names}}",
   "profile.contact": "İrtibat kişisi",
-  "profile.markContact": "İrtibat kişisi olarak işaretle",
   "profile.edit": "Düzenle",
 
   "details.heading": "Ayrıntılar",
@@ -81,7 +80,7 @@
   "connections.heading": "Bağlantılar",
   "connections.none": "Henüz yok.",
   "connections.add": "Bağlantı ekle",
-  "connections.remove": "Bu bağlantıyı kaldır",
+  "connections.removeAria": "Bağlantıyı kaldır: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "çalıştığı kurum",
@@ -137,7 +136,7 @@
   "form.contact": "İrtibat kişisi: birlikte çalıştığınız biri",
   "form.detail": "Ayrıntı",
   "form.detailValue": "Değer",
-  "form.otherNames": "Diğer adlar (virgülle ayrılmış)",
+  "form.otherNames": "Diğer adlar (her satıra bir tane)",
   "form.add": "Ekle",
   "form.save": "Kaydet",
   "form.cancel": "İptal",
@@ -154,8 +153,12 @@
   "trash.button": "Çöpe taşı",
   "trash.confirmTitle": "{{name}} çöp kutusuna taşınsın mı?",
   "trash.confirmMessage": "Çöp Kutusu'ndan geri yükleyebilirsiniz. Orada kalıcı olarak silerseniz bağlantıları da kaldırılır.",
+  "permanentDelete.title": "{{name}} kalıcı olarak silinsin mi?",
+  "permanentDelete.message": "Bu işlem geri alınamaz. Diğer kimliklerden buna olan bağlantılar da kaldırılır.",
+  "permanentDelete.confirm": "Kalıcı olarak sil",
 
   "found.heading": "Henüz kimliklerde yok",
+  "found.dialogTitle": "“{{text}}”",
   "found.hint": "Zaman çizelgesinde ve IOC'lerde geçen, buradaki hiçbir şeyle eşleşmeyen adlar. Eklemek ya da bir kimliğin başka bir adı olarak eklemek için birine tıklayın.",
   "found.more": "{{count}} tane daha",
   "found.fewer": "Daha az",

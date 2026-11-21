@@ -26,12 +26,18 @@ describe('types and phrases', () => {
     expect(canonicalType('personne', { ...typeLabels, person: 'Personne' }, [])).toBe('person');
     expect(canonicalType('vendor', typeLabels, ['Vendor'])).toBe('Vendor');
     expect(canonicalType('Supplier', typeLabels, ['Vendor'])).toBe('Supplier');
+    expect(canonicalType('Organisation', typeLabels, [])).toBe('organization');
   });
 
   it('stores built-in phrases in English whatever the interface language, and others as typed', () => {
-    expect(canonicalPhrase('Arbeitet bei', phraseLabels)).toBe('works at');
-    expect(canonicalPhrase('reports to', phraseLabels)).toBe('reports to');
-    expect(canonicalPhrase(' approved payments to ', phraseLabels)).toBe('approved payments to');
+    expect(canonicalPhrase('Arbeitet bei', phraseLabels)).toEqual({ label: 'works at', reversed: false });
+    expect(canonicalPhrase('reports to', phraseLabels)).toEqual({ label: 'reports to', reversed: false });
+    expect(canonicalPhrase(' approved payments to ', phraseLabels)).toEqual({ label: 'approved payments to', reversed: false });
+    // The other side's wording, as the profile shows it, is the same relation stored the other way round.
+    expect(canonicalPhrase('Manages', phraseLabels)).toEqual({ label: 'reports to', reversed: true });
+    expect(canonicalPhrase('leitet', phraseLabels, { ...phraseLabels, 'reports to': 'leitet' })).toEqual({ label: 'reports to', reversed: true });
+    expect(canonicalPhrase('employs', phraseLabels)).toEqual({ label: 'works at', reversed: true });
+    expect(canonicalPhrase('communicated with', phraseLabels)).toEqual({ label: 'communicated with', reversed: false });
   });
 
   it('makes initials from letters and digits, whatever the script', () => {
@@ -46,7 +52,13 @@ describe('types and phrases', () => {
     expect(maskDetail({ label: 'Phone', value: '+44 7700 900123' })).toBe('•••• 0123');
     expect(maskDetail({ label: 'Personal email', value: 'dana@example.test' })).toBe('d•••••@example.test');
     expect(maskDetail({ label: 'Address', value: '1 High Street' })).toBe('•••••••');
+    // Only a real email keeps its domain: an "@" elsewhere reveals nothing.
+    expect(maskDetail({ label: 'Home address', value: 'Flat 3 @ 12 Acacia Avenue, Leeds' })).toBe('•••••••');
+    expect(maskDetail({ label: 'Handle', value: 'x.com/@dana_private' })).toBe('•••••••');
     expect(maskDetail({ label: 'Phone', value: '12' })).toBe('•••••••');
+    // While screensharing nothing of the value shows.
+    expect(maskDetail({ label: 'Phone', value: '+44 7700 900123' }, true)).toBe('•••••••');
+    expect(maskDetail({ label: 'Personal email', value: 'dana@example.test' }, true)).toBe('•••••••');
   });
 });
 
@@ -57,11 +69,17 @@ describe('organisations, connections and charts', () => {
     const lee = make('Lee Park');
     const dana = make('Dana Okafor', { connections: [{ targetId: org.id, label: 'works at' }, { targetId: lee.id, label: 'reports to' }] });
     const byId = mapOf([org, other, lee, dana]);
-    expect(organizationOf(dana, byId)?.id).toBe(org.id);
-    expect(withOrganization(dana, other.id, byId)).toEqual([{ targetId: lee.id, label: 'reports to' }, { targetId: other.id, label: 'works at' }]);
-    expect(withOrganization(dana, undefined, byId)).toEqual([{ targetId: lee.id, label: 'reports to' }]);
+        expect(organizationOf(dana, byId)?.id).toBe(org.id);
+    expect(withOrganization(dana, org.id, other.id)).toEqual([{ targetId: lee.id, label: 'reports to' }, { targetId: other.id, label: 'works at' }]);
+    expect(withOrganization(dana, org.id, undefined)).toEqual([{ targetId: lee.id, label: 'reports to' }]);
+    // Nothing changes when the organisation stays the same, and other memberships are never touched.
+    expect(withOrganization(dana, org.id, org.id)).toBe(dana.connections);
+    const both = { ...dana, connections: [...dana.connections, { targetId: other.id, label: 'works at' }] };
+    expect(withOrganization(both, undefined, undefined)).toBe(both.connections);
+    expect(withOrganization(both, org.id, undefined)).toEqual([{ targetId: lee.id, label: 'reports to' }, { targetId: other.id, label: 'works at' }]);
+    expect(withOrganization(both, undefined, other.id)).toEqual(both.connections);
     const laptop = make('WS-0231', { type: 'system' });
-    expect(withOrganization(laptop, org.id, byId)).toEqual([{ targetId: org.id, label: 'belongs to' }]);
+    expect(withOrganization(laptop, undefined, org.id)).toEqual([{ targetId: org.id, label: 'belongs to' }]);
     // A trashed organisation, or one in another investigation, is not where someone works.
     expect(organizationOf(dana, mapOf([{ ...org, trashed: true }]))).toBeUndefined();
     expect(organizationOf(dana, mapOf([{ ...org, folderId: 'elsewhere' }]))).toBeUndefined();
@@ -106,6 +124,10 @@ describe('organisations, connections and charts', () => {
     expect(everyone.sort()).toEqual(['Ceo', 'Cfo', 'Clerk', 'Loner', 'Loop A', 'Loop B'].sort());
     expect(chartableOrganizations([org, ceo]).map(o => o.name)).toEqual(['Halvorsen']);
     expect(chartableOrganizations([org])).toEqual([]);
+    // Someone listed under People by "belongs to" is on the chart too, so its link never opens another chart.
+    const member = make('Member', { connections: [{ targetId: org.id, label: 'belongs to' }] });
+    expect(chartableOrganizations([org, member]).map(o => o.name)).toEqual(['Halvorsen']);
+    expect(orgChart(org, [org, member]).unplaced.map(p => p.name)).toEqual(['Member']);
   });
 });
 
@@ -149,12 +171,14 @@ describe('names found in an investigation', () => {
       ['case', 'Lee Park', 3], ['case', '10.0.0.5', 1], ['case', 'billing@evil.example', 1], ['case', 'fin-db01', 1], ['other', 'Other Case', 1],
     ]);
     expect(found[0].sources.map(s => s.kind)).toEqual(['actor', 'actor', 'attribution']);
+    expect(found.find(f => f.text === 'fin-db01')?.guess).toEqual({ type: 'system', detailLabel: 'hostname' });
+    expect(found.find(f => f.text === 'Lee Park')?.guess).toEqual({ type: 'person' });
   });
 
   it('leaves out ignored names and suggests an identity whose name differs only by accents', () => {
     const tomas = make('Tomás Ruiz');
     const found = foundNames({ identities: [tomas], events: [event({ actor: 'Tomas Ruiz' }), event({ actor: 'Noise' })], iocs: [],
-      ignored: new Set([foundKey('case', 'noise')]) });
+      isIgnored: key => key === foundKey('case', 'noise') });
     expect(found.map(f => f.text)).toEqual(['Tomas Ruiz']);
     expect(found[0].looksLike?.id).toBe(tomas.id);
   });
@@ -166,7 +190,17 @@ describe('names found in an investigation', () => {
     expect(guessIdentity('HALV\\FIN01$')).toEqual({ type: 'account' });
     expect(guessIdentity('10.0.0.5')).toEqual({ type: 'system', detailLabel: 'ipAddress' });
     expect(guessIdentity('fe80::1')).toEqual({ type: 'system', detailLabel: 'ipAddress' });
+    // A port or a time is not an IPv6 address.
+    expect(guessIdentity('DC01:443')).toEqual({ type: 'person' });
+    expect(guessIdentity('12:30')).toEqual({ type: 'person' });
     expect(guessIdentity('fin-db01.corp.local')).toEqual({ type: 'system', detailLabel: 'hostname' });
+    expect(guessIdentity('WS-0231')).toEqual({ type: 'system', detailLabel: 'hostname' });
+    expect(guessIdentity('recipe-server-01')).toEqual({ type: 'system', detailLabel: 'hostname' });
+    // Group names and hyphenated names are not hostnames.
+    for (const name of ['APT29', 'UNC2452', 'Jean-Luc', 'Mary-Kate Olsen']) expect(guessIdentity(name), name).toEqual({ type: 'person' });
+    // A name listed as an asset is a thing; an email there is still an account.
+    expect(guessIdentity('model-registry', true)).toEqual({ type: 'system' });
+    expect(guessIdentity('ops@corp.example', true)).toEqual({ type: 'account', detailLabel: 'email' });
     expect(guessIdentity('Dana Okafor')).toEqual({ type: 'person' });
     expect(guessIdentity('Halvorsen')).toEqual({ type: 'person' });
   });

@@ -44,7 +44,6 @@
   "profile.select": "アイデンティティを選択すると、ここに表示されます。",
   "profile.otherNames": "別名: {{names}}",
   "profile.contact": "連絡先",
-  "profile.markContact": "連絡先としてマーク",
   "profile.edit": "編集",
 
   "details.heading": "詳細",
@@ -81,7 +80,7 @@
   "connections.heading": "関係",
   "connections.none": "まだありません。",
   "connections.add": "関係を追加",
-  "connections.remove": "この関係を削除",
+  "connections.removeAria": "関係を削除: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "勤務先",
@@ -137,7 +136,7 @@
   "form.contact": "連絡先（一緒に仕事をしている人）",
   "form.detail": "詳細",
   "form.detailValue": "値",
-  "form.otherNames": "別名（カンマ区切り）",
+  "form.otherNames": "別名（1行に1つ）",
   "form.add": "追加",
   "form.save": "保存",
   "form.cancel": "キャンセル",
@@ -154,8 +153,12 @@
   "trash.button": "ゴミ箱に移動",
   "trash.confirmTitle": "{{name}} をゴミ箱に移動しますか？",
   "trash.confirmMessage": "ゴミ箱から復元できます。ゴミ箱で完全に削除すると、その関係も削除されます。",
+  "permanentDelete.title": "{{name}} を完全に削除しますか？",
+  "permanentDelete.message": "この操作は元に戻せません。他のアイデンティティからの関係も削除されます。",
+  "permanentDelete.confirm": "完全に削除",
 
   "found.heading": "アイデンティティ未登録",
+  "found.dialogTitle": "「{{text}}」",
   "found.hint": "タイムラインや IOC にある名前のうち、ここにあるどれとも一致しないものです。クリックして追加するか、既存のアイデンティティの別名として追加します。",
   "found.more": "ほか {{count}} 件",
   "found.fewer": "折りたたむ",

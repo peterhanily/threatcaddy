@@ -44,7 +44,6 @@
   "profile.select": "Выберите субъект, чтобы увидеть его здесь.",
   "profile.otherNames": "Другие имена: {{names}}",
   "profile.contact": "Контакт",
-  "profile.markContact": "Отметить как контакт",
   "profile.edit": "Редактировать",
 
   "details.heading": "Данные",
@@ -81,7 +80,7 @@
   "connections.heading": "Связи",
   "connections.none": "Пока нет.",
   "connections.add": "Добавить связь",
-  "connections.remove": "Удалить эту связь",
+  "connections.removeAria": "Удалить связь: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "работает в",
@@ -137,7 +136,7 @@
   "form.contact": "Контакт: человек, с которым вы работаете",
   "form.detail": "Поле",
   "form.detailValue": "Значение",
-  "form.otherNames": "Другие имена (через запятую)",
+  "form.otherNames": "Другие имена (по одному в строке)",
   "form.add": "Добавить",
   "form.save": "Сохранить",
   "form.cancel": "Отмена",
@@ -154,8 +153,12 @@
   "trash.button": "Переместить в корзину",
   "trash.confirmTitle": "Переместить {{name}} в корзину?",
   "trash.confirmMessage": "Субъект можно восстановить из корзины. Если удалить его оттуда навсегда, его связи тоже будут удалены.",
+  "permanentDelete.title": "Удалить {{name}} навсегда?",
+  "permanentDelete.message": "Отменить невозможно. Связи других субъектов с ним тоже будут удалены.",
+  "permanentDelete.confirm": "Удалить навсегда",
 
   "found.heading": "Пока нет среди субъектов",
+  "found.dialogTitle": "«{{text}}»",
   "found.hint": "Имена из хронологии и IOC, которые ни с чем здесь не совпадают. Нажмите на имя, чтобы добавить его или добавить как другое имя субъекта.",
   "found.more": "Ещё {{count}}",
   "found.fewer": "Свернуть",

@@ -44,7 +44,6 @@
   "profile.select": "Виберіть суб'єкт, щоб побачити його тут.",
   "profile.otherNames": "Інші імена: {{names}}",
   "profile.contact": "Контакт",
-  "profile.markContact": "Позначити як контакт",
   "profile.edit": "Редагувати",
 
   "details.heading": "Подробиці",
@@ -81,7 +80,7 @@
   "connections.heading": "Зв'язки",
   "connections.none": "Поки немає.",
   "connections.add": "Додати зв'язок",
-  "connections.remove": "Видалити цей зв'язок",
+  "connections.removeAria": "Видалити зв'язок: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "працює в",
@@ -137,7 +136,7 @@
   "form.contact": "Контакт: людина, з якою ви працюєте",
   "form.detail": "Подробиця",
   "form.detailValue": "Значення",
-  "form.otherNames": "Інші імена (через кому)",
+  "form.otherNames": "Інші імена (по одному в рядку)",
   "form.add": "Додати",
   "form.save": "Зберегти",
   "form.cancel": "Скасувати",
@@ -154,8 +153,12 @@
   "trash.button": "Перемістити в кошик",
   "trash.confirmTitle": "Перемістити {{name}} в кошик?",
   "trash.confirmMessage": "Його можна відновити з кошика. Остаточне видалення там також видалить його зв'язки.",
+  "permanentDelete.title": "Видалити {{name}} назавжди?",
+  "permanentDelete.message": "Скасувати це неможливо. Зв'язки інших суб'єктів із ним також буде видалено.",
+  "permanentDelete.confirm": "Видалити назавжди",
 
   "found.heading": "Ще не серед суб'єктів",
+  "found.dialogTitle": "«{{text}}»",
   "found.hint": "Імена з хронології та IOC, які ні з чим тут не збігаються. Натисніть ім'я, щоб додати його або додати як інше ім'я суб'єкта.",
   "found.more": "Ще {{count}}",
   "found.fewer": "Менше",

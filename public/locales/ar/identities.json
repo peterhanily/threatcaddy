@@ -44,7 +44,6 @@
   "profile.select": "اختر هوية لعرضها هنا.",
   "profile.otherNames": "أسماء أخرى: {{names}}",
   "profile.contact": "جهة اتصال",
-  "profile.markContact": "تعيين كجهة اتصال",
   "profile.edit": "تعديل",
 
   "details.heading": "التفاصيل",
@@ -81,7 +80,7 @@
   "connections.heading": "العلاقات",
   "connections.none": "لا شيء بعد.",
   "connections.add": "إضافة علاقة",
-  "connections.remove": "إزالة هذه العلاقة",
+  "connections.removeAria": "إزالة العلاقة: {{phrase}} {{name}}",
   "connections.incomingCustom": "{{label}} {{name}}",
 
   "connection.worksAt": "يعمل لدى",
@@ -137,7 +136,7 @@
   "form.contact": "جهة اتصال: شخص تعمل معه",
   "form.detail": "التفصيل",
   "form.detailValue": "القيمة",
-  "form.otherNames": "أسماء أخرى (مفصولة بفواصل)",
+  "form.otherNames": "أسماء أخرى (اسم واحد في كل سطر)",
   "form.add": "إضافة",
   "form.save": "حفظ",
   "form.cancel": "إلغاء",
@@ -154,8 +153,12 @@
   "trash.button": "نقل إلى المهملات",
   "trash.confirmTitle": "نقل {{name}} إلى المهملات؟",
   "trash.confirmMessage": "يمكنك استعادتها من المهملات. وحذفها نهائيًا من هناك يزيل علاقاتها أيضًا.",
+  "permanentDelete.title": "حذف {{name}} نهائيًا؟",
+  "permanentDelete.message": "لا يمكن التراجع عن ذلك. وتُزال أيضًا علاقات الهويات الأخرى بها.",
+  "permanentDelete.confirm": "حذف نهائي",
 
   "found.heading": "ليست في الهويات بعد",
+  "found.dialogTitle": "«{{text}}»",
   "found.hint": "أسماء من الجدول الزمني ومن مؤشرات IOC لا تطابق أي شيء هنا. انقر على اسم لإضافته، أو لإضافته كاسم آخر لهوية.",
   "found.more": "{{count}} أخرى",
   "found.fewer": "أقل",
