@@ -1,7 +1,11 @@
 import Dexie from 'dexie';
 
-export const SYNC_TABLES = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'evidenceItems'] as const;
+export const SYNC_TABLES = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'evidenceItems', 'identities'] as const;
 export const isSyncTable = (name: string): boolean => (SYNC_TABLES as readonly string[]).includes(name);
+/** The tables clients and servers synced before they began listing the tables they
+ * support (2.0.4 and earlier). A server that lists none syncs only these, and a cursor
+ * saved without a table list covers only these. Frozen: never add a table here. */
+export const LEGACY_SYNC_TABLES: readonly string[] = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'evidenceItems'];
 export const revisionKey = (table: string, id: string): string => JSON.stringify(['revision', table, id]);
 
 // Compatibility transport state only. Durable outbox capture must never depend

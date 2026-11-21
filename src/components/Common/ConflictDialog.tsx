@@ -9,6 +9,7 @@ import { FieldDiffView } from './InlineDiffView';
 const TABLE_LABELS: Record<string, string> = {
   notes: 'Note', tasks: 'Task', folders: 'Investigation', tags: 'Tag', timelineEvents: 'Timeline Event',
   timelines: 'Timeline', whiteboards: 'Whiteboard', standaloneIOCs: 'IOC', chatThreads: 'Chat Thread', evidenceItems: 'Evidence',
+  identities: 'Identity',
 };
 const conflictKey = (conflict: SyncResult) => JSON.stringify([conflict.table, conflict.entityId]);
 const label = (conflict: SyncResult) => (TABLE_LABELS[conflict.table ?? ''] ?? 'Item') + ': ' +

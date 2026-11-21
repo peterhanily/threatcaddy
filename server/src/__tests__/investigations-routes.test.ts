@@ -87,6 +87,7 @@ vi.mock('../routes/admin/shared.js', async () => {
     standaloneIOCs: { id: 'id', folderId: 'folder_id' },
     chatThreads: { id: 'id', folderId: 'folder_id' },
     evidenceItems: { id: 'id', folderId: 'folder_id' },
+    identities: { id: 'id', folderId: 'folder_id' },
     posts: { id: 'id', folderId: 'folder_id' },
     files: { id: 'id', folderId: 'folder_id', storagePath: 'storage_path', thumbnailPath: 'thumbnail_path' },
     notifications: { id: 'id', folderId: 'folder_id' },
@@ -248,6 +249,7 @@ describe('GET /admin/api/investigations/:id/detail', () => {
     selectQueue.push([{ count: 1 }]);
     selectQueue.push([{ count: 4 }]);
     selectQueue.push([{ count: 6 }]);
+    selectQueue.push([{ count: 7 }]);
 
     const res = await app.request('/admin/api/investigations/inv-1/detail', {
       headers: authHeader(token),
@@ -260,6 +262,7 @@ describe('GET /admin/api/investigations/:id/detail', () => {
     expect(body.entityCounts.tasks).toBe(3);
     expect(body.entityCounts.files).toBe(4);
     expect(body.entityCounts.evidenceItems).toBe(6);
+    expect(body.entityCounts.identities).toBe(7);
   });
 
   it('returns 404 when investigation does not exist', async () => {

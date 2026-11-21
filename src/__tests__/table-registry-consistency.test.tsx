@@ -7,7 +7,7 @@ import { BACKUP_TABLES } from '../lib/backup-tables';
 import { INVESTIGATION_TABLES, SHARED_TABLES } from '../lib/backup-data';
 import { ENTITY_RELATIONS, FOLDER_CONTENT_TABLES, TAGGED_TABLES } from '../lib/entity-relations';
 import { ENCRYPTED_FIELDS } from '../lib/encryptionMiddleware';
-import { isSyncTable, SYNC_TABLES } from '../lib/sync-state';
+import { isSyncTable, LEGACY_SYNC_TABLES, SYNC_TABLES } from '../lib/sync-state';
 import { TABLE_SANITIZERS } from '../lib/sync-sanitize';
 import { useFolders } from '../hooks/useFolders';
 import { ConflictDialog } from '../components/Common/ConflictDialog';
@@ -34,7 +34,6 @@ const LOCAL_INVESTIGATION_TABLES: Record<string, string> = {
   agentActions: 'agent records stay with the client that runs the agents',
   agentDeployments: 'agent records stay with the client that runs the agents',
   agentMeetings: 'agent records stay with the client that runs the agents',
-  identities: 'not synced until Phase 2 of the identities plan, which removes this entry',
 };
 /** Backed-up tables that belong to no investigation and are not shared catalogs. */
 const GLOBAL_TABLES: Record<string, string> = {
@@ -140,6 +139,13 @@ describe('the server agrees with the client', () => {
     const tableMap = block('server/src/services/sync-service.ts', 'const TABLE_MAP');
     expect(sorted((tableMap.match(/^\s*([A-Za-z0-9_]+):\s*schema\./gm) ?? []).map((x) => x.trim().split(':')[0]))).toEqual(client);
     expect(quoted(block('server/src/db/sync-contract.ts', 'const syncTables'))).toEqual(client);
+  });
+
+  it('agrees on the frozen tables that clients and servers synced before they listed their tables', () => {
+    expect(quoted(block('server/src/services/sync-service.ts', 'export const LEGACY_SYNC_TABLES'))).toEqual(sorted(LEGACY_SYNC_TABLES));
+    // 2.0.4 synced these ten. A table added since must stay out, or older clients would receive it and stop syncing.
+    expect(sorted(LEGACY_SYNC_TABLES)).toEqual(sorted(['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'evidenceItems']));
+    expect(LEGACY_SYNC_TABLES.every(isSyncTable)).toBe(true);
   });
 
   it('scopes, shares and tombstones the same tables', () => {

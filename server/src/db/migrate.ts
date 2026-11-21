@@ -59,6 +59,9 @@ export async function migrateDatabase(sql: Sql, migrationsFolder: string): Promi
         // Optional provenance was added independently in 0024; absence is the
         // supported predecessor shape, but a wrong existing type still fails.
         differences = differences.filter(value => value !== 'Missing column standalone_iocs.enrichment');
+        // Identities arrived in 0025: a wholly absent table is the supported
+        // predecessor shape, while a partial one still reports its columns.
+        differences = differences.filter(value => value !== 'Missing table identities');
         if (differences.length) throw new Error(`Cannot adopt an unjournaled or partial database: ${differences.join('; ')}`);
         const baseline = journal.entries.findIndex(entry => entry.tag === ADOPTION_BASELINE);
         if (baseline < 0) throw new Error('The explicit schema-adoption baseline is missing.');

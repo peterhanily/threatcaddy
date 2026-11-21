@@ -7,7 +7,7 @@ import { revokeUserFolderAccess, revokeFolderAccess } from '../../ws/handler.js'
 import {
   db, users, folders, investigationMembers, notes, tasks,
   timelineEvents, whiteboards, standaloneIOCs, chatThreads,
-  files, evidenceItems,
+  files, evidenceItems, identities,
   requireAdminAuth, logAdminAction, getAdminId, FILE_STORAGE_PATH,
 } from './shared.js';
 
@@ -74,6 +74,7 @@ app.get('/api/investigations/:id/detail', requireAdminAuth, async (c) => {
   const [chatCount] = await db.select({ count: count() }).from(chatThreads).where(eq(chatThreads.folderId, id));
   const [fileCount] = await db.select({ count: count() }).from(files).where(eq(files.folderId, id));
   const [evidenceCount] = await db.select({ count: count() }).from(evidenceItems).where(eq(evidenceItems.folderId, id));
+  const [identityCount] = await db.select({ count: count() }).from(identities).where(eq(identities.folderId, id));
 
   return c.json({
     investigation: folder,
@@ -87,6 +88,7 @@ app.get('/api/investigations/:id/detail', requireAdminAuth, async (c) => {
       chatThreads: chatCount.count,
       files: fileCount.count,
       evidenceItems: evidenceCount.count,
+      identities: identityCount.count,
     },
   });
 });

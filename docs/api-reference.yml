@@ -750,6 +750,7 @@ paths:
           description: Omits selected heavy fields, not all sensitive content.
           schema:
             type: boolean
+        - $ref: "#/components/parameters/SyncTables"
       responses:
         "200":
           description: Cursor page, or legacy full visible resync when since is supplied without cursor.
@@ -779,6 +780,7 @@ paths:
           required: true
           schema:
             type: string
+        - $ref: "#/components/parameters/SyncTables"
       responses:
         "200":
           description: Full investigation snapshot
@@ -2033,6 +2035,16 @@ components:
       required: true
       schema:
         type: string
+    SyncTables:
+      name: tables
+      in: query
+      description: >-
+        Comma-separated tables this client reads. Without it, the server sends
+        only the ten tables clients synced before identities (every table
+        except identities), because those clients stop a pull at a table they
+        do not know. Unknown names are ignored.
+      schema:
+        type: string
 
   # ─── Reusable Responses ─────────────────────────────────────────────
   responses:
@@ -2547,7 +2559,7 @@ components:
       properties:
         table:
           type: string
-          enum: [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, evidenceItems]
+          enum: [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, evidenceItems, identities]
         op:
           type: string
           enum: [put, delete]
@@ -2609,6 +2621,11 @@ components:
         serverTimestamp:
           type: string
           format: date-time
+        tables:
+          type: array
+          description: The tables this server syncs. Servers before identities leave it out and sync only the ten older tables.
+          items:
+            type: string
       required: [changes, cursor, generation, hasMore, serverTimestamp]
 
     LegacySyncPull:

@@ -161,4 +161,20 @@ describe('useInvestigationData request ownership', () => {
     expect(api.snapshot).toHaveBeenCalledOnce();
     expect(await db.notes.count()).toBe(0);
   });
+
+  it('loads an investigation\'s live identities in remote and local mode', async () => {
+    const person = (id: string, extra: Record<string, unknown> = {}) => ({ id, folderId: 'case', type: 'person', name: `Person ${id}`, aliases: [],
+      details: [], connections: [], tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1, ...extra });
+    api.snapshot.mockResolvedValueOnce({ identities: [person('live'), person('binned', { trashed: true })] });
+    const remote = renderHook(() => useInvestigationData('case', 'remote'));
+    await waitFor(() => expect(remote.result.current.loadedSuccessfully).toBe(true));
+    expect(remote.result.current.identities.map(row => row.id)).toEqual(['live']);
+    remote.unmount();
+    await db.identities.bulkAdd([person('local'), person('archived', { archived: true }), person('elsewhere', { folderId: 'other' })] as never);
+    try {
+      const local = renderHook(() => useInvestigationData('case', 'local'));
+      await waitFor(() => expect(local.result.current.loadedSuccessfully).toBe(true));
+      expect(local.result.current.identities.map(row => row.id)).toEqual(['local']);
+    } finally { await db.identities.clear(); }
+  });
 });

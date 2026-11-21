@@ -4,6 +4,7 @@ import i18n from '../i18n';
 import { cancelServerRequests, fetchServerResponse } from './server-response';
 import { compileIntegrationPlan, isSafeTeamTemplateId } from './integration-plan';
 import { tokenCount } from './model-pricing';
+import { SYNC_TABLES } from './sync-state';
 import type { IntegrationTemplate } from '../types/integration-types';
 
 type GetTokenFn = () => Promise<string | null>;
@@ -74,6 +75,8 @@ export interface SyncPullResult {
   cursor?: string;
   generation?: string;
   hasMore?: boolean;
+  /** The tables the server syncs. Servers before identities (2.0.4 and earlier) leave it out. */
+  tables?: unknown;
 }
 
 // Snapshot returns entity arrays keyed by table name
@@ -230,6 +233,8 @@ export async function syncPull(since: string, folderId?: string, cursor?: string
   if (folderId) params.set('folderId', folderId);
   if (cursor !== undefined) params.set('cursor', cursor);
   if (generation !== undefined) params.set('generation', generation);
+  // Servers leave out tables a client does not list: older clients stop a pull at an unknown table.
+  params.set('tables', SYNC_TABLES.join(','));
   const resp = await apiFetch(`/api/sync/pull?${params}`);
   if (!resp.ok) {
     const detail = await resp.json().catch(() => ({}));
@@ -239,7 +244,7 @@ export async function syncPull(since: string, folderId?: string, cursor?: string
 }
 
 export async function syncSnapshot(folderId: string): Promise<SyncSnapshotResult> {
-  const resp = await apiFetch(`/api/sync/snapshot/${folderId}`);
+  const resp = await apiFetch(`/api/sync/snapshot/${folderId}?${new URLSearchParams({ tables: SYNC_TABLES.join(',') })}`);
   if (!resp.ok) throw new Error('Sync snapshot failed');
   return resp.json();
 }

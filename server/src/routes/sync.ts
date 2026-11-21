@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
-import { processPush, pullChanges, pullCursorChanges, SyncReadError, SyncWriteValidationError, getSnapshot } from '../services/sync-service.js';
+import { processPush, pullChanges, pullCursorChanges, SyncReadError, SyncWriteValidationError, getSnapshot, clientSyncTables } from '../services/sync-service.js';
 import { logActivityBatch } from '../services/audit-service.js';
 import { broadcastToFolder } from '../ws/handler.js';
 import { db } from '../db/index.js';
@@ -18,7 +18,7 @@ app.use('*', requireAuth);
 const MAX_SYNC_CHANGES = 500;
 
 const changeSchema = z.object({
-  table: z.enum(['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'evidenceItems']),
+  table: z.enum(['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'evidenceItems', 'identities']),
   op: z.enum(['put', 'delete']),
   entityId: z.string().min(1).max(128),
   data: z.record(z.string(), z.unknown()).optional(),
@@ -100,12 +100,14 @@ app.get('/pull', async (c) => {
   const cursor = c.req.query('cursor');
   const folderId = c.req.query('folderId');
   const metadataOnly = c.req.query('metadataOnly') === 'true';
+  // Clients that do not list the tables they read get only those older clients know.
+  const tables = clientSyncTables(c.req.query('tables'));
   if (cursor !== undefined) {
     const rawLimit = c.req.query('limit');
     const limit = rawLimit === undefined ? 200 : Number(rawLimit);
     if (!Number.isInteger(limit) || limit < 1 || limit > 1000) return c.json({ error: 'Invalid sync page limit' }, 400);
     try {
-      return c.json(await pullCursorChanges(cursor, user.id, { folderId, metadataOnly, limit, generation: c.req.query('generation') }));
+      return c.json(await pullCursorChanges(cursor, user.id, { folderId, metadataOnly, limit, generation: c.req.query('generation'), tables }));
     } catch (error) {
       if (error instanceof SyncReadError) return c.json({
         error: error.message,
@@ -121,18 +123,18 @@ app.get('/pull', async (c) => {
   if (!since) return c.json({ error: 'Missing cursor parameter', code: ErrorCodes.MISSING_SINCE_PARAM }, 400);
   if (folderId) {
     if (!await checkInvestigationAccess(user.id, folderId, 'viewer')) return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
-    return c.json(await pullChanges(since, [folderId], metadataOnly ? { metadataOnly } : undefined));
+    return c.json(await pullChanges(since, [folderId], { metadataOnly, tables }));
   }
   const memberships = await db.select({ folderId: investigationMembers.folderId }).from(investigationMembers)
     .where(eq(investigationMembers.userId, user.id));
-  return c.json(await pullChanges(since, memberships.map(member => member.folderId), metadataOnly ? { metadataOnly } : undefined));
+  return c.json(await pullChanges(since, memberships.map(member => member.folderId), { metadataOnly, tables }));
 });
 
 app.get('/snapshot/:folderId', async (c) => {
   const user = c.get('user');
   const folderId = c.req.param('folderId');
   if (!await checkInvestigationAccess(user.id, folderId, 'viewer')) return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
-  return c.json(await getSnapshot(folderId));
+  return c.json(await getSnapshot(folderId, clientSyncTables(c.req.query('tables'))));
 });
 
 export default app;

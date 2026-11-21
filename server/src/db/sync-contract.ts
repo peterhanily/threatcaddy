@@ -4,7 +4,7 @@ const syncTables: Record<string, string> = {
   notes: 'notes', tasks: 'tasks', folders: 'folders', tags: 'tags',
   timeline_events: 'timelineEvents', timelines: 'timelines', whiteboards: 'whiteboards',
   standalone_iocs: 'standaloneIOCs', chat_threads: 'chatThreads',
-  evidence_items: 'evidenceItems',
+  evidence_items: 'evidenceItems', identities: 'identities',
 };
 const triggerTypes: Record<string, number> = {
   sync_lock_writes: 30, // BEFORE STATEMENT INSERT/UPDATE/DELETE

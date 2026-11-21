@@ -75,6 +75,7 @@ vi.mock('../db/schema.js', () => {
     standaloneIOCs: makeTable('standaloneIOCs'),
     chatThreads: makeTable('chatThreads'),
     evidenceItems: makeTable('evidenceItems'),
+    identities: makeTable('identities'),
     investigationMembers: makeTable('investigationMembers'),
   };
 });

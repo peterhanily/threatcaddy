@@ -25,10 +25,27 @@ const TABLE_MAP: Record<string, PgTable<any>> = {
   standaloneIOCs: schema.standaloneIOCs,
   chatThreads: schema.chatThreads,
   evidenceItems: schema.evidenceItems,
+  identities: schema.identities,
 };
 
 // These two catalogs are intentionally shared server-wide. Every other sync table is investigation-scoped.
 const GLOBAL_SYNC_TABLES = new Set(['tags', 'timelines']);
+
+/** Every table this server syncs, as pulls report it to clients. */
+export const SYNC_TABLE_NAMES: readonly string[] = Object.keys(TABLE_MAP);
+/** The tables clients synced before they listed the ones they read (2.0.4 and earlier).
+ * Those clients stop a whole pull at an unknown table, so a client that lists none gets
+ * only these. Frozen: never add a table here. */
+export const LEGACY_SYNC_TABLES: readonly string[] = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'evidenceItems'];
+/** Bots neither read nor write these in this version: identity records carry private details. */
+const BOT_HIDDEN_TABLES = new Set(['identities']);
+
+/** The tables a client says it reads that this server syncs. Unknown names are ignored. */
+export function clientSyncTables(listed: string | undefined): readonly string[] {
+  if (listed === undefined) return LEGACY_SYNC_TABLES;
+  const names = new Set(listed.split(',', 64));
+  return SYNC_TABLE_NAMES.filter(name => names.has(name));
+}
 
 // Fields managed exclusively by the server — never accept from client
 const SERVER_MANAGED_FIELDS = new Set([
@@ -369,8 +386,10 @@ export async function processPush(
       result[index] = { table: change.table, entityId, status: 'accepted', serverVersion: record.version as number, serverRecord: record,
         ...(sourceFolder && sourceFolder !== destinationFolder ? { previousFolderId: sourceFolder } : {}) };
       const eventFolder = (record.folderId as string | undefined) ?? (change.table === 'folders' ? entityId : undefined);
-      events.push(op === 'put' ? [op, change.table, entityId, eventFolder, userId, !current, record]
-        : [op, change.table, entityId, eventFolder, userId, false]);
+      if (!BOT_HIDDEN_TABLES.has(change.table)) {
+        events.push(op === 'put' ? [op, change.table, entityId, eventFolder, userId, !current, record]
+          : [op, change.table, entityId, eventFolder, userId, false]);
+      }
     }
     await options.beforeCommit?.();
     return result;
@@ -402,8 +421,8 @@ function logRecord(tableName: string, stored: Record<string, unknown>, metadataO
 export async function pullCursorChanges(
   cursor: string,
   userId: string,
-  opts: { folderId?: string; metadataOnly?: boolean; limit?: number; generation?: string } = {},
-): Promise<{ changes: Record<string, unknown>[]; cursor: string; generation: string; hasMore: boolean; serverTimestamp: string }> {
+  opts: { folderId?: string; metadataOnly?: boolean; limit?: number; generation?: string; tables?: readonly string[] } = {},
+): Promise<{ changes: Record<string, unknown>[]; cursor: string; generation: string; hasMore: boolean; serverTimestamp: string; tables: readonly string[] }> {
   if (!/^(0|[1-9][0-9]{0,18})$/.test(cursor) || BigInt(cursor) > 9223372036854775807n) throw new SyncReadError('Invalid sync cursor', 400);
   const limit = Math.min(Math.max(Math.trunc(opts.limit ?? 200), 1), 1000);
   return db.transaction(async tx => {
@@ -423,7 +442,8 @@ export async function pullCursorChanges(
     const scopes = [inArray(schema.syncChanges.tableName, [...GLOBAL_SYNC_TABLES])];
     if (folderIds.length) scopes.push(inArray(schema.syncChanges.folderId, folderIds), inArray(schema.syncChanges.previousFolderId, folderIds));
     const predicate = and(
-      gt(schema.syncChanges.cursor, BigInt(cursor)), lte(schema.syncChanges.cursor, clock.cursor), or(...scopes),
+      gt(schema.syncChanges.cursor, BigInt(cursor)), lte(schema.syncChanges.cursor, clock.cursor),
+      inArray(schema.syncChanges.tableName, [...(opts.tables ?? LEGACY_SYNC_TABLES)]), or(...scopes),
     );
     // The byte window is evaluated inside PostgreSQL, so large inline images
     // cannot multiply an ordinary page into hundreds of megabytes in Node.
@@ -453,7 +473,7 @@ export async function pullCursorChanges(
         latest.set(key, { table: row.tableName, op: 'put', ...logRecord(row.tableName, row.record as Record<string, unknown>, opts.metadataOnly ?? false) });
       }
     }
-    return { changes: [...latest.values()], cursor: (hasMore ? page[page.length - 1].cursor : clock.cursor).toString(), generation: clock.generation, hasMore, serverTimestamp: new Date().toISOString() };
+    return { changes: [...latest.values()], cursor: (hasMore ? page[page.length - 1].cursor : clock.cursor).toString(), generation: clock.generation, hasMore, serverTimestamp: new Date().toISOString(), tables: SYNC_TABLE_NAMES };
   }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
 }
 
@@ -462,7 +482,7 @@ export async function pullCursorChanges(
 export async function pullChanges(
   _since: string,
   folderIds?: string[],
-  opts?: { metadataOnly?: boolean },
+  opts?: { metadataOnly?: boolean; tables?: readonly string[] },
 ): Promise<{ changes: Record<string, unknown>[]; serverTimestamp: string }> {
   return db.transaction(async tx => {
   const changes: Record<string, unknown>[] = [];
@@ -473,7 +493,9 @@ export async function pullChanges(
   // Build all queries up front, then execute in parallel
   const queries: { tableName: string; promise: Promise<unknown[]> }[] = [];
 
+  const readable = opts?.tables ?? LEGACY_SYNC_TABLES;
   for (const [tableName, table] of Object.entries(TABLE_MAP)) {
+    if (!readable.includes(tableName)) continue;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const t = table as any;
 
@@ -529,7 +551,7 @@ export async function pullChanges(
   }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
 }
 
-export async function getSnapshot(folderId: string): Promise<Record<string, unknown[]>> {
+export async function getSnapshot(folderId: string, tables: readonly string[] = LEGACY_SYNC_TABLES): Promise<Record<string, unknown[]>> {
   return db.transaction(async tx => {
   const snapshot: Record<string, unknown[]> = {};
   const [folder] = await tx.select().from(schema.folders)
@@ -542,7 +564,7 @@ export async function getSnapshot(folderId: string): Promise<Record<string, unkn
   for (const [tableName, table] of Object.entries(TABLE_MAP)) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const t = table as any;
-    if (t.folderId) {
+    if (t.folderId && tables.includes(tableName)) {
       queries.push({
         tableName,
         promise: tx.select().from(table).where(and(eq(t.folderId, folderId), isNull(t.deletedAt))),

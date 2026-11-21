@@ -170,6 +170,7 @@ function AppDataLayer() {
     whiteboards: reloadWhiteboards,
     standaloneIOCs: standaloneIOCsHook.reload,
     evidenceItems: evidenceItemsHook.reload,
+    identities: identitiesHook.reload,
     chats: chatsHook.reload,
     folders: reloadFolders,
     tags: reloadTags,

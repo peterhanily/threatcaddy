@@ -114,11 +114,13 @@ The client sends bounded batches from `_syncQueue` to `POST /api/sync/push`. A r
 
 Current clients use `GET /api/sync/pull?cursor=…&generation=…`. Cursors are decimal strings, not JavaScript numbers or timestamps. Each page returns flat entity changes, the next cursor, generation, `hasMore` and `serverTimestamp`. Authorization and the page watermark are read from one consistent database snapshot. A requested folder narrows the results; `metadataOnly=true` omits selected heavy fields, not all sensitive content. Deleted or moved-out entities can be represented by minimal tombstones.
 
+Clients list the tables they read (`tables=…`), and the server sends only those. A client that lists none (2.0.4 and earlier) gets only the ten tables it knows, because it stops a pull at an unknown table. Pages report the tables the server syncs; a client holds changes to any other table on the device and says so, skips a table it does not know, and replays the log once when its saved cursor predates a table it now syncs. The replay starts only after the server has accepted the saved cursor and history.
+
 A changed history generation or a cursor ahead of the server returns `409 SYNC_CURSOR_RESET` with `resetRequired: true`. The client pauses for explicit recovery rather than silently resetting its cursor. The legacy `since` request remains available, but returns a full currently visible resync, not a timestamp-based incremental page.
 
 ### 4.3 Snapshot
 
-`GET /api/sync/snapshot/:folderId` returns a currently authorized investigation as a map of tables to rows. This is not a portable backup or permission to overwrite pending local work. Current client recovery also checks workspace identity and history generation; see [server sync recovery](../server/docs/sync-recovery.md).
+`GET /api/sync/snapshot/:folderId` returns a currently authorized investigation as a map of tables to rows, limited to the `tables` the client lists, as for pull. This is not a portable backup or permission to overwrite pending local work. Current client recovery also checks workspace identity and history generation; see [server sync recovery](../server/docs/sync-recovery.md).
 
 ### 4.4 Conflict Resolution
 

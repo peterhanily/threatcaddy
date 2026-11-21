@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 const mocks = vi.hoisted(() => ({
   push: vi.fn(), pull: vi.fn(), cursor: vi.fn(), snapshot: vi.fn(), access: vi.fn(), broadcast: vi.fn(), audit: vi.fn(),
+  // Stands in for the service's parser (tested in sync-service.test.ts): unlisted means the legacy tables.
+  tables: vi.fn((listed?: string) => listed === undefined ? ['legacy-tables'] : listed.split(',')),
   user: { id: 'user-1', role: 'analyst' } as { id: string; role: string } | null,
 }));
 vi.mock('../middleware/auth.js', () => ({
@@ -14,7 +16,7 @@ vi.mock('../middleware/auth.js', () => ({
 }));
 vi.mock('../middleware/access.js', () => ({ checkInvestigationAccess: mocks.access }));
 vi.mock('../services/sync-service.js', () => ({
-  processPush: mocks.push, pullChanges: mocks.pull, pullCursorChanges: mocks.cursor, getSnapshot: mocks.snapshot,
+  processPush: mocks.push, pullChanges: mocks.pull, pullCursorChanges: mocks.cursor, getSnapshot: mocks.snapshot, clientSyncTables: mocks.tables,
   SyncWriteValidationError: class extends Error {},
   SyncReadError: class extends Error {
     constructor(message: string, public status: number, public resetRequired = false) { super(message); }
@@ -187,7 +189,20 @@ describe('sync HTTP read boundary', () => {
     mocks.cursor.mockResolvedValue(page);
     const response = await app.request('/api/sync/pull?cursor=12&limit=50&folderId=folder-1&metadataOnly=true');
     expect(response.status).toBe(200); expect(await response.json()).toEqual(page);
-    expect(mocks.cursor).toHaveBeenCalledWith('12', 'user-1', { limit: 50, folderId: 'folder-1', metadataOnly: true });
+    expect(mocks.cursor).toHaveBeenCalledWith('12', 'user-1', { limit: 50, folderId: 'folder-1', metadataOnly: true, tables: ['legacy-tables'] });
+  });
+
+  it('reads only the tables a client lists, and only the legacy tables for a client that lists none', async () => {
+    mocks.cursor.mockResolvedValue({ changes: [], cursor: '0', hasMore: false, serverTimestamp: '2026-01-01' });
+    mocks.snapshot.mockResolvedValue({});
+    await app.request('/api/sync/pull?cursor=0&tables=notes,identities');
+    expect(mocks.cursor).toHaveBeenLastCalledWith('0', 'user-1', expect.objectContaining({ tables: ['notes', 'identities'] }));
+    await app.request('/api/sync/pull?since=2026-01-01&tables=notes');
+    expect(mocks.pull).toHaveBeenLastCalledWith('2026-01-01', ['folder-1'], { metadataOnly: false, tables: ['notes'] });
+    await app.request('/api/sync/snapshot/folder-1?tables=notes,identities');
+    expect(mocks.snapshot).toHaveBeenLastCalledWith('folder-1', ['notes', 'identities']);
+    await app.request('/api/sync/snapshot/folder-1');
+    expect(mocks.snapshot).toHaveBeenLastCalledWith('folder-1', ['legacy-tables']);
   });
 
   it('returns an explicit reset instruction for a future cursor', async () => {
@@ -199,7 +214,7 @@ describe('sync HTTP read boundary', () => {
 
   it('retains full-resync compatibility for a timestamp-only client', async () => {
     expect((await app.request('/api/sync/pull?since=2026-01-01')).status).toBe(200);
-    expect(mocks.pull).toHaveBeenCalledWith('2026-01-01', ['folder-1'], undefined);
+    expect(mocks.pull).toHaveBeenCalledWith('2026-01-01', ['folder-1'], { metadataOnly: false, tables: ['legacy-tables'] });
   });
 
   it.each(['0', '-1', '1001', 'not-a-number'])('rejects invalid page limit %s', async limit => {

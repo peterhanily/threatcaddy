@@ -4,7 +4,7 @@ import { eq, and, count, sql, isNull } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
 import { db } from '../db/index.js';
-import { investigationMembers, folders, users, notes, tasks, timelineEvents, whiteboards, standaloneIOCs, chatThreads, evidenceItems } from '../db/schema.js';
+import { investigationMembers, folders, users, notes, tasks, timelineEvents, whiteboards, standaloneIOCs, chatThreads, evidenceItems, identities } from '../db/schema.js';
 import { createNotification } from '../services/notification-service.js';
 import { logActivity } from '../services/audit-service.js';
 import { revokeUserFolderAccess, revokeFolderAccess, broadcastToUser } from '../ws/handler.js';
@@ -146,6 +146,7 @@ app.get('/:id/summary', async (c) => {
       db.select({ latest: sql<string>`max(${whiteboards.updatedAt})` }).from(whiteboards).where(eq(whiteboards.folderId, folderId)),
       db.select({ latest: sql<string>`max(${chatThreads.updatedAt})` }).from(chatThreads).where(eq(chatThreads.folderId, folderId)),
       db.select({ latest: sql<string>`max(${evidenceItems.updatedAt})` }).from(evidenceItems).where(eq(evidenceItems.folderId, folderId)),
+      db.select({ latest: sql<string>`max(${identities.updatedAt})` }).from(identities).where(eq(identities.folderId, folderId)),
     ]),
   ]);
 

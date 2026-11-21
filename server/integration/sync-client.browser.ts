@@ -131,12 +131,15 @@ try {
             toolCalls: [{ id: 'tool', name: 'read_note', input: { id: 'sync-note' }, result: 'Synthetic output', isError: false }],
             agentCycleSummary: { startedAt: now, durationMs: 10, whyThisCycle: 'Synthetic', whatIDid: ['Read'], entitiesTouched: [], tokens: { input: 1, output: 1 }, costUSD: 0, toolCalls: { executed: 1, proposed: 0 }, toolHistogram: { read_note: 1 }, errorHistogram: {}, turns: 1, outcome: 'success', provider: 'local', model: 'fixture' },
             attachments: [{ type: 'image', mimeType: 'image/png', data: 'iVBORw0KGgo=' }] }] },
+        identities: { ...common, id: 'sync-identity', type: 'person', name: 'Synthetic Person', description: 'Synthetic role', aliases: ['S. Person'],
+          status: 'compromised', contact: true, details: [{ id: 'phone', label: 'Phone', value: '+1 555 0100', private: true }], connections: [] },
       };
       const localFields: Record<string, string[]> = {
         folders: ['agentEnabled', 'agentStatus', 'agentThreadId', 'agentLastRunAt', 'agentPolicy', 'noteTemplateIds', 'playbookExecution'],
         notes: ['parentNoteId', 'isFolder', 'reviewRequired'], tasks: ['checklist', 'rejectionCount', 'escalated', 'rejectionHistory'],
         standaloneIOCs: ['firstSeen', 'lastSeen', 'linkedEvidenceIds'], timelineEvents: [],
         chatThreads: ['mode', 'source', 'contextSummary', 'parentThreadId', 'isFolder'],
+        identities: [],
       };
       for (const [table, row] of Object.entries(rows)) await put(first, table, row);
       assert.deepEqual(await invoke(first, 'sync'), []);
@@ -171,6 +174,20 @@ try {
       assert.equal(((await get(second, 'chatThreads', 'sync-chat'))?.messages as Row[])[0].attachments, undefined);
       assert.equal(((await get(second, 'chatThreads', 'sync-chat'))?.messages as Row[])[0].agentCycleSummary, undefined);
       check('a fresh second browser receives shared content and accurately lacks device-only fields');
+
+      fieldsEqual(await get(second, 'identities', 'sync-identity'), rows.identities, ['name', 'aliases', 'status', 'contact', 'details', 'description']);
+      // The server keeps fields a push leaves out, so an emptied field must travel as null.
+      const withoutStatus: Row = { ...await get(first, 'identities', 'sync-identity'), updatedAt: Date.now() };
+      delete withoutStatus.status;
+      await put(first, 'identities', withoutStatus);
+      assert.deepEqual(await invoke(first, 'sync'), []);
+      assert.deepEqual(await invoke(second, 'sync'), []);
+      for (const device of [first, second]) {
+        const synced = await get(device, 'identities', 'sync-identity');
+        assert.equal(synced?.status, undefined);
+        fieldsEqual(synced, rows.identities, ['name', 'contact', 'details']);
+      }
+      check('an identity syncs between browsers, and an emptied status stays empty on both');
 
       for (const choice of ['theirs', 'mine']) {
         await put(first, 'tasks', { ...await get(first, 'tasks', 'sync-task'), title: `First device ${choice}`, updatedAt: Date.now() });

@@ -315,6 +315,37 @@ export const evidenceItems = pgTable('evidence_items', {
   idxEvidenceFolderUpdatedAt: index('idx_evidence_folder_updated_at').on(t.folderId, t.updatedAt),
 }));
 
+// People, organizations, systems and accounts recorded in an investigation.
+// Bots neither read nor write them (sync-service.ts BOT_HIDDEN_TABLES).
+export const identities = pgTable('identities', {
+  id: text('id').primaryKey(),
+  folderId: text('folder_id'),
+  type: text('type').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  aliases: jsonb('aliases').notNull().default([]),
+  status: text('status'),
+  contact: boolean('contact'),
+  details: jsonb('details').notNull().default([]),
+  connections: jsonb('connections').notNull().default([]),
+  tags: jsonb('tags').notNull().default([]),
+  clsLevel: text('cls_level'),
+  trashed: boolean('trashed').notNull().default(false),
+  trashedAt: timestamp('trashed_at', { withTimezone: true }),
+  archived: boolean('archived').notNull().default(false),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+  updatedBy: text('updated_by').references(() => users.id, { onDelete: 'set null' }),
+  version: integer('version').notNull().default(1),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+}, (t) => ({
+  idxIdentitiesFolderId: index('idx_identities_folder_id').on(t.folderId),
+  idxIdentitiesUpdatedAt: index('idx_identities_updated_at').on(t.updatedAt),
+  idxIdentitiesCreatedBy: index('idx_identities_created_by').on(t.createdBy),
+  idxIdentitiesFolderUpdatedAt: index('idx_identities_folder_updated_at').on(t.folderId, t.updatedAt),
+}));
+
 export const standaloneIOCs = pgTable('standalone_iocs', {
   id: text('id').primaryKey(),
   type: text('type').notNull(),
