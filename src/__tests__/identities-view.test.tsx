@@ -98,6 +98,9 @@ describe('an identity\'s profile', () => {
     const { user, props } = setup({ selectRequest: { id: 'dana', request: 1 } });
     await user.click(within(profile('Dana Okafor')).getByRole('button', { name: 'Make Email private' }));
     expect(lastUpdate(props.onUpdate, dana).fields?.details).toEqual([expect.objectContaining({ label: 'Email', private: true }), dana.details[1]]);
+    // It sets what the button says: on a row already made private elsewhere it stays private.
+    const alreadyPrivate = { ...dana, details: [{ ...dana.details[0], private: true }, dana.details[1]] };
+    expect(lastUpdate(props.onUpdate, alreadyPrivate).fields?.details?.[0]).toMatchObject({ label: 'Email', private: true });
     await user.click(within(profile('Dana Okafor')).getByRole('button', { name: 'Make Phone public' }));
     const shared = lastUpdate(props.onUpdate, dana).fields?.details;
     expect(shared?.[1]).toEqual({ id: 'phone', label: 'Phone', value: '+44 7700 900123' });

@@ -19,8 +19,12 @@ const STATUSES = IDENTITY_STATUSES;
 const MAX_NAME = 200;
 const MAX_TEXT = 2000;
 const MAX_ITEMS = 30;
-/** An identity holds at most this many details; a runaway agent cannot grow one without end. */
+/** An identity holds at most this many public details (checked against public details only, so the
+ * answer never depends on private ones), and at most MAX_TOTAL_DETAILS in all: a runaway agent
+ * cannot grow one without end. The total only binds after hundreds of private details, so it says
+ * nothing about any private value. */
 const MAX_DETAILS = 200;
+const MAX_TOTAL_DETAILS = 1000;
 
 /** Plain text: control characters and runs of spaces become one space, bounded. Never HTML-parsed,
  * so "Smith <john@x.com>" and "R&D" stay as written (React escapes them when shown). */
@@ -139,7 +143,8 @@ function addDetails(identity: Identity, raw: unknown): number | string {
     label: clean((entry as { label?: unknown })?.label, 100),
     value: clean((entry as { value?: unknown })?.value, MAX_TEXT),
   })).filter(entry => entry.label && entry.value);
-  if (identity.details.filter(detail => !detail.private).length + entries.length > MAX_DETAILS) {
+  if (identity.details.filter(detail => !detail.private).length + entries.length > MAX_DETAILS
+    || identity.details.length + entries.length > MAX_TOTAL_DETAILS) {
     return `An identity holds at most ${MAX_DETAILS} details.`;
   }
   for (const { label, value } of entries) {

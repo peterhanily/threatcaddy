@@ -64,6 +64,14 @@ describe('import', () => {
     expect(imported.connections.map(edge => `${edge.label}: ${name(edge.targetId)}`).sort()).toEqual(['reports to: Lee Park', 'works at: Halvorsen Shipping']);
   });
 
+  it('marks a public detail whose label is private by default "(public)", so it imports back public', () => {
+    const shared = { ...make('lee', 'Lee Park'), details: [{ id: 'w', label: 'Phone', value: '+44 20 7946 0101' }, { id: 'h', label: 'Phone', value: '+44 7700 900111', private: true }] };
+    const csv = identitiesToCsv([shared], { byId: new Map([[shared.id, shared]]), folders, includePrivate: true });
+    expect(csv.split('\r\n')[0]).toContain('Phone (public),Phone (private)');
+    const lee = reimport(csv, []).result.created[0];
+    expect(lee.details.map(({ label, value, private: hidden }) => [label, value, !!hidden])).toEqual([['Phone', '+44 20 7946 0101', false], ['Phone', '+44 7700 900111', true]]);
+  });
+
   it('round-trips a custom phrase or a name that holds ": " in the combined Connections column', () => {
     const shell = make('shell', 'Ops: Shell Co', { type: 'organization' });
     const dana = { ...make('dana', 'Dana Okafor'), connections: [{ targetId: 'lee', label: 'met at: the summit with' }, { targetId: 'shell', label: 'audited' }] };

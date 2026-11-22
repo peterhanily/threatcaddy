@@ -14,6 +14,7 @@ describe('the private-label rule', () => {
     expect(labelWords('telephoneNumber')).toEqual(['telephone', 'number']);
     expect(labelWords('home_phone [Optional]')).toEqual(['home', 'phone', 'optional']);
     expect(labelWords('SSNLast4')).toEqual(['ssn', 'last4']);
+    expect(labelWords('IPv4Address')).toEqual(['ipv4', 'address']);
   });
 
   it('makes phones, street addresses, birth dates and government numbers private, as headers from real exports', () => {
@@ -31,7 +32,10 @@ describe('the private-label rule', () => {
   it('keeps network and mailbox addresses, accounts and work identifiers public', () => {
     const publicLabels = ['Email', 'EmailAddress', 'Email address', 'E-mail address', 'mail', 'userPrincipalName', 'IP address', 'MAC address',
       'Hostname', 'Domain', 'Username', 'SamAccountName', 'Handle', 'IBAN', 'Asset tag', 'Website', 'Department', 'Title', 'Hotel booking ref',
-      'Intel source', 'Bitcoin address', 'HomeDirectory'];
+      'Intel source', 'Bitcoin address', 'HomeDirectory',
+      // Mailbox, network and system identifiers (from Exchange, AD, EDR and mail headers)
+      'IPv4 address', 'IPv4Address', 'IPv6Address', 'PrimarySmtpAddress', 'proxyAddresses', 'Sender address', 'From address', 'Reply-to address',
+      'Source address', 'Remote address', 'SIP address', 'DNS address', 'Mobile device ID', 'Health check URL'];
     for (const label of publicLabels) expect(isPrivateLabel(label), label).toBe(false);
   });
 

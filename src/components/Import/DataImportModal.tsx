@@ -161,6 +161,8 @@ export function DataImportModal({
     }
     setImportError('');
 
+    // A new file starts from its own columns' defaults, not the previous file's Private choices.
+    setPrivateOverrides(new Map());
     // Auto-detect schema
     const detections = detectSchema(result.headers);
     const newMappings = new Map<string, ColumnMapping>();
@@ -244,7 +246,7 @@ export function DataImportModal({
             columnMappings,
             tid,
             folderId || undefined,
-            willImportIdentities ? privateColumns : undefined,
+            privateColumns,
           );
           if (events.length > 0) {
             await db.timelineEvents.bulkPut(events);

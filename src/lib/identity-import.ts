@@ -15,9 +15,14 @@ import {
 
 const ENGLISH_TYPES = ENGLISH_TYPE_LABELS;
 const ENGLISH_PHRASES = ENGLISH_PHRASE_LABELS;
-const PRIVATE_SUFFIX = /\s*\(private\)\s*$/i;
-/** Export marks detail columns that would otherwise read as a fixed field ("Role (detail)") or as private. */
-const COLUMN_SUFFIX = /\s*\((?:private|detail)\)\s*$/i;
+// Anchored on the parenthesis (no leading \s*), so a long run of spaces cannot make them slow.
+const PRIVATE_SUFFIX = /\(private\)\s*$/i;
+const PUBLIC_SUFFIX = /\(public\)\s*$/i;
+/** Export marks detail columns that would otherwise read as a fixed field ("Role (detail)"), as
+ * private, or as public although their label is private by default ("Phone (public)"). */
+const COLUMN_SUFFIX = /\((?:private|detail|public)\)\s*$/i;
+/** A column header without its marker. */
+const withoutSuffix = (header: string) => header.replace(COLUMN_SUFFIX, '').trimEnd();
 const STATUSES: readonly IdentityStatus[] = IDENTITY_STATUSES;
 const MEMBERSHIP = new Set(MEMBERSHIP_PHRASES);
 const MAX_ERRORS = 200;
@@ -37,7 +42,8 @@ export function isIdentityExport(headers: readonly string[]): boolean {
  * marked "(private)", or a label private by default in English or, via `isPrivateLabel`, in the
  * interface language ("Telefon"), as in the Add form. */
 export const isPrivateDetailColumn = (header: string, isPrivateLabel?: (label: string) => boolean) => {
-  const label = value(header.replace(COLUMN_SUFFIX, '').replace(COLUMN_SUFFIX, ''));
+  if (PUBLIC_SUFFIX.test(header)) return false;
+  const label = value(withoutSuffix(withoutSuffix(header)));
   return PRIVATE_SUFFIX.test(header) || isPrivateLabelText(label) || !!isPrivateLabel?.(label);
 };
 
@@ -176,7 +182,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     if (!identity.status && STATUSES.includes(status as IdentityStatus)) identity.status = status as IdentityStatus;
     if (contactColumn && truthy(row[contactColumn]) && !identity.contact) identity.contact = true;
     for (const column of columns('identity-detail')) {
-      const label = value(column.replace(COLUMN_SUFFIX, '').replace(COLUMN_SUFFIX, ''));
+      const label = value(withoutSuffix(withoutSuffix(column)));
       const isPrivate = options.privateColumns ? options.privateColumns.has(column) : isPrivateDetailColumn(column, options.isPrivateLabel);
       for (const detail of lines(row[column])) {
         if (identity.details.some(known => sameText(known.label) === sameText(label) && detailKey(known.value) === detailKey(detail))) continue;

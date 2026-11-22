@@ -39,9 +39,9 @@ interface Props {
 
 /** A detail made private or public; a public detail carries no `private` field. */
 function withPrivacy(detail: IdentityDetail, isPrivate: boolean): IdentityDetail {
-  const { private: _wasPrivate, ...rest } = detail;
-  void _wasPrivate;
-  return isPrivate ? { ...rest, private: true } : rest;
+  const copy = { ...detail };
+  delete copy.private;
+  return isPrivate ? { ...copy, private: true } : copy;
 }
 
 export function IdentityProfile({ identity, byId, sameInvestigation, everywhere, folders, showInvestigation, readOnly, screensharing, labels, onUpdate, onEdit, onOpen, onOpenChart, children }: Props) {
@@ -199,7 +199,10 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                         className="rounded p-0.5 text-text-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={() => {
                           if (!detail.private) setShown(previous => { const next = new Set(previous); next.delete(detail.id); return next; });
-                          void save(identity.id, current => ({ details: current.details.map(other => (other.id !== detail.id ? other : withPrivacy(other, !other.private))) }));
+                          // Sets what the button says (not a flip of the stored value), so a double click or a
+                          // stale row can never make a detail public by accident.
+                          const makePrivate = !detail.private;
+                          void save(identity.id, current => ({ details: current.details.map(other => (other.id !== detail.id ? other : withPrivacy(other, makePrivate))) }));
                         }}>{detail.private ? <LockOpen size={13} /> : <Lock size={13} />}</button>
                       <button type="button" aria-label={t('details.remove', { label: named })} className="rounded p-0.5 text-text-muted hover:text-text-primary"
                         onClick={() => { detailButton.current?.focus(); /* The row's button goes away: continue from "Add a detail". */ void save(identity.id, current => ({ details: current.details.filter(other => other.id !== detail.id) })); }}><X size={13} /></button>

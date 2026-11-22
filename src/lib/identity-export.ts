@@ -5,7 +5,7 @@
  */
 import type { Folder, Identity } from '../types';
 import { escapeCSVField } from './ioc-export';
-import { byName, organizationOf, sameText } from './identity-model';
+import { byName, isPrivateLabel, organizationOf, sameText } from './identity-model';
 import { identityMappingFor } from './identity-import';
 
 export const IDENTITY_CSV_COLUMNS = ['Name', 'Type', 'Investigation', 'Status', 'Contact', 'Description', 'Organization', 'Other names'] as const;
@@ -15,6 +15,8 @@ export function identitiesToCsv(identities: readonly Identity[], options: {
   byId: ReadonlyMap<string, Identity>;
   folders: readonly Folder[];
   includePrivate?: boolean;
+  /** Labels private by default in the interface language, as well as in English (for "(public)"). */
+  isPrivateLabel?: (label: string) => boolean;
 }): string {
   const rows = [...identities].filter(identity => !identity.trashed).sort(byName);
   // Organisations and connections name only identities in the file, so importing it never
@@ -29,7 +31,10 @@ export function identitiesToCsv(identities: readonly Identity[], options: {
     if (!columns.some(column => column.private === isPrivate && sameText(column.label) === sameText(detail.label))) columns.push({ label: detail.label.trim(), private: isPrivate });
   }
   // A label that would read as a fixed field on import ("Role", "Type") is marked as a detail.
+  // A public detail whose label is private by default ("Phone" made public) is marked "(public)", so
+  // it imports back public.
   const header = [...IDENTITY_CSV_COLUMNS, ...columns.map(column => (column.private ? `${column.label} (private)`
+    : isPrivateLabel(column.label) || options.isPrivateLabel?.(column.label) ? `${column.label} (public)`
     : identityMappingFor(column.label) === 'identity-detail' ? column.label : `${column.label} (detail)`)), ...TRAILING_COLUMNS];
   const lines = [header.map(escapeCSVField).join(',')];
   for (const identity of rows) {

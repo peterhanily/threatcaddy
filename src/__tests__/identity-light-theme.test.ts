@@ -13,7 +13,8 @@ import chatMessage from '../components/Chat/ChatMessage.tsx?raw';
 // Read from disk: the test runner hands CSS imports over empty.
 const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
 const remapped = new Set([...css.matchAll(/^\.light \.(text-[a-z]+-\d{3})\s*\{/gm)].map(match => match[1]));
-const paletteText = (source: string) => [...new Set([...source.matchAll(/\btext-(?:purple|gray|sky|blue|cyan|green|amber|red|emerald|indigo|pink|orange|yellow|teal|slate)-\d{3}\b/g)].map(match => match[0]))];
+// Any Tailwind palette colour (theme tokens such as text-text-secondary have no shade number).
+const paletteText = (source: string) => [...new Set([...source.matchAll(/\btext-[a-z]+-\d{2,3}\b/g)].map(match => match[0]))];
 
 describe('identity colours in the light theme', () => {
   it('uses only text colours the light theme remaps, in the timeline chips', () => {

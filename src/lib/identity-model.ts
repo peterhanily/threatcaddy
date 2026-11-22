@@ -40,6 +40,8 @@ export const PRIVATE_DETAIL_LABELS = ['phone', 'address', 'personalEmail', 'home
  * words, so "MobilePhone", "home_phone", "telephoneNumber" and "Phone [Optional]" read naturally. */
 export function labelWords(label: string): string[] {
   return label.normalize('NFC')
+    // "IPv4"/"IPv6" are single words, not "I" + "Pv4".
+    .replace(/IPv(?=[46])/g, 'ipv')
     .replace(/([\p{Ll}\p{N}])(\p{Lu})/gu, '$1 $2').replace(/(\p{Lu})(\p{Lu}\p{Ll})/gu, '$1 $2')
     .toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 }
@@ -50,16 +52,24 @@ const PRIVATE_WORDS = new Set([
   'street', 'postcode', 'zip', 'zipcode', 'postal', 'birth', 'birthday', 'birthdate', 'dob',
   'passport', 'ssn', 'nino', 'nhs', 'medicare', 'gender', 'sex', 'ethnicity', 'religion', 'medical', 'health', 'disability', 'salary',
 ]);
-/** "Address" is private unless it is an address of a network or mailbox ("IP address", "Email address"). */
-const PUBLIC_ADDRESS_WORDS = new Set(['email', 'mail', 'e', 'ip', 'ipv4', 'ipv6', 'mac', 'web', 'url', 'wallet', 'bitcoin', 'btc', 'eth', 'crypto', 'server', 'host', 'network', 'ethernet', 'wifi']);
+/** Words that make "address", "mobile", "health" and the like name a mailbox, a network or a system
+ * rather than a person ("Email address", "Sender address", "IPv4 address", "Mobile device ID",
+ * "Health check URL"): such a label stays public. */
+const NOT_PERSONAL_WORDS = new Set([
+  'email', 'mail', 'e', 'smtp', 'proxy', 'sender', 'from', 'reply', 'to', 'cc', 'bcc', 'recipient', 'return', 'sip',
+  'ip', 'ipv4', 'ipv6', 'mac', 'dns', 'gateway', 'broadcast', 'multicast', 'source', 'destination', 'remote', 'local', 'nat',
+  'web', 'url', 'uri', 'wallet', 'bitcoin', 'btc', 'eth', 'crypto', 'server', 'host', 'network', 'ethernet', 'wifi',
+  'device', 'app', 'application', 'os', 'platform', 'check', 'endpoint', 'status', 'monitor', 'tower', 'service',
+]);
 /** Whether a detail label starts out private: by its words in English (from a form, an AI tool or a
  * spreadsheet header such as "MobilePhone" or "Street address"), or as one of `translated` (the
  * interface language's private labels). */
 export function isPrivateLabel(label: string, translated: readonly string[] = []): boolean {
   const words = labelWords(label);
   const has = (...wanted: string[]) => wanted.some(word => words.includes(word));
-  if (words.some(word => PRIVATE_WORDS.has(word))) return true;
-  if (has('address', 'addresses') && !words.some(word => PUBLIC_ADDRESS_WORDS.has(word))) return true;
+  const personal = !words.some(word => NOT_PERSONAL_WORDS.has(word));
+  if (personal && words.some(word => PRIVATE_WORDS.has(word))) return true;
+  if (personal && has('address', 'addresses')) return true;
   if (has('email', 'mail', 'emails') && has('personal', 'private', 'home')) return true;
   if (has('social') && has('security')) return true;
   if (has('national') && has('insurance', 'id', 'identity', 'identification', 'number')) return true;

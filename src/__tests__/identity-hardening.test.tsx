@@ -52,6 +52,17 @@ describe('the detail cap', () => {
   });
 });
 
+describe('the total detail cap', () => {
+  it('stops an identity growing without end through private details', async () => {
+    await seedAIWorkspace();
+    const details = Array.from({ length: 995 }, (_, index) => ({ id: `p${index}`, label: 'Phone', value: `+44 7700 9${String(index).padStart(5, '0')}`, private: true }));
+    await db.identities.add(person('lee', { name: 'Lee Park', details }));
+    expect(await run('update_identity', { id: 'lee', addDetails: [{ label: 'Phone', value: '+1 555 0100' }] })).toMatchObject({ success: true });
+    const many = Array.from({ length: 10 }, (_, index) => ({ label: 'Phone', value: `+1 555 01${index}0` }));
+    expect(await run('update_identity', { id: 'lee', addDetails: many })).toMatchObject({ error: expect.stringMatching(/at most/) });
+  });
+});
+
 describe('hostile text stays fast', () => {
   const evil = 'a@' + '.'.repeat(40_000) + '@';
   it('masks a long hidden value and guesses a long imported name in linear time', () => {

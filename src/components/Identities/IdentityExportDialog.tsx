@@ -27,7 +27,7 @@ export function IdentityExportDialog({ identities, byId, folders, folderId, scre
   const exportFile = () => {
     // A name in a non-Latin script has no ASCII slug: say "investigation" rather than "all".
     const file = `threatcaddy-identities-${scope ? slugify(scope) || 'investigation' : 'all'}-${new Date().toISOString().slice(0, 10)}.csv`;
-    downloadFile(identitiesToCsv(identities, { byId, folders, includePrivate: includePrivate && !screensharing }), file, 'text/csv;charset=utf-8');
+    downloadFile(identitiesToCsv(identities, { byId, folders, includePrivate: includePrivate && !screensharing, isPrivateLabel: labels.privateByDefault }), file, 'text/csv;charset=utf-8');
     onExported(file);
   };
   return (
