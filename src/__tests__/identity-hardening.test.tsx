@@ -55,7 +55,7 @@ describe('the detail cap', () => {
 describe('the total detail cap', () => {
   it('stops an identity growing without end through private details', async () => {
     await seedAIWorkspace();
-    const details = Array.from({ length: 995 }, (_, index) => ({ id: `p${index}`, label: 'Phone', value: `+44 7700 9${String(index).padStart(5, '0')}`, private: true }));
+    const details = Array.from({ length: 395 }, (_, index) => ({ id: `p${index}`, label: 'Phone', value: `+44 7700 9${String(index).padStart(5, '0')}`, private: true }));
     await db.identities.add(person('lee', { name: 'Lee Park', details }));
     expect(await run('update_identity', { id: 'lee', addDetails: [{ label: 'Phone', value: '+1 555 0100' }] })).toMatchObject({ success: true });
     const many = Array.from({ length: 10 }, (_, index) => ({ label: 'Phone', value: `+1 555 01${index}0` }));
@@ -63,28 +63,30 @@ describe('the total detail cap', () => {
   });
 });
 
+// Complexity is checked without tight wall-clock limits (they fail on a busy machine): inputs are
+// large enough that the old quadratic code would take minutes, while the bound is seconds.
 describe('hostile text stays fast', () => {
-  const evil = 'a@' + '.'.repeat(40_000) + '@';
+  const evil = 'a@' + '.'.repeat(400_000) + '@';
   it('masks a long hidden value and guesses a long imported name in linear time', () => {
-    expect(elapsed(() => expect(maskDetail({ label: 'Note', value: evil })).toBe('•••••••'))).toBeLessThan(100);
-    expect(elapsed(() => guessIdentity(evil))).toBeLessThan(100);
+    expect(elapsed(() => expect(maskDetail({ label: 'Note', value: evil })).toBe('•••••••'))).toBeLessThan(3000);
+    expect(elapsed(() => guessIdentity(evil))).toBeLessThan(3000);
     const mappings = new Map<string, ColumnMapping>([['Name', 'identity-name'], ['Other names', 'identity-aliases']]);
-    expect(elapsed(() => buildIdentities([{ Name: evil, 'Other names': '' }], mappings, { folderId: 'S', existing: [] }))).toBeLessThan(150);
+    expect(elapsed(() => buildIdentities([{ Name: evil, 'Other names': '' }], mappings, { folderId: 'S', existing: [] }))).toBeLessThan(3000);
   });
 
   it('refuses a far too long Connections line before splitting it', () => {
     const mappings = new Map<string, ColumnMapping>([['Name', 'identity-name'], ['Connections', 'identity-connections']]);
     let errors: string[] = [];
-    const time = elapsed(() => { errors = buildIdentities([{ Name: 'Dana', Connections: 'x: '.repeat(40_000) }], mappings, { folderId: 'S', existing: [] }).errors; });
-    expect(time).toBeLessThan(150);
+    const time = elapsed(() => { errors = buildIdentities([{ Name: 'Dana', Connections: 'x: '.repeat(400_000) }], mappings, { folderId: 'S', existing: [] }).errors; });
+    expect(time).toBeLessThan(3000);
     expect(errors).toEqual(['Row 2: a connection longer than 400 characters was skipped.']);
   });
 
-  it('stops scanning a crafted note for mentions after a bounded number of candidates', () => {
+  it('stops scanning a crafted note for mentions once its work budget is spent', () => {
     const name = 'a' + 'b c '.repeat(25).slice(0, 99);
     const folder = buildIdentityIndex([person('x', { name })]).folders.get('S');
-    expect(elapsed(() => findMentions(' @ab c'.repeat(100_000), folder))).toBeLessThan(400);
-    // Ordinary text still links.
+    // A real mention after a crafted run that spends the budget is not looked for; on its own it is found.
+    expect(findMentions(`${' @ab c'.repeat(100_000)} @${name} `, folder)).toEqual([]);
     expect(findMentions(`Spoke to @${name} today`, folder)).toHaveLength(1);
   });
 });

@@ -46,36 +46,57 @@ export function labelWords(label: string): string[] {
     .toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 }
 /** Any one of these words makes a label private: phones, street addresses, birth dates, government
- * numbers and special categories of personal data. */
+ * numbers and special categories of personal data, in English and the main European languages
+ * (accents ignored: "Teléfono", "Dirección", "Geburtsdatum"). */
 const PRIVATE_WORDS = new Set([
-  'phone', 'phones', 'telephone', 'tel', 'mobile', 'cell', 'cellphone', 'fax', 'sms', 'whatsapp',
-  'street', 'postcode', 'zip', 'zipcode', 'postal', 'birth', 'birthday', 'birthdate', 'dob',
-  'passport', 'ssn', 'nino', 'nhs', 'medicare', 'gender', 'sex', 'ethnicity', 'religion', 'medical', 'health', 'disability', 'salary',
+  'phone', 'phones', 'telephone', 'tel', 'mobile', 'cell', 'cellphone', 'fax', 'sms', 'whatsapp', 'pager', 'landline',
+  'street', 'postcode', 'zip', 'zipcode', 'postal', 'pobox', 'birth', 'birthday', 'birthdate', 'dob',
+  'passport', 'ssn', 'nino', 'nhs', 'medicare', 'aadhaar', 'pps', 'dni', 'nie', 'cpf', 'bsn', 'nir', 'nss',
+  'gender', 'sex', 'ethnicity', 'religion', 'medical', 'health', 'disability', 'salary',
+  // German, Spanish, French, Italian, Portuguese and Dutch
+  'telefon', 'telefonnummer', 'handy', 'handynummer', 'mobil', 'mobilnummer', 'mobiltelefon', 'adresse', 'anschrift', 'geburtsdatum',
+  'geburtstag', 'postleitzahl', 'plz', 'strasse', 'ausweis', 'ausweisnummer', 'steuernummer', 'sozialversicherungsnummer', 'reisepass',
+  'telefono', 'movil', 'celular', 'direccion', 'domicilio', 'calle', 'nacimiento', 'pasaporte',
+  'domicile', 'naissance', 'passeport', 'cellulare', 'indirizzo', 'nascita', 'passaporto', 'residenza',
+  'telefone', 'endereco', 'morada', 'nascimento', 'passaporte', 'telefoon', 'telefoonnummer', 'mobiel', 'adres', 'woonadres',
+  'geboortedatum', 'paspoort',
 ]);
-/** Words that make "address", "mobile", "health" and the like name a mailbox, a network or a system
- * rather than a person ("Email address", "Sender address", "IPv4 address", "Mobile device ID",
- * "Health check URL"): such a label stays public. */
+/** Words that make "address", "mobile", "health" and the like name a mailbox, a network, a system or
+ * attacker infrastructure rather than a person ("Email address", "Sender address", "IPv4 address",
+ * "C2 address", "Mobile device ID", "Phone model", "Health check URL"): such a label stays public. */
 const NOT_PERSONAL_WORDS = new Set([
   'email', 'mail', 'e', 'smtp', 'proxy', 'sender', 'from', 'reply', 'to', 'cc', 'bcc', 'recipient', 'return', 'sip',
+  'correo', 'courriel', 'elettronica', 'electronica', 'electronico', 'eletronico',
   'ip', 'ipv4', 'ipv6', 'mac', 'dns', 'gateway', 'broadcast', 'multicast', 'source', 'destination', 'remote', 'local', 'nat',
   'web', 'url', 'uri', 'wallet', 'bitcoin', 'btc', 'eth', 'crypto', 'server', 'host', 'network', 'ethernet', 'wifi',
-  'device', 'app', 'application', 'os', 'platform', 'check', 'endpoint', 'status', 'monitor', 'tower', 'service',
+  'c2', 'callback', 'beacon', 'listener', 'implant', 'payload',
+  'device', 'app', 'application', 'os', 'platform', 'model', 'brand', 'check', 'endpoint', 'status', 'monitor', 'tower', 'service',
 ]);
-/** Whether a detail label starts out private: by its words in English (from a form, an AI tool or a
- * spreadsheet header such as "MobilePhone" or "Street address"), or as one of `translated` (the
- * interface language's private labels). */
+/** Whether a detail label starts out private: by its words (from a form, an AI tool or a spreadsheet
+ * header such as "MobilePhone", "Street address" or "Telefonnummer"), or as one of `translated`
+ * (the interface language's private labels). */
 export function isPrivateLabel(label: string, translated: readonly string[] = []): boolean {
-  const words = labelWords(label);
+  const words = labelWords(label).map(word => word.normalize('NFKD').replace(/\p{M}/gu, ''));
   const has = (...wanted: string[]) => wanted.some(word => words.includes(word));
   const personal = !words.some(word => NOT_PERSONAL_WORDS.has(word));
   if (personal && words.some(word => PRIVATE_WORDS.has(word))) return true;
   if (personal && has('address', 'addresses')) return true;
+  if (words.join('') === 'dob') return true; // "D.O.B."
+  if (has('post') && has('code', 'box')) return true;
+  if (has('po') && has('box')) return true;
+  if (has('contact') && has('number', 'no')) return true;
   if (has('email', 'mail', 'emails') && has('personal', 'private', 'home')) return true;
-  if (has('social') && has('security')) return true;
-  if (has('national') && has('insurance', 'id', 'identity', 'identification', 'number')) return true;
+  if (has('social') && has('security', 'insurance')) return true;
+  if (has('national', 'government') && has('insurance', 'id', 'identity', 'identification', 'number')) return true;
+  if (has('ni') && has('number', 'no')) return true;
+  if (has('sin') && (words.length === 1 || has('number', 'no'))) return true;
+  if (has('identity', 'id') && has('card', 'document')) return true;
+  if (has('identity') && has('number')) return true;
+  if (has('personal') && has('id', 'number', 'code', 'identity')) return true;
   if (has('tax') && has('id', 'number', 'code', 'file')) return true;
+  if (has('codice') && has('fiscale')) return true;
+  if (has('visa') && has('number', 'no')) return true;
   if (has('driver', 'drivers', 'driving') && has('license', 'licence')) return true;
-  if (has('id') && has('card')) return true;
   if (has('kin') || (has('emergency') && has('contact'))) return true;
   const key = sameText(label);
   return translated.some(text => sameText(text) === key);

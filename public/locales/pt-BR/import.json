@@ -35,7 +35,7 @@
   "identities.noOrganization": "Não registrado",
   "identities.privateColumn": "Privado",
   "identities.privateColumnAria": "Importar {{column}} como detalhe privado",
-  "identities.privateHint": "Colunas de detalhe marcadas como Privado são importadas como detalhes privados, que ficam ocultos até você clicar em Mostrar, nunca são enviados para a IA e ficam fora das exportações, da nota de resumo desta importação e dos eventos dela. Colunas de telefone, endereço, data de nascimento e número de identificação já começam marcadas.",
+  "identities.privateHint": "Colunas de detalhe marcadas como Privado são importadas como detalhes privados, que ficam ocultos até você clicar em Mostrar e durante o compartilhamento de tela, nunca são enviados para a IA e ficam fora da exportação CSV de Identidades (a menos que você opte por incluí-los), da nota de resumo desta importação e dos eventos dela. Colunas de números de telefone, endereços postais, datas de nascimento, passaportes e números de identificação nacional já começam marcadas; verifique as demais.",
   "identities.result": "Identidades",
   "identities.updated_one": "{{count}} atualizada",
   "identities.updated_many": "{{count}} atualizadas",

@@ -35,7 +35,7 @@
   "identities.noOrganization": "Belirtilmedi",
   "identities.privateColumn": "Özel",
   "identities.privateColumnAria": "{{column}} sütununu özel ayrıntı olarak içe aktar",
-  "identities.privateHint": "“Özel” işaretli ayrıntı sütunları özel ayrıntı olarak içe aktarılır: “Göster” düğmesine tıklanana kadar gizli kalır, asla yapay zekâya gönderilmez ve dışa aktarmalara, bu içe aktarmanın özet notuna ve olaylarına dahil edilmez. Telefon, adres, doğum tarihi ve kimlik numarası sütunları başlangıçta işaretlidir.",
+  "identities.privateHint": "“Özel” işaretli ayrıntı sütunları özel ayrıntı olarak içe aktarılır: “Göster” düğmesine tıklanana kadar ve ekran paylaşımı sırasında gizli kalır, asla yapay zekâya gönderilmez ve kimliklerin CSV dışa aktarımına (dahil etmeyi seçmediğiniz sürece), bu içe aktarmanın özet notuna ve olaylarına dahil edilmez. Telefon numarası, açık adres, doğum tarihi, pasaport ve ulusal kimlik numarası sütunları başlangıçta işaretlidir; diğerlerini kontrol edin.",
   "identities.result": "Kimlikler",
   "identities.updated_one": "{{count}} güncellendi",
   "identities.updated_other": "{{count}} güncellendi"

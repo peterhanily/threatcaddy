@@ -35,7 +35,7 @@
   "identities.noOrganization": "Not recorded",
   "identities.privateColumn": "Private",
   "identities.privateColumnAria": "Import {{column}} as a private detail",
-  "identities.privateHint": "Detail columns ticked Private import as private details: hidden until Show, never sent to AI, and left out of exports, this import's summary note and its events. Phone, address, birth date and ID number columns start ticked.",
+  "identities.privateHint": "Detail columns ticked Private import as private details: hidden until Show and while screensharing, never sent to AI, and left out of the Identities CSV export unless chosen, this import's summary note and its events. Columns for phone numbers, street addresses, dates of birth, passports and national ID numbers start ticked; check the others.",
   "identities.result": "Identities",
   "identities.updated_one": "{{count}} updated",
   "identities.updated_other": "{{count}} updated"

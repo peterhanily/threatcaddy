@@ -35,7 +35,7 @@
   "identities.noOrganization": "Nicht erfasst",
   "identities.privateColumn": "Privat",
   "identities.privateColumnAria": "{{column}} als privates Detail importieren",
-  "identities.privateHint": "Detailspalten mit Häkchen bei „Privat“ werden als private Details importiert: ausgeblendet, bis Sie auf „Anzeigen“ klicken, nie an die KI gesendet und nicht in Exporten, der Zusammenfassungsnotiz dieses Imports oder seinen Ereignissen enthalten. Spalten für Telefon, Adresse, Geburtsdatum und Ausweisnummer sind anfangs angehakt.",
+  "identities.privateHint": "Detailspalten mit Häkchen bei „Privat“ werden als private Details importiert: ausgeblendet, bis Sie auf „Anzeigen“ klicken, und während der Bildschirmfreigabe, nie an die KI gesendet und nicht im CSV-Export der Identitäten (sofern Sie sie nicht einschließen), der Zusammenfassungsnotiz dieses Imports oder seinen Ereignissen enthalten. Spalten für Telefonnummern, Postanschriften, Geburtsdaten, Reisepässe und nationale Ausweisnummern sind anfangs angehakt; prüfen Sie die übrigen.",
   "identities.result": "Identitäten",
   "identities.updated_one": "{{count}} aktualisiert",
   "identities.updated_other": "{{count}} aktualisiert"

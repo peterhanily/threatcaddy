@@ -35,7 +35,7 @@
   "identities.noOrganization": "未記録",
   "identities.privateColumn": "非公開",
   "identities.privateColumnAria": "{{column}} を非公開の詳細としてインポート",
-  "identities.privateHint": "「非公開」にチェックを入れた詳細列は、非公開の詳細としてインポートされます。「表示」をクリックするまで隠され、AI に送信されることはなく、エクスポート、このインポートのサマリーノート、およびそのイベントには含まれません。電話、住所、生年月日、ID 番号の列は最初からチェックが入っています。",
+  "identities.privateHint": "「非公開」にチェックを入れた詳細列は、非公開の詳細としてインポートされます。「表示」をクリックするまで、また画面共有中は隠され、AI に送信されることはなく、アイデンティティの CSV エクスポート（含めることを選んだ場合を除く）、このインポートのサマリーノート、およびそのイベントには含まれません。電話番号、住所、生年月日、パスポート、国民 ID 番号の列は最初からチェックが入っています。その他の列はご自身で確認してください。",
   "identities.result": "アイデンティティ",
   "identities.updated_one": "{{count}} 件を更新",
   "identities.updated_other": "{{count}} 件を更新"

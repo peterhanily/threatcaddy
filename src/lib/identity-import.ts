@@ -185,7 +185,10 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
       const label = value(withoutSuffix(withoutSuffix(column)));
       const isPrivate = options.privateColumns ? options.privateColumns.has(column) : isPrivateDetailColumn(column, options.isPrivateLabel);
       for (const detail of lines(row[column])) {
-        if (identity.details.some(known => sameText(known.label) === sameText(label) && detailKey(known.value) === detailKey(detail))) continue;
+        const known = identity.details.findIndex(other => sameText(other.label) === sameText(label) && detailKey(other.value) === detailKey(detail));
+        // Already held: a column imported as private makes it private (never the reverse: import only
+        // fills in, and making something public is a person's choice on the profile).
+        if (known >= 0) { if (isPrivate && !identity.details[known].private) identity.details[known] = { ...identity.details[known], private: true }; continue; }
         identity.details.push({ id: nanoid(), label, value: detail, ...(isPrivate ? { private: true } : {}) });
       }
     }

@@ -5,10 +5,12 @@ import { cn } from '../../lib/utils';
 import { useIdentityLinks } from './identity-links';
 
 const TONES = {
-  // Colours the light theme remaps (index.css) or theme tokens, so chips stay readable in both themes;
-  // a linked chip is told apart by its icon and weight, not by a paler colour.
-  actor: { plain: 'bg-purple-500/15 text-purple-400', linked: 'bg-purple-500/15 text-purple-400 font-medium', notYet: 'border-purple-400/60 text-purple-400' },
-  asset: { plain: 'bg-bg-raised text-text-secondary', linked: 'bg-bg-raised text-text-primary font-medium', notYet: 'border-border-medium text-text-secondary' },
+  // Colours the light theme remaps to dark ones (index.css) or theme tokens, so chips stay readable in
+  // both themes; a linked chip is told apart by its icon and weight. A not-yet chip's dashed outline
+  // is drawn in its text colour, so it stands out (WCAG 1.4.11). Asset pills use the hover tone,
+  // which differs from the card's own background.
+  actor: { plain: 'bg-purple-500/15 text-purple-300', linked: 'bg-purple-500/15 text-purple-300 font-medium', notYet: 'border-current text-purple-300' },
+  asset: { plain: 'bg-bg-hover text-text-secondary', linked: 'bg-bg-hover text-text-primary font-medium', notYet: 'border-current text-text-secondary' },
 } as const;
 
 /**

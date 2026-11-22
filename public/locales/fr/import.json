@@ -35,7 +35,7 @@
   "identities.noOrganization": "Non renseigné",
   "identities.privateColumn": "Privé",
   "identities.privateColumnAria": "Importer {{column}} comme détail privé",
-  "identities.privateHint": "Les colonnes de détail cochées Privé sont importées comme détails privés : masqués jusqu'à ce que vous cliquiez sur Afficher, jamais envoyés à l'IA, et exclus des exports, de la note de synthèse de cette importation et de ses événements. Les colonnes de téléphone, d'adresse, de date de naissance et de numéro d'identité sont cochées au départ.",
+  "identities.privateHint": "Les colonnes de détail cochées Privé sont importées comme détails privés : masqués jusqu'à ce que vous cliquiez sur Afficher et pendant le partage d'écran, jamais envoyés à l'IA, et exclus de l'export CSV des Identités (sauf si vous choisissez de les inclure), de la note de synthèse de cette importation et de ses événements. Les colonnes de numéros de téléphone, d'adresses postales, de dates de naissance, de passeports et de numéros d'identité nationaux sont cochées au départ ; vérifiez les autres.",
   "identities.result": "Identités",
   "identities.updated_one": "{{count}} mise à jour",
   "identities.updated_many": "{{count}} mises à jour",

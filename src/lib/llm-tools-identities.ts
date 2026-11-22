@@ -24,7 +24,7 @@ const MAX_ITEMS = 30;
  * cannot grow one without end. The total only binds after hundreds of private details, so it says
  * nothing about any private value. */
 const MAX_DETAILS = 200;
-const MAX_TOTAL_DETAILS = 1000;
+const MAX_TOTAL_DETAILS = 400;
 
 /** Plain text: control characters and runs of spaces become one space, bounded. Never HTML-parsed,
  * so "Smith <john@x.com>" and "R&D" stay as written (React escapes them when shown). */

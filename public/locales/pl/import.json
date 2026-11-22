@@ -35,7 +35,7 @@
   "identities.noOrganization": "Nie podano",
   "identities.privateColumn": "Prywatne",
   "identities.privateColumnAria": "Importuj {{column}} jako prywatny szczegół",
-  "identities.privateHint": "Kolumny szczegółów z zaznaczonym polem Prywatne są importowane jako prywatne szczegóły: ukryte, dopóki nie klikniesz Pokaż, nigdy niewysyłane do AI i pomijane w eksportach, notatce podsumowującej tego importu oraz jego zdarzeniach. Kolumny telefonu, adresu, daty urodzenia i numeru identyfikacyjnego są na początku zaznaczone.",
+  "identities.privateHint": "Kolumny szczegółów z zaznaczonym polem Prywatne są importowane jako prywatne szczegóły: ukryte, dopóki nie klikniesz Pokaż, oraz podczas udostępniania ekranu, nigdy niewysyłane do AI i pomijane w eksporcie CSV z Tożsamości (chyba że zdecydujesz się je uwzględnić), notatce podsumowującej tego importu oraz jego zdarzeniach. Kolumny numerów telefonów, adresów pocztowych, dat urodzenia, paszportów i krajowych numerów identyfikacyjnych są na początku zaznaczone; sprawdź pozostałe.",
   "identities.result": "Tożsamości",
   "identities.updated_one": "Zaktualizowano: {{count}}",
   "identities.updated_few": "Zaktualizowano: {{count}}",

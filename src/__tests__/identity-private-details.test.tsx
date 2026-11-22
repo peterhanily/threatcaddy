@@ -25,6 +25,12 @@ describe('the private-label rule', () => {
       'Personal mobile', 'Work phone', 'Street address', 'Passport number', 'National Insurance number', 'Social Security Number', 'SSN',
       'Date of birth', 'DOB', 'Birthday', 'Home address', 'Personal email', 'private e-mail', 'Tax ID', "Driver's licence", 'ID card number',
       'Next of kin', 'Emergency contact', 'Phone', 'Address', 'Fax', 'ZIP code', 'Gender', 'Medical notes',
+      // More real headers: UK and AD addresses, phones, government numbers
+      'Post Code', 'PostCode', 'POBox', 'postOfficeBox', 'Contact number', 'Landline', 'Pager', 'D.O.B.', 'NI Number', 'Social Insurance Number', 'SIN',
+      'Government ID', 'Identity card number', 'Personal ID number', 'PPS number', 'Aadhaar', 'Visa number',
+      // German, Spanish, French, Italian, Portuguese and Dutch
+      'Telefon', 'Telefonnummer', 'Handynummer', 'Adresse', 'Geburtsdatum', 'Teléfono', 'Dirección', 'Fecha de nacimiento', 'Date de naissance',
+      'Indirizzo', 'Codice fiscale', 'Endereço', 'Geboortedatum',
     ];
     for (const label of privateLabels) expect(isPrivateLabel(label), label).toBe(true);
   });
@@ -35,13 +41,16 @@ describe('the private-label rule', () => {
       'Intel source', 'Bitcoin address', 'HomeDirectory',
       // Mailbox, network and system identifiers (from Exchange, AD, EDR and mail headers)
       'IPv4 address', 'IPv4Address', 'IPv6Address', 'PrimarySmtpAddress', 'proxyAddresses', 'Sender address', 'From address', 'Reply-to address',
-      'Source address', 'Remote address', 'SIP address', 'DNS address', 'Mobile device ID', 'Health check URL'];
+      'Source address', 'Remote address', 'SIP address', 'DNS address', 'Mobile device ID', 'Health check URL',
+      'RecipientAddress', 'C2 address', 'Callback address', 'Gateway address', 'Health Status', 'Phone model',
+      'E-Mail-Adresse', 'Adresse IP', 'Dirección IP', 'Dirección de correo', 'Indirizzo email', 'E-mailadres'];
     for (const label of publicLabels) expect(isPrivateLabel(label), label).toBe(false);
   });
 
   it('also follows the interface language, as before', () => {
-    expect(isPrivateLabel('Telefon', ['Telefon'])).toBe(true);
-    expect(isPrivateLabel('Telefon')).toBe(false);
+    // Finnish is not in the built-in word list; the interface language's own label still counts.
+    expect(isPrivateLabel('Puhelin', ['Puhelin'])).toBe(true);
+    expect(isPrivateLabel('Puhelin')).toBe(false);
   });
 });
 
@@ -72,6 +81,30 @@ describe('importing a directory export', () => {
     const dana = created.find(identity => identity.name === 'Dana Okafor');
     expect(dana?.details.filter(detail => detail.private).map(detail => detail.label)).toEqual(['EmailAddress', 'HomePhone']);
     expect(isPrivateDetailColumn('MobilePhone')).toBe(true);
+  });
+
+  it('makes a value already held private when its column is imported as private, and never the reverse', () => {
+    const existing = buildIdentities(parsed.rows, mappings, { folderId: 'case', existing: [], privateColumns: new Set() }).created;
+    const dana = existing.find(identity => identity.name === 'Dana Okafor');
+    expect(dana?.details.find(detail => detail.label === 'MobilePhone')?.private).toBeUndefined();
+    const again = buildIdentities(parsed.rows, mappings, { folderId: 'case', existing, privateColumns: new Set(['MobilePhone']) });
+    expect(again.updated.map(update => update.id)).toEqual([dana?.id]);
+    expect(again.updated[0].changes.details?.find(detail => detail.label === 'MobilePhone')?.private).toBe(true);
+    // Never the reverse: a column not ticked leaves a private value private.
+    const allPrivate = existing.map(identity => (identity === dana ? { ...identity, details: identity.details.map(detail => ({ ...detail, private: true })) } : identity));
+    expect(buildIdentities(parsed.rows, mappings, { folderId: 'case', existing: allPrivate, privateColumns: new Set() }).updated).toEqual([]);
+  });
+
+  it('keeps a column ticked Private out of the summary note and the events, even one no rule would call private', () => {
+    const rows = [{ Timestamp: '2026-11-01T10:00:00Z', Name: 'Dana Okafor', 'Badge notes': 'Escorted visitor 4471', Event: 'Door opened' }];
+    const columnMappings = new Map<string, ColumnMapping>([['Timestamp', 'timestamp'], ['Name', 'identity-name'], ['Badge notes', 'identity-detail'], ['Event', 'event-title']]);
+    const ticked = new Set(['Badge notes']);
+    const result = { eventsCreated: 0, iocsExtracted: 0, errors: [] } as unknown as ImportResult;
+    const parseResult = { headers: Object.keys(rows[0]), rows, format: 'csv', totalRowCount: 1, truncated: false } as unknown as Parameters<typeof buildSummaryNote>[0];
+    expect(buildSummaryNote(parseResult, columnMappings, result, 'case', undefined, ticked).content).not.toContain('4471');
+    expect(buildSummaryNote(parseResult, columnMappings, result, 'case').content).toContain('4471');
+    expect(buildTimelineEvents(rows, columnMappings, 'timeline', 'case', ticked).events[0].rawData).not.toContain('4471');
+    expect(buildTimelineEvents(rows, columnMappings, 'timeline', 'case').events[0].rawData).toContain('4471');
   });
 
   it('keeps private columns out of the summary note and out of the events\' raw data', () => {

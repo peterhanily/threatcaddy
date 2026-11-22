@@ -93,6 +93,9 @@
 .light .text-emerald-400 { color: #064e3b; }
 .light .text-red-400 { color: #b91c1c; }
 .light .text-purple-400 { color: #6b21a8; }
+/* Pale purple and sky (identity chips, chat sources) need dark remaps to stay readable on light backgrounds. */
+.light .text-purple-300 { color: #581c87; }
+.light .text-sky-400 { color: #0c4a6e; }
 .light .text-cyan-400 { color: #0e7490; }
 /* Amber 100-500 is 1.06-2.04:1 on light surfaces; #78350f (the light
    --color-accent-amber) is 4.8:1 or more on every scheme's light page, panel
