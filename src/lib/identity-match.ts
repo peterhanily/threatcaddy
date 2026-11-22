@@ -137,6 +137,17 @@ export function belongsTo(index: IdentityIndex, ioc: Pick<StandaloneIOC, 'folder
 
 /** A letter, digit or combining mark: accents written as separate marks (NFD text) and the vowel
  * signs of Hindi or Thai belong to the word, so "@José" is not "@Jose" plus a mark. */
+/**
+ * How reports group text that may name an identity (an event's Actor, an IOC's attribution): by
+ * the identity when the text names exactly one, otherwise by the text as written. Ambiguous text
+ * is not merged, because a person has not decided which identity it is.
+ */
+export function reportGroup(link: TextLink | undefined, text: string): { key: string; label: string; identity?: Identity } {
+  return link?.state === 'linked' && link.others === 0
+    ? { key: `identity:${link.identity.id}`, label: link.identity.name, identity: link.identity }
+    : { key: `text:${text}`, label: text };
+}
+
 const WORD = /[\p{L}\p{M}\p{N}_]/u;
 /** Where an `@` can start a mention: at the start, or after a space, an opening bracket or a quote. */
 export const MENTION_START = /[\s([{"'“‘«]/;

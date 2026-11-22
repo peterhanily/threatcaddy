@@ -34,6 +34,7 @@
   },
   "import": {
     "dataImported": "تم استيراد {{events}} حدث و{{iocs}} IOCs",
+    "identitiesImported": "الهويات: تمت إضافة {{created}} وتحديث {{updated}}",
     "jsonImported": "تم استيراد {{notes}} ملاحظة، {{tasks}} مهمة",
     "markdownImported": "تم استيراد {{count}} ملاحظة من Markdown",
     "importFailed": "فشل الاستيراد",

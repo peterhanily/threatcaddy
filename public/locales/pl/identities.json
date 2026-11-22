@@ -4,6 +4,7 @@
   "header.descAll": "Osoby, organizacje, systemy i konta we wszystkich dochodzeniach.",
   "header.add": "Dodaj",
   "header.addBlocked": "Najpierw utwórz dochodzenie.",
+  "header.export": "Eksportuj",
   "readOnly.remote": "To dochodzenie zespołowe jest wyświetlane z serwera i nie można go tu edytować. Pobierz kopię lokalną, aby edytować jego tożsamości.",
 
   "tabs.label": "Widoki tożsamości",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "Opisz powiązanie, na przykład pracuje w.",
   "connectionForm.errorTarget": "Wybierz, z kim lub z czym jest powiązanie.",
   "connectionForm.noOthers": "Najpierw dodaj do tego dochodzenia inną tożsamość.",
+  "graphConnect.title": "Połącz {{from}} i {{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "Osoby ({{count}})",
   "people.openChart": "Otwórz schemat organizacyjny",
@@ -164,6 +167,16 @@
   "permanentDelete.title": "Trwale usunąć {{name}}?",
   "permanentDelete.message": "Tej operacji nie można cofnąć. Powiązania innych tożsamości z nią też zostaną usunięte.",
   "permanentDelete.confirm": "Usuń trwale",
+  "export.title": "Eksportuj tożsamości",
+  "export.summary_one": "{{count}} tożsamość ({{scope}}).",
+  "export.summary_few": "{{count}} tożsamości ({{scope}}).",
+  "export.summary_many": "{{count}} tożsamości ({{scope}}).",
+  "export.summary_other": "{{count}} tożsamości ({{scope}}).",
+  "export.allInvestigations": "wszystkie dochodzenia",
+  "export.csvHint": "Arkusz kalkulacyjny (CSV) z jednym wierszem na tożsamość i jedną kolumną na szczegół. Można go ponownie zaimportować w oknie Import danych.",
+  "export.includePrivate": "Uwzględnij prywatne szczegóły",
+  "export.privateHint": "Prywatne szczegóły są w ThreatCaddy ukryte, dopóki nie klikniesz Pokaż. Każdy, kto ma plik, może je przeczytać.",
+  "export.button": "Eksportuj",
 
   "found.heading": "Nie ma jeszcze w Tożsamościach",
   "found.dialogTitle": "„{{text}}”",
@@ -198,5 +211,6 @@
   "toast.ignored": "„{{text}}” będzie ignorowane na tym urządzeniu.",
   "toast.merged": "Scalono {{gone}} z {{keep}}.",
   "toast.trashed": "Przeniesiono {{name}} do kosza.",
+  "toast.exported": "Wyeksportowano {{file}}.",
   "toast.failed": "Nie udało się zapisać: {{error}}"
 }

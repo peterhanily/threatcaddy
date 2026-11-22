@@ -4,6 +4,7 @@
   "header.descAll": "Las personas, organizaciones, sistemas y cuentas de todas las investigaciones.",
   "header.add": "Agregar",
   "header.addBlocked": "Cree primero una investigación.",
+  "header.export": "Exportar",
   "readOnly.remote": "Esta investigación de equipo se muestra desde el servidor y no se puede editar aquí. Descargue una copia local para editar sus identidades.",
 
   "tabs.label": "Vistas de identidades",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "Describa la relación, por ejemplo «trabaja en».",
   "connectionForm.errorTarget": "Elija con quién o con qué se relaciona.",
   "connectionForm.noOthers": "Agregue primero otra identidad a esta investigación.",
+  "graphConnect.title": "Relacionar {{from}} y {{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "Personas ({{count}})",
   "people.openChart": "Abrir el organigrama",
@@ -164,6 +167,15 @@
   "permanentDelete.title": "¿Eliminar {{name}} definitivamente?",
   "permanentDelete.message": "Esta acción no se puede deshacer. También se eliminan las relaciones de otras identidades con ella.",
   "permanentDelete.confirm": "Eliminar definitivamente",
+  "export.title": "Exportar identidades",
+  "export.summary_one": "{{count}} identidad de {{scope}}.",
+  "export.summary_many": "{{count}} identidades de {{scope}}.",
+  "export.summary_other": "{{count}} identidades de {{scope}}.",
+  "export.allInvestigations": "todas las investigaciones",
+  "export.csvHint": "Una hoja de cálculo (CSV) con una fila por identidad y una columna por detalle. Se puede volver a importar desde Importar datos.",
+  "export.includePrivate": "Incluir detalles privados",
+  "export.privateHint": "Los detalles privados permanecen ocultos en ThreatCaddy hasta que haga clic en Mostrar. Cualquiera que tenga el archivo puede leerlos.",
+  "export.button": "Exportar",
 
   "found.heading": "Aún no están en Identidades",
   "found.dialogTitle": "«{{text}}»",
@@ -198,5 +210,6 @@
   "toast.ignored": "«{{text}}» se ignora en este dispositivo.",
   "toast.merged": "Se fusionó {{gone}} con {{keep}}.",
   "toast.trashed": "Se movió {{name}} a la papelera.",
+  "toast.exported": "Se exportó {{file}}.",
   "toast.failed": "No se pudo guardar: {{error}}"
 }

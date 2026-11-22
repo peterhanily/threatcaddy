@@ -30,6 +30,7 @@
   },
   "import": {
     "dataImported": "Đã nhập {{events}} sự kiện và {{iocs}} IOC",
+    "identitiesImported": "Danh tính: đã thêm {{created}}, đã cập nhật {{updated}}",
     "jsonImported": "Đã nhập {{notes}} ghi chú, {{tasks}} nhiệm vụ",
     "markdownImported": "Đã nhập {{count}} ghi chú từ Markdown",
     "importFailed": "Nhập thất bại",

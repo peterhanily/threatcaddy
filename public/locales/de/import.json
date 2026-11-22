@@ -27,5 +27,13 @@
   "summaryNote": "Zusammenfassungsnotiz",
   "errorCount": "{{count}} Fehler:",
   "andMore": "... und {{count}} weitere",
-  "done": "Fertig"
+  "done": "Fertig",
+  "identities.create": "Identitäten erstellen oder aktualisieren",
+  "identities.noName": "(keine Namensspalte zugeordnet)",
+  "identities.needsInvestigation": "(Untersuchung auswählen)",
+  "identities.organization": "Arbeitet bei, für Zeilen ohne Organisation",
+  "identities.noOrganization": "Nicht erfasst",
+  "identities.result": "Identitäten",
+  "identities.updated_one": "{{count}} aktualisiert",
+  "identities.updated_other": "{{count}} aktualisiert"
 }

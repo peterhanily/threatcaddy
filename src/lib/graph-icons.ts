@@ -132,17 +132,47 @@ const IOC_ICON_MAP: Record<IOCType, (c: string) => string> = {
   'file-path': svgFilePath,
 };
 
+// Person: head and shoulders
+function svgPerson(c: string): string {
+  const l = lighten(c, 0.5);
+  return `${H(c)}<circle cx="8" cy="5" r="3.2" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.6"/><path d="M2.5 15c0-3.2 2.5-5.5 5.5-5.5s5.5 2.3 5.5 5.5" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>${E}`;
+}
+
+// Organization: building with windows
+function svgOrganization(c: string): string {
+  const l = lighten(c, 0.5);
+  return `${H(c)}<rect x="2.5" y="2" width="11" height="13" rx="1" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.5"/><rect x="5" y="4.5" width="2" height="2" fill="${c}"/><rect x="9" y="4.5" width="2" height="2" fill="${c}"/><rect x="5" y="8" width="2" height="2" fill="${c}"/><rect x="9" y="8" width="2" height="2" fill="${c}"/><rect x="7" y="11.5" width="2" height="3.5" fill="${c}"/>${E}`;
+}
+
+// System: server stack
+function svgSystem(c: string): string {
+  const l = lighten(c, 0.5);
+  return `${H(c)}<rect x="2" y="2" width="12" height="5" rx="1" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.5"/><rect x="2" y="9" width="12" height="5" rx="1" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.5"/><circle cx="5" cy="4.5" r="0.9" fill="${c}"/><circle cx="5" cy="11.5" r="0.9" fill="${c}"/>${E}`;
+}
+
+// Account: key
+function svgAccount(c: string): string {
+  const l = lighten(c, 0.5);
+  return `${H(c)}<circle cx="5.5" cy="8" r="3.5" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.6"/><line x1="9" y1="8" x2="15" y2="8" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/><line x1="12.5" y1="8" x2="12.5" y2="11" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/>${E}`;
+}
+
+const IDENTITY_ICON_MAP: Record<string, (c: string) => string> = {
+  person: svgPerson, organization: svgOrganization, system: svgSystem, account: svgAccount,
+};
+
 const cache = new Map<string, string>();
 
 /**
  * Returns a data URI for an SVG icon matching the given entity type and color.
  */
 export function getNodeIcon(
-  type: 'ioc' | 'note' | 'task' | 'timeline-event',
+  type: 'ioc' | 'note' | 'task' | 'timeline-event' | 'identity',
   color: string,
   iocType?: IOCType,
+  /** For an identity: its type (person, organization, system, account, or another word). */
+  identityType?: string,
 ): string {
-  const key = `${type}:${iocType ?? ''}:${color}`;
+  const key = `${type}:${iocType ?? identityType ?? ''}:${color}`;
   const cached = cache.get(key);
   if (cached) return cached;
 
@@ -162,6 +192,9 @@ export function getNodeIcon(
     case 'timeline-event':
       svg = svgTimelineEvent(color);
       break;
+    case 'identity':
+      svg = (IDENTITY_ICON_MAP[identityType ?? ''] ?? svgPerson)(color);
+      break;
   }
 
   const uri = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
@@ -170,7 +203,7 @@ export function getNodeIcon(
 }
 
 export interface LegendEntry {
-  type: 'note' | 'task' | 'timeline-event' | 'ioc';
+  type: 'note' | 'task' | 'timeline-event' | 'ioc' | 'identity';
   iocType?: IOCType;
   label: string;
   color: string;

@@ -1,5 +1,5 @@
 import { marked } from 'marked';
-import type { EvidenceItem, Folder, Note, NoteTemplate, StandaloneIOC, Task, TimelineEvent } from '../types';
+import type { EvidenceItem, Folder, Identity, Note, NoteTemplate, StandaloneIOC, Task, TimelineEvent } from '../types';
 import { DEFAULT_CLS_LEVELS } from '../types';
 
 export const PRODUCT_COMPOSER_LIMITS = {
@@ -33,6 +33,8 @@ export interface ProductComposerSnapshot {
   timelineEvents: readonly TimelineEvent[];
   iocs: readonly StandaloneIOC[];
   evidence: readonly EvidenceItem[];
+  /** Staged without private details; their classification counts like any other source's. */
+  identities: readonly Identity[];
 }
 export interface ProductComposerSection {
   id: string;
@@ -48,7 +50,7 @@ export interface ProductComposerDraft {
   hasTemplatePlaceholders: boolean;
   generatedAt: string;
 }
-export type ProductComposerSourceKind = 'notes' | 'tasks' | 'timeline' | 'iocs' | 'evidence';
+export type ProductComposerSourceKind = 'notes' | 'tasks' | 'timeline' | 'iocs' | 'evidence' | 'identities';
 
 function limit(value: string, maximum: number, label: string): void {
   if (value.length > maximum) throw new ProductComposerValidationError('limit', `${label} exceeds the ${maximum.toLocaleString('en-US')}-character limit. Reduce it before continuing; no content has been truncated.`, 'fieldLimit', { field: label, maximum });
@@ -64,7 +66,7 @@ function activeInFolder<T extends { folderId?: string; trashed: boolean; archive
   return rows.filter(row => row.folderId === folderId && !row.trashed && !row.archived);
 }
 function scopedSnapshot(snapshot: ProductComposerSnapshot): ProductComposerSnapshot {
-  const collections = [snapshot.notes, snapshot.tasks, snapshot.timelineEvents, snapshot.iocs, snapshot.evidence];
+  const collections = [snapshot.notes, snapshot.tasks, snapshot.timelineEvents, snapshot.iocs, snapshot.evidence, snapshot.identities];
   if (collections.reduce((total, rows) => total + rows.length, 0) > PRODUCT_COMPOSER_LIMITS.sourceItems) {
     throw new ProductComposerValidationError('limit', `The composer supports at most ${PRODUCT_COMPOSER_LIMITS.sourceItems} source items. Narrow the supplied investigation snapshot.`, 'sourceCount', { maximum: PRODUCT_COMPOSER_LIMITS.sourceItems });
   }
@@ -76,6 +78,7 @@ function scopedSnapshot(snapshot: ProductComposerSnapshot): ProductComposerSnaps
     timelineEvents: activeInFolder(snapshot.timelineEvents, snapshot.folder.id),
     iocs: activeInFolder(snapshot.iocs, snapshot.folder.id),
     evidence: activeInFolder(snapshot.evidence, snapshot.folder.id),
+    identities: activeInFolder(snapshot.identities, snapshot.folder.id),
   };
 }
 
@@ -86,7 +89,7 @@ export function deriveProductComposerClassification(
   effectiveLevels: readonly string[] = DEFAULT_CLS_LEVELS,
 ): string | undefined {
   const source = scopedSnapshot(snapshot);
-  const entities = [...source.notes, ...source.tasks, ...source.timelineEvents, ...source.iocs, ...source.evidence];
+  const entities = [...source.notes, ...source.tasks, ...source.timelineEvents, ...source.iocs, ...source.evidence, ...source.identities];
   const labels = new Set<string>();
   const includeLevel = (level: string | undefined) => {
     if (!level) return;
@@ -180,7 +183,7 @@ function dateText(timestamp: number): string {
 /** Stage only explicitly chosen, still-visible source IDs; never query storage. */
 export function stageProductSection(snapshot: ProductComposerSnapshot, kind: ProductComposerSourceKind, ids: string[]): string {
   const source = scopedSnapshot(snapshot);
-  if (!['notes', 'tasks', 'timeline', 'iocs', 'evidence'].includes(kind)) throw new ProductComposerValidationError('selection', 'Choose a supported source type.', 'sourceType');
+  if (!['notes', 'tasks', 'timeline', 'iocs', 'evidence', 'identities'].includes(kind)) throw new ProductComposerValidationError('selection', 'Choose a supported source type.', 'sourceType');
   if (ids.length === 0) throw new ProductComposerValidationError('selection', 'Select at least one source item to stage.', 'selectSource');
   if (ids.length > PRODUCT_COMPOSER_LIMITS.sourceItems) throw new ProductComposerValidationError('limit', 'Too many source selections.', 'selectionCount');
   const available = kind === 'timeline' ? source.timelineEvents : source[kind];
@@ -211,6 +214,12 @@ export function stageProductSection(snapshot: ProductComposerSnapshot, kind: Pro
     case 'evidence':
       headers = ['ID', 'Title', 'File', 'Type', 'Extraction status', 'Content', 'Classification'];
       rows = (selected as EvidenceItem[]).map(item => [item.id, item.title, item.fileName, item.fileType, item.extractionStatus, item.content, item.clsLevel]);
+      break;
+    case 'identities':
+      // Private details are never staged; only the details anyone can see in the investigation.
+      headers = ['ID', 'Name', 'Type', 'Status', 'Description', 'Other names', 'Details', 'Classification'];
+      rows = (selected as Identity[]).map(identity => [identity.id, identity.name, identity.type, identity.status, identity.description,
+        identity.aliases.join('; '), identity.details.filter(detail => !detail.private).map(detail => `${detail.label}: ${detail.value}`).join('; '), identity.clsLevel]);
       break;
   }
   const size = rows.reduce((total, row) => total + row.reduce<number>((count, value) => count + String(value ?? '').length, 0), 0);

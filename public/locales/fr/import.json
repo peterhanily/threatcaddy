@@ -27,5 +27,14 @@
   "summaryNote": "Note de synthèse",
   "errorCount": "{{count}} erreur(s) :",
   "andMore": "... et {{count}} de plus",
-  "done": "Terminé"
+  "done": "Terminé",
+  "identities.create": "Créer ou mettre à jour les identités",
+  "identities.noName": "(aucune colonne de nom mappée)",
+  "identities.needsInvestigation": "(choisissez une enquête)",
+  "identities.organization": "Travaille chez, pour les lignes sans organisation",
+  "identities.noOrganization": "Non renseigné",
+  "identities.result": "Identités",
+  "identities.updated_one": "{{count}} mise à jour",
+  "identities.updated_many": "{{count}} mises à jour",
+  "identities.updated_other": "{{count}} mises à jour"
 }

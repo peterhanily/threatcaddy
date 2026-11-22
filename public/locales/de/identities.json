@@ -4,6 +4,7 @@
   "header.descAll": "Die Personen, Organisationen, Systeme und Konten in allen Untersuchungen.",
   "header.add": "Hinzufügen",
   "header.addBlocked": "Erstellen Sie zuerst eine Untersuchung.",
+  "header.export": "Exportieren",
   "readOnly.remote": "Diese Teamuntersuchung wird vom Server angezeigt und kann hier nicht bearbeitet werden. Laden Sie eine lokale Kopie herunter, um ihre Identitäten zu bearbeiten.",
 
   "tabs.label": "Ansichten der Identitäten",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "Beschreiben Sie die Verbindung, zum Beispiel „arbeitet bei“.",
   "connectionForm.errorTarget": "Wählen Sie aus, mit wem oder was sie verbunden ist.",
   "connectionForm.noOthers": "Fügen Sie dieser Untersuchung zuerst eine weitere Identität hinzu.",
+  "graphConnect.title": "{{from}} und {{to}} verbinden",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "Personen ({{count}})",
   "people.openChart": "Organigramm öffnen",
@@ -164,6 +167,14 @@
   "permanentDelete.title": "{{name}} endgültig löschen?",
   "permanentDelete.message": "Dies kann nicht rückgängig gemacht werden. Verbindungen anderer Identitäten zu ihr werden ebenfalls entfernt.",
   "permanentDelete.confirm": "Endgültig löschen",
+  "export.title": "Identitäten exportieren",
+  "export.summary_one": "{{count}} Identität aus {{scope}}.",
+  "export.summary_other": "{{count}} Identitäten aus {{scope}}.",
+  "export.allInvestigations": "allen Untersuchungen",
+  "export.csvHint": "Eine Tabelle (CSV) mit einer Zeile pro Identität und einer Spalte pro Detail. Sie lässt sich unter „Daten importieren“ wieder importieren.",
+  "export.includePrivate": "Private Details einschließen",
+  "export.privateHint": "Private Details bleiben in ThreatCaddy ausgeblendet, bis Sie auf „Anzeigen“ klicken. Jeder, der die Datei hat, kann sie lesen.",
+  "export.button": "Exportieren",
 
   "found.heading": "Noch nicht in Identitäten",
   "found.dialogTitle": "„{{text}}“",
@@ -198,5 +209,6 @@
   "toast.ignored": "„{{text}}“ wird auf diesem Gerät ignoriert.",
   "toast.merged": "{{gone}} in {{keep}} zusammengeführt.",
   "toast.trashed": "{{name}} in den Papierkorb verschoben.",
+  "toast.exported": "{{file}} exportiert.",
   "toast.failed": "Speichern fehlgeschlagen: {{error}}"
 }

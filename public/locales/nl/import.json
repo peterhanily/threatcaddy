@@ -27,5 +27,13 @@
   "summaryNote": "Samenvattingsnotitie",
   "errorCount": "{{count}} fouten:",
   "andMore": "... en nog {{count}}",
-  "done": "Klaar"
+  "done": "Klaar",
+  "identities.create": "Identiteiten aanmaken of bijwerken",
+  "identities.noName": "(naamkolom niet toegewezen)",
+  "identities.needsInvestigation": "(kies een onderzoek)",
+  "identities.organization": "Werkt bij, voor rijen zonder organisatie",
+  "identities.noOrganization": "Niet vastgelegd",
+  "identities.result": "Identiteiten",
+  "identities.updated_one": "{{count}} bijgewerkt",
+  "identities.updated_other": "{{count}} bijgewerkt"
 }

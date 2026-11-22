@@ -4,6 +4,7 @@
   "header.descAll": "Les personnes, organisations, systèmes et comptes de toutes les enquêtes.",
   "header.add": "Ajouter",
   "header.addBlocked": "Créez d'abord une enquête.",
+  "header.export": "Exporter",
   "readOnly.remote": "Cette enquête d'équipe est affichée depuis le serveur et ne peut pas être modifiée ici. Téléchargez une copie locale pour modifier ses identités.",
 
   "tabs.label": "Vues des identités",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "Décrivez la relation, par exemple « travaille chez ».",
   "connectionForm.errorTarget": "Choisissez à qui ou à quoi elle est liée.",
   "connectionForm.noOthers": "Ajoutez d'abord une autre identité à cette enquête.",
+  "graphConnect.title": "Relier {{from}} et {{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "Personnes ({{count}})",
   "people.openChart": "Ouvrir l'organigramme",
@@ -164,6 +167,15 @@
   "permanentDelete.title": "Supprimer {{name}} définitivement ?",
   "permanentDelete.message": "Cette action est irréversible. Les relations des autres identités vers elle sont aussi supprimées.",
   "permanentDelete.confirm": "Supprimer définitivement",
+  "export.title": "Exporter les identités",
+  "export.summary_one": "{{count}} identité de {{scope}}.",
+  "export.summary_many": "{{count}} identités de {{scope}}.",
+  "export.summary_other": "{{count}} identités de {{scope}}.",
+  "export.allInvestigations": "toutes les enquêtes",
+  "export.csvHint": "Un tableur (CSV) avec une ligne par identité et une colonne par détail. Il peut être réimporté via Importer des données.",
+  "export.includePrivate": "Inclure les détails privés",
+  "export.privateHint": "Les détails privés restent masqués dans ThreatCaddy jusqu'à ce que vous cliquiez sur Afficher. Toute personne disposant du fichier peut les lire.",
+  "export.button": "Exporter",
 
   "found.heading": "Pas encore dans Identités",
   "found.dialogTitle": "« {{text}} »",
@@ -198,5 +210,6 @@
   "toast.ignored": "« {{text}} » est ignoré sur cet appareil.",
   "toast.merged": "Fusion de {{gone}} dans {{keep}} effectuée.",
   "toast.trashed": "Identité mise à la corbeille : {{name}}.",
+  "toast.exported": "{{file}} exporté.",
   "toast.failed": "Impossible d'enregistrer : {{error}}"
 }

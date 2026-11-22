@@ -27,5 +27,13 @@
   "summaryNote": "Ghi chú tóm tắt",
   "errorCount": "{{count}} lỗi:",
   "andMore": "... và {{count}} nữa",
-  "done": "Xong"
+  "done": "Xong",
+  "identities.create": "Tạo hoặc cập nhật danh tính",
+  "identities.noName": "(không có cột tên được ánh xạ)",
+  "identities.needsInvestigation": "(chọn một cuộc điều tra)",
+  "identities.organization": "Làm việc tại, cho các hàng không ghi tổ chức",
+  "identities.noOrganization": "Chưa ghi nhận",
+  "identities.result": "Danh tính",
+  "identities.updated_one": "Đã cập nhật {{count}}",
+  "identities.updated_other": "Đã cập nhật {{count}}"
 }

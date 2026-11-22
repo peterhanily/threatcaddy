@@ -8,6 +8,7 @@ import { IdentityLinksProvider } from '../components/Identities/IdentityLinksPro
 import { TimelineEventCard } from '../components/Timeline/TimelineEventCard';
 import { TimelineEventForm } from '../components/Timeline/TimelineEventForm';
 import { MarkdownPreview } from '../components/Notes/MarkdownPreview';
+import { MitreReport } from '../components/Timeline/MitreReport';
 import { useMentionAutocomplete } from '../components/Notes/useMentionAutocomplete';
 import { renderMarkdown } from '../lib/markdown';
 import { buildIdentityIndex, type FolderIndex } from '../lib/identity-match';
@@ -226,3 +227,25 @@ describe('the note editor\'s @ suggestions', () => {
     expect(screen.queryByRole('list', { name: 'Mentions' })).not.toBeInTheDocument();
   });
 });
+
+describe('reports', () => {
+  it('groups the MITRE report by the identity an actor names, other names included, and opens it', async () => {
+    const twin = make('twin', 'Dana Okafor');
+    const dana = make('dana', 'Dana Okafor', { description: 'Accounts payable' });
+    const { onOpen, user } = withLinks(<MitreReport events={[
+      event({ id: 'a', actor: 'Tomas Lindqvist', mitreAttackIds: ['T1566'] }),
+      event({ id: 'b', actor: 'T. Lindqvist', mitreAttackIds: ['T1078'] }),
+      event({ id: 'c', actor: 'Tomás Lindqvist', mitreAttackIds: ['T1110'] }),
+      event({ id: 'd', actor: 'Dana Okafor', mitreAttackIds: ['T1566'] }),
+    ]} />, { identities: [tomas, twin, dana] });
+    // Tomas and T. Lindqvist are one identity; the accented spelling is not confirmed, and the
+    // shared name "Dana Okafor" names two identities, so both stay as written.
+    const tomasRow = screen.getByRole('button', { name: 'Tomas Lindqvist' }).parentElement as HTMLElement;
+    expect(within(tomasRow).getByText(/2 techniques/)).toBeInTheDocument();
+    expect(screen.getByText('Tomás Lindqvist').closest('button')).toBeNull();
+    expect(screen.getByText('Dana Okafor').closest('button')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Tomas Lindqvist' }));
+    expect(onOpen).toHaveBeenCalledWith(tomas);
+  });
+});
+

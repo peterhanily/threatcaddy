@@ -27,5 +27,13 @@
   "summaryNote": "摘要笔记",
   "errorCount": "{{count}} 个错误：",
   "andMore": "...以及 {{count}} 个更多",
-  "done": "完成"
+  "done": "完成",
+  "identities.create": "创建或更新身份",
+  "identities.noName": "（未映射名称列）",
+  "identities.needsInvestigation": "（请选择调查）",
+  "identities.organization": "就职于（用于未注明组织的行）",
+  "identities.noOrganization": "未记录",
+  "identities.result": "身份",
+  "identities.updated_one": "已更新 {{count}} 个",
+  "identities.updated_other": "已更新 {{count}} 个"
 }

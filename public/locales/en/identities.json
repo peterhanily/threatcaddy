@@ -4,6 +4,7 @@
   "header.descAll": "The people, organizations, systems and accounts in every investigation.",
   "header.add": "Add",
   "header.addBlocked": "Create an investigation first.",
+  "header.export": "Export",
   "readOnly.remote": "This team investigation is shown from the server and can't be edited here. Download a local copy to edit its identities.",
 
   "tabs.label": "Identities views",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "Describe the connection, for example works at.",
   "connectionForm.errorTarget": "Choose whom or what it connects to.",
   "connectionForm.noOthers": "Add another identity to this investigation first.",
+  "graphConnect.title": "Connect {{from}} and {{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "People ({{count}})",
   "people.openChart": "Open the org chart",
@@ -164,6 +167,14 @@
   "permanentDelete.title": "Delete {{name}} for good?",
   "permanentDelete.message": "This can't be undone. Connections from other identities to it are removed too.",
   "permanentDelete.confirm": "Delete for good",
+  "export.title": "Export identities",
+  "export.summary_one": "{{count}} identity from {{scope}}.",
+  "export.summary_other": "{{count}} identities from {{scope}}.",
+  "export.allInvestigations": "every investigation",
+  "export.csvHint": "A spreadsheet (CSV) with one row per identity and one column per detail. It can be imported again under Data Import.",
+  "export.includePrivate": "Include private details",
+  "export.privateHint": "Private details are hidden until Show in ThreatCaddy. Anyone with the file can read them.",
+  "export.button": "Export",
 
   "found.heading": "Not yet in Identities",
   "found.dialogTitle": "“{{text}}”",
@@ -198,5 +209,6 @@
   "toast.ignored": "“{{text}}” is ignored on this device.",
   "toast.merged": "Merged {{gone}} into {{keep}}.",
   "toast.trashed": "Moved {{name}} to the trash.",
+  "toast.exported": "Exported {{file}}.",
   "toast.failed": "Couldn't save: {{error}}"
 }

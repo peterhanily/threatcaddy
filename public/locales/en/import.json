@@ -27,5 +27,13 @@
   "summaryNote": "Summary Note",
   "errorCount": "{{count}} error(s):",
   "andMore": "... and {{count}} more",
-  "done": "Done"
+  "done": "Done",
+  "identities.create": "Create or update identities",
+  "identities.noName": "(no name column mapped)",
+  "identities.needsInvestigation": "(choose an investigation)",
+  "identities.organization": "Works at, for rows that name no organization",
+  "identities.noOrganization": "Not recorded",
+  "identities.result": "Identities",
+  "identities.updated_one": "{{count}} updated",
+  "identities.updated_other": "{{count}} updated"
 }

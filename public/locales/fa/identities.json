@@ -4,6 +4,7 @@
   "header.descAll": "افراد، سازمان‌ها، سیستم‌ها و حساب‌های همه تحقیقات.",
   "header.add": "افزودن",
   "header.addBlocked": "ابتدا یک تحقیق ایجاد کنید.",
+  "header.export": "صدور",
   "readOnly.remote": "این تحقیق تیمی از سرور نمایش داده می‌شود و اینجا قابل ویرایش نیست. برای ویرایش هویت‌های آن، یک نسخه محلی دانلود کنید.",
 
   "tabs.label": "نماهای هویت‌ها",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "ارتباط را توصیف کنید، مثلاً «شاغل در».",
   "connectionForm.errorTarget": "انتخاب کنید به چه کسی یا چه چیزی وصل است.",
   "connectionForm.noOthers": "ابتدا هویت دیگری به این تحقیق اضافه کنید.",
+  "graphConnect.title": "مرتبط کردن {{from}} و {{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "افراد ({{count}})",
   "people.openChart": "باز کردن نمودار سازمانی",
@@ -164,6 +167,14 @@
   "permanentDelete.title": "{{name}} به‌طور دائمی حذف شود؟",
   "permanentDelete.message": "این کار قابل بازگشت نیست. ارتباط‌های هویت‌های دیگر با آن هم حذف می‌شوند.",
   "permanentDelete.confirm": "حذف دائمی",
+  "export.title": "صدور هویت‌ها",
+  "export.summary_one": "{{count}} هویت از {{scope}}.",
+  "export.summary_other": "{{count}} هویت از {{scope}}.",
+  "export.allInvestigations": "همه تحقیقات",
+  "export.csvHint": "صفحه‌گسترده‌ای (CSV) با یک سطر برای هر هویت و یک ستون برای هر مشخصه. می‌توان آن را دوباره از «ورود داده» وارد کرد.",
+  "export.includePrivate": "شامل مشخصات خصوصی",
+  "export.privateHint": "مشخصات خصوصی در ThreatCaddy تا وقتی روی «نمایش» کلیک نکنید پنهان می‌مانند. هر کسی که فایل را داشته باشد می‌تواند آن‌ها را بخواند.",
+  "export.button": "صدور",
 
   "found.heading": "هنوز در هویت‌ها نیستند",
   "found.dialogTitle": "«{{text}}»",
@@ -198,5 +209,6 @@
   "toast.ignored": "«{{text}}» در این دستگاه نادیده گرفته می‌شود.",
   "toast.merged": "{{gone}} در {{keep}} ادغام شد.",
   "toast.trashed": "{{name}} به سطل زباله منتقل شد.",
+  "toast.exported": "{{file}} صادر شد.",
   "toast.failed": "ذخیره نشد: {{error}}"
 }

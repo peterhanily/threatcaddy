@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, forwardRef } from 'react';
 import { ChevronDown, ChevronRight, Search, BarChart3, List, Plus, ListPlus, Clipboard, X, ChevronUp, Pencil, Trash2, Archive, RotateCcw, ExternalLink, Columns, GitMerge, Tag as TagIcon, Download, Contact } from 'lucide-react';
 import type { Note, Task, TimelineEvent, StandaloneIOC, Settings, IOCEntry, IOCType, ConfidenceLevel, Folder, Tag, InvestigationMember, Identity } from '../../types';
 import { useIdentityLinks } from '../Identities/identity-links';
+import { reportGroup } from '../../lib/identity-match';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, ALL_IOC_TABLE_COLUMNS, DEFAULT_IOC_TABLE_COLUMNS, IOC_STATUS_VALUES, IOC_STATUS_LABELS, IOC_STATUS_COLORS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { StandaloneIOCForm } from './StandaloneIOCForm';
@@ -84,6 +85,8 @@ interface UniqueIOC {
   value: string;
   confidence: ConfidenceLevel;
   attribution?: string;
+  /** The investigation the attribution came from, to match it to an identity there. */
+  attributionFolderId?: string;
   firstSeen: number;
   entityCount: number;
   sourceTypes: Set<'note' | 'task' | 'event' | 'standalone'>;
@@ -148,7 +151,7 @@ export function IOCStatsView({
     const iocMap = new Map<string, UniqueIOC>();
     const entityIds = new Set<string>();
 
-    const processIOCs = (iocs: IOCEntry[], entityId: string, sourceType: 'note' | 'task' | 'event' | 'standalone') => {
+    const processIOCs = (iocs: IOCEntry[], entityId: string, sourceType: 'note' | 'task' | 'event' | 'standalone', folderId?: string) => {
       let hasActiveIOC = false;
       for (const ioc of iocs) {
         if (ioc.dismissed) continue;
@@ -159,7 +162,7 @@ export function IOCStatsView({
           existing.entityCount++;
           existing.sourceTypes.add(sourceType);
           if (ioc.firstSeen < existing.firstSeen) existing.firstSeen = ioc.firstSeen;
-          if (ioc.attribution && !existing.attribution) existing.attribution = ioc.attribution;
+          if (ioc.attribution && !existing.attribution) { existing.attribution = ioc.attribution; existing.attributionFolderId = folderId; }
           const levels: ConfidenceLevel[] = ['low', 'medium', 'high', 'confirmed'];
           if (levels.indexOf(ioc.confidence) > levels.indexOf(existing.confidence)) {
             existing.confidence = ioc.confidence;
@@ -170,6 +173,7 @@ export function IOCStatsView({
             value: ioc.value,
             confidence: ioc.confidence,
             attribution: ioc.attribution,
+            attributionFolderId: ioc.attribution ? folderId : undefined,
             firstSeen: ioc.firstSeen,
             entityCount: 1,
             sourceTypes: new Set([sourceType]),
@@ -181,13 +185,13 @@ export function IOCStatsView({
 
     for (const note of effectiveNotes) {
       if (note.trashed) continue;
-      if (note.iocAnalysis?.iocs) processIOCs(note.iocAnalysis.iocs, note.id, 'note');
+      if (note.iocAnalysis?.iocs) processIOCs(note.iocAnalysis.iocs, note.id, 'note', note.folderId);
     }
     for (const task of effectiveTasks) {
-      if (task.iocAnalysis?.iocs) processIOCs(task.iocAnalysis.iocs, task.id, 'task');
+      if (task.iocAnalysis?.iocs) processIOCs(task.iocAnalysis.iocs, task.id, 'task', task.folderId);
     }
     for (const event of effectiveEvents) {
-      if (event.iocAnalysis?.iocs) processIOCs(event.iocAnalysis.iocs, event.id, 'event');
+      if (event.iocAnalysis?.iocs) processIOCs(event.iocAnalysis.iocs, event.id, 'event', event.folderId);
     }
     for (const si of effectiveStandaloneIOCs) {
       if (si.trashed) continue;
@@ -196,7 +200,7 @@ export function IOCStatsView({
         confidence: si.confidence, attribution: si.attribution,
         firstSeen: si.createdAt, dismissed: false,
       };
-      processIOCs([syntheticEntry], si.id, 'standalone');
+      processIOCs([syntheticEntry], si.id, 'standalone', si.folderId);
     }
 
     return { uniqueIOCs: Array.from(iocMap.values()), entitiesWithIOCs: entityIds.size };
@@ -217,22 +221,25 @@ export function IOCStatsView({
     return counts;
   }, [uniqueIOCs]);
 
+  // Attributions are grouped by the identity they name, when they name exactly one.
+  const identityLinks = useIdentityLinks();
   const topActors = useMemo(() => {
-    const actorMap = new Map<string, { count: number; types: Map<IOCType, number> }>();
+    const actorMap = new Map<string, { name: string; count: number; types: Map<IOCType, number> }>();
     for (const ioc of uniqueIOCs) {
       if (!ioc.attribution) continue;
-      let entry = actorMap.get(ioc.attribution);
-      if (!entry) { entry = { count: 0, types: new Map() }; actorMap.set(ioc.attribution, entry); }
+      const group = reportGroup(identityLinks?.linkFor(ioc.attributionFolderId, ioc.attribution), ioc.attribution);
+      let entry = actorMap.get(group.key);
+      if (!entry) { entry = { name: group.label, count: 0, types: new Map() }; actorMap.set(group.key, entry); }
       entry.count++;
       entry.types.set(ioc.type, (entry.types.get(ioc.type) || 0) + 1);
     }
     return Array.from(actorMap.entries())
-      .map(([name, data]) => ({
-        name, count: data.count,
+      .map(([key, data]) => ({
+        key, name: data.name, count: data.count,
         topTypes: Array.from(data.types.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t]) => t),
       }))
       .sort((a, b) => b.count - a.count);
-  }, [uniqueIOCs]);
+  }, [uniqueIOCs, identityLinks]);
 
   const overTime = useMemo(() => {
     if (uniqueIOCs.length === 0) return [];
@@ -519,7 +526,7 @@ export function IOCStatsView({
                   </thead>
                   <tbody>
                     {displayedActors.map((actor) => (
-                      <tr key={actor.name} className="border-b border-gray-800/50">
+                      <tr key={actor.key} className="border-b border-gray-800/50">
                         <td className="py-1.5 pe-4 text-purple-400 font-medium">{actor.name}</td>
                         <td className="py-1.5 px-2 text-end text-gray-300 tabular-nums">{actor.count}</td>
                         <td className="py-1.5 ps-4">

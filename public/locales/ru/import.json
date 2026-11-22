@@ -27,5 +27,15 @@
   "summaryNote": "Сводная заметка",
   "errorCount": "{{count}} ошибок:",
   "andMore": "... и ещё {{count}}",
-  "done": "Готово"
+  "done": "Готово",
+  "identities.create": "Создать или обновить субъекты",
+  "identities.noName": "(столбец имени не сопоставлен)",
+  "identities.needsInvestigation": "(выберите расследование)",
+  "identities.organization": "Работает в — для строк без организации",
+  "identities.noOrganization": "Не указано",
+  "identities.result": "Субъекты",
+  "identities.updated_one": "Обновлено: {{count}}",
+  "identities.updated_few": "Обновлено: {{count}}",
+  "identities.updated_many": "Обновлено: {{count}}",
+  "identities.updated_other": "Обновлено: {{count}}"
 }

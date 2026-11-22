@@ -31,6 +31,7 @@
   },
   "import": {
     "dataImported": "Importati {{events}} eventi e {{iocs}} IOC",
+    "identitiesImported": "Identità: {{created}} aggiunte, {{updated}} aggiornate",
     "jsonImported": "Importate {{notes}} note, {{tasks}} attività",
     "markdownImported": "Importate {{count}} note da Markdown",
     "importFailed": "Importazione fallita",

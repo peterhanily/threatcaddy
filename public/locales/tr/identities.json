@@ -4,6 +4,7 @@
   "header.descAll": "Tüm soruşturmalardaki kişiler, kuruluşlar, sistemler ve hesaplar.",
   "header.add": "Ekle",
   "header.addBlocked": "Önce bir soruşturma oluşturun.",
+  "header.export": "Dışa Aktar",
   "readOnly.remote": "Bu ekip soruşturması sunucudan gösteriliyor ve burada düzenlenemez. Kimliklerini düzenlemek için yerel bir kopya indirin.",
 
   "tabs.label": "Kimlik görünümleri",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "Bağlantıyı tanımlayın, örneğin çalıştığı kurum.",
   "connectionForm.errorTarget": "Kiminle ya da neyle bağlantılı olduğunu seçin.",
   "connectionForm.noOthers": "Önce bu soruşturmaya başka bir kimlik ekleyin.",
+  "graphConnect.title": "{{from}} ile {{to}} arasında bağlantı kur",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "Kişiler ({{count}})",
   "people.openChart": "Organizasyon şemasını aç",
@@ -164,6 +167,14 @@
   "permanentDelete.title": "{{name}} kalıcı olarak silinsin mi?",
   "permanentDelete.message": "Bu işlem geri alınamaz. Diğer kimliklerden buna olan bağlantılar da kaldırılır.",
   "permanentDelete.confirm": "Kalıcı olarak sil",
+  "export.title": "Kimlikleri dışa aktar",
+  "export.summary_one": "{{count}} kimlik ({{scope}}).",
+  "export.summary_other": "{{count}} kimlik ({{scope}}).",
+  "export.allInvestigations": "tüm soruşturmalar",
+  "export.csvHint": "Her kimlik için bir satır ve her ayrıntı için bir sütun içeren bir elektronik tablo (CSV). Veri İçe Aktar bölümünden yeniden içe aktarılabilir.",
+  "export.includePrivate": "Özel ayrıntıları dahil et",
+  "export.privateHint": "Özel ayrıntılar ThreatCaddy'de “Göster” düğmesine tıklanana kadar gizlidir. Dosyaya sahip olan herkes bunları okuyabilir.",
+  "export.button": "Dışa Aktar",
 
   "found.heading": "Henüz kimliklerde yok",
   "found.dialogTitle": "“{{text}}”",
@@ -198,5 +209,6 @@
   "toast.ignored": "“{{text}}” bu cihazda yok sayılıyor.",
   "toast.merged": "{{gone}} kaydı {{keep}} kaydıyla birleştirildi.",
   "toast.trashed": "{{name}} çöp kutusuna taşındı.",
+  "toast.exported": "{{file}} dışa aktarıldı.",
   "toast.failed": "Kaydedilemedi: {{error}}"
 }

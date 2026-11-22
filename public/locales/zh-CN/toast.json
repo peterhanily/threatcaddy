@@ -30,6 +30,7 @@
   },
   "import": {
     "dataImported": "已导入 {{events}} 个事件和 {{iocs}} 个 IOC",
+    "identitiesImported": "身份：已添加 {{created}} 个，已更新 {{updated}} 个",
     "jsonImported": "已导入 {{notes}} 条笔记，{{tasks}} 个任务",
     "markdownImported": "已从 Markdown 导入 {{count}} 条笔记",
     "importFailed": "导入失败",

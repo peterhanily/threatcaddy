@@ -27,5 +27,13 @@
   "summaryNote": "Catatan Ringkasan",
   "errorCount": "{{count}} kesalahan:",
   "andMore": "... dan {{count}} lagi",
-  "done": "Selesai"
+  "done": "Selesai",
+  "identities.create": "Buat atau perbarui identitas",
+  "identities.noName": "(tidak ada kolom nama yang dipetakan)",
+  "identities.needsInvestigation": "(pilih investigasi)",
+  "identities.organization": "Bekerja di, untuk baris yang tidak menyebutkan organisasi",
+  "identities.noOrganization": "Tidak dicatat",
+  "identities.result": "Identitas",
+  "identities.updated_one": "{{count}} diperbarui",
+  "identities.updated_other": "{{count}} diperbarui"
 }

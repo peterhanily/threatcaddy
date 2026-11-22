@@ -27,5 +27,13 @@
   "summaryNote": "Özet Notu",
   "errorCount": "{{count}} hata:",
   "andMore": "... ve {{count}} daha",
-  "done": "Tamamlandı"
+  "done": "Tamamlandı",
+  "identities.create": "Kimlikleri oluştur veya güncelle",
+  "identities.noName": "(ad sütunu eşlenmedi)",
+  "identities.needsInvestigation": "(bir soruşturma seçin)",
+  "identities.organization": "Çalıştığı kurum, kuruluş belirtmeyen satırlar için",
+  "identities.noOrganization": "Kaydedilmedi",
+  "identities.result": "Kimlikler",
+  "identities.updated_one": "{{count}} güncellendi",
+  "identities.updated_other": "{{count}} güncellendi"
 }

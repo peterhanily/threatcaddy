@@ -27,5 +27,14 @@
   "summaryNote": "הערת סיכום",
   "errorCount": "{{count}} שגיאות:",
   "andMore": "... ו-{{count}} נוספים",
-  "done": "סיום"
+  "done": "סיום",
+  "identities.create": "צור או עדכן זהויות",
+  "identities.noName": "(ללא עמודת שם ממופה)",
+  "identities.needsInvestigation": "(בחר חקירה)",
+  "identities.organization": "עובד אצל, עבור שורות שאין בהן ארגון",
+  "identities.noOrganization": "לא תועד",
+  "identities.result": "זהויות",
+  "identities.updated_one": "{{count}} עודכנה",
+  "identities.updated_two": "{{count}} עודכנו",
+  "identities.updated_other": "{{count}} עודכנו"
 }

@@ -95,7 +95,8 @@ export function formatIOCsJSON(entries: IOCExportEntry[], _config?: ThreatIntelE
   );
 }
 
-function escapeCSVField(value: string): string {
+/** A CSV cell that a spreadsheet will not run as a formula (cells starting = + - @, tab or CR get a leading '). */
+export function escapeCSVField(value: string): string {
   let s = value;
   if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
   if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {

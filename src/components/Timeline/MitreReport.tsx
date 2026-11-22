@@ -1,7 +1,10 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Contact } from 'lucide-react';
 import { MITRE_TACTICS, MITRE_TECHNIQUES, getParentTechniqueId } from '../../lib/mitre-attack';
-import type { TimelineEvent } from '../../types';
+import type { Identity, TimelineEvent } from '../../types';
+import { reportGroup } from '../../lib/identity-match';
+import { useIdentityLinks } from '../Identities/identity-links';
 
 interface MitreReportProps {
   events: TimelineEvent[];
@@ -9,11 +12,12 @@ interface MitreReportProps {
 
 export function MitreReport({ events }: MitreReportProps) {
   const { t } = useTranslation('timeline');
+  const identityLinks = useIdentityLinks();
   const { tacticCounts, maxTacticCount, actorTTPs, techniqueCoverage } = useMemo(() => {
     // Count techniques per tactic
     const techByTactic = new Map<string, Set<string>>();
-    // Actor → Set<techniqueId>
-    const actorTechs = new Map<string, Set<string>>();
+    // Actor (the identity it names, or its text) → Set<techniqueId>
+    const actorTechs = new Map<string, { label: string; identity?: Identity; techs: Set<string> }>();
     const allTechniques = new Set<string>();
 
     for (const ev of events) {
@@ -31,9 +35,10 @@ export function MitreReport({ events }: MitreReportProps) {
         }
 
         if (ev.actor) {
-          let s = actorTechs.get(ev.actor);
-          if (!s) { s = new Set(); actorTechs.set(ev.actor, s); }
-          s.add(parentId);
+          const group = reportGroup(identityLinks?.linkFor(ev.folderId, ev.actor), ev.actor);
+          let entry = actorTechs.get(group.key);
+          if (!entry) { entry = { label: group.label, identity: group.identity, techs: new Set() }; actorTechs.set(group.key, entry); }
+          entry.techs.add(parentId);
         }
       }
     }
@@ -46,8 +51,10 @@ export function MitreReport({ events }: MitreReportProps) {
 
     // Sort actors by technique count descending
     const actors = Array.from(actorTechs.entries())
-      .map(([name, techs]) => ({
-        name,
+      .map(([key, { label, identity, techs }]) => ({
+        key,
+        name: label,
+        identity,
         techniques: Array.from(techs).map((id) => {
           const t = MITRE_TECHNIQUES.find((mt) => mt.id === id);
           return { id, name: t?.name || id };
@@ -61,7 +68,7 @@ export function MitreReport({ events }: MitreReportProps) {
       actorTTPs: actors,
       techniqueCoverage: allTechniques.size,
     };
-  }, [events]);
+  }, [events, identityLinks]);
 
   const coveragePct = ((techniqueCoverage / MITRE_TECHNIQUES.length) * 100).toFixed(1);
 
@@ -100,9 +107,14 @@ export function MitreReport({ events }: MitreReportProps) {
         ) : (
           <div className="space-y-3">
             {actorTTPs.map((actor) => (
-              <div key={actor.name}>
+              <div key={actor.key}>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium text-purple-400">{actor.name}</span>
+                  {actor.identity && identityLinks ? (
+                    <button type="button" onClick={() => identityLinks.open(actor.identity as Identity)}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-purple-400 hover:underline">
+                      <Contact size={11} aria-hidden="true" />{actor.name}
+                    </button>
+                  ) : <span className="text-xs font-medium text-purple-400">{actor.name}</span>}
                   <span className="text-[10px] text-gray-500">({t('mitreReport.techniqueCount', { count: actor.techniques.length })})</span>
                 </div>
                 <div className="flex flex-wrap gap-1">

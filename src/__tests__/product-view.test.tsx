@@ -35,7 +35,7 @@ const baseline: NoteTemplate = {
 describe('ProductView', () => {
   const snapshot: ProductComposerSnapshot = {
     folder: { id: 'folder-1', name: 'Fictional local investigation', order: 0, createdAt: 0, clsLevel: 'TLP:GREEN' },
-    notes: [], tasks: [], timelineEvents: [], iocs: [], evidence: [],
+    notes: [], tasks: [], timelineEvents: [], iocs: [], evidence: [], identities: [],
   };
 
   it('requires an available local snapshot and saves through the supplied normal-note callback', async () => {

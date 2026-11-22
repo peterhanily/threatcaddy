@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Contact, Plus, Star } from 'lucide-react';
+import { Contact, Download, Plus, Star } from 'lucide-react';
 import type { Folder, Identity, Note, StandaloneIOC, TimelineEvent } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { useScreenshare } from '../../hooks/ScreenshareContext';
@@ -14,6 +14,7 @@ import { IdentityProfile } from './IdentityProfile';
 import { IdentityFormModal, type AddPrefill } from './IdentityFormModal';
 import { FoundNameDialog, FoundNamesPanel } from './FoundNames';
 import { OrgCharts } from './OrgCharts';
+import { IdentityExportDialog } from './IdentityExportDialog';
 
 type Filter = 'all' | 'contact' | 'other' | (typeof BUILTIN_TYPES)[number];
 const FILTERS: Filter[] = ['all', 'person', 'contact', 'organization', 'system', 'account', 'other'];
@@ -70,6 +71,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const [filter, setFilter] = useState<Filter>('all');
   const [form, setForm] = useState<{ editing?: Identity; prefill?: AddPrefill } | null>(null);
   const [picked, setPicked] = useState<FoundName | null>(null);
+  const [exporting, setExporting] = useState(false);
   const { isIgnored, ignore: ignoreName } = useIgnoredNames();
 
   // Requests from outside (search, the New menu) are applied once, while rendering.
@@ -132,6 +134,10 @@ export function IdentitiesView(props: IdentitiesViewProps) {
             <p className="text-xs text-text-muted">{folderId ? t('header.descScoped') : t('header.descAll')}</p>
           </div>
         </div>
+        <button type="button" onClick={() => setExporting(true)} disabled={!live.length}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-bg-hover hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50">
+          <Download size={14} />{t('header.export')}
+        </button>
         {!readOnly && (
           <button type="button" disabled={!canAdd} title={canAdd ? undefined : t('header.addBlocked')} onClick={() => setForm({})}
             className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-bg-raised disabled:text-text-muted">
@@ -252,6 +258,11 @@ export function IdentitiesView(props: IdentitiesViewProps) {
             if (message) addToast('success', message);
           }}
         />
+      )}
+      {exporting && (
+        <IdentityExportDialog identities={live} byId={byId} folders={folders} folderId={folderId} screensharing={screensharing} labels={labels}
+          onClose={() => setExporting(false)}
+          onExported={file => { setExporting(false); addToast('success', t('toast.exported', { file })); }} />
       )}
       {picked && (
         <FoundNameDialog

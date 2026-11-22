@@ -27,5 +27,13 @@
   "summaryNote": "یادداشت خلاصه",
   "errorCount": "{{count}} خطا:",
   "andMore": "... و {{count}} مورد دیگر",
-  "done": "پایان"
+  "done": "پایان",
+  "identities.create": "ایجاد یا به‌روزرسانی هویت‌ها",
+  "identities.noName": "(بدون ستون نام نگاشت شده)",
+  "identities.needsInvestigation": "(یک تحقیق انتخاب کنید)",
+  "identities.organization": "شاغل در، برای سطرهایی که سازمانی ندارند",
+  "identities.noOrganization": "ثبت نشده",
+  "identities.result": "هویت‌ها",
+  "identities.updated_one": "{{count}} به‌روزرسانی شد",
+  "identities.updated_other": "{{count}} به‌روزرسانی شد"
 }

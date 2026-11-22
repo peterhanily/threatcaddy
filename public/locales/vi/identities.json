@@ -4,6 +4,7 @@
   "header.descAll": "Các cá nhân, tổ chức, hệ thống và tài khoản trong mọi cuộc điều tra.",
   "header.add": "Thêm",
   "header.addBlocked": "Hãy tạo một cuộc điều tra trước.",
+  "header.export": "Xuất",
   "readOnly.remote": "Cuộc điều tra nhóm này được hiển thị từ máy chủ và không thể chỉnh sửa tại đây. Hãy tải xuống bản sao cục bộ để chỉnh sửa danh tính của nó.",
 
   "tabs.label": "Chế độ xem danh tính",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "Mô tả mối liên kết, ví dụ làm việc tại.",
   "connectionForm.errorTarget": "Chọn ai hoặc cái gì được liên kết đến.",
   "connectionForm.noOthers": "Hãy thêm một danh tính khác vào cuộc điều tra này trước.",
+  "graphConnect.title": "Liên kết {{from}} và {{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "Nhân sự ({{count}})",
   "people.openChart": "Mở sơ đồ tổ chức",
@@ -164,6 +167,14 @@
   "permanentDelete.title": "Xóa vĩnh viễn {{name}}?",
   "permanentDelete.message": "Không thể hoàn tác thao tác này. Các mối liên kết từ danh tính khác đến danh tính này cũng sẽ bị xóa.",
   "permanentDelete.confirm": "Xóa vĩnh viễn",
+  "export.title": "Xuất danh tính",
+  "export.summary_one": "{{count}} danh tính từ {{scope}}.",
+  "export.summary_other": "{{count}} danh tính từ {{scope}}.",
+  "export.allInvestigations": "mọi cuộc điều tra",
+  "export.csvHint": "Bảng tính (CSV) với mỗi danh tính một hàng và mỗi chi tiết một cột. Có thể nhập lại trong Nhập dữ liệu.",
+  "export.includePrivate": "Bao gồm chi tiết riêng tư",
+  "export.privateHint": "Chi tiết riêng tư bị ẩn trong ThreatCaddy cho đến khi bạn nhấp “Hiển thị”. Bất kỳ ai có tệp đều có thể đọc chúng.",
+  "export.button": "Xuất",
 
   "found.heading": "Chưa có trong Danh tính",
   "found.dialogTitle": "“{{text}}”",
@@ -198,5 +209,6 @@
   "toast.ignored": "Đã bỏ qua “{{text}}” trên thiết bị này.",
   "toast.merged": "Đã gộp {{gone}} vào {{keep}}.",
   "toast.trashed": "Đã chuyển {{name}} vào thùng rác.",
+  "toast.exported": "Đã xuất {{file}}.",
   "toast.failed": "Không thể lưu: {{error}}"
 }

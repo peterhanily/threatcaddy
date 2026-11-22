@@ -2,6 +2,7 @@ import Papa from 'papaparse';
 import { nanoid } from 'nanoid';
 import { extractIOCs, mergeIOCAnalysis } from './ioc-extractor';
 import { createLabelProxy } from './i18n-labels';
+import { identityMappingFor, looksLikeIdentities } from './identity-import';
 import type {
   TimelineEvent,
   TimelineEventType,
@@ -23,6 +24,8 @@ export type ColumnMapping =
   | 'ioc-md5' | 'ioc-sha1' | 'ioc-sha256' | 'ioc-cve' | 'ioc-file-path'
   | 'event-title' | 'event-description' | 'event-type'
   | 'source' | 'mitre-technique' | 'confidence' | 'actor' | 'asset'
+  | 'identity-name' | 'identity-type' | 'identity-description' | 'identity-organization' | 'identity-aliases'
+  | 'identity-status' | 'identity-contact' | 'identity-detail' | 'identity-connection' | 'identity-connections'
   | 'ignore';
 
 export interface ParseResult {
@@ -49,6 +52,8 @@ export interface ImportActions {
 export interface ImportResult {
   timelineEventsCreated: number;
   iocsExtracted: number;
+  identitiesCreated: number;
+  identitiesUpdated: number;
   summaryNoteCreated: boolean;
   errors: string[];
 }
@@ -412,6 +417,10 @@ const SCHEMA_RULES: PatternDef[] = [
 ];
 
 export function detectSchema(headers: string[]): ColumnDetection[] {
+  // A list of identities (such as Identities › Export writes) maps its columns to identity fields.
+  if (looksLikeIdentities(headers)) {
+    return headers.map(column => ({ column, mapping: identityMappingFor(column), confidence: 0.8 }));
+  }
   const detections: ColumnDetection[] = [];
   const usedMappings = new Set<ColumnMapping>();
 
@@ -809,6 +818,16 @@ export const MAPPING_COLORS: Record<ColumnMapping, string> = {
   'ioc-sha256': '#ef4444',
   'ioc-cve': '#10b981',
   'ioc-file-path': '#64748b',
+  'identity-name': '#0ea5e9',   // sky
+  'identity-type': '#0ea5e9',
+  'identity-description': '#0ea5e9',
+  'identity-organization': '#0ea5e9',
+  'identity-aliases': '#0ea5e9',
+  'identity-status': '#0ea5e9',
+  'identity-contact': '#0ea5e9',
+  'identity-detail': '#0ea5e9',
+  'identity-connection': '#0ea5e9',
+  'identity-connections': '#0ea5e9',
   'ignore': '#6b7280',         // gray
 };
 
@@ -819,6 +838,8 @@ export const ALL_MAPPINGS: ColumnMapping[] = [
   'source', 'mitre-technique', 'confidence', 'actor', 'asset',
   'ioc-ipv4', 'ioc-domain', 'ioc-url', 'ioc-email',
   'ioc-md5', 'ioc-sha1', 'ioc-sha256', 'ioc-cve', 'ioc-file-path',
+  'identity-name', 'identity-type', 'identity-description', 'identity-organization', 'identity-aliases',
+  'identity-status', 'identity-contact', 'identity-detail', 'identity-connection', 'identity-connections',
   'ignore',
 ];
 

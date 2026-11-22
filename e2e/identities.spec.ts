@@ -329,3 +329,81 @@ test('mentions an identity in a note with @, links it in the preview, and shows 
   await page.getByRole('button', { name: 'lee@halvorsen.example (Belongs to), open Lee Park in Identities' }).click();
   await expect(card(page, 'Lee Park')).toBeVisible();
 });
+
+test('exports identities as CSV without private details, and imports the file back without duplicates', async ({ page }) => {
+  await seed(page, {
+    folders: [folder('case', 'Fictional BEC case'), folder('copy', 'Fictional copy case')],
+    identities: [identity('org', 'case', 'Halvorsen Shipping', { type: 'organization' }),
+      identity('dana', 'case', 'Dana Okafor', { status: 'compromised', connections: [{ targetId: 'org', label: 'works at' }],
+        details: [{ id: 'e', label: 'Email', value: 'dana@halvorsen.example' }, { id: 'p', label: 'Phone', value: '+44 7700 900999', private: true }] })],
+  }, { view: 'identities', selectedFolderId: 'case' });
+
+  const exportFile = async (includePrivate: boolean) => {
+    await page.getByRole('button', { name: 'Export', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Export identities' });
+    await expect(dialog.getByText('2 identities from Fictional BEC case.')).toBeVisible();
+    if (includePrivate) await dialog.getByRole('checkbox', { name: 'Include private details' }).check();
+    const [download] = await Promise.all([page.waitForEvent('download'), dialog.getByRole('button', { name: 'Export', exact: true }).click()]);
+    expect(download.suggestedFilename()).toMatch(/^threatcaddy-identities-fictional-bec-case-\d{4}-\d{2}-\d{2}\.csv$/);
+    return (await (await download.createReadStream()).toArray()).join('');
+  };
+  const plain = await exportFile(false);
+  expect(plain).toContain('dana@halvorsen.example');
+  expect(plain).not.toContain('7700');
+  const full = await exportFile(true);
+  expect(full).toContain('Phone (private)');
+
+  // Import the full file into another investigation, then again: nothing is duplicated.
+  for (const round of [1, 2]) {
+    await page.locator('header[data-tour="header"]').getByRole('button', { name: /Create new/i }).click();
+    await page.getByRole('menuitem', { name: 'Import Data' }).click();
+    await page.locator('textarea').first().fill(full.replace(/^\uFEFF/, ''));
+    await page.getByRole('button', { name: 'Parse & Preview' }).click();
+    await page.getByRole('combobox').filter({ has: page.getByRole('option', { name: 'Fictional copy case' }) }).selectOption({ label: 'Fictional copy case' });
+    await page.getByRole('checkbox', { name: 'Create summary note' }).uncheck();
+    await expect(page.getByRole('checkbox', { name: 'Create or update identities' })).toBeChecked();
+    await page.getByRole('button', { name: /^Import 2 rows/ }).click();
+    // The Identities tile: two added the first time, none (and nothing changed) the second.
+    const tile = page.getByRole('dialog').getByText('Identities', { exact: true }).locator('..');
+    await expect(tile.locator('div').first()).toHaveText(round === 1 ? '2' : '0');
+    await expect(tile).not.toContainText('updated');
+    await page.getByRole('button', { name: 'Done' }).click();
+  }
+  await page.getByRole('button', { name: 'Show all', exact: true }).click();
+  await expect(row(page, 'Dana Okafor')).toHaveCount(2);
+  await row(page, 'Dana Okafor').filter({ hasText: 'Fictional copy case' }).click();
+  const copy = card(page, 'Dana Okafor');
+  await expect(copy.getByText('dana@halvorsen.example')).toBeVisible();
+  await expect(copy.getByRole('button', { name: 'Show private Phone' })).toBeVisible();
+});
+
+test('stages identities into a product without their private details', async ({ page }) => {
+  await seed(page, {
+    folders: [folder('case', 'Fictional BEC case')],
+    identities: [identity('dana', 'case', 'Dana Okafor', { status: 'compromised', clsLevel: 'TLP:CLEAR',
+      details: [{ id: 'e', label: 'Email', value: 'dana@halvorsen.example' }, { id: 'p', label: 'Phone', value: '+44 7700 900999', private: true }] })],
+  }, { view: 'products', selectedFolderId: 'case' });
+  await page.getByRole('button', { name: 'Compose draft', exact: true }).click();
+  const composer = page.getByRole('dialog', { name: 'Compose product', exact: true });
+  await composer.getByRole('combobox', { name: 'Source type' }).selectOption({ label: 'Affected people and systems' });
+  await composer.getByRole('checkbox', { name: 'Include identity: Dana Okafor' }).check();
+  await composer.getByRole('button', { name: 'Stage selected sources', exact: true }).click();
+  const content = composer.getByRole('textbox', { name: 'Section 1 content', exact: true });
+  await expect(content).toHaveValue(/Email: dana@halvorsen\.example/);
+  await expect(content).not.toHaveValue(/7700/);
+});
+
+test('shows identities on the graph with their own node and edge filters, and the focus layout', async ({ page }) => {
+  await seed(page, {
+    folders: [folder('case', 'Fictional BEC case')],
+    timelines: [{ id: 'tl', name: 'Main', order: 0, createdAt: now, updatedAt: now }],
+    timelineEvents: [event('e1', 'case', 'Payment approved', { actor: 'Dana Okafor' })],
+    identities: [identity('dana', 'case', 'Dana Okafor'), identity('org', 'case', 'Halvorsen Shipping', { type: 'organization' })],
+  }, { view: 'graph', selectedFolderId: 'case' });
+  const identitiesFilter = page.locator('label').filter({ hasText: /^Identities/ });
+  await expect(identitiesFilter).toContainText('2');
+  await expect(page.locator('label').filter({ hasText: 'Identity connections' })).toBeVisible();
+  await expect(page.getByRole('option', { name: 'Focus on the selected node' })).toBeAttached();
+  await identitiesFilter.getByRole('checkbox').uncheck();
+  await expect(page.getByText(/^1 nodes?/)).toBeVisible();
+});

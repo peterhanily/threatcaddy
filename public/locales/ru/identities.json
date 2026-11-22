@@ -4,6 +4,7 @@
   "header.descAll": "Люди, организации, системы и учётные записи во всех расследованиях.",
   "header.add": "Добавить",
   "header.addBlocked": "Сначала создайте расследование.",
+  "header.export": "Экспорт",
   "readOnly.remote": "Это командное расследование показано с сервера, и здесь его нельзя редактировать. Скачайте локальную копию, чтобы редактировать его субъекты.",
 
   "tabs.label": "Представления субъектов",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "Опишите связь, например «работает в».",
   "connectionForm.errorTarget": "Выберите, с кем или с чем связь.",
   "connectionForm.noOthers": "Сначала добавьте в это расследование ещё один субъект.",
+  "graphConnect.title": "Связать {{from}} и {{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "Люди ({{count}})",
   "people.openChart": "Открыть оргструктуру",
@@ -164,6 +167,16 @@
   "permanentDelete.title": "Удалить {{name}} навсегда?",
   "permanentDelete.message": "Отменить невозможно. Связи других субъектов с ним тоже будут удалены.",
   "permanentDelete.confirm": "Удалить навсегда",
+  "export.title": "Экспорт субъектов",
+  "export.summary_one": "{{count}} субъект ({{scope}}).",
+  "export.summary_few": "{{count}} субъекта ({{scope}}).",
+  "export.summary_many": "{{count}} субъектов ({{scope}}).",
+  "export.summary_other": "{{count}} субъекта ({{scope}}).",
+  "export.allInvestigations": "все расследования",
+  "export.csvHint": "Таблица (CSV): одна строка на субъект и один столбец на поле. Её можно снова импортировать через «Импорт данных».",
+  "export.includePrivate": "Включить приватные поля",
+  "export.privateHint": "В ThreatCaddy приватные поля скрыты, пока вы не нажмёте «Показать». Любой, у кого есть файл, сможет их прочитать.",
+  "export.button": "Экспортировать",
 
   "found.heading": "Пока нет среди субъектов",
   "found.dialogTitle": "«{{text}}»",
@@ -198,5 +211,6 @@
   "toast.ignored": "«{{text}}» игнорируется на этом устройстве.",
   "toast.merged": "Субъект {{gone}} объединён с {{keep}}.",
   "toast.trashed": "Перемещено в корзину: {{name}}.",
+  "toast.exported": "Экспортирован файл {{file}}.",
   "toast.failed": "Не удалось сохранить: {{error}}"
 }

@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { Upload, FileText, CheckCircle2, AlertTriangle, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Modal } from '../Common/Modal';
 import { db } from '../../db';
-import type { Folder, Timeline } from '../../types';
+import type { Folder, Identity, Timeline } from '../../types';
 import type { ImportResult, ColumnMapping, ParseResult } from '../../lib/data-import';
 import { isUserTimeline } from '../../lib/sync-capture-policy';
+import { buildIdentities } from '../../lib/identity-import';
+import { byName, isOrganization } from '../../lib/identity-model';
 import {
   detectFormat,
   parseInput,
@@ -31,6 +33,8 @@ interface DataImportModalProps {
   defaultTimelineId?: string;
   onCreateTimeline: (name: string) => Promise<Timeline>;
   onImportComplete: (result: ImportResult) => void;
+  /** This device's identities, for the organisation choice when importing identities. */
+  identities?: Identity[];
 }
 
 type Step = 'input' | 'preview' | 'importing' | 'done';
@@ -53,6 +57,7 @@ export function DataImportModal({
   defaultTimelineId,
   onCreateTimeline,
   onImportComplete,
+  identities = [],
 }: DataImportModalProps) {
   const { t } = useTranslation('import');
   const [step, setStep] = useState<Step>('input');
@@ -65,6 +70,8 @@ export function DataImportModal({
   const [createEvents, setCreateEvents] = useState(true);
   const [extractIOCsFlag, setExtractIOCsFlag] = useState(true);
   const [createNote, setCreateNote] = useState(true);
+  const [importIdentities, setImportIdentities] = useState(true);
+  const [identityOrganizationId, setIdentityOrganizationId] = useState('');
   const [newTimelineName, setNewTimelineName] = useState('');
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importError, setImportError] = useState('');
@@ -167,6 +174,12 @@ export function DataImportModal({
     return false;
   }, [columnMappings]);
 
+  // Identities need a name column and an investigation to belong to.
+  const hasIdentityName = useMemo(() => [...columnMappings.values()].includes('identity-name'), [columnMappings]);
+  const willImportIdentities = importIdentities && hasIdentityName && !!folderId;
+  const organizations = useMemo(() => identities.filter((identity) => identity.folderId === folderId && isOrganization(identity)
+    && !identity.trashed && !identity.archived).sort(byName), [identities, folderId]);
+
   // Update a single column mapping
   const updateMapping = useCallback((column: string, mapping: ColumnMapping) => {
     setColumnMappings((prev) => {
@@ -184,6 +197,8 @@ export function DataImportModal({
     const result: ImportResult = {
       timelineEventsCreated: 0,
       iocsExtracted: 0,
+      identitiesCreated: 0,
+      identitiesUpdated: 0,
       summaryNoteCreated: false,
       errors: [],
     };
@@ -239,6 +254,23 @@ export function DataImportModal({
         result.errors.push(...errors);
       }
 
+      // Create or update identities in the chosen investigation: never duplicated.
+      if (willImportIdentities) {
+        const now = Date.now();
+        await db.transaction('rw', db.identities, async () => {
+          const existing = await db.identities.where('folderId').equals(folderId).toArray();
+          const { created, updated, errors } = buildIdentities(parseResult.rows, columnMappings, {
+            folderId, existing, clsLevel: folders.find((f) => f.id === folderId)?.clsLevel,
+            defaultOrganizationId: identityOrganizationId || undefined, now,
+          });
+          if (created.length) await db.identities.bulkAdd(created);
+          for (const { id, changes } of updated) await db.identities.update(id, { ...changes, updatedAt: now });
+          result.identitiesCreated = created.length;
+          result.identitiesUpdated = updated.length;
+          result.errors.push(...errors);
+        });
+      }
+
       // Build summary note
       if (createNote) {
         const note = buildSummaryNote(
@@ -258,7 +290,8 @@ export function DataImportModal({
       setImportResult(result);
       setStep('done');
     }
-  }, [parseResult, createEvents, hasTimestamp, timelineId, timelines, columnMappings, folderId, extractIOCsFlag, hasIOCColumns, createNote, newTimelineName, onCreateTimeline]);
+  }, [parseResult, createEvents, hasTimestamp, timelineId, timelines, columnMappings, folderId, extractIOCsFlag, hasIOCColumns, createNote, newTimelineName, onCreateTimeline,
+    willImportIdentities, folders, identityOrganizationId]);
 
   // Done
   const handleDone = useCallback(() => {
@@ -480,6 +513,20 @@ export function DataImportModal({
                 {!hasIOCColumns && <span className="text-yellow-500 text-[10px]">(no IOC columns mapped)</span>}
               </label>
 
+              <label className={`flex items-center gap-2 text-xs ${!hasIdentityName || !folderId ? 'opacity-40' : 'text-gray-300'}`}>
+                <input
+                  type="checkbox"
+                  checked={willImportIdentities}
+                  disabled={!hasIdentityName || !folderId}
+                  onChange={(e) => setImportIdentities(e.target.checked)}
+                  className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                />
+                {t('identities.create')}
+                {!hasIdentityName
+                  ? <span className="text-yellow-500 text-[10px]">{t('identities.noName')}</span>
+                  : !folderId && <span className="text-yellow-500 text-[10px]">{t('identities.needsInvestigation')}</span>}
+              </label>
+
               <label className="flex items-center gap-2 text-xs text-gray-300">
                 <input
                   type="checkbox"
@@ -490,6 +537,21 @@ export function DataImportModal({
                 Create summary note
               </label>
             </div>
+
+            {willImportIdentities && organizations.length > 0 && (
+              <div className="sm:col-span-2">
+                <label htmlFor="data-import-identity-organization" className="block text-xs font-medium text-gray-400 mb-1">{t('identities.organization')}</label>
+                <select
+                  id="data-import-identity-organization"
+                  value={identityOrganizationId}
+                  onChange={(e) => setIdentityOrganizationId(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-200 px-2 py-1.5 focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">{t('identities.noOrganization')}</option>
+                  {organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
@@ -503,7 +565,7 @@ export function DataImportModal({
             </button>
             <button
               onClick={handleImport}
-              disabled={!createEvents && !extractIOCsFlag && !createNote}
+              disabled={!createEvents && !extractIOCsFlag && !createNote && !willImportIdentities}
               className="flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition-colors"
             >
               Import {parseResult.rows.length.toLocaleString()} rows
@@ -531,7 +593,7 @@ export function DataImportModal({
             <h3 className="text-lg font-semibold text-gray-200">{t('importComplete')}</h3>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
             <div className="p-3 bg-gray-800 rounded-lg">
               <div className="text-2xl font-bold text-blue-400">{importResult.timelineEventsCreated}</div>
               <div className="text-xs text-gray-400 mt-1">Timeline Events</div>
@@ -539,6 +601,11 @@ export function DataImportModal({
             <div className="p-3 bg-gray-800 rounded-lg">
               <div className="text-2xl font-bold text-green-400">{importResult.iocsExtracted}</div>
               <div className="text-xs text-gray-400 mt-1">IOCs Extracted</div>
+            </div>
+            <div className="p-3 bg-gray-800 rounded-lg">
+              <div className="text-2xl font-bold text-sky-400">{importResult.identitiesCreated}</div>
+              <div className="text-xs text-gray-400 mt-1">{t('identities.result')}</div>
+              {importResult.identitiesUpdated > 0 && <div className="text-[10px] text-gray-500">{t('identities.updated', { count: importResult.identitiesUpdated })}</div>}
             </div>
             <div className="p-3 bg-gray-800 rounded-lg">
               <div className="text-2xl font-bold text-purple-400">{importResult.summaryNoteCreated ? 1 : 0}</div>

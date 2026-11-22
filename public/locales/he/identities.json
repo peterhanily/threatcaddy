@@ -4,6 +4,7 @@
   "header.descAll": "האנשים, הארגונים, המערכות והחשבונות בכל החקירות.",
   "header.add": "הוסף",
   "header.addBlocked": "צור חקירה תחילה.",
+  "header.export": "ייצא",
   "readOnly.remote": "חקירת צוות זו מוצגת מהשרת ולא ניתן לערוך אותה כאן. הורד עותק מקומי כדי לערוך את הזהויות שלה.",
 
   "tabs.label": "תצוגות זהויות",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "תאר את הקשר, למשל עובד אצל.",
   "connectionForm.errorTarget": "בחר עם מי או עם מה הקשר.",
   "connectionForm.noOthers": "הוסף קודם זהות נוספת לחקירה זו.",
+  "graphConnect.title": "קשר בין {{from}} ל-{{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "אנשים ({{count}})",
   "people.openChart": "פתח את התרשים הארגוני",
@@ -164,6 +167,15 @@
   "permanentDelete.title": "למחוק את {{name}} לצמיתות?",
   "permanentDelete.message": "לא ניתן לבטל פעולה זו. גם קשרים מזהויות אחרות אליו יוסרו.",
   "permanentDelete.confirm": "מחק לצמיתות",
+  "export.title": "ייצוא זהויות",
+  "export.summary_one": "{{count}} זהות מתוך {{scope}}.",
+  "export.summary_two": "{{count}} זהויות מתוך {{scope}}.",
+  "export.summary_other": "{{count}} זהויות מתוך {{scope}}.",
+  "export.allInvestigations": "כל החקירות",
+  "export.csvHint": "גיליון אלקטרוני (CSV) עם שורה לכל זהות ועמודה לכל פרט. אפשר לייבא אותו שוב דרך ייבא נתונים.",
+  "export.includePrivate": "כלול פרטים פרטיים",
+  "export.privateHint": "פרטים פרטיים מוסתרים ב-ThreatCaddy עד שלוחצים על הצג. כל מי שיש לו את הקובץ יכול לקרוא אותם.",
+  "export.button": "ייצא",
 
   "found.heading": "עדיין לא בזהויות",
   "found.dialogTitle": "„{{text}}”",
@@ -198,5 +210,6 @@
   "toast.ignored": "מתעלמים מ-„{{text}}” במכשיר זה.",
   "toast.merged": "{{gone}} מוזג לתוך {{keep}}.",
   "toast.trashed": "{{name}} הועבר לאשפה.",
+  "toast.exported": "{{file}} יוצא.",
   "toast.failed": "לא ניתן היה לשמור: {{error}}"
 }

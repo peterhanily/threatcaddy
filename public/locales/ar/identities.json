@@ -4,6 +4,7 @@
   "header.descAll": "الأشخاص والمنظمات والأنظمة والحسابات في جميع التحقيقات.",
   "header.add": "إضافة",
   "header.addBlocked": "أنشئ تحقيقًا أولًا.",
+  "header.export": "تصدير",
   "readOnly.remote": "يُعرض تحقيق الفريق هذا من الخادم ولا يمكن تعديله هنا. نزّل نسخة محلية لتعديل هوياته.",
 
   "tabs.label": "طرق عرض الهويات",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "صِف العلاقة، مثل «يعمل لدى».",
   "connectionForm.errorTarget": "اختر مَن أو ما الذي ترتبط به.",
   "connectionForm.noOthers": "أضف هوية أخرى إلى هذا التحقيق أولًا.",
+  "graphConnect.title": "ربط {{from}} و{{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "الأشخاص ({{count}})",
   "people.openChart": "فتح المخطط التنظيمي",
@@ -164,6 +167,18 @@
   "permanentDelete.title": "حذف {{name}} نهائيًا؟",
   "permanentDelete.message": "لا يمكن التراجع عن ذلك. وتُزال أيضًا علاقات الهويات الأخرى بها.",
   "permanentDelete.confirm": "حذف نهائي",
+  "export.title": "تصدير الهويات",
+  "export.summary_zero": "عدد الهويات من {{scope}}: {{count}}.",
+  "export.summary_one": "{{count}} هوية من {{scope}}.",
+  "export.summary_two": "هويتان ({{count}}) من {{scope}}.",
+  "export.summary_few": "{{count}} هويات من {{scope}}.",
+  "export.summary_many": "{{count}} هوية من {{scope}}.",
+  "export.summary_other": "{{count}} هوية من {{scope}}.",
+  "export.allInvestigations": "جميع التحقيقات",
+  "export.csvHint": "جدول بيانات (CSV) بصف لكل هوية وعمود لكل تفصيل. يمكن استيراده مجددًا من «استيراد البيانات».",
+  "export.includePrivate": "تضمين التفاصيل الخاصة",
+  "export.privateHint": "تبقى التفاصيل الخاصة مخفية في ThreatCaddy حتى تنقر على «إظهار». يمكن لأي شخص لديه الملف قراءتها.",
+  "export.button": "تصدير",
 
   "found.heading": "ليست في الهويات بعد",
   "found.dialogTitle": "«{{text}}»",
@@ -198,5 +213,6 @@
   "toast.ignored": "يُتجاهل «{{text}}» على هذا الجهاز.",
   "toast.merged": "تم دمج {{gone}} في {{keep}}.",
   "toast.trashed": "تم نقل {{name}} إلى المهملات.",
+  "toast.exported": "تم تصدير {{file}}.",
   "toast.failed": "تعذّر الحفظ: {{error}}"
 }

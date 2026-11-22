@@ -4,6 +4,7 @@
   "header.descAll": "Le persone, le organizzazioni, i sistemi e gli account di tutte le indagini.",
   "header.add": "Aggiungi",
   "header.addBlocked": "Crea prima un'indagine.",
+  "header.export": "Esporta",
   "readOnly.remote": "Questa indagine del team viene mostrata dal server e non può essere modificata qui. Scarica una copia locale per modificarne le identità.",
 
   "tabs.label": "Viste delle identità",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "Descrivi il collegamento, ad esempio lavora presso.",
   "connectionForm.errorTarget": "Scegli a chi o a cosa si collega.",
   "connectionForm.noOthers": "Prima aggiungi un'altra identità a questa indagine.",
+  "graphConnect.title": "Collega {{from}} e {{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "Persone ({{count}})",
   "people.openChart": "Apri l'organigramma",
@@ -164,6 +167,15 @@
   "permanentDelete.title": "Eliminare definitivamente {{name}}?",
   "permanentDelete.message": "Questa azione non può essere annullata. Vengono rimossi anche i collegamenti di altre identità verso di essa.",
   "permanentDelete.confirm": "Elimina definitivamente",
+  "export.title": "Esporta identità",
+  "export.summary_one": "{{count}} identità da {{scope}}.",
+  "export.summary_many": "{{count}} identità da {{scope}}.",
+  "export.summary_other": "{{count}} identità da {{scope}}.",
+  "export.allInvestigations": "tutte le indagini",
+  "export.csvHint": "Un foglio di calcolo (CSV) con una riga per identità e una colonna per dettaglio. Puoi reimportarlo da Importa dati.",
+  "export.includePrivate": "Includi i dettagli privati",
+  "export.privateHint": "I dettagli privati restano nascosti in ThreatCaddy finché non fai clic su Mostra. Chiunque abbia il file può leggerli.",
+  "export.button": "Esporta",
 
   "found.heading": "Non ancora nelle Identità",
   "found.dialogTitle": "«{{text}}»",
@@ -198,5 +210,6 @@
   "toast.ignored": "«{{text}}» viene ignorato su questo dispositivo.",
   "toast.merged": "Hai unito {{gone}} a {{keep}}.",
   "toast.trashed": "Hai spostato {{name}} nel cestino.",
+  "toast.exported": "Hai esportato {{file}}.",
   "toast.failed": "Impossibile salvare: {{error}}"
 }

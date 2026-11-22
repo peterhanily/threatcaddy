@@ -60,5 +60,13 @@
   "summaryNote": "요약 노트",
   "errorCount": "{{count}}개 오류:",
   "andMore": "... 그리고 {{count}}개 더",
-  "done": "완료"
+  "done": "완료",
+  "identities.create": "신원 생성 또는 업데이트",
+  "identities.noName": "(이름 열 매핑 없음)",
+  "identities.needsInvestigation": "(조사를 선택하세요)",
+  "identities.organization": "근무처, 조직이 없는 행에 적용",
+  "identities.noOrganization": "기록 없음",
+  "identities.result": "신원",
+  "identities.updated_one": "{{count}}개 업데이트됨",
+  "identities.updated_other": "{{count}}개 업데이트됨"
 }

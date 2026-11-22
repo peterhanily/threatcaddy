@@ -4,6 +4,7 @@
   "header.descAll": "हर जाँच के लोग, संगठन, सिस्टम और खाते।",
   "header.add": "जोड़ें",
   "header.addBlocked": "पहले एक जाँच बनाएँ।",
+  "header.export": "निर्यात",
   "readOnly.remote": "यह टीम जाँच सर्वर से दिखाई जा रही है और इसे यहाँ संपादित नहीं किया जा सकता। इसकी पहचानों को संपादित करने के लिए एक स्थानीय प्रति डाउनलोड करें।",
 
   "tabs.label": "पहचान दृश्य",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "संबंध बताएँ, जैसे कार्यस्थल।",
   "connectionForm.errorTarget": "चुनें कि यह किससे या किस चीज़ से जुड़ता है।",
   "connectionForm.noOthers": "पहले इस जाँच में कोई दूसरी पहचान जोड़ें।",
+  "graphConnect.title": "{{from}} और {{to}} को जोड़ें",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "लोग ({{count}})",
   "people.openChart": "संगठन चार्ट खोलें",
@@ -164,6 +167,14 @@
   "permanentDelete.title": "{{name}} को स्थायी रूप से हटाएँ?",
   "permanentDelete.message": "यह क्रिया पूर्ववत नहीं की जा सकती। अन्य पहचानों से इसके संबंध भी हटा दिए जाते हैं।",
   "permanentDelete.confirm": "स्थायी रूप से हटाएँ",
+  "export.title": "पहचान निर्यात करें",
+  "export.summary_one": "{{scope}} से {{count}} पहचान।",
+  "export.summary_other": "{{scope}} से {{count}} पहचान।",
+  "export.allInvestigations": "हर जाँच",
+  "export.csvHint": "एक स्प्रेडशीट (CSV), जिसमें हर पहचान के लिए एक पंक्ति और हर जानकारी के लिए एक कॉलम है। इसे डेटा आयात करें में फिर से आयात किया जा सकता है।",
+  "export.includePrivate": "निजी जानकारी शामिल करें",
+  "export.privateHint": "ThreatCaddy में निजी जानकारी तब तक छिपी रहती है जब तक आप दिखाएँ पर क्लिक न करें। फ़ाइल रखने वाला कोई भी व्यक्ति इसे पढ़ सकता है।",
+  "export.button": "निर्यात",
 
   "found.heading": "अभी पहचान में नहीं",
   "found.dialogTitle": "«{{text}}»",
@@ -198,5 +209,6 @@
   "toast.ignored": "इस डिवाइस पर «{{text}}» को अनदेखा किया जा रहा है।",
   "toast.merged": "{{gone}} को {{keep}} में मर्ज किया गया।",
   "toast.trashed": "{{name}} को ट्रैश में भेजा गया।",
+  "toast.exported": "{{file}} निर्यात हुई।",
   "toast.failed": "सहेजा नहीं जा सका: {{error}}"
 }

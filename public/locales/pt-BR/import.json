@@ -27,5 +27,14 @@
   "summaryNote": "Nota de resumo",
   "errorCount": "{{count}} erro(s):",
   "andMore": "... e mais {{count}}",
-  "done": "Concluído"
+  "done": "Concluído",
+  "identities.create": "Criar ou atualizar identidades",
+  "identities.noName": "(sem coluna de nome mapeada)",
+  "identities.needsInvestigation": "(escolha uma investigação)",
+  "identities.organization": "Trabalha em, para linhas sem organização",
+  "identities.noOrganization": "Não registrado",
+  "identities.result": "Identidades",
+  "identities.updated_one": "{{count}} atualizada",
+  "identities.updated_many": "{{count}} atualizadas",
+  "identities.updated_other": "{{count}} atualizadas"
 }

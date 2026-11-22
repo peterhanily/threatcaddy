@@ -30,6 +30,7 @@
   },
   "import": {
     "dataImported": "{{events}} इवेंट और {{iocs}} IOC आयात हुए",
+    "identitiesImported": "पहचान: {{created}} जोड़ी गईं, {{updated}} अपडेट हुईं",
     "jsonImported": "{{notes}} नोट्स, {{tasks}} कार्य आयात हुए",
     "markdownImported": "Markdown से {{count}} नोट्स आयात हुए",
     "importFailed": "आयात विफल",

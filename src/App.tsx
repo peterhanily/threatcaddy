@@ -1030,9 +1030,10 @@ const AppInner = memo(function AppInner({
       timelineEvents: active(investigationTimelineEvents),
       iocs: active(investigationStandaloneIOCs),
       evidence: active(investigationEvidenceItems),
+      identities: active(investigationIdentities),
     };
   }, [privacyDataReady, noteTemplatesHook.loading, investigationMode, selectedFolder, selectedContextHidden, screenshareMaxLevel,
-    investigationNotes, investigationTasks, investigationTimelineEvents, investigationStandaloneIOCs, investigationEvidenceItems]);
+    investigationNotes, investigationTasks, investigationTimelineEvents, investigationStandaloneIOCs, investigationEvidenceItems, investigationIdentities]);
   const productsViewActive = activeView === 'products' && !showSettings && !showTrash && !showArchive;
   const productComposerActive = productsViewActive && investigationMode === 'local'
     && (!productDraftFolderId || underlyingFolderId === productDraftFolderId);
@@ -1245,13 +1246,17 @@ const AppInner = memo(function AppInner({
     activityLog.log(
       'data',
       'import',
-      `Data import: ${result.timelineEventsCreated} events, ${result.iocsExtracted} IOCs`,
+      `Data import: ${result.timelineEventsCreated} events, ${result.iocsExtracted} IOCs, ${result.identitiesCreated} identities added, ${result.identitiesUpdated} updated`,
     );
     addToast('success', tt('import.dataImported', { events: result.timelineEventsCreated, iocs: result.iocsExtracted }));
+    if (result.identitiesCreated || result.identitiesUpdated) {
+      addToast('success', tt('import.identitiesImported', { created: result.identitiesCreated, updated: result.identitiesUpdated }));
+    }
     // Reload all hooks to pick up new entities
     notes.reload();
     timeline.reload();
     standaloneIOCsHook.reload();
+    identitiesHook.reload();
     reloadTimelines();
     reloadTags();
     // Navigate based on what was imported
@@ -1259,9 +1264,11 @@ const AppInner = memo(function AppInner({
       navigateTo('timeline');
     } else if (result.iocsExtracted > 0) {
       navigateTo('ioc-stats');
+    } else if (result.identitiesCreated > 0 || result.identitiesUpdated > 0) {
+      navigateTo('identities');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityLog, addToast, notes.reload, timeline.reload, standaloneIOCsHook.reload, reloadTimelines, reloadTags, navigateTo]);
+  }, [activityLog, addToast, notes.reload, timeline.reload, standaloneIOCsHook.reload, identitiesHook.reload, reloadTimelines, reloadTags, navigateTo]);
 
   const handleQuickCapture = useCallback(async (data: Partial<Note>) => {
     const folder = selectedFolderId ? folders.find((f) => f.id === selectedFolderId) : undefined;
@@ -2285,6 +2292,10 @@ const AppInner = memo(function AppInner({
             scopedNotes={investigationNotes}
             scopedTasks={investigationTasks}
             scopedTimelineEvents={investigationTimelineEvents}
+            identities={screensafeIdentities}
+            scopedIdentities={investigationIdentities}
+            onOpenIdentity={openIdentity}
+            onUpdateIdentity={investigationMode === 'remote' ? undefined : identitiesHook.updateIdentity}
             onNavigateToNote={(id) => { setSelectedNoteId(id); setSelectedFolderId(undefined); setSelectedTag(undefined); setShowTrash(false); setShowArchive(false); navigateTo('notes', { selectedNoteId: id }); }}
             onNavigateToTask={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); navigateTo('tasks'); }}
             onNavigateToTimelineEvent={(id) => { const ev = timeline.events.find((e) => e.id === id); if (ev) { setSelectedTimelineId(ev.timelineId); navigateTo('timeline', { selectedTimelineId: ev.timelineId }); } else { navigateTo('timeline'); } }}
@@ -2403,6 +2414,7 @@ const AppInner = memo(function AppInner({
         defaultFolderId={underlyingFolderId}
         onCreateTimeline={loggedCreateTimeline}
         onImportComplete={handleDataImportComplete}
+        identities={identitiesHook.identities}
       /></Suspense>
 
       {pendingImportFile && <BackupImportDialog

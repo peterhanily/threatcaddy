@@ -27,5 +27,13 @@
   "summaryNote": "सारांश नोट",
   "errorCount": "{{count}} त्रुटि(याँ):",
   "andMore": "... और {{count}} अधिक",
-  "done": "हो गया"
+  "done": "हो गया",
+  "identities.create": "पहचान बनाएँ या अपडेट करें",
+  "identities.noName": "(कोई नाम कॉलम मैप नहीं)",
+  "identities.needsInvestigation": "(कोई जाँच चुनें)",
+  "identities.organization": "कार्यस्थल, उन पंक्तियों के लिए जिनमें कोई संगठन नहीं है",
+  "identities.noOrganization": "दर्ज नहीं",
+  "identities.result": "पहचान",
+  "identities.updated_one": "{{count}} अपडेट हुई",
+  "identities.updated_other": "{{count}} अपडेट हुईं"
 }

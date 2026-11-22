@@ -27,5 +27,17 @@
   "summaryNote": "ملاحظة الملخص",
   "errorCount": "{{count}} خطأ/أخطاء:",
   "andMore": "... و{{count}} أكثر",
-  "done": "تم"
+  "done": "تم",
+  "identities.create": "إنشاء الهويات أو تحديثها",
+  "identities.noName": "(لم يتم تحديد عمود الاسم)",
+  "identities.needsInvestigation": "(اختر تحقيقًا)",
+  "identities.organization": "يعمل لدى، للصفوف التي لا تذكر منظمة",
+  "identities.noOrganization": "غير مسجّل",
+  "identities.result": "الهويات",
+  "identities.updated_zero": "تم تحديث {{count}}",
+  "identities.updated_one": "تم تحديث {{count}}",
+  "identities.updated_two": "تم تحديث {{count}}",
+  "identities.updated_few": "تم تحديث {{count}}",
+  "identities.updated_many": "تم تحديث {{count}}",
+  "identities.updated_other": "تم تحديث {{count}}"
 }

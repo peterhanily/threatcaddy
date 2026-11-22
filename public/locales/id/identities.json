@@ -4,6 +4,7 @@
   "header.descAll": "Orang, organisasi, sistem, dan akun di semua investigasi.",
   "header.add": "Tambah",
   "header.addBlocked": "Buat investigasi terlebih dahulu.",
+  "header.export": "Ekspor",
   "readOnly.remote": "Investigasi tim ini ditampilkan dari server dan tidak dapat diedit di sini. Unduh salinan lokal untuk mengedit identitasnya.",
 
   "tabs.label": "Tampilan identitas",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "Jelaskan hubungannya, misalnya bekerja di.",
   "connectionForm.errorTarget": "Pilih siapa atau apa yang terhubung.",
   "connectionForm.noOthers": "Tambahkan identitas lain ke investigasi ini terlebih dahulu.",
+  "graphConnect.title": "Hubungkan {{from}} dan {{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "Orang ({{count}})",
   "people.openChart": "Buka bagan organisasi",
@@ -164,6 +167,14 @@
   "permanentDelete.title": "Hapus {{name}} secara permanen?",
   "permanentDelete.message": "Tindakan ini tidak dapat dibatalkan. Hubungan dari identitas lain ke identitas ini juga dihapus.",
   "permanentDelete.confirm": "Hapus permanen",
+  "export.title": "Ekspor identitas",
+  "export.summary_one": "{{count}} identitas dari {{scope}}.",
+  "export.summary_other": "{{count}} identitas dari {{scope}}.",
+  "export.allInvestigations": "semua investigasi",
+  "export.csvHint": "Spreadsheet (CSV) dengan satu baris per identitas dan satu kolom per detail. File ini dapat diimpor lagi melalui Impor Data.",
+  "export.includePrivate": "Sertakan detail privat",
+  "export.privateHint": "Detail privat disembunyikan di ThreatCaddy sampai Anda mengklik Tampilkan. Siapa pun yang memiliki file ini dapat membacanya.",
+  "export.button": "Ekspor",
 
   "found.heading": "Belum ada di Identitas",
   "found.dialogTitle": "“{{text}}”",
@@ -198,5 +209,6 @@
   "toast.ignored": "“{{text}}” diabaikan di perangkat ini.",
   "toast.merged": "{{gone}} digabungkan ke {{keep}}.",
   "toast.trashed": "{{name}} dipindahkan ke sampah.",
+  "toast.exported": "Diekspor {{file}}.",
   "toast.failed": "Tidak dapat menyimpan: {{error}}"
 }

@@ -4,6 +4,7 @@
   "header.descAll": "모든 조사에 있는 사람, 조직, 시스템, 계정입니다.",
   "header.add": "추가",
   "header.addBlocked": "먼저 조사를 만드세요.",
+  "header.export": "내보내기",
   "readOnly.remote": "이 팀 조사는 서버에서 표시되므로 여기서 편집할 수 없습니다. 신원을 편집하려면 로컬 사본을 다운로드하세요.",
 
   "tabs.label": "신원 보기",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "연결을 설명하세요. 예: 근무처.",
   "connectionForm.errorTarget": "연결할 대상을 선택하세요.",
   "connectionForm.noOthers": "먼저 이 조사에 다른 신원을 추가하세요.",
+  "graphConnect.title": "{{from}}와(과) {{to}} 연결",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "사람 ({{count}})",
   "people.openChart": "조직도 열기",
@@ -164,6 +167,14 @@
   "permanentDelete.title": "{{name}}을(를) 영구 삭제할까요?",
   "permanentDelete.message": "이 작업은 취소할 수 없습니다. 다른 신원에서 이 신원으로의 연결도 제거됩니다.",
   "permanentDelete.confirm": "영구 삭제",
+  "export.title": "신원 내보내기",
+  "export.summary_one": "{{scope}}의 신원 {{count}}개.",
+  "export.summary_other": "{{scope}}의 신원 {{count}}개.",
+  "export.allInvestigations": "모든 조사",
+  "export.csvHint": "신원마다 한 행, 세부 정보마다 한 열이 있는 스프레드시트(CSV)입니다. 데이터 가져오기에서 다시 가져올 수 있습니다.",
+  "export.includePrivate": "비공개 세부 정보 포함",
+  "export.privateHint": "비공개 세부 정보는 ThreatCaddy에서 표시를 클릭하기 전까지 숨겨집니다. 파일을 가진 사람은 누구나 읽을 수 있습니다.",
+  "export.button": "내보내기",
 
   "found.heading": "아직 신원에 없음",
   "found.dialogTitle": "“{{text}}”",
@@ -198,5 +209,6 @@
   "toast.ignored": "이 기기에서 “{{text}}”을(를) 무시합니다.",
   "toast.merged": "{{gone}}을(를) {{keep}}에 병합했습니다.",
   "toast.trashed": "{{name}}을(를) 휴지통으로 이동했습니다.",
+  "toast.exported": "{{file}}을(를) 내보냈습니다.",
   "toast.failed": "저장하지 못했습니다: {{error}}"
 }

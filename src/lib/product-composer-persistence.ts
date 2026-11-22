@@ -11,7 +11,7 @@ import { getActiveWorkspaceId, workspaceStorageKey } from './workspace-profiles'
 
 type ProductInput = Parameters<typeof prepareProductComposerNote>[0];
 type SourceKey = Exclude<keyof ProductComposerSnapshot, 'folder'>;
-const sourceKeys: SourceKey[] = ['notes', 'tasks', 'timelineEvents', 'iocs', 'evidence'];
+const sourceKeys: SourceKey[] = ['notes', 'tasks', 'timelineEvents', 'iocs', 'evidence', 'identities'];
 
 function changed(messageKey: string, message: string): never {
   throw new ProductComposerValidationError('selection', message, messageKey);
@@ -79,7 +79,7 @@ export function createProductComposerPersistence({ input, originSnapshot, origin
       changed('draftChanged', 'The draft changed before it could be saved. Review the draft and try again.');
     }
     await db.transaction('rw', [db.notes, db.tasks, db.timelineEvents, db.standaloneIOCs,
-      db.evidenceItems, db.folders, db.noteTemplates], async () => {
+      db.evidenceItems, db.identities, db.folders, db.noteTemplates], async () => {
       assertOwner();
       const folder = await db.folders.get(folderId);
       if (!folder || folder.status === 'archived') {
@@ -94,14 +94,15 @@ export function createProductComposerPersistence({ input, originSnapshot, origin
       // enforces the combined/embedded-IOC budget.
       const maximum = PRODUCT_COMPOSER_LIMITS.sourceItems + 1;
       const active = <T extends { archived: boolean; trashed: boolean }>(row: T) => !row.archived && !row.trashed;
-      const [notes, tasks, timelineEvents, iocs, evidence] = await Promise.all([
+      const [notes, tasks, timelineEvents, iocs, evidence, identities] = await Promise.all([
         db.notes.where('folderId').equals(folderId).filter(row => active(row) && !row.tags.includes('product')).limit(maximum).toArray(),
         db.tasks.where('folderId').equals(folderId).filter(active).limit(maximum).toArray(),
         db.timelineEvents.where('folderId').equals(folderId).filter(active).limit(maximum).toArray(),
         db.standaloneIOCs.where('folderId').equals(folderId).filter(active).limit(maximum).toArray(),
         db.evidenceItems.where('folderId').equals(folderId).filter(active).limit(maximum).toArray(),
+        db.identities.where('folderId').equals(folderId).filter(active).limit(maximum).toArray(),
       ]);
-      const current: ProductComposerSnapshot = { folder, notes, tasks, timelineEvents, iocs, evidence };
+      const current: ProductComposerSnapshot = { folder, notes, tasks, timelineEvents, iocs, evidence, identities };
       // Includes newly added sources and current embedded indicator labels,
       // not just the cached React rows or the items explicitly staged so far.
       // Check the budget before interpreting any bounded result as complete.

@@ -12,7 +12,9 @@ describe('Identities strings in every language', () => {
 
   it.each(locales)('%s translates the sentences, not just copies English', locale => {
     const translated = read(locale, 'identities.json');
-    expect(Object.keys(translated)).toEqual(Object.keys(english));
+    // The same keys as English, allowing each language its own plural forms (_few, _many…).
+    const families = (keys: string[]) => [...new Set(keys.map(key => key.replace(/_(zero|one|two|few|many|other)$/, '')))];
+    expect(families(Object.keys(translated))).toEqual(families(Object.keys(english)));
     for (const key of ['header.descScoped', 'detailForm.private', 'merge.confirmMessage', 'found.hint', 'trash.confirmMessage', 'readOnly.remote', 'org.desc']) {
       expect(translated[key], `${locale} ${key}`).not.toBe(english[key]);
     }

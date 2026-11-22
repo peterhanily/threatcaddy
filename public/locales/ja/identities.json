@@ -4,6 +4,7 @@
   "header.descAll": "すべての調査に含まれる人物、組織、システム、アカウント。",
   "header.add": "追加",
   "header.addBlocked": "先に調査を作成してください。",
+  "header.export": "エクスポート",
   "readOnly.remote": "このチーム調査はサーバーから表示されているため、ここでは編集できません。アイデンティティを編集するには、ローカルコピーをダウンロードしてください。",
 
   "tabs.label": "アイデンティティの表示",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "関係を入力してください（例: 勤務先）。",
   "connectionForm.errorTarget": "関係の相手を選択してください。",
   "connectionForm.noOthers": "先にこの調査に別のアイデンティティを追加してください。",
+  "graphConnect.title": "{{from}} と {{to}} を関連付け",
+  "graphConnect.target": "…は {{name}}",
 
   "people.heading": "人物（{{count}}）",
   "people.openChart": "組織図を開く",
@@ -164,6 +167,14 @@
   "permanentDelete.title": "{{name}} を完全に削除しますか？",
   "permanentDelete.message": "この操作は元に戻せません。他のアイデンティティからの関係も削除されます。",
   "permanentDelete.confirm": "完全に削除",
+  "export.title": "アイデンティティをエクスポート",
+  "export.summary_one": "{{count}} 件のアイデンティティ（{{scope}}）。",
+  "export.summary_other": "{{count}} 件のアイデンティティ（{{scope}}）。",
+  "export.allInvestigations": "すべての調査",
+  "export.csvHint": "アイデンティティごとに 1 行、詳細ごとに 1 列のスプレッドシート（CSV）です。「データをインポート」から再度インポートできます。",
+  "export.includePrivate": "非公開の詳細を含める",
+  "export.privateHint": "非公開の詳細は、ThreatCaddy では「表示」をクリックするまで隠されています。ファイルを持っている人は誰でも読めます。",
+  "export.button": "エクスポート",
 
   "found.heading": "アイデンティティ未登録",
   "found.dialogTitle": "「{{text}}」",
@@ -198,5 +209,6 @@
   "toast.ignored": "このデバイスでは「{{text}}」を無視します。",
   "toast.merged": "{{gone}} を {{keep}} にマージしました。",
   "toast.trashed": "{{name}} をゴミ箱に移動しました。",
+  "toast.exported": "{{file}} をエクスポートしました。",
   "toast.failed": "保存できませんでした: {{error}}"
 }

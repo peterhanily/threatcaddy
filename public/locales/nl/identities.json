@@ -4,6 +4,7 @@
   "header.descAll": "De personen, organisaties, systemen en accounts in alle onderzoeken.",
   "header.add": "Toevoegen",
   "header.addBlocked": "Maak eerst een onderzoek aan.",
+  "header.export": "Exporteren",
   "readOnly.remote": "Dit teamonderzoek wordt vanaf de server getoond en kan hier niet worden bewerkt. Download een lokale kopie om de identiteiten te bewerken.",
 
   "tabs.label": "Weergaven van identiteiten",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "Beschrijf de relatie, bijvoorbeeld werkt bij.",
   "connectionForm.errorTarget": "Kies met wie of wat de relatie is.",
   "connectionForm.noOthers": "Voeg eerst nog een identiteit toe aan dit onderzoek.",
+  "graphConnect.title": "{{from}} en {{to}} verbinden",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "Personen ({{count}})",
   "people.openChart": "Organigram openen",
@@ -164,6 +167,14 @@
   "permanentDelete.title": "{{name}} definitief verwijderen?",
   "permanentDelete.message": "Dit kan niet ongedaan worden gemaakt. Relaties van andere identiteiten naar deze identiteit worden ook verwijderd.",
   "permanentDelete.confirm": "Definitief verwijderen",
+  "export.title": "Identiteiten exporteren",
+  "export.summary_one": "{{count}} identiteit uit {{scope}}.",
+  "export.summary_other": "{{count}} identiteiten uit {{scope}}.",
+  "export.allInvestigations": "alle onderzoeken",
+  "export.csvHint": "Een spreadsheet (CSV) met één rij per identiteit en één kolom per detail. Je kunt het opnieuw importeren via Gegevens importeren.",
+  "export.includePrivate": "Privédetails opnemen",
+  "export.privateHint": "Privédetails blijven in ThreatCaddy verborgen tot je op Tonen klikt. Iedereen met het bestand kan ze lezen.",
+  "export.button": "Exporteren",
 
   "found.heading": "Nog niet in Identiteiten",
   "found.dialogTitle": "“{{text}}”",
@@ -198,5 +209,6 @@
   "toast.ignored": "“{{text}}” wordt op dit apparaat genegeerd.",
   "toast.merged": "{{gone}} samengevoegd met {{keep}}.",
   "toast.trashed": "{{name}} naar de prullenbak verplaatst.",
+  "toast.exported": "{{file}} geëxporteerd.",
   "toast.failed": "Opslaan mislukt: {{error}}"
 }

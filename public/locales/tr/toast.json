@@ -30,6 +30,7 @@
   },
   "import": {
     "dataImported": "{{events}} olay ve {{iocs}} IOC içe aktarıldı",
+    "identitiesImported": "Kimlikler: {{created}} eklendi, {{updated}} güncellendi",
     "jsonImported": "{{notes}} not, {{tasks}} görev içe aktarıldı",
     "markdownImported": "Markdown'dan {{count}} not içe aktarıldı",
     "importFailed": "İçe aktarma başarısız",

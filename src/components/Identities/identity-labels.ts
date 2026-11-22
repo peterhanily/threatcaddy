@@ -7,9 +7,13 @@ import {
 } from '../../lib/identity-model';
 import type { AddPrefill } from './IdentityFormModal';
 
-/** Translated labels for types, statuses, connection phrases and detail labels. */
-export function useIdentityLabels() {
-  const { t } = useTranslation('identities');
+/**
+ * Translated labels for types, statuses, connection phrases and detail labels. `suspense: false`
+ * for views mounted before anyone opens them (the graph), so the strings load without holding up
+ * the app; until then the labels are their keys.
+ */
+export function useIdentityLabels(options?: { suspense?: boolean }) {
+  const { t } = useTranslation('identities', { useSuspense: options?.suspense ?? true });
   return useMemo(() => {
     const typeLabels = Object.fromEntries(BUILTIN_TYPES.map(type => [type, t(`type.${type}`)])) as Record<BuiltinType, string>;
     const phraseLabels = Object.fromEntries((Object.keys(CONNECTION_PHRASES) as ConnectionPhrase[])

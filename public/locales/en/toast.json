@@ -30,6 +30,7 @@
   },
   "import": {
     "dataImported": "Imported {{events}} events and {{iocs}} IOCs",
+    "identitiesImported": "Identities: {{created}} added, {{updated}} updated",
     "jsonImported": "Imported {{notes}} notes, {{tasks}} tasks",
     "markdownImported": "Imported {{count}} notes from Markdown",
     "importFailed": "Import failed",

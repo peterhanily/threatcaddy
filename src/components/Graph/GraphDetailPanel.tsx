@@ -12,6 +12,8 @@ interface GraphDetailPanelProps {
   onNavigate: (nodeId: string) => void;
   onOpenNewTab?: (node: GraphNode) => void;
   onEditIOC?: (node: GraphNode) => void;
+  /** Opens an identity node in the Identities view. */
+  onOpenIdentity?: (node: GraphNode) => void;
   notes?: Note[];
   tasks?: Task[];
   timelineEvents?: TimelineEvent[];
@@ -49,7 +51,7 @@ function snippet(text: string, maxLen = 120): string {
   return clean.slice(0, maxLen) + '...';
 }
 
-export function GraphDetailPanel({ node, edges, allNodes, onClose, onNavigate, onOpenNewTab, onEditIOC, notes, tasks, timelineEvents }: GraphDetailPanelProps) {
+export function GraphDetailPanel({ node, edges, allNodes, onClose, onNavigate, onOpenNewTab, onEditIOC, onOpenIdentity, notes, tasks, timelineEvents }: GraphDetailPanelProps) {
   const { t } = useTranslation('graph');
   const connectedEdges = edges.filter((e) => e.source === node.id || e.target === node.id);
 
@@ -92,10 +94,10 @@ export function GraphDetailPanel({ node, edges, allNodes, onClose, onNavigate, o
               {TIMELINE_EVENT_TYPE_LABELS[node.eventType]?.label || node.eventType}
             </span>
           ) : (
-            <div className="text-xs text-gray-300 capitalize">
-              {node.type === 'ioc' && node.iocType
+            <div className={`text-xs text-gray-300 ${node.subtitle ? '' : 'capitalize'}`}>
+              {node.subtitle ?? (node.type === 'ioc' && node.iocType
                 ? ((IOC_TYPE_LABELS as Record<string, { label: string; color: string }>)[node.iocType]?.label || node.iocType)
-                : node.type.replace('-', ' ')}
+                : node.type.replace('-', ' '))}
             </div>
           )}
         </div>
@@ -240,8 +242,17 @@ export function GraphDetailPanel({ node, edges, allNodes, onClose, onNavigate, o
       </div>
 
       {/* Footer buttons */}
-      {(node.type === 'note' || node.type === 'task' || node.type === 'timeline-event' || (node.type === 'ioc' && onEditIOC)) && (
+      {(node.type === 'note' || node.type === 'task' || node.type === 'timeline-event' || (node.type === 'ioc' && onEditIOC) || (node.type === 'identity' && onOpenIdentity)) && (
         <div className="border-t border-gray-800 p-2 space-y-1">
+          {node.type === 'identity' && onOpenIdentity && (
+            <button
+              onClick={() => onOpenIdentity(node)}
+              className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/15 text-accent hover:bg-accent/25 transition-colors"
+            >
+              <ArrowRight size={12} />
+              {t('detail.openIdentity')}
+            </button>
+          )}
           {(node.type === 'note' || node.type === 'task' || node.type === 'timeline-event') && (
             <>
               <button

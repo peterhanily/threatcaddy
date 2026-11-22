@@ -4,6 +4,7 @@
   "header.descAll": "บุคคล องค์กร ระบบ และบัญชีในการสืบสวนทั้งหมด",
   "header.add": "เพิ่ม",
   "header.addBlocked": "สร้างการสืบสวนก่อน",
+  "header.export": "ส่งออก",
   "readOnly.remote": "การสืบสวนของทีมนี้แสดงจากเซิร์ฟเวอร์และแก้ไขที่นี่ไม่ได้ ดาวน์โหลดสำเนาในเครื่องเพื่อแก้ไขตัวตนในการสืบสวนนี้",
 
   "tabs.label": "มุมมองตัวตน",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "อธิบายความเชื่อมโยง เช่น ทำงานที่",
   "connectionForm.errorTarget": "เลือกว่าเชื่อมโยงกับใครหรืออะไร",
   "connectionForm.noOthers": "เพิ่มตัวตนอื่นในการสืบสวนนี้ก่อน",
+  "graphConnect.title": "เชื่อมโยง {{from}} กับ {{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "บุคคล ({{count}})",
   "people.openChart": "เปิดแผนผังองค์กร",
@@ -164,6 +167,14 @@
   "permanentDelete.title": "ลบ {{name}} อย่างถาวร?",
   "permanentDelete.message": "การดำเนินการนี้ไม่สามารถยกเลิกได้ ความเชื่อมโยงจากตัวตนอื่นมายังตัวตนนี้จะถูกลบด้วย",
   "permanentDelete.confirm": "ลบถาวร",
+  "export.title": "ส่งออกตัวตน",
+  "export.summary_one": "ตัวตน {{count}} รายการจาก{{scope}}",
+  "export.summary_other": "ตัวตน {{count}} รายการจาก{{scope}}",
+  "export.allInvestigations": "การสืบสวนทั้งหมด",
+  "export.csvHint": "สเปรดชีต (CSV) ที่มีหนึ่งแถวต่อตัวตนและหนึ่งคอลัมน์ต่อรายละเอียด สามารถนำเข้าอีกครั้งได้ที่ “นำเข้าข้อมูล”",
+  "export.includePrivate": "รวมรายละเอียดส่วนตัว",
+  "export.privateHint": "รายละเอียดส่วนตัวจะถูกซ่อนใน ThreatCaddy จนกว่าคุณจะคลิก “แสดง” ทุกคนที่มีไฟล์นี้สามารถอ่านได้",
+  "export.button": "ส่งออก",
 
   "found.heading": "ยังไม่อยู่ในรายการตัวตน",
   "found.dialogTitle": "“{{text}}”",
@@ -198,5 +209,6 @@
   "toast.ignored": "ละเว้น “{{text}}” ในอุปกรณ์นี้แล้ว",
   "toast.merged": "รวม {{gone}} เข้ากับ {{keep}} แล้ว",
   "toast.trashed": "ย้าย {{name}} ไปถังขยะแล้ว",
+  "toast.exported": "ส่งออก {{file}} แล้ว",
   "toast.failed": "บันทึกไม่ได้: {{error}}"
 }

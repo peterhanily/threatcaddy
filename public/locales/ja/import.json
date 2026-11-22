@@ -27,5 +27,13 @@
   "summaryNote": "サマリーノート",
   "errorCount": "{{count}} 件のエラー：",
   "andMore": "...他 {{count}} 件",
-  "done": "完了"
+  "done": "完了",
+  "identities.create": "アイデンティティを作成または更新",
+  "identities.noName": "（名前列がマッピングされていません）",
+  "identities.needsInvestigation": "（調査を選択してください）",
+  "identities.organization": "勤務先（組織が記載されていない行に適用）",
+  "identities.noOrganization": "未記録",
+  "identities.result": "アイデンティティ",
+  "identities.updated_one": "{{count}} 件を更新",
+  "identities.updated_other": "{{count}} 件を更新"
 }

@@ -32,6 +32,7 @@
   },
   "import": {
     "dataImported": "Импортировано {{events}} событий и {{iocs}} IOC",
+    "identitiesImported": "Субъекты: добавлено {{created}}, обновлено {{updated}}",
     "jsonImported": "Импортировано {{notes}} заметок, {{tasks}} задач",
     "markdownImported": "Импортировано {{count}} заметок из Markdown",
     "importFailed": "Импорт не удался",

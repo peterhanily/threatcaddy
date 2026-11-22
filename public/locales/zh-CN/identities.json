@@ -4,6 +4,7 @@
   "header.descAll": "所有调查中的人员、组织、系统和账户。",
   "header.add": "添加",
   "header.addBlocked": "请先创建一个调查。",
+  "header.export": "导出",
   "readOnly.remote": "此团队调查从服务器显示，无法在此编辑。请下载本地副本以编辑其身份。",
 
   "tabs.label": "身份视图",
@@ -108,6 +109,8 @@
   "connectionForm.errorPhrase": "请描述关联，例如“就职于”。",
   "connectionForm.errorTarget": "请选择关联到谁或什么。",
   "connectionForm.noOthers": "请先向此调查添加另一个身份。",
+  "graphConnect.title": "关联 {{from}} 和 {{to}}",
+  "graphConnect.target": "…{{name}}",
 
   "people.heading": "人员（{{count}}）",
   "people.openChart": "打开组织架构图",
@@ -164,6 +167,14 @@
   "permanentDelete.title": "永久删除 {{name}}？",
   "permanentDelete.message": "此操作无法撤销。其他身份与它的关联也会一并移除。",
   "permanentDelete.confirm": "永久删除",
+  "export.title": "导出身份",
+  "export.summary_one": "来自 {{scope}} 的 {{count}} 个身份。",
+  "export.summary_other": "来自 {{scope}} 的 {{count}} 个身份。",
+  "export.allInvestigations": "所有调查",
+  "export.csvHint": "电子表格（CSV），每个身份一行，每项详细信息一列。可在“导入数据”中重新导入。",
+  "export.includePrivate": "包含私密详细信息",
+  "export.privateHint": "在 ThreatCaddy 中，私密详细信息在点击“显示”前保持隐藏。任何拥有该文件的人都能读取它们。",
+  "export.button": "导出",
 
   "found.heading": "尚未加入身份",
   "found.dialogTitle": "“{{text}}”",
@@ -198,5 +209,6 @@
   "toast.ignored": "已在此设备上忽略“{{text}}”。",
   "toast.merged": "已将 {{gone}} 合并到 {{keep}}。",
   "toast.trashed": "已将 {{name}} 移至回收站。",
+  "toast.exported": "已导出 {{file}}。",
   "toast.failed": "无法保存：{{error}}"
 }

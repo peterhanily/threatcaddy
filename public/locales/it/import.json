@@ -27,5 +27,14 @@
   "summaryNote": "Nota di riepilogo",
   "errorCount": "{{count}} errori:",
   "andMore": "... e altri {{count}}",
-  "done": "Fatto"
+  "done": "Fatto",
+  "identities.create": "Crea o aggiorna identità",
+  "identities.noName": "(nessuna colonna nome mappata)",
+  "identities.needsInvestigation": "(scegli un'indagine)",
+  "identities.organization": "Lavora presso, per le righe senza organizzazione",
+  "identities.noOrganization": "Non registrato",
+  "identities.result": "Identità",
+  "identities.updated_one": "{{count}} aggiornata",
+  "identities.updated_many": "{{count}} aggiornate",
+  "identities.updated_other": "{{count}} aggiornate"
 }

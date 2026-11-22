@@ -27,5 +27,15 @@
   "summaryNote": "Notatka podsumowująca",
   "errorCount": "{{count}} błędów:",
   "andMore": "... i jeszcze {{count}}",
-  "done": "Gotowe"
+  "done": "Gotowe",
+  "identities.create": "Utwórz lub zaktualizuj tożsamości",
+  "identities.noName": "(kolumna nazwy nie zamapowana)",
+  "identities.needsInvestigation": "(wybierz dochodzenie)",
+  "identities.organization": "Pracuje w, dla wierszy bez organizacji",
+  "identities.noOrganization": "Nie zapisano",
+  "identities.result": "Tożsamości",
+  "identities.updated_one": "Zaktualizowano: {{count}}",
+  "identities.updated_few": "Zaktualizowano: {{count}}",
+  "identities.updated_many": "Zaktualizowano: {{count}}",
+  "identities.updated_other": "Zaktualizowano: {{count}}"
 }

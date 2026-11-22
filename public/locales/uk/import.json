@@ -27,5 +27,15 @@
   "summaryNote": "Підсумкова нотатка",
   "errorCount": "{{count}} помилок:",
   "andMore": "... і ще {{count}}",
-  "done": "Готово"
+  "done": "Готово",
+  "identities.create": "Створити або оновити суб'єкти",
+  "identities.noName": "(стовпець імені не зіставлено)",
+  "identities.needsInvestigation": "(виберіть розслідування)",
+  "identities.organization": "Працює в — для рядків без організації",
+  "identities.noOrganization": "Не вказано",
+  "identities.result": "Суб'єкти",
+  "identities.updated_one": "Оновлено: {{count}}",
+  "identities.updated_few": "Оновлено: {{count}}",
+  "identities.updated_many": "Оновлено: {{count}}",
+  "identities.updated_other": "Оновлено: {{count}}"
 }
