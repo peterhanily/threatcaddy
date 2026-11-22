@@ -37,6 +37,25 @@ describe('incremental search projection and index', () => {
     expect(index.search({ mode: 'simple', raw: 'amendment' }).results).toEqual([]);
   });
 
+  it('never indexes a private identity detail, and finds a public one', () => {
+    const projection = new SearchProjection();
+    const index = new SearchIndex();
+    const dana = { id: 'dana', folderId: 'case', type: 'person', name: 'Dana Okafor', aliases: ['D. Okafor'], connections: [], tags: [],
+      details: [{ id: 'e', label: 'Email', value: 'dana@halvorsen.example' }, { id: 'p', label: 'Phone', value: '+44 7700 900999', private: true }],
+      trashed: false, archived: false, createdAt: 1, updatedAt: 1 };
+    const patch = projection.update({ notes: [], tasks: [], identities: [dana] });
+    expect(JSON.stringify(patch)).not.toContain('900999');
+    index.apply(patch);
+    expect(index.search({ mode: 'simple', raw: '900999' }).results).toEqual([]);
+    expect(index.search({ mode: 'simple', raw: 'halvorsen' }).results.map(r => r.id)).toEqual(['dana']);
+    // Made public later, it is indexed; made private again, it leaves the index.
+    const shared = { ...dana, details: dana.details.map(detail => ({ ...detail, private: undefined })), updatedAt: 2 };
+    index.apply(projection.update({ notes: [], tasks: [], identities: [shared] }));
+    expect(index.search({ mode: 'simple', raw: '900999' }).results.map(r => r.id)).toEqual(['dana']);
+    index.apply(projection.update({ notes: [], tasks: [], identities: [dana] }));
+    expect(index.search({ mode: 'simple', raw: '900999' }).results).toEqual([]);
+  });
+
   it('projects evidence OCR, analysis and filenames but excludes binary/scene/tool payloads', () => {
     const projection = new SearchProjection();
     const patch = projection.update({ notes: [], tasks: [], evidenceItems: [evidence('e', { imageData: 'SECRET_BINARY', imageOcrText: 'transcribed receipt', imageAnalysis: 'Description of exhibit' })], whiteboards: [{ id: 'w', name: 'Diagram', tags: [], elements: 'SECRET_SCENE', files: 'SECRET_FILES', order: 0, trashed: false, archived: false, createdAt: 1, updatedAt: 1 }] as Whiteboard[], chatThreads: [{ id: 'c', title: 'Conversation', tags: [], messages: [{ content: 'Visible message', toolCalls: [{ input: 'SECRET_TOOL' }] }], createdAt: 1, updatedAt: 1 }] as unknown as ChatThread[] });

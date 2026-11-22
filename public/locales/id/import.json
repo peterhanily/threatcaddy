@@ -33,6 +33,9 @@
   "identities.needsInvestigation": "(pilih investigasi)",
   "identities.organization": "Bekerja di, untuk baris yang tidak menyebutkan organisasi",
   "identities.noOrganization": "Tidak dicatat",
+  "identities.privateColumn": "Privat",
+  "identities.privateColumnAria": "Impor {{column}} sebagai detail privat",
+  "identities.privateHint": "Kolom detail yang dicentang Privat diimpor sebagai detail privat: disembunyikan sampai Anda mengklik Tampilkan, tidak pernah dikirim ke AI, dan tidak disertakan dalam ekspor, catatan ringkasan impor ini, maupun kejadiannya. Kolom telepon, alamat, tanggal lahir, dan nomor ID sudah dicentang sejak awal.",
   "identities.result": "Identitas",
   "identities.updated_one": "{{count}} diperbarui",
   "identities.updated_other": "{{count}} diperbarui"

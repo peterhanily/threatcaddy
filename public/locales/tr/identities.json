@@ -54,6 +54,10 @@
   "details.showAria": "Özel {{label}} ayrıntısını göster",
   "details.private": "Özel",
   "details.remove": "{{label}} ayrıntısını kaldır",
+  "details.makePrivate": "Özel yap",
+  "details.makePublic": "Herkese açık yap",
+  "details.makePrivateAria": "{{label}} ayrıntısını özel yap",
+  "details.makePublicAria": "{{label}} ayrıntısını herkese açık yap",
   "details.hiddenWhileSharing": "Özel ayrıntılar ekran paylaşımı sırasında gizli kalır.",
 
   "detailForm.label": "Etiket",

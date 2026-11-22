@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { Lock, Pencil, Star, X } from 'lucide-react';
+import { Lock, LockOpen, Pencil, Star, X } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import type { Folder, Identity, IdentityStatus } from '../../types';
+import type { Folder, Identity, IdentityStatus, IdentityDetail } from '../../types';
 import { IDENTITY_STATUSES } from '../../lib/entity-enums';
 import {
   CONNECTION_PHRASES, alsoElsewhere, byName, canonicalPhrase, connectionsOf, isOrganization, isPerson, maskDetail, membersOf, sameText,
@@ -35,6 +35,13 @@ interface Props {
   onOpenChart: (organization: Identity) => void;
   /** Shown below details and connections (the Activity list). */
   children?: ReactNode;
+}
+
+/** A detail made private or public; a public detail carries no `private` field. */
+function withPrivacy(detail: IdentityDetail, isPrivate: boolean): IdentityDetail {
+  const { private: _wasPrivate, ...rest } = detail;
+  void _wasPrivate;
+  return isPrivate ? { ...rest, private: true } : rest;
 }
 
 export function IdentityProfile({ identity, byId, sameInvestigation, everywhere, folders, showInvestigation, readOnly, screensharing, labels, onUpdate, onEdit, onOpen, onOpenChart, children }: Props) {
@@ -183,8 +190,21 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                           aria-label={t('details.showAria', { label: named.toLowerCase() })} className={cn(linkButton, 'disabled:cursor-not-allowed disabled:opacity-50')}
                           onClick={() => setShown(previous => new Set(previous).add(detail.id))}>{t('details.show')}</button>)}
                   </span>
-                  {!readOnly && <button type="button" aria-label={t('details.remove', { label: named })} className="rounded p-0.5 text-text-muted hover:text-text-primary"
-                    onClick={() => { detailButton.current?.focus(); /* The row's button goes away: continue from "Add a detail". */ void save(identity.id, current => ({ details: current.details.filter(other => other.id !== detail.id) })); }}><X size={13} /></button>}
+                  {!readOnly && (
+                    <span className="flex items-center gap-0.5">
+                      {/* Private or public can be changed later, e.g. after an import; making one public while screensharing would show it. */}
+                      <button type="button" disabled={!!detail.private && screensharing}
+                        aria-label={t(detail.private ? 'details.makePublicAria' : 'details.makePrivateAria', { label: named })}
+                        title={detail.private && screensharing ? t('details.hiddenWhileSharing') : t(detail.private ? 'details.makePublic' : 'details.makePrivate')}
+                        className="rounded p-0.5 text-text-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => {
+                          if (!detail.private) setShown(previous => { const next = new Set(previous); next.delete(detail.id); return next; });
+                          void save(identity.id, current => ({ details: current.details.map(other => (other.id !== detail.id ? other : withPrivacy(other, !other.private))) }));
+                        }}>{detail.private ? <LockOpen size={13} /> : <Lock size={13} />}</button>
+                      <button type="button" aria-label={t('details.remove', { label: named })} className="rounded p-0.5 text-text-muted hover:text-text-primary"
+                        onClick={() => { detailButton.current?.focus(); /* The row's button goes away: continue from "Add a detail". */ void save(identity.id, current => ({ details: current.details.filter(other => other.id !== detail.id) })); }}><X size={13} /></button>
+                    </span>
+                  )}
                 </li>
               );
             })}

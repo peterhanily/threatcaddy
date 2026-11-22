@@ -129,24 +129,26 @@ export async function executeReadIdentity(input: Record<string, unknown>, folder
  * New details. Whether one is private depends on its label alone (Phone, Home address…), never on
  * what private details already hold, and a repeat is skipped only against details of the same
  * kind: nothing a later read or search shows depends on a private value, so a guess cannot be
- * confirmed. Returns how many entries were valid, not how many were stored, for the same reason.
+ * confirmed. The cap is checked once, before anything is added, against the public details and
+ * every valid entry received, so whether a repeat was skipped never changes the answer either.
+ * Returns how many entries were valid, not how many were stored, for the same reason.
  */
 function addDetails(identity: Identity, raw: unknown): number | string {
   const privateLabels = translatedPrivateLabels();
-  let received = 0;
-  for (const entry of list(raw)) {
-    const label = clean((entry as { label?: unknown })?.label, 100);
-    const value = clean((entry as { value?: unknown })?.value, MAX_TEXT);
-    if (!label || !value) continue;
-    received++;
+  const entries = list(raw).map(entry => ({
+    label: clean((entry as { label?: unknown })?.label, 100),
+    value: clean((entry as { value?: unknown })?.value, MAX_TEXT),
+  })).filter(entry => entry.label && entry.value);
+  if (identity.details.filter(detail => !detail.private).length + entries.length > MAX_DETAILS) {
+    return `An identity holds at most ${MAX_DETAILS} details.`;
+  }
+  for (const { label, value } of entries) {
     const isPrivate = isPrivateLabel(label, privateLabels);
     const key = detailKey(value);
-    // The cap comes first: whether a repeat is skipped must not change the answer (no oracle on private values).
-    if (identity.details.length >= MAX_DETAILS) return `An identity holds at most ${MAX_DETAILS} details.`;
     if (identity.details.some(detail => !!detail.private === isPrivate && sameText(detail.label) === sameText(label) && detailKey(detail.value) === key)) continue;
     identity.details.push({ id: nanoid(), label, value, ...(isPrivate ? { private: true } : {}) });
   }
-  return received;
+  return entries.length;
 }
 
 /** Other names that are nobody else's name in the investigation. */

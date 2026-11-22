@@ -33,6 +33,9 @@
   "identities.needsInvestigation": "(choose an investigation)",
   "identities.organization": "Works at, for rows that name no organization",
   "identities.noOrganization": "Not recorded",
+  "identities.privateColumn": "Private",
+  "identities.privateColumnAria": "Import {{column}} as a private detail",
+  "identities.privateHint": "Detail columns ticked Private import as private details: hidden until Show, never sent to AI, and left out of exports, this import's summary note and its events. Phone, address, birth date and ID number columns start ticked.",
   "identities.result": "Identities",
   "identities.updated_one": "{{count}} updated",
   "identities.updated_other": "{{count}} updated"

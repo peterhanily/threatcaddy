@@ -54,6 +54,10 @@
   "details.showAria": "非公開の {{label}} を表示",
   "details.private": "非公開",
   "details.remove": "{{label}} を削除",
+  "details.makePrivate": "非公開にする",
+  "details.makePublic": "公開にする",
+  "details.makePrivateAria": "{{label}} を非公開にする",
+  "details.makePublicAria": "{{label}} を公開にする",
   "details.hiddenWhileSharing": "画面共有中は非公開の詳細を非表示にしています。",
 
   "detailForm.label": "ラベル",

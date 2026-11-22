@@ -54,6 +54,10 @@
   "details.showAria": "निजी {{label}} दिखाएँ",
   "details.private": "निजी",
   "details.remove": "{{label}} हटाएँ",
+  "details.makePrivate": "निजी बनाएँ",
+  "details.makePublic": "सार्वजनिक बनाएँ",
+  "details.makePrivateAria": "{{label}} को निजी बनाएँ",
+  "details.makePublicAria": "{{label}} को सार्वजनिक बनाएँ",
   "details.hiddenWhileSharing": "स्क्रीन शेयरिंग के दौरान निजी जानकारी छिपी रहती है।",
 
   "detailForm.label": "लेबल",

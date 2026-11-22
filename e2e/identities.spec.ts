@@ -152,7 +152,11 @@ test('adds a name found on the timeline, remembers an ignored one, and finds ide
   await navigateToView(page, 'Notes');
   await page.locator('[data-tour="search"]').click();
   const search = page.getByRole('dialog').getByRole('textbox').first();
+  // A public detail finds her first, so the search has answered before the private one is tried.
+  await search.fill('halvorsen.example');
+  await expect(page.getByRole('dialog').getByText('Dana Okafor').first()).toBeVisible();
   await search.fill('7700 900999');
+  await expect(page.getByRole('dialog').getByText(/^No results found/)).toBeVisible();
   await expect(page.getByRole('dialog').getByText('Dana Okafor')).toHaveCount(0);
   await search.fill('halvorsen.example');
   await page.getByRole('dialog').getByText('Dana Okafor').first().click();

@@ -94,6 +94,20 @@ describe('an identity\'s profile', () => {
     expect(within(profile('Dana Okafor')).getByText('+44 7700 900123')).toBeInTheDocument();
   });
 
+  it('makes a detail private or public later, but never public while screensharing', async () => {
+    const { user, props } = setup({ selectRequest: { id: 'dana', request: 1 } });
+    await user.click(within(profile('Dana Okafor')).getByRole('button', { name: 'Make Email private' }));
+    expect(lastUpdate(props.onUpdate, dana).fields?.details).toEqual([expect.objectContaining({ label: 'Email', private: true }), dana.details[1]]);
+    await user.click(within(profile('Dana Okafor')).getByRole('button', { name: 'Make Phone public' }));
+    const shared = lastUpdate(props.onUpdate, dana).fields?.details;
+    expect(shared?.[1]).toEqual({ id: 'phone', label: 'Phone', value: '+44 7700 900123' });
+    cleanup();
+    setup({ selectRequest: { id: 'dana', request: 1 } },
+      node => <ScreenshareContext.Provider value={{ maxLevel: 'TLP:GREEN', effectiveLevels: [] }}>{node}</ScreenshareContext.Provider>);
+    expect(within(profile('Dana Okafor')).getByRole('button', { name: 'Make Phone public' })).toBeDisabled();
+    expect(within(profile('Dana Okafor')).getByRole('button', { name: 'Make Email private' })).toBeEnabled();
+  });
+
   it('never shows a private detail while screensharing', () => {
     setup({ selectRequest: { id: 'dana', request: 1 } },
       node => <ScreenshareContext.Provider value={{ maxLevel: 'TLP:GREEN', effectiveLevels: [] }}>{node}</ScreenshareContext.Provider>);

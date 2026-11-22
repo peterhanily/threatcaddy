@@ -10,7 +10,7 @@ import type { ColumnMapping } from './data-import';
 import { IDENTITY_STATUSES } from './entity-enums';
 import {
   CONNECTION_PHRASES, ENGLISH_PHRASE_LABELS, ENGLISH_TYPE_LABELS, MEMBERSHIP_PHRASES, canonicalPhrase, canonicalType, detailKey,
-  guessIdentity, isOrganization, isPerson, isPrivateLabel as isPrivateLabelText, sameText,
+  guessIdentity, isOrganization, isPerson, isPrivateLabel as isPrivateLabelText, labelWords, sameText,
 } from './identity-model';
 
 const ENGLISH_TYPES = ENGLISH_TYPE_LABELS;
@@ -23,6 +23,9 @@ const MEMBERSHIP = new Set(MEMBERSHIP_PHRASES);
 const MAX_ERRORS = 200;
 /** A connection phrase (100) and a name (200), with room for spacing. */
 const MAX_CONNECTION_LINE = 400;
+
+/** A header as words ("displayName" → "display name", "job_title" → "job title"), for recognising columns. */
+const headerKey = (header: string) => labelWords(header).join(' ');
 
 /** Whether a file is an Identities › Export file (its Other names and Connections columns). */
 export function isIdentityExport(headers: readonly string[]): boolean {
@@ -40,9 +43,9 @@ export const isPrivateDetailColumn = (header: string, isPrivateLabel?: (label: s
 
 /** Whether a file's columns look like a list of identities (as Identities › Export writes one). */
 export function looksLikeIdentities(headers: readonly string[]): boolean {
-  const keys = headers.map(sameText);
+  const keys = headers.map(headerKey);
   return keys.some(key => /^(name|full name|display name)$/.test(key))
-    && keys.some(key => /^(type|organi[sz]ation|company|other names|aliases|job title|status|contact|connections)$/.test(key))
+    && keys.some(key => /^(type|organi[sz]ation|organi[sz]ation name|company|company name|other names|aliases|job title|status|contact|connections)$/.test(key))
     && !keys.some(key => /^(timestamp|time|date|datetime|@timestamp|event time)$/.test(key));
 }
 
@@ -51,17 +54,17 @@ export function looksLikeIdentities(headers: readonly string[]): boolean {
  * Contact column alone does not). */
 export function hasIdentityOnlyColumns(headers: readonly string[]): boolean {
   return headers.some(header => COLUMN_SUFFIX.test(header)
-    || /^(type|kind|organi[sz]ation|company|employer|other names|aliases|aka|also known as|job title|connections)$/.test(sameText(header)));
+    || /^(type|kind|organi[sz]ation|organi[sz]ation name|company|company name|employer|other names|aliases|aka|also known as|job title|connections)$/.test(headerKey(header)));
 }
 
 /** The mapping for each column of an identity list; unknown columns become details. */
 export function identityMappingFor(header: string): ColumnMapping {
-  const key = sameText(header);
+  const key = headerKey(header);
   if (COLUMN_SUFFIX.test(header)) return 'identity-detail';
   if (/^(name|full name|display name)$/.test(key)) return 'identity-name';
   if (/^(type|kind)$/.test(key)) return 'identity-type';
   if (/^(description|job title|title|role)$/.test(key)) return 'identity-description';
-  if (/^(organi[sz]ation|company|employer)$/.test(key)) return 'identity-organization';
+  if (/^(organi[sz]ation|organi[sz]ation name|company|company name|employer)$/.test(key)) return 'identity-organization';
   if (/^(other names|aliases|aka|also known as)$/.test(key)) return 'identity-aliases';
   if (key === 'status') return 'identity-status';
   if (key === 'contact') return 'identity-contact';
@@ -96,6 +99,9 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   author?: string;
   /** Labels private by default in the interface language. */
   isPrivateLabel?: (label: string) => boolean;
+  /** The detail columns a person chose to import as private (the preview's Private choice). When
+   * given, it decides for every detail column; otherwise each column's label does. */
+  privateColumns?: ReadonlySet<string>;
   now?: number;
 }): IdentityImport {
   const now = options.now ?? Date.now();
@@ -171,7 +177,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     if (contactColumn && truthy(row[contactColumn]) && !identity.contact) identity.contact = true;
     for (const column of columns('identity-detail')) {
       const label = value(column.replace(COLUMN_SUFFIX, '').replace(COLUMN_SUFFIX, ''));
-      const isPrivate = isPrivateDetailColumn(column, options.isPrivateLabel);
+      const isPrivate = options.privateColumns ? options.privateColumns.has(column) : isPrivateDetailColumn(column, options.isPrivateLabel);
       for (const detail of lines(row[column])) {
         if (identity.details.some(known => sameText(known.label) === sameText(label) && detailKey(known.value) === detailKey(detail))) continue;
         identity.details.push({ id: nanoid(), label, value: detail, ...(isPrivate ? { private: true } : {}) });

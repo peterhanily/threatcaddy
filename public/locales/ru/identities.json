@@ -54,6 +54,10 @@
   "details.showAria": "Показать приватное поле {{label}}",
   "details.private": "Приватное",
   "details.remove": "Удалить поле {{label}}",
+  "details.makePrivate": "Сделать приватным",
+  "details.makePublic": "Сделать публичным",
+  "details.makePrivateAria": "Сделать поле {{label}} приватным",
+  "details.makePublicAria": "Сделать поле {{label}} публичным",
   "details.hiddenWhileSharing": "Приватные поля скрыты во время демонстрации экрана.",
 
   "detailForm.label": "Метка",

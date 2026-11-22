@@ -36,16 +36,39 @@ export const ENGLISH_PHRASE_LABELS = Object.fromEntries(Object.keys(CONNECTION_P
 export const DETAIL_LABELS = ['email', 'phone', 'username', 'handle', 'ipAddress', 'hostname', 'domain', 'iban', 'assetTag', 'website', 'address'] as const;
 /** Details with these labels start out private (i18n keys under `detailLabel.`). */
 export const PRIVATE_DETAIL_LABELS = ['phone', 'address', 'personalEmail', 'homeAddress', 'dateOfBirth'] as const;
-/** English labels whose details start out private: the built-in ones and their common variants. */
-const PRIVATE_LABEL_WORDS = new Set([
-  'phone', 'address', 'personal email', 'home address', 'date of birth',
-  'phone number', 'telephone', 'tel', 'mobile', 'mobile number', 'mobile phone', 'cell', 'cell phone', 'home phone', 'personal phone',
-  'private phone', 'postal address', 'personal address', 'private address', 'private email', 'personal e-mail', 'birthday', 'birth date', 'dob',
+/** A label as lower-case words: camelCase, underscores, dots, brackets and the like all separate
+ * words, so "MobilePhone", "home_phone", "telephoneNumber" and "Phone [Optional]" read naturally. */
+export function labelWords(label: string): string[] {
+  return label.normalize('NFC')
+    .replace(/([\p{Ll}\p{N}])(\p{Lu})/gu, '$1 $2').replace(/(\p{Lu})(\p{Lu}\p{Ll})/gu, '$1 $2')
+    .toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+}
+/** Any one of these words makes a label private: phones, street addresses, birth dates, government
+ * numbers and special categories of personal data. */
+const PRIVATE_WORDS = new Set([
+  'phone', 'phones', 'telephone', 'tel', 'mobile', 'cell', 'cellphone', 'fax', 'sms', 'whatsapp',
+  'street', 'postcode', 'zip', 'zipcode', 'postal', 'birth', 'birthday', 'birthdate', 'dob',
+  'passport', 'ssn', 'nino', 'nhs', 'medicare', 'gender', 'sex', 'ethnicity', 'religion', 'medical', 'health', 'disability', 'salary',
 ]);
-/** Whether a detail label starts out private: in English, or one of `translated` (the interface language's labels). */
+/** "Address" is private unless it is an address of a network or mailbox ("IP address", "Email address"). */
+const PUBLIC_ADDRESS_WORDS = new Set(['email', 'mail', 'e', 'ip', 'ipv4', 'ipv6', 'mac', 'web', 'url', 'wallet', 'bitcoin', 'btc', 'eth', 'crypto', 'server', 'host', 'network', 'ethernet', 'wifi']);
+/** Whether a detail label starts out private: by its words in English (from a form, an AI tool or a
+ * spreadsheet header such as "MobilePhone" or "Street address"), or as one of `translated` (the
+ * interface language's private labels). */
 export function isPrivateLabel(label: string, translated: readonly string[] = []): boolean {
+  const words = labelWords(label);
+  const has = (...wanted: string[]) => wanted.some(word => words.includes(word));
+  if (words.some(word => PRIVATE_WORDS.has(word))) return true;
+  if (has('address', 'addresses') && !words.some(word => PUBLIC_ADDRESS_WORDS.has(word))) return true;
+  if (has('email', 'mail', 'emails') && has('personal', 'private', 'home')) return true;
+  if (has('social') && has('security')) return true;
+  if (has('national') && has('insurance', 'id', 'identity', 'identification', 'number')) return true;
+  if (has('tax') && has('id', 'number', 'code', 'file')) return true;
+  if (has('driver', 'drivers', 'driving') && has('license', 'licence')) return true;
+  if (has('id') && has('card')) return true;
+  if (has('kin') || (has('emergency') && has('contact'))) return true;
   const key = sameText(label);
-  return PRIVATE_LABEL_WORDS.has(key) || translated.some(text => sameText(text) === key);
+  return translated.some(text => sameText(text) === key);
 }
 
 /** Lower case, single spaces, trimmed: how names and details are compared. */

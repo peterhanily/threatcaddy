@@ -54,6 +54,10 @@
   "details.showAria": "Показати приватне поле «{{label}}»",
   "details.private": "Приватне",
   "details.remove": "Видалити «{{label}}»",
+  "details.makePrivate": "Зробити приватним",
+  "details.makePublic": "Зробити публічним",
+  "details.makePrivateAria": "Зробити поле «{{label}}» приватним",
+  "details.makePublicAria": "Зробити поле «{{label}}» публічним",
   "details.hiddenWhileSharing": "Приватні подробиці приховано під час показу екрана.",
 
   "detailForm.label": "Мітка",

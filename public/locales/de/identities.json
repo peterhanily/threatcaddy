@@ -54,6 +54,10 @@
   "details.showAria": "Private Angabe {{label}} anzeigen",
   "details.private": "Privat",
   "details.remove": "{{label}} entfernen",
+  "details.makePrivate": "Privat machen",
+  "details.makePublic": "Öffentlich machen",
+  "details.makePrivateAria": "{{label}} privat machen",
+  "details.makePublicAria": "{{label}} öffentlich machen",
   "details.hiddenWhileSharing": "Private Details bleiben während der Bildschirmfreigabe ausgeblendet.",
 
   "detailForm.label": "Bezeichnung",

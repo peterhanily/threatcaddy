@@ -54,6 +54,10 @@
   "details.showAria": "إظهار {{label}} (خاص)",
   "details.private": "خاص",
   "details.remove": "إزالة {{label}}",
+  "details.makePrivate": "جعله خاصًا",
+  "details.makePublic": "جعله عامًا",
+  "details.makePrivateAria": "جعل {{label}} خاصًا",
+  "details.makePublicAria": "جعل {{label}} عامًا",
   "details.hiddenWhileSharing": "تبقى التفاصيل الخاصة مخفية أثناء مشاركة الشاشة.",
 
   "detailForm.label": "التسمية",

@@ -33,6 +33,9 @@
   "identities.needsInvestigation": "(कोई जाँच चुनें)",
   "identities.organization": "कार्यस्थल, उन पंक्तियों के लिए जिनमें कोई संगठन नहीं है",
   "identities.noOrganization": "दर्ज नहीं",
+  "identities.privateColumn": "निजी",
+  "identities.privateColumnAria": "{{column}} को निजी जानकारी के रूप में आयात करें",
+  "identities.privateHint": "जिन जानकारी कॉलम में निजी पर टिक लगा है, वे निजी जानकारी के रूप में आयात होते हैं: यह जानकारी तब तक छिपी रहती है जब तक आप दिखाएँ पर क्लिक न करें, AI को कभी नहीं भेजी जाती, और निर्यात, इस आयात के सारांश नोट और इसके इवेंट में शामिल नहीं होती। फ़ोन, पता, जन्म तिथि और आईडी नंबर वाले कॉलम पर शुरू से टिक लगा रहता है।",
   "identities.result": "पहचान",
   "identities.updated_one": "{{count}} अपडेट हुई",
   "identities.updated_other": "{{count}} अपडेट हुईं"

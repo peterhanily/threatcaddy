@@ -54,6 +54,10 @@
   "details.showAria": "הצג את הפרט הפרטי {{label}}",
   "details.private": "פרטי",
   "details.remove": "הסר {{label}}",
+  "details.makePrivate": "הפוך לפרטי",
+  "details.makePublic": "הפוך לציבורי",
+  "details.makePrivateAria": "הפוך את {{label}} לפרטי",
+  "details.makePublicAria": "הפוך את {{label}} לציבורי",
   "details.hiddenWhileSharing": "פרטים פרטיים נשארים מוסתרים בזמן שיתוף מסך.",
 
   "detailForm.label": "תווית",

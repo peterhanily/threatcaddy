@@ -54,6 +54,10 @@
   "details.showAria": "Mostra il dato privato {{label}}",
   "details.private": "Privato",
   "details.remove": "Rimuovi {{label}}",
+  "details.makePrivate": "Rendi privato",
+  "details.makePublic": "Rendi pubblico",
+  "details.makePrivateAria": "Rendi privato il dettaglio {{label}}",
+  "details.makePublicAria": "Rendi pubblico il dettaglio {{label}}",
   "details.hiddenWhileSharing": "I dettagli privati restano nascosti durante la condivisione dello schermo.",
 
   "detailForm.label": "Etichetta",

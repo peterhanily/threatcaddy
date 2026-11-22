@@ -54,6 +54,10 @@
   "details.showAria": "Pokaż prywatne pole {{label}}",
   "details.private": "Prywatne",
   "details.remove": "Usuń pole {{label}}",
+  "details.makePrivate": "Ustaw jako prywatne",
+  "details.makePublic": "Ustaw jako publiczne",
+  "details.makePrivateAria": "Ustaw pole {{label}} jako prywatne",
+  "details.makePublicAria": "Ustaw pole {{label}} jako publiczne",
   "details.hiddenWhileSharing": "Prywatne szczegóły są ukryte podczas udostępniania ekranu.",
 
   "detailForm.label": "Etykieta",

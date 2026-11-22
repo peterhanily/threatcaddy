@@ -36,11 +36,19 @@ describe('the detail cap', () => {
     await db.identities.add(person('dana', { name: 'Dana Okafor', details: [...details, { id: 'p', label: 'Phone', value: SECRET, private: true }] }));
   });
 
-  it('answers the same whether or not a guess is the private value', async () => {
-    const right = await run('update_identity', { id: 'dana', addDetails: [{ label: 'Phone', value: SECRET }] });
-    const wrong = await run('update_identity', { id: 'dana', addDetails: [{ label: 'Phone', value: '+44 7700 900999' }] });
-    expect(right).toEqual(wrong);
-    expect(right).toMatchObject({ error: expect.stringMatching(/at most 200 details/) });
+  it('answers the same whether or not a guess is the private value, with one entry or several', async () => {
+    const reply = async (guess: string, fillers: number) => {
+      // Each attempt starts from the same identity: a refused call stores nothing, an accepted one is undone here.
+      const before = await db.identities.get('dana');
+      const result = await run('update_identity', { id: 'dana', addDetails: [{ label: 'Phone', value: guess },
+        ...Array.from({ length: fillers }, (_, index) => ({ label: 'Note', value: `filler ${guess} ${index}` }))] });
+      if (before) await db.identities.put(before);
+      return result;
+    };
+    // 199 public details: one more fits, two do not, whatever the guess.
+    for (const fillers of [0, 1, 5]) expect(await reply(SECRET, fillers)).toEqual(await reply('+44 7700 900999', fillers));
+    expect(await reply(SECRET, 0)).toMatchObject({ success: true, detailsReceived: 1 });
+    expect(await reply(SECRET, 1)).toMatchObject({ error: expect.stringMatching(/at most 200 details/) });
   });
 });
 

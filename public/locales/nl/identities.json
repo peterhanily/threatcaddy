@@ -54,6 +54,10 @@
   "details.showAria": "{{label}} (privé) tonen",
   "details.private": "Privé",
   "details.remove": "{{label}} verwijderen",
+  "details.makePrivate": "Privé maken",
+  "details.makePublic": "Openbaar maken",
+  "details.makePrivateAria": "{{label}} privé maken",
+  "details.makePublicAria": "{{label}} openbaar maken",
   "details.hiddenWhileSharing": "Privédetails blijven verborgen tijdens schermdelen.",
 
   "detailForm.label": "Label",

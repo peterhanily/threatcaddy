@@ -6,7 +6,7 @@ import { db } from '../../db';
 import type { Folder, Identity, Timeline } from '../../types';
 import type { ImportResult, ColumnMapping, ParseResult } from '../../lib/data-import';
 import { isUserTimeline } from '../../lib/sync-capture-policy';
-import { buildIdentities } from '../../lib/identity-import';
+import { buildIdentities, isPrivateDetailColumn } from '../../lib/identity-import';
 import { byName, isOrganization } from '../../lib/identity-model';
 import { getCurrentUserName } from '../../lib/utils';
 import { useIdentityLabels } from '../Identities/identity-labels';
@@ -69,6 +69,12 @@ export function DataImportModal({
   const [detectedFormat, setDetectedFormat] = useState('');
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [columnMappings, setColumnMappings] = useState<Map<string, ColumnMapping>>(new Map());
+  // A person's Private choice for a detail column; otherwise the column's label decides.
+  const [privateOverrides, setPrivateOverrides] = useState<Map<string, boolean>>(new Map());
+  const isPrivateColumn = useCallback((column: string) => privateOverrides.get(column) ?? isPrivateDetailColumn(column, privateByDefault),
+    [privateOverrides, privateByDefault]);
+  const privateColumns = useMemo(() => new Set([...columnMappings]
+    .filter(([column, mapping]) => mapping === 'identity-detail' && isPrivateColumn(column)).map(([column]) => column)), [columnMappings, isPrivateColumn]);
   const [folderId, setFolderId] = useState(defaultFolderId || '');
   const [timelineId, setTimelineId] = useState(defaultTimelineId || '');
   const [createEvents, setCreateEvents] = useState(true);
@@ -92,6 +98,7 @@ export function DataImportModal({
       setDetectedFormat('');
       setParseResult(null);
       setColumnMappings(new Map());
+      setPrivateOverrides(new Map());
       setFolderId(defaultFolderId || '');
       setTimelineId(defaultTimelineId || '');
       setCreateEvents(true);
@@ -237,6 +244,7 @@ export function DataImportModal({
             columnMappings,
             tid,
             folderId || undefined,
+            willImportIdentities ? privateColumns : undefined,
           );
           if (events.length > 0) {
             await db.timelineEvents.bulkPut(events);
@@ -267,7 +275,7 @@ export function DataImportModal({
           const existing = await db.identities.where('folderId').equals(folderId).toArray();
           const { created, updated, errors } = buildIdentities(parseResult.rows, columnMappings, {
             folderId, existing, clsLevel: folders.find((f) => f.id === folderId)?.clsLevel,
-            defaultOrganizationId: identityOrganizationId || undefined, author: getCurrentUserName(), isPrivateLabel: privateByDefault, now,
+            defaultOrganizationId: identityOrganizationId || undefined, author: getCurrentUserName(), isPrivateLabel: privateByDefault, privateColumns, now,
           });
           if (created.length) await db.identities.bulkAdd(created);
           for (const { id, changes } of updated) await db.identities.update(id, { ...changes, updatedAt: now });
@@ -285,6 +293,7 @@ export function DataImportModal({
           result,
           folderId || undefined,
           privateByDefault,
+          privateColumns,
         );
         await db.notes.put(note);
         result.summaryNoteCreated = true;
@@ -298,7 +307,7 @@ export function DataImportModal({
       setStep('done');
     }
   }, [parseResult, createEvents, hasTimestamp, timelineId, timelines, columnMappings, folderId, extractIOCsFlag, hasIOCColumns, createNote, newTimelineName, onCreateTimeline,
-    willImportIdentities, folders, identityOrganizationId, privateByDefault]);
+    willImportIdentities, folders, identityOrganizationId, privateByDefault, privateColumns]);
 
   // Done
   const handleDone = useCallback(() => {
@@ -433,6 +442,14 @@ export function DataImportModal({
                               ))}
                             </select>
                           </div>
+                          {mapping === 'identity-detail' && (
+                            <label className="flex items-center gap-1 text-[10px] font-normal text-gray-300">
+                              <input type="checkbox" checked={isPrivateColumn(header)} aria-label={t('identities.privateColumnAria', { column: header })}
+                                onChange={(e) => setPrivateOverrides((prev) => new Map(prev).set(header, e.target.checked))}
+                                className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500" />
+                              {t('identities.privateColumn')}
+                            </label>
+                          )}
                         </div>
                       </th>
                     );
@@ -545,6 +562,9 @@ export function DataImportModal({
               </label>
             </div>
 
+            {willImportIdentities && (
+              <p className="sm:col-span-2 text-[11px] text-gray-400">{t('identities.privateHint')}</p>
+            )}
             {willImportIdentities && organizations.length > 0 && (
               <div className="sm:col-span-2">
                 <label htmlFor="data-import-identity-organization" className="block text-xs font-medium text-gray-400 mb-1">{t('identities.organization')}</label>

@@ -54,6 +54,10 @@
   "details.showAria": "نمایش {{label}} خصوصی",
   "details.private": "خصوصی",
   "details.remove": "حذف {{label}}",
+  "details.makePrivate": "خصوصی کردن",
+  "details.makePublic": "عمومی کردن",
+  "details.makePrivateAria": "خصوصی کردن {{label}}",
+  "details.makePublicAria": "عمومی کردن {{label}}",
   "details.hiddenWhileSharing": "مشخصات خصوصی هنگام اشتراک‌گذاری صفحه پنهان می‌مانند.",
 
   "detailForm.label": "عنوان",

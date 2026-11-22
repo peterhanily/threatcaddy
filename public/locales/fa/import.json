@@ -33,6 +33,9 @@
   "identities.needsInvestigation": "(یک تحقیق انتخاب کنید)",
   "identities.organization": "شاغل در، برای سطرهایی که سازمانی ندارند",
   "identities.noOrganization": "ثبت نشده",
+  "identities.privateColumn": "خصوصی",
+  "identities.privateColumnAria": "ورود {{column}} به‌عنوان مشخصه خصوصی",
+  "identities.privateHint": "ستون‌های مشخصه‌ای که «خصوصی» آن‌ها تیک خورده است، به‌صورت مشخصات خصوصی وارد می‌شوند: تا وقتی روی «نمایش» کلیک نکنید پنهان می‌مانند، هرگز برای هوش مصنوعی فرستاده نمی‌شوند و در فایل‌های صادرشده، یادداشت خلاصه این ورود و رویدادهای آن نمی‌آیند. ستون‌های تلفن، نشانی، تاریخ تولد و شماره شناسایی از ابتدا تیک خورده‌اند.",
   "identities.result": "هویت‌ها",
   "identities.updated_one": "{{count}} به‌روزرسانی شد",
   "identities.updated_other": "{{count}} به‌روزرسانی شد"

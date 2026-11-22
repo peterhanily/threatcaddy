@@ -201,7 +201,7 @@ function SourcesFooter({ toolCalls, onEntityClick, sourcesLabel }: { toolCalls: 
   if (sources.length === 0) return null;
 
   const IconMap: Record<string, typeof FileText> = { note: FileText, task: ListChecks, ioc: Shield, event: Clock, identity: Contact };
-  const colorMap: Record<string, string> = { note: 'text-blue-400', task: 'text-green-400', ioc: 'text-amber-400', event: 'text-purple-400', identity: 'text-sky-400' };
+  const colorMap: Record<string, string> = { note: 'text-blue-400', task: 'text-green-400', ioc: 'text-amber-400', event: 'text-purple-400', identity: 'text-cyan-400' };
 
   return (
     <div className="mt-2 pt-2 border-t border-border-subtle">

@@ -54,6 +54,10 @@
   "details.showAria": "แสดง {{label}} ที่เป็นข้อมูลส่วนตัว",
   "details.private": "ส่วนตัว",
   "details.remove": "ลบ {{label}}",
+  "details.makePrivate": "ตั้งเป็นส่วนตัว",
+  "details.makePublic": "ตั้งเป็นสาธารณะ",
+  "details.makePrivateAria": "ตั้ง {{label}} เป็นส่วนตัว",
+  "details.makePublicAria": "ตั้ง {{label}} เป็นสาธารณะ",
   "details.hiddenWhileSharing": "รายละเอียดส่วนตัวจะถูกซ่อนไว้ขณะแชร์หน้าจอ",
 
   "detailForm.label": "ป้ายกำกับ",

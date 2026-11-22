@@ -54,6 +54,10 @@
   "details.showAria": "Tampilkan {{label}} privat",
   "details.private": "Privat",
   "details.remove": "Hapus {{label}}",
+  "details.makePrivate": "Jadikan privat",
+  "details.makePublic": "Jadikan publik",
+  "details.makePrivateAria": "Jadikan {{label}} privat",
+  "details.makePublicAria": "Jadikan {{label}} publik",
   "details.hiddenWhileSharing": "Detail privat tetap disembunyikan selama berbagi layar.",
 
   "detailForm.label": "Label",

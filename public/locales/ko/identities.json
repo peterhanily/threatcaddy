@@ -54,6 +54,10 @@
   "details.showAria": "비공개 {{label}} 표시",
   "details.private": "비공개",
   "details.remove": "{{label}} 제거",
+  "details.makePrivate": "비공개로 설정",
+  "details.makePublic": "공개로 설정",
+  "details.makePrivateAria": "{{label}}을(를) 비공개로 설정",
+  "details.makePublicAria": "{{label}}을(를) 공개로 설정",
   "details.hiddenWhileSharing": "화면 공유 중에는 비공개 세부 정보가 숨겨집니다.",
 
   "detailForm.label": "레이블",

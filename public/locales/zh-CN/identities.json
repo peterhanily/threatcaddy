@@ -54,6 +54,10 @@
   "details.showAria": "显示私密项“{{label}}”",
   "details.private": "私密",
   "details.remove": "移除“{{label}}”",
+  "details.makePrivate": "设为私密",
+  "details.makePublic": "设为公开",
+  "details.makePrivateAria": "将“{{label}}”设为私密",
+  "details.makePublicAria": "将“{{label}}”设为公开",
   "details.hiddenWhileSharing": "屏幕共享期间，私密详细信息保持隐藏。",
 
   "detailForm.label": "字段",

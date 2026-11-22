@@ -54,6 +54,10 @@
   "details.showAria": "Mostrar campo privado {{label}}",
   "details.private": "Privado",
   "details.remove": "Remover {{label}}",
+  "details.makePrivate": "Tornar privado",
+  "details.makePublic": "Tornar público",
+  "details.makePrivateAria": "Tornar o campo {{label}} privado",
+  "details.makePublicAria": "Tornar o campo {{label}} público",
   "details.hiddenWhileSharing": "Detalhes privados ficam ocultos durante o compartilhamento de tela.",
 
   "detailForm.label": "Rótulo",

@@ -593,7 +593,13 @@ export function buildTimelineEvents(
   mappings: Map<string, ColumnMapping>,
   timelineId: string,
   folderId?: string,
+  /** Columns kept out of each event's raw data: those imported as private identity details. By
+   * default, when the rows also make identities, every detail column private by its label. */
+  omitColumns?: ReadonlySet<string>,
 ): { events: TimelineEvent[]; errors: string[] } {
+  const makesIdentities = [...mappings.values()].includes('identity-name');
+  const omitted = omitColumns ?? new Set(makesIdentities
+    ? [...mappings].filter(([column, mapping]) => mapping === 'identity-detail' && isPrivateDetailColumn(column)).map(([column]) => column) : []);
   const events: TimelineEvent[] = [];
   const errors: string[] = [];
   const now = Date.now();
@@ -636,8 +642,9 @@ export function buildTimelineEvents(
       assets.push(...row[assetCol].split(/[,;]\s*/).filter(Boolean));
     }
 
-    // Build rawData from all row values
-    const rawData = JSON.stringify(row);
+    // Build rawData from the row's values, without columns imported as private identity details
+    // (the event would otherwise keep them readable, even while screensharing).
+    const rawData = JSON.stringify(omitted.size ? Object.fromEntries(Object.entries(row).filter(([column]) => !omitted.has(column))) : row);
 
     // Run IOC extraction on description
     const allText = [description, title].filter(Boolean).join(' ');
@@ -746,6 +753,8 @@ export function buildSummaryNote(
   folderId?: string,
   /** Labels private by default in the interface language, as well as in English. */
   isPrivateLabel?: (label: string) => boolean,
+  /** Columns a person chose to import as private details, also kept out of the note. */
+  privateColumns: ReadonlySet<string> = new Set(),
 ): Note {
   const now = Date.now();
   const dateStr = new Date(now).toISOString().slice(0, 19).replace('T', ' ');
@@ -761,7 +770,7 @@ export function buildSummaryNote(
   // Columns of private details (Phone, Home address, "… (private)") are never copied into the
   // note, which shows them unmasked, whatever they were mapped to.
   const sampleHeaders = parseResult.headers
-    .filter((h) => !isPrivateDetailColumn(h, isPrivateLabel))
+    .filter((h) => !privateColumns.has(h) && !isPrivateDetailColumn(h, isPrivateLabel))
     .slice(0, 8); // cap columns for readability
   const headerRow = sampleHeaders.map((h) => h).join(' | ');
   const separatorRow = sampleHeaders.map(() => '---').join(' | ');

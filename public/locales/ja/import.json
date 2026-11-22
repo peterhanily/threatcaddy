@@ -33,6 +33,9 @@
   "identities.needsInvestigation": "（調査を選択してください）",
   "identities.organization": "勤務先（組織が記載されていない行に適用）",
   "identities.noOrganization": "未記録",
+  "identities.privateColumn": "非公開",
+  "identities.privateColumnAria": "{{column}} を非公開の詳細としてインポート",
+  "identities.privateHint": "「非公開」にチェックを入れた詳細列は、非公開の詳細としてインポートされます。「表示」をクリックするまで隠され、AI に送信されることはなく、エクスポート、このインポートのサマリーノート、およびそのイベントには含まれません。電話、住所、生年月日、ID 番号の列は最初からチェックが入っています。",
   "identities.result": "アイデンティティ",
   "identities.updated_one": "{{count}} 件を更新",
   "identities.updated_other": "{{count}} 件を更新"

@@ -54,6 +54,10 @@
   "details.showAria": "Show private {{label}}",
   "details.private": "Private",
   "details.remove": "Remove {{label}}",
+  "details.makePrivate": "Make private",
+  "details.makePublic": "Make public",
+  "details.makePrivateAria": "Make {{label}} private",
+  "details.makePublicAria": "Make {{label}} public",
   "details.hiddenWhileSharing": "Private details stay hidden while screensharing.",
 
   "detailForm.label": "Label",

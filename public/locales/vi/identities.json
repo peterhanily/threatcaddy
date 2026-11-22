@@ -54,6 +54,10 @@
   "details.showAria": "Hiển thị {{label}} riêng tư",
   "details.private": "Riêng tư",
   "details.remove": "Xóa {{label}}",
+  "details.makePrivate": "Đặt riêng tư",
+  "details.makePublic": "Đặt công khai",
+  "details.makePrivateAria": "Đặt {{label}} thành riêng tư",
+  "details.makePublicAria": "Đặt {{label}} thành công khai",
   "details.hiddenWhileSharing": "Chi tiết riêng tư luôn bị ẩn khi chia sẻ màn hình.",
 
   "detailForm.label": "Nhãn",

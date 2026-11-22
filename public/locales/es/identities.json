@@ -54,6 +54,10 @@
   "details.showAria": "Mostrar {{label}} (privado)",
   "details.private": "Privado",
   "details.remove": "Eliminar {{label}}",
+  "details.makePrivate": "Hacer privado",
+  "details.makePublic": "Hacer público",
+  "details.makePrivateAria": "Hacer privado el detalle {{label}}",
+  "details.makePublicAria": "Hacer público el detalle {{label}}",
   "details.hiddenWhileSharing": "Los detalles privados permanecen ocultos mientras se comparte la pantalla.",
 
   "detailForm.label": "Campo",

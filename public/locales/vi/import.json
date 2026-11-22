@@ -33,6 +33,9 @@
   "identities.needsInvestigation": "(chọn một cuộc điều tra)",
   "identities.organization": "Làm việc tại, cho các hàng không ghi tổ chức",
   "identities.noOrganization": "Chưa ghi nhận",
+  "identities.privateColumn": "Riêng tư",
+  "identities.privateColumnAria": "Nhập {{column}} dưới dạng chi tiết riêng tư",
+  "identities.privateHint": "Các cột chi tiết được đánh dấu “Riêng tư” sẽ được nhập dưới dạng chi tiết riêng tư: bị ẩn cho đến khi bạn nhấp “Hiển thị”, không bao giờ được gửi cho AI, và không có trong các bản xuất, ghi chú tóm tắt của lần nhập này cũng như các sự kiện của nó. Các cột điện thoại, địa chỉ, ngày sinh và số giấy tờ tùy thân được đánh dấu sẵn từ đầu.",
   "identities.result": "Danh tính",
   "identities.updated_one": "Đã cập nhật {{count}}",
   "identities.updated_other": "Đã cập nhật {{count}}"

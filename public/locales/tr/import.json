@@ -33,6 +33,9 @@
   "identities.needsInvestigation": "(bir soruşturma seçin)",
   "identities.organization": "Çalıştığı kurum, kuruluş belirtmeyen satırlar için",
   "identities.noOrganization": "Belirtilmedi",
+  "identities.privateColumn": "Özel",
+  "identities.privateColumnAria": "{{column}} sütununu özel ayrıntı olarak içe aktar",
+  "identities.privateHint": "“Özel” işaretli ayrıntı sütunları özel ayrıntı olarak içe aktarılır: “Göster” düğmesine tıklanana kadar gizli kalır, asla yapay zekâya gönderilmez ve dışa aktarmalara, bu içe aktarmanın özet notuna ve olaylarına dahil edilmez. Telefon, adres, doğum tarihi ve kimlik numarası sütunları başlangıçta işaretlidir.",
   "identities.result": "Kimlikler",
   "identities.updated_one": "{{count}} güncellendi",
   "identities.updated_other": "{{count}} güncellendi"
