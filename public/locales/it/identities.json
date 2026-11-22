@@ -177,7 +177,7 @@
   "export.privateHint": "I dettagli privati restano nascosti in ThreatCaddy finché non fai clic su Mostra. Chiunque abbia il file può leggerli.",
   "export.button": "Esporta",
 
-  "found.heading": "Non ancora nelle Identità",
+  "found.heading": "Non ancora in Identità",
   "found.dialogTitle": "«{{text}}»",
   "found.hint": "Nomi nella timeline e negli IOC che non corrispondono a nulla qui. Fai clic su uno per aggiungerlo, o per aggiungerlo come altro nome di un'identità.",
   "found.more": "Altri {{count}}",

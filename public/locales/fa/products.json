@@ -79,7 +79,7 @@
   "composer.sourceKinds.timeline": "رویدادهای خط زمانی",
   "composer.sourceKinds.iocs": "شاخص‌های نفوذ",
   "composer.sourceKinds.evidence": "شواهد",
-  "composer.sourceKinds.identities": "افراد و سیستم‌های آسیب‌دیده",
+  "composer.sourceKinds.identities": "افراد و سیستم‌های تحت تأثیر",
   "composer.include.notes": "افزودن یادداشت: {{name}}",
   "composer.include.tasks": "افزودن وظیفه: {{name}}",
   "composer.include.timeline": "افزودن رویداد خط زمانی: {{name}}",

@@ -94,7 +94,7 @@
   "connection.impersonated": "冒充",
   "connection.paid": "付款给",
   "connectionReverse.worksAt": "雇用",
-  "connectionReverse.reportsTo": "领导",
+  "connectionReverse.reportsTo": "下属为",
   "connectionReverse.uses": "使用者为",
   "connectionReverse.administers": "管理者为",
   "connectionReverse.belongsTo": "拥有",
@@ -201,7 +201,7 @@
   "org.showTeam": "显示团队（{{count}}）",
   "org.hideTeam": "隐藏团队（{{count}}）",
   "org.noManager": "未记录上级：{{names}}。",
-  "org.nobodyManaged": "{{name}} 中尚无人记录上级。",
+  "org.nobodyManaged": "尚未为 {{name}} 中的任何人记录上级。",
   "org.teamAria": "{{name}} 的团队",
 
   "toast.added": "已添加 {{name}}。",

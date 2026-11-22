@@ -32,7 +32,7 @@
   "identities.noName": "(kolumna nazwy nie zamapowana)",
   "identities.needsInvestigation": "(wybierz dochodzenie)",
   "identities.organization": "Pracuje w, dla wierszy bez organizacji",
-  "identities.noOrganization": "Nie zapisano",
+  "identities.noOrganization": "Nie podano",
   "identities.result": "Tożsamości",
   "identities.updated_one": "Zaktualizowano: {{count}}",
   "identities.updated_few": "Zaktualizowano: {{count}}",

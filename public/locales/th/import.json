@@ -64,7 +64,7 @@
   "identities.create": "สร้างหรืออัปเดตตัวตน",
   "identities.noName": "(ไม่มีการจับคู่คอลัมน์ชื่อ)",
   "identities.needsInvestigation": "(เลือกการสืบสวน)",
-  "identities.organization": "ทำงานที่ สำหรับแถวที่ไม่ได้ระบุองค์กร",
+  "identities.organization": "ทำงานที่ (สำหรับแถวที่ไม่ได้ระบุองค์กร)",
   "identities.noOrganization": "ไม่ได้บันทึก",
   "identities.result": "ตัวตน",
   "identities.updated_one": "อัปเดต {{count}} รายการ",

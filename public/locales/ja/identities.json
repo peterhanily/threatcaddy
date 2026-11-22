@@ -182,7 +182,7 @@
   "found.more": "ほか {{count}} 件",
   "found.fewer": "折りたたむ",
   "found.where.actor": "タイムラインのアクター",
-  "found.where.asset": "タイムラインの資産",
+  "found.where.asset": "タイムラインのアセット",
   "found.where.attribution": "IOC の帰属",
   "found.where.email": "メール IOC",
   "found.pickWhere": "{{investigation}} の {{where}}",

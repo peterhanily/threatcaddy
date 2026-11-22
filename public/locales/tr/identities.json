@@ -142,7 +142,7 @@
   "form.optional": "İsteğe bağlı",
   "form.worksAt": "Çalıştığı kurum",
   "form.belongsTo": "Ait olduğu kurum",
-  "form.notRecorded": "Kaydedilmedi",
+  "form.notRecorded": "Belirtilmedi",
   "form.noOrganizations": "Burada henüz kuruluş yok",
   "form.contact": "İrtibat kişisi: birlikte çalıştığınız biri",
   "form.detail": "Ayrıntı",
@@ -176,7 +176,7 @@
   "export.privateHint": "Özel ayrıntılar ThreatCaddy'de “Göster” düğmesine tıklanana kadar gizlidir. Dosyaya sahip olan herkes bunları okuyabilir.",
   "export.button": "Dışa Aktar",
 
-  "found.heading": "Henüz kimliklerde yok",
+  "found.heading": "Henüz Kimlikler'de yok",
   "found.dialogTitle": "“{{text}}”",
   "found.hint": "Zaman çizelgesinde ve IOC'lerde geçen, buradaki hiçbir şeyle eşleşmeyen adlar. Eklemek ya da bir kimliğin başka bir adı olarak eklemek için birine tıklayın.",
   "found.more": "{{count}} tane daha",

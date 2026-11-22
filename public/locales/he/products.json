@@ -79,7 +79,7 @@
   "composer.sourceKinds.timeline": "אירועי ציר זמן",
   "composer.sourceKinds.iocs": "אינדיקטורים לפגיעה",
   "composer.sourceKinds.evidence": "ראיות",
-  "composer.sourceKinds.identities": "אנשים ומערכות שנפגעו",
+  "composer.sourceKinds.identities": "אנשים ומערכות מושפעים",
   "composer.include.notes": "הכללת הערה: {{name}}",
   "composer.include.tasks": "הכללת משימה: {{name}}",
   "composer.include.timeline": "הכללת אירוע בציר הזמן: {{name}}",

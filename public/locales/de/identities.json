@@ -121,7 +121,7 @@
   "also.heading": "Auch in einer anderen Untersuchung:",
 
   "activity.heading": "Aktivität ({{count}})",
-  "activity.none": "Bisher nennt nichts in der Zeitleiste, in Notizen oder in IOCs {{name}}.",
+  "activity.none": "{{name}} wird bisher weder in der Zeitleiste noch in Notizen oder IOCs genannt.",
   "activity.addNote": "Notiz zu {{name}} hinzufügen",
   "activity.untitled": "Ohne Titel",
   "activity.kind.event": "Ereignis",

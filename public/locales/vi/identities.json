@@ -200,8 +200,8 @@
   "org.empty": "Thêm người vào một tổ chức (Làm việc tại) để vẽ sơ đồ của tổ chức đó.",
   "org.showTeam": "Hiển thị nhóm ({{count}})",
   "org.hideTeam": "Ẩn nhóm ({{count}})",
-  "org.noManager": "Chưa ghi nhận quản lý: {{names}}.",
-  "org.nobodyManaged": "Chưa ai tại {{name}} được ghi nhận quản lý.",
+  "org.noManager": "Chưa ghi nhận người quản lý: {{names}}.",
+  "org.nobodyManaged": "Chưa có ai tại {{name}} có người quản lý được ghi nhận.",
   "org.teamAria": "Nhóm của {{name}}",
 
   "toast.added": "Đã thêm {{name}}.",

@@ -100,7 +100,7 @@
   "connectionReverse.belongsTo": "володіє",
   "connectionReverse.logsOnTo": "приймає вхід від",
   "connectionReverse.communicatedWith": "спілкується з",
-  "connectionReverse.impersonated": "під чиїм іменем діє",
+  "connectionReverse.impersonated": "за нього видає себе",
   "connectionReverse.paid": "отримує оплату від",
 
   "connectionForm.phrase": "{{name}}…",

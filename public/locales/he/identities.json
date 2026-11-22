@@ -172,7 +172,7 @@
   "export.summary_two": "{{count}} זהויות מתוך {{scope}}.",
   "export.summary_other": "{{count}} זהויות מתוך {{scope}}.",
   "export.allInvestigations": "כל החקירות",
-  "export.csvHint": "גיליון אלקטרוני (CSV) עם שורה לכל זהות ועמודה לכל פרט. אפשר לייבא אותו שוב דרך ייבא נתונים.",
+  "export.csvHint": "גיליון אלקטרוני (CSV) עם שורה לכל זהות ועמודה לכל פרט. אפשר לייבא אותו שוב דרך „ייבא נתונים”.",
   "export.includePrivate": "כלול פרטים פרטיים",
   "export.privateHint": "פרטים פרטיים מוסתרים ב-ThreatCaddy עד שלוחצים על הצג. כל מי שיש לו את הקובץ יכול לקרוא אותם.",
   "export.button": "ייצא",

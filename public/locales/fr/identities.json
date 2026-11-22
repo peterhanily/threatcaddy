@@ -100,7 +100,7 @@
   "connectionReverse.belongsTo": "possède",
   "connectionReverse.logsOnTo": "reçoit les connexions de",
   "connectionReverse.communicatedWith": "a communiqué avec",
-  "connectionReverse.impersonated": "s'est fait usurper l'identité par",
+  "connectionReverse.impersonated": "identité usurpée par",
   "connectionReverse.paid": "a reçu un paiement de",
 
   "connectionForm.phrase": "{{name}}…",
