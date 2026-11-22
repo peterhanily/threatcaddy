@@ -245,20 +245,24 @@ test('deletes an identity for good only after confirmation, removing connections
   await expect(card(page, 'Dana Okafor').getByText('reports to')).toHaveCount(0);
 });
 
-test('reaches the list with the Tab key and opens a profile with Enter', async ({ page, browserName }) => {
+test('reaches the list with the Tab key, moves through it with the arrow keys, and opens a profile', async ({ page, browserName }) => {
   // Like Safari on macOS, WebKit's Tab skips buttons by default; Alt+Tab reaches them (as the accessibility specs do).
   const nextControl = browserName === 'webkit' && process.platform === 'darwin' ? 'Alt+Tab' : 'Tab';
   await seed(page, { folders: [folder('case', 'Fictional BEC case')], identities: [identity('lee', 'case', 'Lee Park'), identity('ana', 'case', 'Ana Silva')] },
     { view: 'identities', selectedFolderId: 'case' });
   await list(page).getByRole('searchbox', { name: 'Search identities' }).focus();
+  // The list is one tab stop (the selected identity, Ana Silva A–Z first); the arrow keys move within it.
   for (let presses = 0; presses < 12; presses++) {
     await page.keyboard.press(nextControl);
-    if (await row(page, 'Lee Park').evaluate(element => element === document.activeElement)) break;
-    if (await row(page, 'Ana Silva').evaluate(element => element === document.activeElement)) { await page.keyboard.press(nextControl); break; }
+    if (await row(page, 'Ana Silva').evaluate(element => element === document.activeElement)) break;
   }
+  await expect(row(page, 'Ana Silva')).toBeFocused();
+  await page.keyboard.press('ArrowDown');
   await expect(row(page, 'Lee Park')).toBeFocused();
-  await page.keyboard.press('Enter');
   await expect(card(page, 'Lee Park')).toBeVisible();
+  await page.keyboard.press(nextControl);
+  await expect(row(page, 'Ana Silva')).not.toBeFocused();
+  await expect(row(page, 'Lee Park')).not.toBeFocused();
 });
 
 test('links timeline chips to identities, adds a new name without leaving the timeline, and lists it in Activity', async ({ page }) => {
@@ -312,7 +316,7 @@ test('mentions an identity in a note with @, links it in the preview, and shows 
   const editor = page.locator('textarea.note-editor');
   await editor.click();
   await editor.pressSequentially('Spoke to @lee');
-  await expect(page.getByText('Mention an identity')).toBeVisible();
+  await expect(page.getByRole('listbox', { name: 'Mention an identity' })).toBeVisible();
   await page.keyboard.press('Enter');
   await expect(editor).toHaveValue('Spoke to @Lee Park ');
   // Typing straight on continues after the mention.
