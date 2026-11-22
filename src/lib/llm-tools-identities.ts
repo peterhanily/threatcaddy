@@ -27,6 +27,15 @@ const MAX_DETAILS = 200;
 const clean = (value: unknown, max: number) => String(value ?? '').replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 /** An id exactly as the dispatcher's reach check reads it (tool-reach.ts `arg`), so both see the same row. */
 const rawId = (value: unknown) => String(value || '');
+/** Loads the interface language's identities strings before an identity write, outside the
+ * dispatcher's transaction (executeTool), so its private labels count. Never waits more than 2 s. */
+export async function prepareIdentityLabels(): Promise<void> {
+  if (i18n.hasResourceBundle(i18n.language, 'identities')) return;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([i18n.loadNamespaces('identities').catch(() => undefined), new Promise(resolve => { timer = setTimeout(resolve, 2000); })]);
+  clearTimeout(timer);
+}
+
 /** The interface language's private labels, when its identities strings are already loaded
  * (no loading here: the dispatcher may be inside a database transaction). */
 function translatedPrivateLabels(): string[] {

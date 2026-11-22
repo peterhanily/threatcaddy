@@ -138,8 +138,11 @@ export function IdentitiesView(props: IdentitiesViewProps) {
           className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-bg-hover hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50">
           <Download size={14} />{t('header.export')}
         </button>
+        {/* Said on screen, not only in the disabled button's tooltip. */}
+        {!readOnly && !canAdd && <p id={`${ids}-add-blocked`} className="text-xs text-text-muted">{t('header.addBlocked')}</p>}
         {!readOnly && (
           <button type="button" disabled={!canAdd} title={canAdd ? undefined : t('header.addBlocked')} onClick={() => setForm({})}
+            aria-describedby={canAdd ? undefined : `${ids}-add-blocked`}
             className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-bg-raised disabled:text-text-muted">
             <Plus size={14} />{t('header.add')}
           </button>

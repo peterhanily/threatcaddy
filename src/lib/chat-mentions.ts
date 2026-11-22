@@ -1,6 +1,7 @@
 import { db } from '../db';
+import i18n from '../i18n';
 import { isFolderLocalOnly, isShareableFolder } from './ai-scope';
-import { looseText, organizationOf } from './identity-model';
+import { isBuiltinType, looseText, organizationOf } from './identity-model';
 
 export interface MentionSuggestion {
   type: 'note' | 'ioc' | 'investigation' | 'identity';
@@ -97,11 +98,14 @@ export async function searchMentions(
     // Names and other names only: private details are never searched.
     const wanted = looseText(q);
     if (wanted) identities = identities.filter(i => [i.name, ...i.aliases].some(name => looseText(name).includes(wanted)));
+    // The type as the Identities view names it; a custom type is shown as written.
+    await i18n.loadNamespaces('identities').catch(() => undefined);
+    const typeName = (type: string) => (isBuiltinType(type) ? i18n.t(`type.${type}`, { ns: 'identities' }) : type);
     return identities.slice(0, limit).map(i => ({
       type: 'identity',
       id: i.id,
       label: i.name,
-      preview: [i.type, i.description].filter(Boolean).join(' · ').slice(0, 60),
+      preview: [typeName(i.type), i.description].filter(Boolean).join(' · ').slice(0, 60),
     }));
   }
 

@@ -7,7 +7,7 @@ import { classifyToolCall, decideToolCall, type ToolReach, type ToolSurface } fr
 import { consumeHumanApproval } from './human-approval';
 import { listAgentProfiles, loadAgentPolicy, resolveAgentProfile } from './agent-profile-resolver';
 import { sanitizeSoulText } from './soul-text';
-import { MAX_ACTIVE_DEPLOYMENTS_PER_INVESTIGATION } from './caddy-agent-policy';
+import { IDENTITY_WRITE_TOOLS, MAX_ACTIVE_DEPLOYMENTS_PER_INVESTIGATION } from './caddy-agent-policy';
 import { SUPERVISOR_ACTION_PROFILE } from './supervisor-tool-policy';
 import { PASSIVE_LOOKUP_TEMPLATE_IDS } from './builtin-integrations';
 import { getReadOnlyEntityError } from './tool-entity-policy';
@@ -39,7 +39,7 @@ import {
   executeListInvestigations, executeGetInvestigationDetails,
   executeSearchAcrossInvestigations, executeCompareInvestigations,
 } from './llm-tools-read';
-import { executeConnectIdentities, executeCreateIdentity, executeReadIdentity, executeSearchIdentities, executeUpdateIdentity } from './llm-tools-identities';
+import { executeConnectIdentities, executeCreateIdentity, executeReadIdentity, executeSearchIdentities, executeUpdateIdentity, prepareIdentityLabels } from './llm-tools-identities';
 
 // Write tools
 import {
@@ -235,6 +235,7 @@ export async function executeTool(
   agentContext: { profileId?: string; deploymentId?: string } | undefined,
   constraints: ToolExecutionConstraints,
 ): Promise<ToolExecutionResult> {
+  if (IDENTITY_WRITE_TOOLS.has(toolUse.name)) await prepareIdentityLabels();
   if (!constraints?.signal || !atomicLocalTools.has(toolUse.name)) return dispatchTool(toolUse, folderId, agentContext, constraints);
   try {
     return await db.transaction('rw', db.tables, async () => {

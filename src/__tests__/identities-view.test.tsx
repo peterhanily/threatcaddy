@@ -82,6 +82,8 @@ describe('an identity\'s profile', () => {
     setup({ selectRequest: { id: 'dana', request: 1 } },
       node => <ScreenshareContext.Provider value={{ maxLevel: 'TLP:GREEN', effectiveLevels: [] }}>{node}</ScreenshareContext.Provider>);
     expect(within(profile('Dana Okafor')).getByRole('button', { name: 'Show private phone' })).toBeDisabled();
+    // Why it is disabled is said on screen and tied to the button, not only in a tooltip.
+    expect(within(profile('Dana Okafor')).getByRole('button', { name: 'Show private phone' })).toHaveAccessibleDescription('Private details stay hidden while screensharing.');
     expect(within(profile('Dana Okafor')).queryByText('+44 7700 900123')).not.toBeInTheDocument();
     // Not even the last digits while sharing.
     expect(within(profile('Dana Okafor')).queryByText(/0123/)).not.toBeInTheDocument();
@@ -327,5 +329,6 @@ describe('read only and org charts', () => {
   it('does not open Add from the New menu when there is no investigation to add to', () => {
     setup({ folders: [], addRequest: 1 });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add' })).toHaveAccessibleDescription('Create an investigation first.');
   });
 });

@@ -177,7 +177,8 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
     });
   };
 
-  // Handle node click: IOC nodes open edit dialog directly, others show detail panel
+  // Handle node click: IOC nodes open edit dialog directly, others show detail panel. In the
+  // Focus layout an IOC is selected like any node, so it can be focused (Edit stays in the panel).
   const handleSelectNode = useCallback((nodeId: string | null) => {
     setSelectedNodeIds([]);
     if (!nodeId) {
@@ -186,13 +187,13 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
     }
     // Look up from ref (always up-to-date) to handle IOC nodes
     const node = fullGraphDataRef.current.nodes.find((n) => n.id === nodeId);
-    if (node?.type === 'ioc' && onUpdateNote && onUpdateTask) {
+    if (node?.type === 'ioc' && onUpdateNote && onUpdateTask && layout !== 'focus') {
       setEditingIOCNode(node);
       setSelectedNodeId(null);
     } else {
       setSelectedNodeId(nodeId);
     }
-  }, [onUpdateNote, onUpdateTask]);
+  }, [onUpdateNote, onUpdateTask, layout]);
 
   const handleSelectMulti = useCallback((nodeIds: string[]) => {
     setSelectedNodeId(null);
@@ -260,7 +261,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
     for (const id of selectedNodeIds) {
       const node = fullGraphData.nodes.find((n) => n.id === id);
       if (node) {
-        const label = node.type === 'ioc' ? 'IOC' : node.type === 'note' ? 'Note' : node.type === 'task' ? 'Task' : node.type === 'identity' ? t('view.identities') : 'Event';
+        const label = t(node.type === 'ioc' ? 'view.iocs' : node.type === 'note' ? 'view.notes' : node.type === 'task' ? 'view.tasks' : node.type === 'identity' ? 'view.identities' : 'view.events');
         counts[label] = (counts[label] || 0) + 1;
       }
     }

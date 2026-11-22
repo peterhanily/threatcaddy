@@ -3,7 +3,7 @@
  * search, not through what a write says), writes stay in their investigation, and agents
  * change identities only with a person's approval.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import { DEFAULT_AGENT_POLICY, type AgentAction, type AgentProfile, type Identity, type ToolUseBlock } from '../types';
 import { executeTool } from '../lib/llm-tools';
@@ -18,6 +18,8 @@ import { resolveMentions, searchMentions } from '../lib/chat-mentions';
 import { BRIDGE_TOOLS } from '../lib/agent-bridge';
 import { executeCreateIdentity } from '../lib/llm-tools-identities';
 import { bulkApproveActions } from '../lib/agent-action-approval';
+import i18n from '../i18n';
+import deIdentities from '../../public/locales/de/identities.json';
 import { seedAIWorkspace } from './helpers/ai-workspace';
 import { ALL_STATIC_TOOLS } from './helpers/tool-exec';
 
@@ -286,6 +288,47 @@ describe('stakeholder agents and bulk approval', () => {
     for (const id of ['person', 'detail']) expect(await db.agentActions.get(id)).toMatchObject({ status: 'pending' });
     expect((await db.identities.toArray()).some(identity => identity.name === 'Queued Person')).toBe(false);
     expect((await stored('lee')).description).toBe('Finance director');
+  });
+});
+
+describe('the interface language', () => {
+  const language = i18n.language;
+  /** German, with every bundle but identities present (as English), so nothing else loads. */
+  async function german() {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    await i18n.changeLanguage('de');
+    i18n.removeResourceBundle('de', 'identities');
+  }
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await i18n.changeLanguage(language);
+    for (const namespace of Object.keys(i18n.getDataByLanguage('de') ?? {})) i18n.removeResourceBundle('de', namespace);
+  });
+
+  it('loads its identity labels before a write, so a translated private label stays private', async () => {
+    await german();
+    // As the HTTP backend would: the bundle arrives when asked for, before the write's transaction starts.
+    const load = vi.spyOn(i18n, 'loadNamespaces').mockImplementation(async () => { i18n.addResourceBundle('de', 'identities', deIdentities); });
+    await run('update_identity', { id: 'lee', addDetails: [{ label: 'Telefon', value: '+49 30 1234567' }, { label: 'E-Mail-Adresse', value: 'lee@example.test' }] });
+    expect(load).toHaveBeenCalledWith('identities');
+    expect((await stored('lee')).details.map(({ label, private: hidden }) => [label, !!hidden])).toEqual([['Telefon', true], ['E-Mail-Adresse', false]]);
+    expect(JSON.stringify(await run('read_identity', { id: 'lee' }))).not.toContain('1234567');
+  });
+
+  it('never holds a write for long when the labels cannot be loaded', async () => {
+    await german();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    vi.spyOn(i18n, 'loadNamespaces').mockReturnValue(new Promise(() => undefined));
+    const pending = run('update_identity', { id: 'lee', addDetails: [{ label: 'Phone', value: '+1 555 0142' }] });
+    await vi.advanceTimersByTimeAsync(2000);
+    vi.useRealTimers();
+    expect(await pending).toMatchObject({ success: true });
+    expect((await stored('lee')).details).toEqual([expect.objectContaining({ label: 'Phone', private: true })]);
+  });
+
+  it('names a mention\'s type as the Identities view does', async () => {
+    const [dana] = await searchMentions('identity', 'dana', 'S');
+    expect(dana.preview).toBe('Person · Accounts payable');
   });
 });
 

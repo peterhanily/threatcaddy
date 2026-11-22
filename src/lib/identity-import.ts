@@ -200,8 +200,10 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     };
     for (const column of columns('identity-connection')) for (const target of lines(row[column])) link(column, target);
     for (const column of columns('identity-connections')) for (const line of lines(row[column])) {
-      const at = line.indexOf(': ');
-      if (at > 0) link(line.slice(0, at), line.slice(at + 2));
+      // A custom phrase or a name may itself hold ": ", so take the first split whose name is an identity.
+      const splits = [...line.matchAll(/: /g)].map(match => match.index).filter(at => at > 0);
+      const at = splits.find(at => find(line.slice(at + 2))) ?? splits[0];
+      if (at !== undefined) link(line.slice(0, at), line.slice(at + 2));
       else error(`Row ${index + 2}: “${line}” is not “phrase: name”; skipped.`);
     }
   });

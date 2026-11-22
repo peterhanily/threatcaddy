@@ -157,6 +157,10 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
       <div className="grid gap-4 md:grid-cols-2">
         <section aria-labelledby={`${ids}-details`} className="flex min-w-0 flex-col gap-2">
           <h3 id={`${ids}-details`} className="text-xs font-semibold uppercase tracking-wide text-text-muted">{t('details.heading')}</h3>
+          {/* Said on screen, not only in the disabled Show button's tooltip (keyboard, touch and screen readers miss it). */}
+          {screensharing && identity.details.some(detail => detail.private) && (
+            <p id={`${ids}-sharing`} className="text-xs text-text-muted">{t('details.hiddenWhileSharing')}</p>
+          )}
           <ul className="flex flex-col gap-1.5">
             {identity.details.map(detail => {
               const visible = !detail.private || (shown.has(detail.id) && !screensharing);
@@ -168,6 +172,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                     {detail.private && (visible
                       ? <span className="inline-flex items-center gap-0.5 rounded bg-bg-raised px-1 text-[10px] text-text-muted"><Lock size={10} />{t('details.private')}</span>
                       : <button type="button" disabled={screensharing} title={screensharing ? t('details.hiddenWhileSharing') : undefined}
+                          aria-describedby={screensharing ? `${ids}-sharing` : undefined}
                           aria-label={t('details.showAria', { label: detail.label.toLowerCase() })} className={cn(linkButton, 'disabled:cursor-not-allowed disabled:opacity-50')}
                           onClick={() => setShown(previous => new Set(previous).add(detail.id))}>{t('details.show')}</button>)}
                   </span>

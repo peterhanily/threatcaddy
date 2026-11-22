@@ -64,6 +64,18 @@ describe('import', () => {
     expect(imported.connections.map(edge => `${edge.label}: ${name(edge.targetId)}`).sort()).toEqual(['reports to: Lee Park', 'works at: Halvorsen Shipping']);
   });
 
+  it('round-trips a custom phrase or a name that holds ": " in the combined Connections column', () => {
+    const shell = make('shell', 'Ops: Shell Co', { type: 'organization' });
+    const dana = { ...make('dana', 'Dana Okafor'), connections: [{ targetId: 'lee', label: 'met at: the summit with' }, { targetId: 'shell', label: 'audited' }] };
+    const rows = [dana, make('lee', 'Lee Park'), shell];
+    const csv = identitiesToCsv(rows, { byId: new Map(rows.map(row => [row.id, row])), folders, includePrivate: false });
+    const { result } = reimport(csv, []);
+    expect(result.errors).toEqual([]);
+    const created = result.created.find(identity => identity.name === 'Dana Okafor') as Identity;
+    const name = (id: string) => result.created.find(identity => identity.id === id)?.name;
+    expect(created.connections.map(edge => `${edge.label} → ${name(edge.targetId)}`).sort()).toEqual(['audited → Ops: Shell Co', 'met at: the summit with → Lee Park']);
+  });
+
   it('never duplicates: importing the same file again changes nothing, and a matching row fills only what is missing', () => {
     const csv = identitiesToCsv(all, { byId, folders, includePrivate: true });
     expect(reimport(csv, all).result).toEqual({ created: [], updated: [], errors: [] });
