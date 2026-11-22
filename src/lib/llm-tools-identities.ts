@@ -5,26 +5,33 @@
  * an AI provider). Identity names and details are data the model reads, never instructions.
  */
 import { nanoid } from 'nanoid';
-import DOMPurify from 'dompurify';
 import { db } from '../db';
+import i18n from '../i18n';
 import type { Identity, IdentityStatus } from '../types';
+import { IDENTITY_STATUSES } from './entity-enums';
 import {
-  BUILTIN_TYPES, CONNECTION_PHRASES, PRIVATE_DETAIL_LABELS, byName, canonicalPhrase, canonicalType, detailKey, guessIdentity,
-  identityMatches, isOrganization, isPerson, organizationOf, sameText, type BuiltinType, type ConnectionPhrase,
+  CONNECTION_PHRASES, ENGLISH_PHRASE_LABELS, ENGLISH_TYPE_LABELS, MEMBERSHIP_PHRASES, PRIVATE_DETAIL_LABELS, byName, canonicalPhrase,
+  canonicalType, detailKey, guessIdentity, identityMatches, isOrganization, isPerson, isPrivateLabel, looseText, organizationOf, sameText,
 } from './identity-model';
 import { withCreatorTags } from './tool-creator';
 
-const ENGLISH_TYPES = Object.fromEntries(BUILTIN_TYPES.map(type => [type, type])) as Record<BuiltinType, string>;
-const ENGLISH_PHRASES = Object.fromEntries(Object.keys(CONNECTION_PHRASES).map(phrase => [phrase, phrase])) as Record<ConnectionPhrase, string>;
-const PRIVATE_LABELS = new Set(PRIVATE_DETAIL_LABELS.map(key => sameText(key.replace(/([A-Z])/g, ' $1'))));
-const STATUSES: readonly IdentityStatus[] = ['compromised', 'suspicious', 'cleared'];
-const MEMBERSHIP = new Set(['works at', 'belongs to']);
+const STATUSES = IDENTITY_STATUSES;
 const MAX_NAME = 200;
 const MAX_TEXT = 2000;
 const MAX_ITEMS = 30;
+/** An identity holds at most this many details; a runaway agent cannot grow one without end. */
+const MAX_DETAILS = 200;
 
-/** Plain text, no markup, bounded. */
-const clean = (value: unknown, max: number) => DOMPurify.sanitize(String(value ?? ''), { ALLOWED_TAGS: [] }).replace(/\s+/g, ' ').trim().slice(0, max);
+/** Plain text: control characters and runs of spaces become one space, bounded. Never HTML-parsed,
+ * so "Smith <john@x.com>" and "R&D" stay as written (React escapes them when shown). */
+const clean = (value: unknown, max: number) => String(value ?? '').replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+/** An id exactly as the dispatcher's reach check reads it (tool-reach.ts `arg`), so both see the same row. */
+const rawId = (value: unknown) => String(value || '');
+/** The interface language's private labels, when its identities strings are already loaded
+ * (no loading here: the dispatcher may be inside a database transaction). */
+function translatedPrivateLabels(): string[] {
+  return i18n.hasResourceBundle(i18n.language, 'identities') ? PRIVATE_DETAIL_LABELS.map(key => i18n.t(`detailLabel.${key}`, { ns: 'identities' })) : [];
+}
 const list = (value: unknown) => (Array.isArray(value) ? value : value == null || value === '' ? [] : [value]).slice(0, MAX_ITEMS);
 const error = (message: string) => JSON.stringify({ error: message });
 
@@ -47,7 +54,7 @@ function summary(identity: Identity, byId: ReadonlyMap<string, Identity>) {
 
 /** By id, or by exact name or other name in the investigation; refuses a name two identities share. */
 function find(rows: readonly Identity[], input: { id?: unknown; name?: unknown }): Identity | string {
-  const id = clean(input.id, 100);
+  const id = rawId(input.id);
   if (id) return rows.find(identity => identity.id === id) ?? 'Identity not found in this investigation.';
   const name = clean(input.name, MAX_NAME);
   if (!name) return 'Give the identity\'s id or name.';
@@ -57,7 +64,12 @@ function find(rows: readonly Identity[], input: { id?: unknown; name?: unknown }
   return `No identity named "${name}" in this investigation; search_identities lists them.`;
 }
 
-export async function executeSearchIdentities(input: Record<string, unknown>, folderId?: string): Promise<string> {
+/**
+ * `brief` is for stakeholder (observer) agents: owner decision, names, types, statuses and counts
+ * only. A brief search matches names and other names only, never a detail, and returns no description,
+ * organisation or other names.
+ */
+export async function executeSearchIdentities(input: Record<string, unknown>, folderId?: string, options: { brief?: boolean } = {}): Promise<string> {
   const query = clean(input.query, MAX_NAME);
   const type = clean(input.type, 50).toLowerCase();
   const status = clean(input.status, 20).toLowerCase();
@@ -65,13 +77,19 @@ export async function executeSearchIdentities(input: Record<string, unknown>, fo
   const rows = await scope(folderId);
   const byId = new Map(rows.map(identity => [identity.id, identity]));
   // identityMatches looks at the name, other names, description, type and details that are not private.
+  const wanted = looseText(query);
+  const matches = (identity: Identity) => (options.brief
+    ? !wanted || [identity.name, ...identity.aliases].some(name => looseText(name).includes(wanted))
+    : identityMatches(identity, query, identity.type));
   const matched = rows.filter(identity => !identity.archived && (!type || sameText(identity.type) === type)
-    && (!status || identity.status === status) && identityMatches(identity, query, identity.type)).sort(byName);
-  return JSON.stringify({ count: matched.length, identities: matched.slice(0, limit).map(identity => summary(identity, byId)) });
+    && (!status || identity.status === status) && matches(identity)).sort(byName);
+  return JSON.stringify({ count: matched.length, identities: matched.slice(0, limit).map(identity => (options.brief
+    ? { id: identity.id, name: identity.name, type: identity.type, status: identity.status }
+    : summary(identity, byId))) });
 }
 
 export async function executeReadIdentity(input: Record<string, unknown>, folderId?: string): Promise<string> {
-  const id = clean(input.id, 100);
+  const id = rawId(input.id);
   // By id, the dispatcher's reach check has already decided whether another investigation may be read.
   const stored = id ? await db.identities.get(id) : undefined;
   const rows = id ? (stored && !stored.trashed ? await scope(stored.folderId) : []) : await scope(folderId);
@@ -92,21 +110,27 @@ export async function executeReadIdentity(input: Record<string, unknown>, folder
   });
 }
 
-/** New details: private when the label is private by default (Phone, Home address…), or when the
- * value is already held privately; the reply is the same either way, so it reveals nothing. */
-function addDetails(identity: Identity, raw: unknown): number {
-  let added = 0;
+/**
+ * New details. Whether one is private depends on its label alone (Phone, Home address…), never on
+ * what private details already hold, and a repeat is skipped only against details of the same
+ * kind: nothing a later read or search shows depends on a private value, so a guess cannot be
+ * confirmed. Returns how many entries were valid, not how many were stored, for the same reason.
+ */
+function addDetails(identity: Identity, raw: unknown): number | string {
+  const privateLabels = translatedPrivateLabels();
+  let received = 0;
   for (const entry of list(raw)) {
     const label = clean((entry as { label?: unknown })?.label, 100);
     const value = clean((entry as { value?: unknown })?.value, MAX_TEXT);
     if (!label || !value) continue;
+    received++;
+    const isPrivate = isPrivateLabel(label, privateLabels);
     const key = detailKey(value);
-    if (identity.details.some(detail => !detail.private && sameText(detail.label) === sameText(label) && detailKey(detail.value) === key)) continue;
-    const isPrivate = PRIVATE_LABELS.has(sameText(label)) || identity.details.some(detail => detail.private && detailKey(detail.value) === key);
+    if (identity.details.some(detail => !!detail.private === isPrivate && sameText(detail.label) === sameText(label) && detailKey(detail.value) === key)) continue;
+    if (identity.details.length >= MAX_DETAILS) return `An identity holds at most ${MAX_DETAILS} details.`;
     identity.details.push({ id: nanoid(), label, value, ...(isPrivate ? { private: true } : {}) });
-    added++;
   }
-  return added;
+  return received;
 }
 
 /** Other names that are nobody else's name in the investigation. */
@@ -144,7 +168,7 @@ export async function executeCreateIdentity(input: Record<string, unknown>, fold
   const folder = await db.folders.get(folderId);
   const identity: Identity = {
     id: nanoid(), folderId, name,
-    type: typed ? canonicalType(typed, ENGLISH_TYPES, [...new Set(rows.map(row => row.type))]) : guessIdentity(name).type,
+    type: typed ? canonicalType(typed, ENGLISH_TYPE_LABELS, [...new Set(rows.map(row => row.type))]) : guessIdentity(name).type,
     description: clean(input.description, MAX_TEXT) || undefined,
     status: (statusText as IdentityStatus) || undefined,
     contact: input.contact === true || undefined,
@@ -153,15 +177,16 @@ export async function executeCreateIdentity(input: Record<string, unknown>, fold
     trashed: false, archived: false, createdBy: creator, createdAt: now, updatedAt: now,
   };
   const otherNames = addOtherNames(identity, input.otherNames, rows);
-  const detailsAdded = addDetails(identity, input.details);
+  const detailsReceived = addDetails(identity, input.details);
+  if (typeof detailsReceived === 'string') return error(detailsReceived);
   if (organization) identity.connections.push({ targetId: organization.id, label: isPerson(identity) ? 'works at' : 'belongs to' });
   await db.identities.add(identity);
-  return JSON.stringify({ success: true, id: identity.id, name: identity.name, type: identity.type, detailsAdded,
+  return JSON.stringify({ success: true, id: identity.id, name: identity.name, type: identity.type, detailsReceived,
     ...(otherNames.skipped.length ? { otherNamesSkipped: otherNames.skipped, reason: 'already another identity\'s name' } : {}) });
 }
 
 export async function executeUpdateIdentity(input: Record<string, unknown>, creator?: string): Promise<string> {
-  const id = clean(input.id, 100);
+  const id = rawId(input.id);
   if (!id) return error('id is required');
   const stored = await db.identities.get(id);
   if (!stored || stored.trashed) return error('Identity not found');
@@ -176,11 +201,12 @@ export async function executeUpdateIdentity(input: Record<string, unknown>, crea
   }
   if (typeof input.contact === 'boolean') updates.contact = input.contact || undefined;
   const otherNames = addOtherNames(identity, input.addOtherNames, rows);
-  const detailsAdded = addDetails(identity, input.addDetails);
+  const detailsReceived = addDetails(identity, input.addDetails);
+  if (typeof detailsReceived === 'string') return error(detailsReceived);
   if (otherNames.added) updates.aliases = identity.aliases;
-  if (detailsAdded) updates.details = identity.details;
+  if (identity.details.length !== stored.details.length) updates.details = identity.details;
   await db.identities.update(id, updates);
-  return JSON.stringify({ success: true, id, name: stored.name, detailsAdded, otherNamesAdded: otherNames.added,
+  return JSON.stringify({ success: true, id, name: stored.name, detailsReceived, otherNamesAdded: otherNames.added,
     ...(otherNames.skipped.length ? { otherNamesSkipped: otherNames.skipped, reason: 'already another identity\'s name' } : {}) });
 }
 
@@ -188,7 +214,7 @@ export async function executeConnectIdentities(input: Record<string, unknown>, f
   const phraseText = clean(input.phrase, 100);
   if (!phraseText) return error('phrase is required, for example "works at" or "reports to"');
   // Both ends in one investigation: the one the first names, else the conversation's.
-  const first = clean(input.fromId, 100) ? await db.identities.get(clean(input.fromId, 100)) : undefined;
+  const first = rawId(input.fromId) ? await db.identities.get(rawId(input.fromId)) : undefined;
   const rows = await scope(first?.folderId ?? folderId);
   if (!first?.folderId && !folderId) return error('Open an investigation first, or give both ids.');
   const from = find(rows, { id: input.fromId, name: input.fromName });
@@ -196,9 +222,11 @@ export async function executeConnectIdentities(input: Record<string, unknown>, f
   const to = find(rows, { id: input.toId, name: input.toName });
   if (typeof to === 'string') return error(`to: ${to} Both identities must be in the same investigation.`);
   if (from.id === to.id) return error('An identity cannot be connected to itself.');
-  const { label, reversed } = canonicalPhrase(phraseText, ENGLISH_PHRASES);
+  // Only the built-in phrases (or their other-side wording): free text from a model is not stored as a connection.
+  const { label, reversed } = canonicalPhrase(phraseText, ENGLISH_PHRASE_LABELS);
+  if (!Object.hasOwn(CONNECTION_PHRASES, label)) return error(`Use one of: ${Object.keys(CONNECTION_PHRASES).join(', ')} (or the other side's wording, such as "manages").`);
   const [source, target] = reversed ? [to, from] : [from, to];
-  if (MEMBERSHIP.has(label) && !isOrganization(target)) return error(`"${label}" connects to an organization; "${target.name}" is not one.`);
+  if (MEMBERSHIP_PHRASES.includes(label) && !isOrganization(target)) return error(`"${label}" connects to an organization; "${target.name}" is not one.`);
   if (source.connections.some(edge => edge.targetId === target.id && edge.label === label)) {
     return JSON.stringify({ success: true, id: source.id, unchanged: true, connection: `${source.name} ${label} ${target.name}` });
   }

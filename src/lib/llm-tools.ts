@@ -408,7 +408,7 @@ async function dispatchTool(
       case 'dismiss_agent':                  result = await executeDismissAgent(inp, folderId, creator); break;
       case 'reflect_on_performance':         result = await executeReflectOnPerformance(inp, agentContext?.profileId); break;
       case 'read_soul':                      result = await executeReadSoul(inp, agentContext?.profileId, agentRole); break;
-      case 'search_identities':              result = await executeSearchIdentities(inp, folderId); break;
+      case 'search_identities':              result = await executeSearchIdentities(inp, folderId, { brief: agentRole === 'observer' }); break;
       case 'read_identity':                  result = await executeReadIdentity(inp, folderId); break;
       case 'create_identity':                result = await executeCreateIdentity(inp, folderId, creator); break;
       case 'update_identity':                result = await executeUpdateIdentity(inp, creator); break;

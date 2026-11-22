@@ -191,7 +191,7 @@ Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|re
     id: 'ap-legal-counsel', get name() { return i18n.t('builtinProfile.legalCounsel.name', { ns: 'agent' }); }, icon: '⚖️', role: 'observer',
     get description() { return i18n.t('builtinProfile.legalCounsel.description', { ns: 'agent' }); },
     systemPrompt: `You are Legal Counsel advising on this investigation. Assess legal implications: breach notification requirements (GDPR 72hrs, state laws), evidence admissibility, regulatory exposure, litigation risk. Create advisory notes. Flag items requiring immediate legal action. Do NOT modify technical entities — you advise only.`,
-    // Names, types and statuses only (search_identities), never details: owner decision for stakeholders.
+    // search_identities only: names, types, statuses and descriptions, never a private detail (owner decision for stakeholders).
     allowedTools: ['get_investigation_summary', 'search_notes', 'read_note', 'list_tasks', 'read_task', 'list_iocs', 'search_all', 'create_note', 'search_identities'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: false, autoApproveCreate: true, seriousness: 95, verbosity: 70, creativity: 20, riskTolerance: 10 },
     readOnlyEntityTypes: ['task', 'ioc', 'timeline'],
@@ -201,7 +201,7 @@ Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|re
     id: 'ap-compliance-officer', get name() { return i18n.t('builtinProfile.complianceOfficer.name', { ns: 'agent' }); }, icon: '📜', role: 'observer',
     get description() { return i18n.t('builtinProfile.complianceOfficer.description', { ns: 'agent' }); },
     systemPrompt: `You are the Compliance Officer. Assess regulatory impact: which frameworks apply (GDPR, HIPAA, PCI-DSS, SOX, NIST)? What controls failed? What remediation is required? What must be reported to regulators? Create compliance assessment notes. Flag mandatory reporting deadlines. Do NOT modify technical entities.`,
-    // Names, types and statuses only (search_identities), never details: owner decision for stakeholders.
+    // search_identities only: names, types, statuses and descriptions, never a private detail (owner decision for stakeholders).
     allowedTools: ['get_investigation_summary', 'search_notes', 'read_note', 'list_tasks', 'read_task', 'list_iocs', 'search_all', 'create_note', 'search_identities'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: false, autoApproveCreate: true, seriousness: 95, verbosity: 70, creativity: 10, riskTolerance: 10 },
     readOnlyEntityTypes: ['task', 'ioc', 'timeline'],
@@ -211,7 +211,7 @@ Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|re
     id: 'ap-comms-lead', get name() { return i18n.t('builtinProfile.commsLead.name', { ns: 'agent' }); }, icon: '📢', role: 'observer',
     get description() { return i18n.t('builtinProfile.commsLead.description', { ns: 'agent' }); },
     systemPrompt: `You are the Communications Lead. Draft external communications: customer notification letters, press statements, internal staff briefings, board updates. Assess reputational impact. Create draft communications as notes. Tailor messaging to audience (technical vs executive vs public). Flag items that need PR review before release.`,
-    // Names, types and statuses only (search_identities), never details: owner decision for stakeholders.
+    // search_identities only: names, types, statuses and descriptions, never a private detail (owner decision for stakeholders).
     allowedTools: ['get_investigation_summary', 'search_notes', 'read_note', 'list_tasks', 'search_all', 'create_note', 'search_identities'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: false, autoApproveCreate: true, seriousness: 60, verbosity: 70, creativity: 70, riskTolerance: 30 },
     readOnlyEntityTypes: ['task', 'ioc', 'timeline'],

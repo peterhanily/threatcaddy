@@ -18,7 +18,7 @@ export const AGENT_CONTROL_TOOLS: ReadonlySet<string> = new Set([
  * profile that lists its tools gets only those it lists), but never through the agent bridge,
  * and an agent's identity write always needs a person's approval. */
 export const IDENTITY_TOOLS: ReadonlySet<string> = new Set(['search_identities', 'read_identity', 'create_identity', 'update_identity', 'connect_identities']);
-const IDENTITY_WRITE_TOOLS: ReadonlySet<string> = new Set(['create_identity', 'update_identity', 'connect_identities']);
+export const IDENTITY_WRITE_TOOLS: ReadonlySet<string> = new Set(['create_identity', 'update_identity', 'connect_identities']);
 /** Offered to an agent only when its profile lists them explicitly. Cross-case readers also need a local-only home. */
 export const EXPLICIT_ONLY_TOOLS: ReadonlySet<string> = new Set([...CROSS_CASE_READ_TOOLS, 'query_siem', 'create_ticket']);
 export const isEgressToolName = (n: string) =>

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Identity, IdentityStatus } from '../../types';
 import {
-  BUILTIN_TYPES, CONNECTION_PHRASES, DETAIL_LABELS, PRIVATE_DETAIL_LABELS, isBuiltinType, isConnectionPhrase, isPerson,
+  BUILTIN_TYPES, CONNECTION_PHRASES, DETAIL_LABELS, PRIVATE_DETAIL_LABELS, isBuiltinType, isConnectionPhrase, isPerson, isPrivateLabel,
   organizationOf, sameText, type BuiltinType, type ConnectionPhrase, type FoundName,
 } from '../../lib/identity-model';
 import type { AddPrefill } from './IdentityFormModal';
@@ -33,10 +33,7 @@ export function useIdentityLabels(options?: { suspense?: boolean }) {
       phrase: (label: string, outgoing: boolean) => (isConnectionPhrase(label)
         ? t(`${outgoing ? 'connection' : 'connectionReverse'}.${CONNECTION_PHRASES[label]}`) : label),
       /** Phone, address and similar labels start out private (English or the interface language). */
-      privateByDefault: (label: string) => {
-        const key = sameText(label);
-        return PRIVATE_DETAIL_LABELS.some((name, index) => sameText(name.replace(/([A-Z])/g, ' $1')) === key || sameText(privateLabels[index]) === key);
-      },
+      privateByDefault: (label: string) => isPrivateLabel(label, privateLabels),
     };
   }, [t]);
 }

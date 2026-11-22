@@ -1581,7 +1581,7 @@ const AppInner = memo(function AppInner({
   const caddyAgent = useCaddyAgent({
     folder: selectedFolder,
     settings,
-    onEntitiesChanged: () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); },
+    onEntitiesChanged: () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); identitiesHook.reload(); chatsHook.reload(); },
     onSupervisorError: message => addToast('error', message),
   });
 
@@ -2092,7 +2092,7 @@ const AppInner = memo(function AppInner({
                 setSelectedNoteId(noteId);
                 setActiveView('notes');
               }}
-              onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); }}
+              onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); identitiesHook.reload(); chatsHook.reload(); }}
               onOpenSettings={(tab) => { openSettings(tab); }}
               onFolderChanged={reloadFolders}
               profiles={agentProfilesHook.profiles}
@@ -2314,7 +2314,7 @@ const AppInner = memo(function AppInner({
             onTrashThread={loggedTrashChatThread}
             onShareThread={handleShareChatThread}
             settings={settings}
-            onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); }}
+            onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); identitiesHook.reload(); chatsHook.reload(); }}
             onNavigateToEntity={(type, id) => {
               if (type === 'note') { setSelectedNoteId(id); navigateTo('notes', { selectedNoteId: id }); }
               else if (type === 'task') { navigateTo('tasks'); }

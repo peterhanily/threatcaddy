@@ -26,12 +26,27 @@ const REVERSE_PHRASES: Readonly<Record<ConnectionPhrase, string>> = {
 };
 export const isConnectionPhrase = (label: string): label is ConnectionPhrase => Object.hasOwn(CONNECTION_PHRASES, label);
 /** Phrases that tie a person, system or account to an organisation. */
-const MEMBERSHIP: readonly string[] = ['works at', 'belongs to'];
+export const MEMBERSHIP_PHRASES: readonly string[] = ['works at', 'belongs to'];
+const MEMBERSHIP = MEMBERSHIP_PHRASES;
+/** The built-in types and phrases keyed to themselves: how import and the AI tools read English. */
+export const ENGLISH_TYPE_LABELS = Object.fromEntries(BUILTIN_TYPES.map(type => [type, type])) as Record<BuiltinType, string>;
+export const ENGLISH_PHRASE_LABELS = Object.fromEntries(Object.keys(CONNECTION_PHRASES).map(phrase => [phrase, phrase])) as Record<ConnectionPhrase, string>;
 
 /** Detail labels offered in forms (i18n keys under `detailLabel.`). Labels are stored as typed. */
 export const DETAIL_LABELS = ['email', 'phone', 'username', 'handle', 'ipAddress', 'hostname', 'domain', 'iban', 'assetTag', 'website', 'address'] as const;
 /** Details with these labels start out private (i18n keys under `detailLabel.`). */
 export const PRIVATE_DETAIL_LABELS = ['phone', 'address', 'personalEmail', 'homeAddress', 'dateOfBirth'] as const;
+/** English labels whose details start out private: the built-in ones and their common variants. */
+const PRIVATE_LABEL_WORDS = new Set([
+  'phone', 'address', 'personal email', 'home address', 'date of birth',
+  'phone number', 'telephone', 'tel', 'mobile', 'mobile number', 'mobile phone', 'cell', 'cell phone', 'home phone', 'personal phone',
+  'private phone', 'postal address', 'personal address', 'private address', 'private email', 'personal e-mail', 'birthday', 'birth date', 'dob',
+]);
+/** Whether a detail label starts out private: in English, or one of `translated` (the interface language's labels). */
+export function isPrivateLabel(label: string, translated: readonly string[] = []): boolean {
+  const key = sameText(label);
+  return PRIVATE_LABEL_WORDS.has(key) || translated.some(text => sameText(text) === key);
+}
 
 /** Lower case, single spaces, trimmed: how names and details are compared. */
 export const sameText = (text: string) => text.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();

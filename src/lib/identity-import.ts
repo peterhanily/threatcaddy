@@ -7,20 +7,19 @@
 import { nanoid } from 'nanoid';
 import type { Identity, IdentityStatus } from '../types';
 import type { ColumnMapping } from './data-import';
+import { IDENTITY_STATUSES } from './entity-enums';
 import {
-  BUILTIN_TYPES, CONNECTION_PHRASES, PRIVATE_DETAIL_LABELS, canonicalPhrase, canonicalType, detailKey, guessIdentity,
-  isOrganization, isPerson, sameText, type BuiltinType, type ConnectionPhrase,
+  CONNECTION_PHRASES, ENGLISH_PHRASE_LABELS, ENGLISH_TYPE_LABELS, MEMBERSHIP_PHRASES, canonicalPhrase, canonicalType, detailKey,
+  guessIdentity, isOrganization, isPerson, isPrivateLabel as isPrivateLabelText, sameText,
 } from './identity-model';
 
-const ENGLISH_TYPES = Object.fromEntries(BUILTIN_TYPES.map(type => [type, type])) as Record<BuiltinType, string>;
-const ENGLISH_PHRASES = Object.fromEntries(Object.keys(CONNECTION_PHRASES).map(phrase => [phrase, phrase])) as Record<ConnectionPhrase, string>;
-/** Phone, address and similar labels start out private, as when added by hand (in English). */
-const PRIVATE_LABELS = new Set(PRIVATE_DETAIL_LABELS.map(key => sameText(key.replace(/([A-Z])/g, ' $1'))));
+const ENGLISH_TYPES = ENGLISH_TYPE_LABELS;
+const ENGLISH_PHRASES = ENGLISH_PHRASE_LABELS;
 const PRIVATE_SUFFIX = /\s*\(private\)\s*$/i;
 /** Export marks detail columns that would otherwise read as a fixed field ("Role (detail)") or as private. */
 const COLUMN_SUFFIX = /\s*\((?:private|detail)\)\s*$/i;
-const STATUSES: readonly IdentityStatus[] = ['compromised', 'suspicious', 'cleared'];
-const MEMBERSHIP = new Set(['works at', 'belongs to']);
+const STATUSES: readonly IdentityStatus[] = IDENTITY_STATUSES;
+const MEMBERSHIP = new Set(MEMBERSHIP_PHRASES);
 const MAX_ERRORS = 200;
 
 /** Whether a file is an Identities › Export file (its Other names and Connections columns). */
@@ -34,7 +33,7 @@ export function isIdentityExport(headers: readonly string[]): boolean {
  * interface language ("Telefon"), as in the Add form. */
 export const isPrivateDetailColumn = (header: string, isPrivateLabel?: (label: string) => boolean) => {
   const label = value(header.replace(COLUMN_SUFFIX, '').replace(COLUMN_SUFFIX, ''));
-  return PRIVATE_SUFFIX.test(header) || PRIVATE_LABELS.has(sameText(label)) || !!isPrivateLabel?.(label);
+  return PRIVATE_SUFFIX.test(header) || isPrivateLabelText(label) || !!isPrivateLabel?.(label);
 };
 
 /** Whether a file's columns look like a list of identities (as Identities › Export writes one). */

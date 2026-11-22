@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { isFolderLocalOnly, isShareableFolder } from './ai-scope';
-import { looseText } from './identity-model';
+import { looseText, organizationOf } from './identity-model';
 
 export interface MentionSuggestion {
   type: 'note' | 'ioc' | 'investigation' | 'identity';
@@ -179,8 +179,9 @@ export async function resolveMentions(text: string, homeFolderId: string | undef
       const identity = await db.identities.get(m.id);
       if (identity && !await isHidden(identity, hideLocalOnly)) {
         // What anyone can see: never a private detail (owner decision 7).
-        const organization = identity.connections.find(edge => edge.label === 'works at' || edge.label === 'belongs to');
-        const organizationName = organization ? (await db.identities.get(organization.targetId))?.name : undefined;
+        // The same organisation the Identities view shows: a live organisation in the same investigation.
+        const sameInvestigation = identity.folderId ? await db.identities.where('folderId').equals(identity.folderId).toArray() : [];
+        const organizationName = organizationOf(identity, new Map(sameInvestigation.map(row => [row.id, row])))?.name;
         const details = [
           `Name: ${identity.name}`,
           `Type: ${identity.type}`,
@@ -196,17 +197,18 @@ export async function resolveMentions(text: string, homeFolderId: string | undef
     } else if (m.type === 'investigation') {
       const folder = await db.folders.get(m.id);
       if (folder && !await isHidden({ folderId: folder.id }, hideLocalOnly)) {
-        const [noteCount, taskCount, iocCount, eventCount] = await Promise.all([
+        const [noteCount, taskCount, iocCount, eventCount, identityCount] = await Promise.all([
           db.notes.where('folderId').equals(folder.id).and(n => !n.trashed).count(),
           db.tasks.where('folderId').equals(folder.id).and(t => !t.trashed).count(),
           db.standaloneIOCs.where('folderId').equals(folder.id).and(i => !i.trashed).count(),
           db.timelineEvents.where('folderId').equals(folder.id).and(e => !e.trashed).count(),
+          db.identities.where('folderId').equals(folder.id).and(i => !i.trashed).count(),
         ]);
         const details = [
           `Name: ${folder.name}`,
           folder.description ? `Description: ${folder.description}` : '',
           `Status: ${folder.status || 'active'}`,
-          `Entities: ${noteCount} notes, ${taskCount} tasks, ${iocCount} IOCs, ${eventCount} timeline events`,
+          `Entities: ${noteCount} notes, ${taskCount} tasks, ${iocCount} IOCs, ${eventCount} timeline events, ${identityCount} identities`,
         ].filter(Boolean).join('\n');
         contextParts.push(`[Referenced Investigation: "${folder.name}"]\n${details}`);
         displayText = displayText.replace(m.full, `@${folder.name}`);

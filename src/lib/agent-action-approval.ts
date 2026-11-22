@@ -9,7 +9,7 @@ import { db } from '../db';
 import type { AgentAction, Settings, ToolUseBlock } from '../types';
 import { executeTool } from './llm-tools';
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from './llm-tool-defs';
-import { getToolActionClass } from './caddy-agent-policy';
+import { getToolActionClass, IDENTITY_WRITE_TOOLS } from './caddy-agent-policy';
 import { buildAgentToolset } from './caddy-agent';
 import { getHostToolDefinitions } from './agent-hosts';
 import { agentRefusal } from './llm-router';
@@ -189,6 +189,8 @@ const pendingActions = (investigationId: string) => db.agentActions
  * always needs individual review. */
 async function isRoutineAction(action: AgentAction, settings: Settings): Promise<boolean> {
   if (action.id.startsWith('srv:') || action.agentConfigId === SUPERVISOR_ACTION_PROFILE) return false;
+  // A change to a person's record is personal data: a person reviews each one (owner decision).
+  if (IDENTITY_WRITE_TOOLS.has(action.toolName)) return false;
   const call: ToolUseBlock = { type: 'tool_use', id: action.id, name: action.toolName, input: action.toolInput };
   try {
     if (await proposerRemoved(action)) return false;
