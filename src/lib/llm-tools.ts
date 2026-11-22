@@ -39,6 +39,7 @@ import {
   executeListInvestigations, executeGetInvestigationDetails,
   executeSearchAcrossInvestigations, executeCompareInvestigations,
 } from './llm-tools-read';
+import { executeConnectIdentities, executeCreateIdentity, executeReadIdentity, executeSearchIdentities, executeUpdateIdentity } from './llm-tools-identities';
 
 // Write tools
 import {
@@ -99,7 +100,7 @@ Understand the IR lifecycle (NIST SP 800-61): Preparation, Detection & Analysis,
 
 ## Available Tools
 
-You have 46 tools organized into these categories:
+You have 51 tools organized into these categories:
 
 **Search & Read** (11): search_notes, search_all, read_note, read_task, read_ioc, read_timeline_event, list_tasks, list_iocs, list_timeline_events, get_investigation_summary, list_folders.
 
@@ -118,6 +119,8 @@ You have 46 tools organized into these categories:
 **Agent Management** (4): deploy_agent, stop_agent, list_deployed_agents, run_agent_cycle.
 
 **Global Investigation** (5): list_investigations, get_investigation_details, search_across_investigations, create_in_investigation, compare_investigations.
+
+**Identities** (5): search_identities, read_identity, create_identity, update_identity, connect_identities — the people, organizations, systems and accounts in the investigation. Private details are hidden from you; never ask for them or guess them.
 
 ### Tool Usage Guidelines
 - When creating or updating entities, confirm exactly what you did with clickable entity links.
@@ -140,6 +143,7 @@ When you reference entities in your response, use this format so they become cli
 - Tasks: [task:ID:Title]
 - IOCs: [ioc:TYPE:VALUE]
 - Timeline events: [event:ID:Title]
+- Identities: [identity:ID:Name]
 
 ## Response Format
 
@@ -198,14 +202,15 @@ export async function buildSystemPrompt(folder?: Folder, customPrompt?: string, 
     if (folder.papLevel) prompt += `\nPAP: ${folder.papLevel}`;
 
     // Add entity counts for context
-    const [noteCount, taskCount, iocCount, eventCount] = await Promise.all([
+    const [noteCount, taskCount, iocCount, eventCount, identityCount] = await Promise.all([
       db.notes.where('folderId').equals(folder.id).and(n => !n.trashed).count(),
       db.tasks.where('folderId').equals(folder.id).and(t => !t.trashed).count(),
       db.standaloneIOCs.where('folderId').equals(folder.id).and(i => !i.trashed).count(),
       db.timelineEvents.where('folderId').equals(folder.id).and(e => !e.trashed).count(),
+      db.identities.where('folderId').equals(folder.id).and(i => !i.trashed).count(),
     ]);
 
-    prompt += `\n\nEntity counts: ${noteCount} notes, ${taskCount} tasks, ${iocCount} IOCs, ${eventCount} timeline events`;
+    prompt += `\n\nEntity counts: ${noteCount} notes, ${taskCount} tasks, ${iocCount} IOCs, ${eventCount} timeline events, ${identityCount} identities`;
   }
 
   return prompt;
@@ -219,7 +224,8 @@ const SURFACE_AGENT_LABELS: Partial<Record<ToolSurface, string>> = { supervisor:
 
 const atomicLocalTools = new Set(['create_note', 'update_note', 'create_task', 'update_task', 'create_ioc', 'update_ioc',
   'bulk_create_iocs', 'create_timeline_event', 'update_timeline_event', 'link_entities', 'generate_report',
-  'create_in_investigation', 'create_note_folder', 'delete_note_folder', 'move_to_folder']);
+  'create_in_investigation', 'create_note_folder', 'delete_note_folder', 'move_to_folder',
+  'create_identity', 'update_identity', 'connect_identities']);
 
 /** Every caller states its surface; the dispatcher re-runs the decision table
  * for it (2.0.3 design, section 2.5) and refuses an 'ask' without a HumanApproval. */
@@ -402,6 +408,11 @@ async function dispatchTool(
       case 'dismiss_agent':                  result = await executeDismissAgent(inp, folderId, creator); break;
       case 'reflect_on_performance':         result = await executeReflectOnPerformance(inp, agentContext?.profileId); break;
       case 'read_soul':                      result = await executeReadSoul(inp, agentContext?.profileId, agentRole); break;
+      case 'search_identities':              result = await executeSearchIdentities(inp, folderId); break;
+      case 'read_identity':                  result = await executeReadIdentity(inp, folderId); break;
+      case 'create_identity':                result = await executeCreateIdentity(inp, folderId, creator); break;
+      case 'update_identity':                result = await executeUpdateIdentity(inp, creator); break;
+      case 'connect_identities':             result = await executeConnectIdentities(inp, folderId, creator); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
       default: {
         // Dynamic skill tools: local:<skill> or host:<name>:<skill>

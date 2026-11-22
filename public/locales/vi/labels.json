@@ -136,6 +136,7 @@
   "mentionCategory.note": "Ghi chú",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "Điều tra",
+  "mentionCategory.identity": "Danh tính",
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",

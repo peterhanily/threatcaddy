@@ -136,6 +136,7 @@
   "mentionCategory.note": "ノート",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "調査",
+  "mentionCategory.identity": "アイデンティティ",
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",

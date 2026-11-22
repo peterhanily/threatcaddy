@@ -136,6 +136,7 @@
   "mentionCategory.note": "Нотатки",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "Розслідування",
+  "mentionCategory.identity": "Суб'єкти",
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",

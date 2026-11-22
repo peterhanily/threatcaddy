@@ -3,12 +3,12 @@ import type { Settings, ToolCallRecord } from '../types';
 import { classifyToolCall } from './tool-reach';
 
 /** Item tables that sync with their investigation. */
-const ITEM_TABLES = ['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems'] as const;
+const ITEM_TABLES = ['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'identities'] as const;
 
 /** The write calls whose target classifyToolCall resolves (tool-reach.ts resolveTargets). Every
  * other write lands in its own conversation's investigation, so classifying it would find nothing. */
 const REACHING_WRITES = new Set(['create_in_investigation', 'update_note', 'update_task', 'update_ioc', 'update_timeline_event',
-  'link_entities', 'review_completed_task', 'enrich_ioc', 'delete_note_folder', 'move_to_folder']);
+  'link_entities', 'review_completed_task', 'enrich_ioc', 'delete_note_folder', 'move_to_folder', 'update_identity', 'connect_identities']);
 
 /** Agents, the supervisor and the bridge tag what they create (D11); 2.0.2 rows carry only createdBy. */
 const agentMade = (row: { tags?: unknown; createdBy?: unknown }) =>

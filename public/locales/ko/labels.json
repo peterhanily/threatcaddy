@@ -136,6 +136,7 @@
   "mentionCategory.note": "노트",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "조사",
+  "mentionCategory.identity": "신원",
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",

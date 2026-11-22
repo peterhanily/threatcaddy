@@ -136,6 +136,7 @@
   "mentionCategory.note": "บันทึก",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "การสืบสวน",
+  "mentionCategory.identity": "ตัวตน",
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",

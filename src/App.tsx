@@ -2320,6 +2320,7 @@ const AppInner = memo(function AppInner({
               else if (type === 'task') { navigateTo('tasks'); }
               else if (type === 'event') { const ev = timeline.events.find((e) => e.id === id); setSelectedTimelineId(ev?.timelineId); navigateTo('timeline', { selectedTimelineId: ev?.timelineId }); }
               else if (type === 'ioc') { navigateTo('graph'); }
+              else if (type === 'identity') { const identity = screensafeIdentities.find((i) => i.id === id && !i.trashed); if (identity) openIdentity(identity); }
             }}
             onOpenSettings={(tab) => { openSettings(tab); }}
           />

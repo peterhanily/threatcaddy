@@ -640,6 +640,82 @@ export const TOOL_DEFINITIONS = [
       required: [],
     },
   },
+  {
+    name: 'search_identities',
+    description: 'Search the people, organizations, systems and accounts recorded in this investigation by name, other names, description, type or public details. Returns names, types, statuses and organizations. Private details are never searched or returned.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        query: { type: 'string', description: 'Text to look for (optional; empty lists every identity)' },
+        type: { type: 'string', description: 'Only this type: person, organization, system, account, or another type in use (optional)' },
+        status: { type: 'string', enum: ['compromised', 'suspicious', 'cleared'], description: 'Only this status (optional)' },
+        limit: { type: 'number', description: 'Maximum results (default 20, max 50)' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'read_identity',
+    description: 'Get one identity by id or exact name: its type, status, description, other names, organization, public details and connections. Private details are never returned.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        id: { type: 'string', description: 'Identity ID' },
+        name: { type: 'string', description: 'Exact name or other name. Used if id is not provided.' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'create_identity',
+    description: 'Record a new person, organization, system or account in the current investigation. Refused if the name is already an identity here.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        name: { type: 'string', description: 'Name, or handle if the real name is not known' },
+        type: { type: 'string', description: 'person, organization, system, account, or another word (default: guessed from the name)' },
+        description: { type: 'string', description: 'Job title or short description (optional)' },
+        status: { type: 'string', enum: ['compromised', 'suspicious', 'cleared'], description: 'Status (optional)' },
+        organization: { type: 'string', description: 'Name of an organization identity in this investigation they work at or belong to (optional)' },
+        otherNames: { type: 'array', items: { type: 'string' }, description: 'Other names, aliases or spellings (optional)' },
+        details: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, value: { type: 'string' } }, required: ['label', 'value'] },
+          description: 'Details such as Email, Hostname or IP address (optional). Phone, address and similar details are stored as private.' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'update_identity',
+    description: 'Update an identity by ID: description, status or contact flag, and add other names or details. Existing names and details are never removed.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        id: { type: 'string', description: 'Identity ID to update' },
+        description: { type: 'string', description: 'New job title or description (optional)' },
+        status: { type: 'string', enum: ['compromised', 'suspicious', 'cleared', 'none'], description: 'New status; none clears it (optional)' },
+        contact: { type: 'boolean', description: 'Whether this is someone the analyst works with (optional)' },
+        addOtherNames: { type: 'array', items: { type: 'string' }, description: 'Other names to add (optional)' },
+        addDetails: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, value: { type: 'string' } }, required: ['label', 'value'] },
+          description: 'Details to add (optional). Phone, address and similar details are stored as private.' },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'connect_identities',
+    description: 'Record a connection between two identities in the same investigation, such as "works at", "reports to", "uses", "administers", "belongs to", "logs on to", "communicated with", "impersonated" or "paid".',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        fromId: { type: 'string', description: 'ID of the identity the phrase starts from' },
+        fromName: { type: 'string', description: 'Exact name, if fromId is not given' },
+        phrase: { type: 'string', description: 'The connection, for example "reports to" (the reverse wording, such as "manages", is stored the right way round)' },
+        toId: { type: 'string', description: 'ID of the other identity' },
+        toName: { type: 'string', description: 'Exact name, if toId is not given' },
+      },
+      required: ['phrase'],
+    },
+  },
 ];
 
 // ── Delegation tools (Lead agent only) ─────────────────────────────────

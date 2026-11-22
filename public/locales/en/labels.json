@@ -150,6 +150,7 @@
   "mentionCategory.note": "Notes",
   "mentionCategory.ioc": "IOCs",
   "mentionCategory.investigation": "Investigations",
+  "mentionCategory.identity": "Identities",
 
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",

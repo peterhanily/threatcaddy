@@ -39,16 +39,19 @@ export type Verdict = { kind: 'run' } | { kind: 'ask'; reason: AskReason } | { k
 type EntityRow = { folderId?: string; trashed?: boolean } | undefined;
 
 // Maps, not object literals: names and link types come from model output.
-const READ_BY_ID = new Map<string, 'notes' | 'tasks' | 'standaloneIOCs' | 'timelineEvents'>([
-  ['read_note', 'notes'], ['read_task', 'tasks'], ['read_ioc', 'standaloneIOCs'], ['read_timeline_event', 'timelineEvents']]);
-const UPDATE_BY_ID = new Map<string, 'notes' | 'tasks' | 'standaloneIOCs' | 'timelineEvents'>([
-  ['update_note', 'notes'], ['update_task', 'tasks'], ['update_ioc', 'standaloneIOCs'], ['update_timeline_event', 'timelineEvents']]);
+type EntityTable = 'notes' | 'tasks' | 'standaloneIOCs' | 'timelineEvents' | 'identities';
+const READ_BY_ID = new Map<string, EntityTable>([
+  ['read_note', 'notes'], ['read_task', 'tasks'], ['read_ioc', 'standaloneIOCs'], ['read_timeline_event', 'timelineEvents'],
+  ['read_identity', 'identities']]);
+const UPDATE_BY_ID = new Map<string, EntityTable>([
+  ['update_note', 'notes'], ['update_task', 'tasks'], ['update_ioc', 'standaloneIOCs'], ['update_timeline_event', 'timelineEvents'],
+  ['update_identity', 'identities']]);
 const LINK_TABLE = new Map<string, 'notes' | 'tasks' | 'timelineEvents'>([['note', 'notes'], ['task', 'tasks'], ['timeline-event', 'timelineEvents']]);
 
 const text = (value: unknown) => typeof value === 'string' ? value : '';
 /** The executors' coercion, String(input.x || ''): ['id'], [['id']] and 42 reach the rows 'id' and '42'. */
 const arg = (value: unknown) => String(value || '');
-const getRow = async (table: 'notes' | 'tasks' | 'standaloneIOCs' | 'timelineEvents', id: unknown): Promise<EntityRow> =>
+const getRow = async (table: EntityTable, id: unknown): Promise<EntityRow> =>
   arg(id) ? await db.table(table).get(arg(id)) as EntityRow : undefined;
 
 /** Exact, case-insensitive name, as executeCreateInInvestigation resolves it. */
@@ -67,6 +70,7 @@ async function resolveTargets(name: string, input: Record<string, unknown>): Pro
   else if (name === 'review_completed_task') rows.push(await getRow('tasks', input.taskId));
   else if (name === 'enrich_ioc') rows.push(await getRow('standaloneIOCs', input.iocId));
   else if (name === 'delete_note_folder') rows.push(await getRow('notes', input.folderId));
+  else if (name === 'connect_identities') rows.push(await getRow('identities', input.fromId), await getRow('identities', input.toId));
   else if (name === 'move_to_folder') rows.push(await getRow('notes', input.noteId), await getRow('notes', input.parentFolderId));
   else if (name === 'link_entities' && Array.isArray(input.links)) {
     for (const link of input.links as unknown[]) {

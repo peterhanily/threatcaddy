@@ -132,7 +132,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
   const [mentionPhase, setMentionPhase] = useState<'category' | 'search'>('category');
   const mentionMenuRef = useRef<HTMLDivElement>(null);
   const typedMention = !slashOpen && text.lastIndexOf('@') !== -1
-    ? text.slice(text.lastIndexOf('@') + 1).match(/^(note|ioc|investigation):(.*)$/i) : null;
+    ? text.slice(text.lastIndexOf('@') + 1).match(/^(note|ioc|investigation|identity):(.*)$/i) : null;
   const mentionResults = useMentionSearch({
     type: mentionOpen && typedMention ? typedMention[1].toLowerCase() as MentionSuggestion['type'] : undefined,
     query: typedMention?.[2] ?? '', folderId, scope,
@@ -150,7 +150,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
     const afterAt = text.slice(lastAt + 1);
 
     // Check if we're in a typed mention (e.g. @note:query)
-    const typedMatch = afterAt.match(/^(note|ioc|investigation):(.*)$/i);
+    const typedMatch = afterAt.match(/^(note|ioc|investigation|identity):(.*)$/i);
     if (typedMatch) {
       setMentionPhase('search');
       setMentionOpen(true);
@@ -170,7 +170,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, slashOpen, folderId, scope]);
 
-  const selectMentionCategory = (type: 'note' | 'ioc' | 'investigation') => {
+  const selectMentionCategory = (type: 'note' | 'ioc' | 'investigation' | 'identity') => {
     const lastAt = text.lastIndexOf('@');
     const before = text.slice(0, lastAt);
     setText(before + `@${type}:`);

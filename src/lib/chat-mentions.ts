@@ -1,8 +1,9 @@
 import { db } from '../db';
 import { isFolderLocalOnly, isShareableFolder } from './ai-scope';
+import { looseText } from './identity-model';
 
 export interface MentionSuggestion {
-  type: 'note' | 'ioc' | 'investigation';
+  type: 'note' | 'ioc' | 'investigation' | 'identity';
   id: string;
   label: string;
   /** Short preview for the dropdown */
@@ -16,10 +17,11 @@ export const MENTION_CATEGORIES = [
   { type: 'note' as const, get label() { return mentionCategoryLabel('note'); }, prefix: '@note:' },
   { type: 'ioc' as const, get label() { return mentionCategoryLabel('ioc'); }, prefix: '@ioc:' },
   { type: 'investigation' as const, get label() { return mentionCategoryLabel('investigation'); }, prefix: '@investigation:' },
+  { type: 'identity' as const, get label() { return mentionCategoryLabel('identity'); }, prefix: '@identity:' },
 ];
 
 /** Every token resolveMentions reads an entity for. */
-const MENTION_TOKEN = /@(note|ioc|investigation):([^\s]+)/;
+const MENTION_TOKEN = /@(note|ioc|investigation|identity):([^\s]+)/;
 
 /** Model-written text must not carry one: a click would read the entity with no approval card. */
 export function hasMentionToken(text: string): boolean {
@@ -37,7 +39,7 @@ async function isHidden(row: { folderId?: string; trashed?: boolean }, hideLocal
  * Called as the user types after '@note:', '@ioc:', or '@investigation:'.
  */
 export async function searchMentions(
-  type: 'note' | 'ioc' | 'investigation',
+  type: 'note' | 'ioc' | 'investigation' | 'identity',
   query: string,
   folderId?: string,
   limit = 8,
@@ -81,6 +83,25 @@ export async function searchMentions(
       id: i.id,
       label: `${i.type}: ${i.value}`,
       preview: i.analystNotes?.slice(0, 60),
+    }));
+  }
+
+  if (type === 'identity') {
+    let identities;
+    if (folderId) {
+      identities = await db.identities.where('folderId').equals(folderId).and(i => !i.trashed && !i.archived).toArray();
+      identities.sort((a, b) => b.updatedAt - a.updatedAt);
+    } else {
+      identities = await db.identities.orderBy('updatedAt').reverse().filter(i => !i.trashed && !i.archived).limit(GLOBAL_RECENT_CAP).toArray();
+    }
+    // Names and other names only: private details are never searched.
+    const wanted = looseText(q);
+    if (wanted) identities = identities.filter(i => [i.name, ...i.aliases].some(name => looseText(name).includes(wanted)));
+    return identities.slice(0, limit).map(i => ({
+      type: 'identity',
+      id: i.id,
+      label: i.name,
+      preview: [i.type, i.description].filter(Boolean).join(' · ').slice(0, 60),
     }));
   }
 
@@ -153,6 +174,24 @@ export async function resolveMentions(text: string, homeFolderId: string | undef
         ].filter(Boolean).join('\n');
         contextParts.push(`[Referenced IOC: ${ioc.type}:${ioc.value}]\n${details}`);
         displayText = displayText.replace(m.full, `@${ioc.type}:${ioc.value}`);
+      }
+    } else if (m.type === 'identity') {
+      const identity = await db.identities.get(m.id);
+      if (identity && !await isHidden(identity, hideLocalOnly)) {
+        // What anyone can see: never a private detail (owner decision 7).
+        const organization = identity.connections.find(edge => edge.label === 'works at' || edge.label === 'belongs to');
+        const organizationName = organization ? (await db.identities.get(organization.targetId))?.name : undefined;
+        const details = [
+          `Name: ${identity.name}`,
+          `Type: ${identity.type}`,
+          identity.status ? `Status: ${identity.status}` : '',
+          identity.description ? `Description: ${identity.description}` : '',
+          identity.aliases.length ? `Other names: ${identity.aliases.join('; ')}` : '',
+          organizationName ? `Organization: ${organizationName}` : '',
+          ...identity.details.filter(detail => !detail.private).map(detail => `${detail.label}: ${detail.value}`),
+        ].filter(Boolean).join('\n');
+        contextParts.push(`[Referenced Identity: "${identity.name}"]\n${details}`);
+        displayText = displayText.replace(m.full, `@${identity.name}`);
       }
     } else if (m.type === 'investigation') {
       const folder = await db.folders.get(m.id);

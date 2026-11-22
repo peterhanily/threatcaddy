@@ -136,6 +136,7 @@
   "mentionCategory.note": "笔记",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "调查",
+  "mentionCategory.identity": "身份",
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",

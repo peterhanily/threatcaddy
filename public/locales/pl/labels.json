@@ -136,6 +136,7 @@
   "mentionCategory.note": "Notatki",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "Dochodzenia",
+  "mentionCategory.identity": "Tożsamości",
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",

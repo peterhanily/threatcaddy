@@ -136,6 +136,7 @@
   "mentionCategory.note": "Notities",
   "mentionCategory.ioc": "IOC's",
   "mentionCategory.investigation": "Onderzoeken",
+  "mentionCategory.identity": "Identiteiten",
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",

@@ -136,6 +136,7 @@
   "mentionCategory.note": "یادداشت‌ها",
   "mentionCategory.ioc": "IOCها",
   "mentionCategory.investigation": "تحقیقات",
+  "mentionCategory.identity": "هویت‌ها",
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",

@@ -258,11 +258,12 @@ export async function executeGetInvestigationSummary(_input: Record<string, unkn
   const folder = await db.folders.get(folderId);
   if (!folder) return JSON.stringify({ error: 'Investigation not found' });
 
-  const [noteCount, taskCount, iocCount, eventCount] = await Promise.all([
+  const [noteCount, taskCount, iocCount, eventCount, identityCount] = await Promise.all([
     db.notes.where('folderId').equals(folderId).and(n => !n.trashed).count(),
     db.tasks.where('folderId').equals(folderId).and(t => !t.trashed).count(),
     db.standaloneIOCs.where('folderId').equals(folderId).and(i => !i.trashed).count(),
     db.timelineEvents.where('folderId').equals(folderId).and(e => !e.trashed).count(),
+    db.identities.where('folderId').equals(folderId).and(i => !i.trashed).count(),
   ]);
 
   const tasks = await db.tasks.where('folderId').equals(folderId).and(t => !t.trashed).toArray();
@@ -273,7 +274,7 @@ export async function executeGetInvestigationSummary(_input: Record<string, unkn
     name: folder.name,
     description: folder.description || '',
     status: folder.status || 'active',
-    counts: { notes: noteCount, tasks: taskCount, iocs: iocCount, timelineEvents: eventCount },
+    counts: { notes: noteCount, tasks: taskCount, iocs: iocCount, timelineEvents: eventCount, identities: identityCount },
     tasksByStatus,
     createdAt: new Date(folder.createdAt).toISOString(),
   });

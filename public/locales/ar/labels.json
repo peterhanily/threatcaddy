@@ -136,6 +136,7 @@
   "mentionCategory.note": "الملاحظات",
   "mentionCategory.ioc": "IOCs",
   "mentionCategory.investigation": "التحقيقات",
+  "mentionCategory.identity": "الهويات",
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",

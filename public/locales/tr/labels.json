@@ -136,6 +136,7 @@
   "mentionCategory.note": "Notlar",
   "mentionCategory.ioc": "IOC'ler",
   "mentionCategory.investigation": "Soruşturmalar",
+  "mentionCategory.identity": "Kimlikler",
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",

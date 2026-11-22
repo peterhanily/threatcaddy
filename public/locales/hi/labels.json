@@ -136,6 +136,7 @@
   "mentionCategory.note": "नोट्स",
   "mentionCategory.ioc": "IOCs",
   "mentionCategory.investigation": "जाँचें",
+  "mentionCategory.identity": "पहचान",
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",

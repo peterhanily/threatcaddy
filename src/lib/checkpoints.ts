@@ -9,6 +9,8 @@ const tables: Record<string, string> = {
   create_task: 'tasks', update_task: 'tasks', create_ioc: 'standaloneIOCs',
   update_ioc: 'standaloneIOCs', bulk_create_iocs: 'standaloneIOCs',
   create_timeline_event: 'timelineEvents', update_timeline_event: 'timelineEvents',
+  // connect_identities changes whichever identity holds the edge, so like link_entities it is not undoable.
+  create_identity: 'identities', update_identity: 'identities',
 };
 const entityTables = new Set(Object.values(tables));
 function canonical(value: unknown): string {
