@@ -152,6 +152,7 @@
   "form.save": "Lưu",
   "form.cancel": "Hủy",
   "form.errorName": "Hãy đặt tên, hoặc dùng biệt danh nếu chưa biết tên thật.",
+  "form.errorDuplicate": "Tên này đã được một danh tính khác trong cuộc điều tra này sử dụng.",
   "form.errorType": "Chọn một loại, hoặc tự nhập loại của bạn.",
   "form.errorInvestigation": "Chọn một cuộc điều tra.",
   "form.errorDetailLabel": "Cho biết đây là chi tiết gì, ví dụ Email hoặc IBAN.",

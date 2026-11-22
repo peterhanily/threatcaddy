@@ -76,9 +76,11 @@ app.post('/push', requireRole('admin', 'analyst'), async (c) => {
       }, user.id);
     }
     if (folderId) {
+      // Subscribers include clients that never receive identities (2.0.4), and no client reads `data`
+      // (it pulls instead), so an identity change is announced without its record or private details.
       await broadcastToFolder(folderId, {
         type: 'entity-change', table: change.table, op: change.op, entityId: change.entityId,
-        data: result.serverRecord, updatedBy: user.id,
+        ...(change.table === 'identities' ? {} : { data: result.serverRecord }), updatedBy: user.id,
       }, user.id);
     }
     activityEntries.push({

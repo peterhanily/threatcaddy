@@ -2,7 +2,7 @@ import Papa from 'papaparse';
 import { nanoid } from 'nanoid';
 import { extractIOCs, mergeIOCAnalysis } from './ioc-extractor';
 import { createLabelProxy } from './i18n-labels';
-import { identityMappingFor, isIdentityExport, isPrivateDetailColumn, looksLikeIdentities } from './identity-import';
+import { hasIdentityOnlyColumns, identityMappingFor, isIdentityExport, isPrivateDetailColumn, looksLikeIdentities } from './identity-import';
 import type {
   TimelineEvent,
   TimelineEventType,
@@ -423,7 +423,10 @@ export function detectSchema(headers: string[]): ColumnDetection[] {
   // and otherwise a file with Name and identity-like columns but no timestamp, IP, URL or hash
   // columns (a log or indicator export keeps its usual detection).
   const logLike = detections.some(detection => detection.mapping === 'timestamp' || LOG_IOC_MAPPINGS.has(detection.mapping));
-  if (isIdentityExport(headers) || (!logLike && looksLikeIdentities(headers))) {
+  // An email or domain column alone (a phishing-recipient list: Name, Email, Status) keeps its
+  // indicator detection unless a column only identity lists have says otherwise.
+  const indicatorList = detections.some(detection => detection.mapping === 'ioc-email' || detection.mapping === 'ioc-domain');
+  if (isIdentityExport(headers) || (!logLike && looksLikeIdentities(headers) && (!indicatorList || hasIdentityOnlyColumns(headers)))) {
     return headers.map(column => ({ column, mapping: identityMappingFor(column), confidence: 0.8 }));
   }
   return detections;

@@ -152,6 +152,7 @@
   "form.save": "حفظ",
   "form.cancel": "إلغاء",
   "form.errorName": "أدخل اسمًا، أو معرّفًا إن كان الاسم الحقيقي غير معروف.",
+  "form.errorDuplicate": "هذا الاسم مستخدم بالفعل لهوية أخرى في هذا التحقيق.",
   "form.errorType": "اختر نوعًا، أو اكتب نوعًا خاصًا بك.",
   "form.errorInvestigation": "اختر تحقيقًا.",
   "form.errorDetailLabel": "حدّد ما هذا التفصيل، مثل البريد الإلكتروني أو IBAN.",

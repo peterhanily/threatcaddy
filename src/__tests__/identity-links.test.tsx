@@ -5,6 +5,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import type { Folder, Identity, TimelineEvent } from '../types';
 import { ToastProvider } from '../contexts/ToastContext';
 import { IdentityLinksProvider } from '../components/Identities/IdentityLinksProvider';
+import { useIdentityLinks } from '../components/Identities/identity-links';
 import { TimelineEventCard } from '../components/Timeline/TimelineEventCard';
 import { TimelineEventForm } from '../components/Timeline/TimelineEventForm';
 import { MarkdownPreview } from '../components/Notes/MarkdownPreview';
@@ -259,6 +260,28 @@ describe('reports', () => {
     withLinks(<><MitreReport events={events} /><MitreHeatmap events={events} colorMode="actors" onTechniqueClick={vi.fn()} /></>, { identities: [tomas, other] });
     expect(screen.getAllByRole('button', { name: 'Tomas Lindqvist' })).toHaveLength(1);
     expect(document.querySelector('button[title^="T1566:"]')?.getAttribute('title')).toMatch(/· 1 actor$/);
+  });
+});
+
+describe('the link layer', () => {
+  it('keeps the same links when other data changes but no identity, visibility or threat actor does', () => {
+    const seen: unknown[] = [];
+    function Probe() { seen.push(useIdentityLinks()); return null; }
+    // App's callbacks and Settings' actor list are stable between renders.
+    const onOpen = vi.fn(), onUpdate = vi.fn(async () => {}), onCreate = vi.fn(async () => tomas), apt29 = ['APT29'];
+    const tree = (isVisible: (identity: Identity) => boolean, actors = apt29) => (
+      <IdentityLinksProvider identities={identities} folders={folders} threatActors={actors} isVisible={isVisible}
+        onOpen={onOpen} onUpdate={onUpdate} onCreate={onCreate}><Probe /></IdentityLinksProvider>
+    );
+    // A note saved elsewhere gives App a new visibility function that answers the same.
+    const { rerender } = render(tree(identity => identity.id !== secret.id));
+    rerender(tree(identity => identity.id !== secret.id));
+    expect(seen.at(-1)).toBe(seen[0]);
+    rerender(tree(() => true));
+    expect(seen.at(-1)).not.toBe(seen[0]);
+    const before = seen.at(-1);
+    rerender(tree(() => true, ['APT28']));
+    expect(seen.at(-1)).not.toBe(before);
   });
 });
 

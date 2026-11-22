@@ -152,6 +152,7 @@
   "form.save": "Kaydet",
   "form.cancel": "İptal",
   "form.errorName": "Bir ad verin; gerçek adı bilinmiyorsa bir rumuz kullanın.",
+  "form.errorDuplicate": "Bu ad, bu soruşturmadaki başka bir kimlik tarafından zaten kullanılıyor.",
   "form.errorType": "Bir tür seçin ya da kendiniz yazın.",
   "form.errorInvestigation": "Bir soruşturma seçin.",
   "form.errorDetailLabel": "Ayrıntının ne olduğunu belirtin, örneğin E-posta veya IBAN.",

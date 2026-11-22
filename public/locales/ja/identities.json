@@ -152,6 +152,7 @@
   "form.save": "保存",
   "form.cancel": "キャンセル",
   "form.errorName": "名前を入力してください。本名がわからない場合はハンドル名でもかまいません。",
+  "form.errorDuplicate": "この名前は、この調査の別のアイデンティティですでに使われています。",
   "form.errorType": "種類を選択するか、独自の種類を入力してください。",
   "form.errorInvestigation": "調査を選択してください。",
   "form.errorDetailLabel": "メールや IBAN など、何の詳細かを入力してください。",

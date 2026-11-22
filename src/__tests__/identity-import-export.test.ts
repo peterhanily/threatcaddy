@@ -131,6 +131,10 @@ describe('import', () => {
     expect(mapped(['name', 'status', '_time', 'src_ip', 'sha256']).some(mapping => mapping.startsWith('identity-'))).toBe(false);
     expect(mapped(['name', 'status', 'src_ip'])).toContain('ioc-ipv4');
     expect(mapped(['Name', 'Type', 'Email', 'Hostname'])).toEqual(['identity-name', 'identity-type', 'identity-detail', 'identity-detail']);
+    // A recipient list (Name, Email, Status) keeps extracting email indicators, as before identities.
+    expect(mapped(['Name', 'Email', 'Status'])).toContain('ioc-email');
+    expect(mapped(['Name', 'Email', 'Status']).some(mapping => mapping.startsWith('identity-'))).toBe(false);
+    expect(mapped(['Name', 'Email', 'Organization'])).toEqual(['identity-name', 'identity-detail', 'identity-organization']);
     // ThreatCaddy's own export is always an identity list, even with Created and IP columns.
     expect(mapped(['Name', 'Other names', 'IP address', 'Connections', 'Created'])).toEqual(['identity-name', 'identity-aliases', 'identity-detail', 'identity-connections', 'ignore']);
   });

@@ -152,6 +152,7 @@
   "form.save": "Speichern",
   "form.cancel": "Abbrechen",
   "form.errorName": "Geben Sie einen Namen ein, oder ein Handle, wenn der echte Name unbekannt ist.",
+  "form.errorDuplicate": "Dieser Name gehört bereits zu einer anderen Identität in dieser Untersuchung.",
   "form.errorType": "Wählen Sie einen Typ aus oder geben Sie einen eigenen ein.",
   "form.errorInvestigation": "Wählen Sie eine Untersuchung aus.",
   "form.errorDetailLabel": "Geben Sie an, was das Detail ist, zum Beispiel E-Mail oder IBAN.",

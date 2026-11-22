@@ -63,7 +63,7 @@ const TYPE_SPELLINGS: Readonly<Record<string, BuiltinType>> = { organisation: 'o
 export function canonicalType(input: string, builtinLabels: Readonly<Record<BuiltinType, string>>, typesInUse: readonly string[]): string {
   const text = input.trim();
   const key = sameText(text);
-  const builtin = TYPE_SPELLINGS[key] ?? BUILTIN_TYPES.find(type => type === key || sameText(builtinLabels[type]) === key);
+  const builtin = (Object.hasOwn(TYPE_SPELLINGS, key) ? TYPE_SPELLINGS[key] : undefined) ?? BUILTIN_TYPES.find(type => type === key || sameText(builtinLabels[type]) === key);
   if (builtin) return builtin;
   return typesInUse.find(type => sameText(type) === key) ?? text;
 }
@@ -97,9 +97,9 @@ export function initials(name: string): string {
 export function maskDetail(detail: Pick<IdentityDetail, 'label' | 'value'>, full = false): string {
   if (full) return '•••••••';
   const digits = detail.value.replace(/\D/g, '');
-  if (/phone|tel|mobile/i.test(detail.label) && digits.length >= 6) return `•••• ${digits.slice(-4)}`;
+  if (/\b(?:phone|tel|mobile|cell)\b/i.test(detail.label) && digits.length >= 6) return `•••• ${digits.slice(-4)}`;
   // Only a real email address keeps its domain; any other value shows nothing.
-  return EMAIL.test(detail.value.trim()) ? `${[...detail.value][0]}•••••${detail.value.slice(detail.value.indexOf('@'))}` : '•••••••';
+  return isEmail(detail.value.trim()) ? `${[...detail.value][0]}•••••${detail.value.slice(detail.value.indexOf('@'))}` : '•••••••';
 }
 
 const live = (identity: Identity) => !identity.trashed;
@@ -251,6 +251,8 @@ export interface FoundName {
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** An email address is at most 254 characters; longer text is never tested (the pattern's time grows with its square). */
+const isEmail = (text: string) => text.length <= 254 && EMAIL.test(text);
 const IPV4 = /^(?:\d{1,3}\.){3}\d{1,3}$/;
 /** At least two colons (fe80::1), so a port (DC01:443) or a time (12:30) is not an address. */
 const IPV6 = /^(?=(?:[^:]*:){2})[0-9a-f:]{2,39}$/i;
@@ -264,7 +266,7 @@ const HOSTNAME = /^(?=.{2,63}$)(?:[a-z0-9-]+\.)+[a-z][a-z0-9-]*$|^(?=.{2,63}$)(?
  * listed as an asset, which names a system or an account, never a person. */
 export function guessIdentity(text: string, thing = false): FoundName['guess'] {
   const compact = text.replace(/\s+/g, '');
-  if (EMAIL.test(text)) return { type: 'account', detailLabel: 'email' };
+  if (isEmail(text)) return { type: 'account', detailLabel: 'email' };
   if (IBAN.test(compact)) return { type: 'account', detailLabel: 'iban' };
   if (SERVICE_ACCOUNT.test(text)) return { type: 'account' };
   if (IPV4.test(text) || IPV6.test(text)) return { type: 'system', detailLabel: 'ipAddress' };

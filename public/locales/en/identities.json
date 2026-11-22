@@ -152,6 +152,7 @@
   "form.save": "Save",
   "form.cancel": "Cancel",
   "form.errorName": "Give it a name, or a handle if the real name isn't known.",
+  "form.errorDuplicate": "This name is already used by another identity in this investigation.",
   "form.errorType": "Choose a type, or type your own.",
   "form.errorInvestigation": "Choose an investigation.",
   "form.errorDetailLabel": "Say what the detail is, for example Email or IBAN.",

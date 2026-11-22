@@ -21,6 +21,8 @@ const COLUMN_SUFFIX = /\s*\((?:private|detail)\)\s*$/i;
 const STATUSES: readonly IdentityStatus[] = IDENTITY_STATUSES;
 const MEMBERSHIP = new Set(MEMBERSHIP_PHRASES);
 const MAX_ERRORS = 200;
+/** A connection phrase (100) and a name (200), with room for spacing. */
+const MAX_CONNECTION_LINE = 400;
 
 /** Whether a file is an Identities › Export file (its Other names and Connections columns). */
 export function isIdentityExport(headers: readonly string[]): boolean {
@@ -42,6 +44,14 @@ export function looksLikeIdentities(headers: readonly string[]): boolean {
   return keys.some(key => /^(name|full name|display name)$/.test(key))
     && keys.some(key => /^(type|organi[sz]ation|company|other names|aliases|job title|status|contact|connections)$/.test(key))
     && !keys.some(key => /^(timestamp|time|date|datetime|@timestamp|event time)$/.test(key));
+}
+
+/** Columns that, beside a Name column, mark a list of identities: a type, an organisation, other
+ * names, a job title, connections, or a detail column as Identities › Export writes it (a Status or
+ * Contact column alone does not). */
+export function hasIdentityOnlyColumns(headers: readonly string[]): boolean {
+  return headers.some(header => COLUMN_SUFFIX.test(header)
+    || /^(type|kind|organi[sz]ation|company|employer|other names|aliases|aka|also known as|job title|connections)$/.test(sameText(header)));
 }
 
 /** The mapping for each column of an identity list; unknown columns become details. */
@@ -200,6 +210,8 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     };
     for (const column of columns('identity-connection')) for (const target of lines(row[column])) link(column, target);
     for (const column of columns('identity-connections')) for (const line of lines(row[column])) {
+      // A phrase and a name: anything far longer is not a connection, and is refused before it is split.
+      if (line.length > MAX_CONNECTION_LINE) { error(`Row ${index + 2}: a connection longer than ${MAX_CONNECTION_LINE} characters was skipped.`); continue; }
       // A custom phrase or a name may itself hold ": ", so take the first split whose name is an identity.
       const splits = [...line.matchAll(/: /g)].map(match => match.index).filter(at => at > 0);
       const at = splits.find(at => find(line.slice(at + 2))) ?? splits[0];

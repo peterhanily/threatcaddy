@@ -64,6 +64,11 @@ export function IdentityFormModal({ editing, prefill, folders, defaultFolderId, 
     if (!type.trim()) { setError(t('form.errorType')); return; }
     if (!editing && !folderId) { setError(t('form.errorInvestigation')); return; }
     if (!editing && detailValue.trim() && !detailLabel.trim()) { setError(t('form.errorDetailLabel')); return; }
+    // A name two identities share makes every link to it ambiguous (the AI tools and import refuse it too).
+    const home = editing?.folderId ?? folderId;
+    const renamed = !editing || sameText(name) !== sameText(editing.name);
+    if (renamed && identities.some(other => other.id !== editing?.id && !other.trashed && other.folderId === home
+      && [other.name, ...other.aliases].some(taken => sameText(taken) === sameText(name)))) { setError(t('form.errorDuplicate')); return; }
     setBusy(true);
     try {
       if (editing) {
@@ -106,11 +111,11 @@ export function IdentityFormModal({ editing, prefill, folders, defaultFolderId, 
         <form onSubmit={event => void submit(event)} className="flex flex-col gap-3" aria-describedby={error ? `${ids}-error` : undefined}>
           {prefill?.fromText && <p className="text-xs text-text-muted">{t('form.addFromHint')}</p>}
           <label className={label}>{t('form.name')}
-            <input autoFocus value={name} onChange={event => setName(event.target.value)} className={field} />
+            <input autoFocus value={name} maxLength={200} onChange={event => setName(event.target.value)} className={field} />
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={label}>{t('form.type')}
-              <input list={`${ids}-types`} value={type} placeholder={t('form.typePlaceholder')} onChange={event => setType(event.target.value)} className={field} />
+              <input list={`${ids}-types`} value={type} maxLength={100} placeholder={t('form.typePlaceholder')} onChange={event => setType(event.target.value)} className={field} />
               <datalist id={`${ids}-types`}>{typeChoices.map(choice => <option key={choice} value={choice} />)}</datalist>
             </label>
             {!editing && (
@@ -124,7 +129,7 @@ export function IdentityFormModal({ editing, prefill, folders, defaultFolderId, 
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={label}>{person ? t('form.jobTitle') : t('form.description')}
-              <input value={description} placeholder={t('form.optional')} onChange={event => setDescription(event.target.value)} className={field} />
+              <input value={description} maxLength={2000} placeholder={t('form.optional')} onChange={event => setDescription(event.target.value)} className={field} />
             </label>
             {!isOrganization({ type: resolvedType }) && (
               <label className={label}>{person ? t('form.worksAt') : t('form.belongsTo')}
@@ -141,17 +146,17 @@ export function IdentityFormModal({ editing, prefill, folders, defaultFolderId, 
           {!editing && (
             <div className="grid gap-3 sm:grid-cols-2">
               <label className={label}>{t('form.detail')}
-                <input list={`${ids}-labels`} value={detailLabel} placeholder={t('detailForm.labelPlaceholder')} onChange={event => setDetailLabel(event.target.value)} className={field} />
+                <input list={`${ids}-labels`} value={detailLabel} maxLength={100} placeholder={t('detailForm.labelPlaceholder')} onChange={event => setDetailLabel(event.target.value)} className={field} />
                 <datalist id={`${ids}-labels`}>{labels.detailLabels.map(choice => <option key={choice} value={choice} />)}</datalist>
               </label>
               <label className={label}>{t('form.detailValue')}
-                <input value={detailValue} placeholder={t('form.optional')} onChange={event => setDetailValue(event.target.value)} className={field} />
+                <input value={detailValue} maxLength={2000} placeholder={t('form.optional')} onChange={event => setDetailValue(event.target.value)} className={field} />
               </label>
             </div>
           )}
           {editing && (
             <label className={label}>{t('form.otherNames')}
-              <textarea rows={Math.min(6, Math.max(2, otherNames.split('\n').length + 1))} value={otherNames}
+              <textarea rows={Math.min(6, Math.max(2, otherNames.split('\n').length + 1))} value={otherNames} maxLength={20000}
                 onChange={event => setOtherNames(event.target.value)} className={field} />
             </label>
           )}

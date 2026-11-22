@@ -50,6 +50,12 @@ async function scope(folderId?: string): Promise<Identity[]> {
   return rows.filter(identity => !identity.trashed);
 }
 
+/** The live identities an identity sits with: its investigation's, or, for one in no investigation,
+ * the others in none (never every investigation on the device). */
+async function besides(stored: Identity): Promise<Identity[]> {
+  return stored.folderId ? scope(stored.folderId) : (await scope()).filter(identity => !identity.folderId);
+}
+
 /** The details anyone can see; private ones are never returned. */
 const publicDetails = (identity: Identity) => identity.details.filter(detail => !detail.private).map(({ label, value }) => ({ label, value }));
 
@@ -101,7 +107,7 @@ export async function executeReadIdentity(input: Record<string, unknown>, folder
   const id = rawId(input.id);
   // By id, the dispatcher's reach check has already decided whether another investigation may be read.
   const stored = id ? await db.identities.get(id) : undefined;
-  const rows = id ? (stored && !stored.trashed ? await scope(stored.folderId) : []) : await scope(folderId);
+  const rows = id ? (stored && !stored.trashed ? await besides(stored) : []) : await scope(folderId);
   const identity = find(rows, input);
   if (typeof identity === 'string') return error(identity);
   const byId = new Map(rows.map(row => [row.id, row]));
@@ -135,8 +141,9 @@ function addDetails(identity: Identity, raw: unknown): number | string {
     received++;
     const isPrivate = isPrivateLabel(label, privateLabels);
     const key = detailKey(value);
-    if (identity.details.some(detail => !!detail.private === isPrivate && sameText(detail.label) === sameText(label) && detailKey(detail.value) === key)) continue;
+    // The cap comes first: whether a repeat is skipped must not change the answer (no oracle on private values).
     if (identity.details.length >= MAX_DETAILS) return `An identity holds at most ${MAX_DETAILS} details.`;
+    if (identity.details.some(detail => !!detail.private === isPrivate && sameText(detail.label) === sameText(label) && detailKey(detail.value) === key)) continue;
     identity.details.push({ id: nanoid(), label, value, ...(isPrivate ? { private: true } : {}) });
   }
   return received;
@@ -199,7 +206,7 @@ export async function executeUpdateIdentity(input: Record<string, unknown>, crea
   if (!id) return error('id is required');
   const stored = await db.identities.get(id);
   if (!stored || stored.trashed) return error('Identity not found');
-  const rows = await scope(stored.folderId);
+  const rows = await besides(stored);
   const identity: Identity = { ...stored, aliases: [...stored.aliases], details: [...stored.details], connections: [...stored.connections] };
   const updates: Partial<Identity> = { updatedAt: Date.now(), ...(creator ? { updatedBy: creator } : {}) };
   if (input.description !== undefined) updates.description = clean(input.description, MAX_TEXT) || undefined;

@@ -152,6 +152,7 @@
   "form.save": "שמור",
   "form.cancel": "בטל",
   "form.errorName": "תן שם, או כינוי אם השם האמיתי אינו ידוע.",
+  "form.errorDuplicate": "השם הזה כבר משמש זהות אחרת בחקירה זו.",
   "form.errorType": "בחר סוג, או הקלד סוג משלך.",
   "form.errorInvestigation": "בחר חקירה.",
   "form.errorDetailLabel": "ציין מהו הפרט, למשל אימייל או IBAN.",

@@ -110,6 +110,17 @@ describe('private details never reach a model', () => {
     expect((await stored('elsewhere')).description).toBeUndefined();
   });
 
+  it('treats an identity in no investigation as sitting with the others in none, never every investigation', async () => {
+    await db.identities.add(make('loose', undefined as unknown as string, 'Loose Person'));
+    await db.identities.update('loose', { folderId: undefined });
+    // "Dana Okafor" is another investigation's name, so it does not block an other name here.
+    const result = await executeTool(call('update_identity', { id: 'loose', addOtherNames: ['Dana Okafor'] }), undefined, undefined,
+      { surface: 'chat-yolo', allowedTools: ALL_STATIC_TOOLS });
+    expect(JSON.parse(result.result)).toMatchObject({ success: true, otherNamesAdded: 1 });
+    const read = await executeTool(call('read_identity', { id: 'loose' }), undefined, undefined, { surface: 'chat-yolo', allowedTools: ALL_STATIC_TOOLS });
+    expect(read.result).not.toContain('Halvorsen');
+  });
+
   it('keeps text as written: no HTML parsing of names or details', async () => {
     const created = await run('create_identity', { name: 'R&D <team>', details: [{ label: 'Email', value: 'Smith <john@x.example>' }] });
     expect(await stored(created.id as string)).toMatchObject({ name: 'R&D <team>', details: [expect.objectContaining({ value: 'Smith <john@x.example>' })] });

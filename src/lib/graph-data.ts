@@ -54,7 +54,7 @@ export interface IdentityGraphInput {
 export const IDENTITY_NODE_COLORS: Readonly<Record<string, string>> = {
   person: '#0ea5e9', organization: '#a855f7', system: '#10b981', account: '#f97316',
 };
-export const identityNodeColor = (type: string) => IDENTITY_NODE_COLORS[type] ?? '#64748b';
+export const identityNodeColor = (type: string) => (Object.hasOwn(IDENTITY_NODE_COLORS, type) ? IDENTITY_NODE_COLORS[type] : '#64748b');
 
 export interface GraphData {
   nodes: GraphNode[];

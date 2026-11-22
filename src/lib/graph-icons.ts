@@ -193,7 +193,8 @@ export function getNodeIcon(
       svg = svgTimelineEvent(color);
       break;
     case 'identity':
-      svg = (IDENTITY_ICON_MAP[identityType ?? ''] ?? svgPerson)(color);
+      // A custom type is the analyst's text, so only an own key may pick an icon ("__proto__" must not).
+      svg = (identityType && Object.hasOwn(IDENTITY_ICON_MAP, identityType) ? IDENTITY_ICON_MAP[identityType] : svgPerson)(color);
       break;
   }
 

@@ -152,6 +152,7 @@
   "form.save": "บันทึก",
   "form.cancel": "ยกเลิก",
   "form.errorName": "ตั้งชื่อ หรือใช้แฮนเดิลหากไม่ทราบชื่อจริง",
+  "form.errorDuplicate": "ชื่อนี้ถูกใช้โดยตัวตนอื่นในการสืบสวนนี้แล้ว",
   "form.errorType": "เลือกประเภท หรือพิมพ์ประเภทของคุณเอง",
   "form.errorInvestigation": "เลือกการสืบสวน",
   "form.errorDetailLabel": "ระบุว่ารายละเอียดนี้คืออะไร เช่น อีเมล หรือ IBAN",

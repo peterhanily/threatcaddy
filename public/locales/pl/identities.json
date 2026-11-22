@@ -152,6 +152,7 @@
   "form.save": "Zapisz",
   "form.cancel": "Anuluj",
   "form.errorName": "Podaj nazwę albo pseudonim, jeśli prawdziwe imię i nazwisko nie są znane.",
+  "form.errorDuplicate": "Tej nazwy używa już inna tożsamość w tym dochodzeniu.",
   "form.errorType": "Wybierz typ lub wpisz własny.",
   "form.errorInvestigation": "Wybierz dochodzenie.",
   "form.errorDetailLabel": "Podaj, czego dotyczy szczegół, na przykład E-mail lub IBAN.",

@@ -152,6 +152,7 @@
   "form.save": "Salva",
   "form.cancel": "Annulla",
   "form.errorName": "Dagli un nome, oppure un nickname se il vero nome non è noto.",
+  "form.errorDuplicate": "Questo nome è già usato da un'altra identità in questa indagine.",
   "form.errorType": "Scegli un tipo, oppure scrivine uno tuo.",
   "form.errorInvestigation": "Scegli un'indagine.",
   "form.errorDetailLabel": "Indica di che dettaglio si tratta, ad esempio Email o IBAN.",

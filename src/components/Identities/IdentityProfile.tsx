@@ -81,7 +81,9 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
     if (!connectionForm.to) { setConnectionForm({ ...connectionForm, error: t('connectionForm.errorTarget') }); return; }
     // "Lee manages Dana" is stored as "Dana reports to Lee", so charts and both sides read it.
     const [owner, edge] = reversed ? [connectionForm.to, { targetId: identity.id, label }] : [identity.id, { targetId: connectionForm.to, label }];
-    if (await save(owner, current => ({ connections: [...current.connections, edge] }))) closeConnection();
+    // The same connection added again (from either side) is stored once.
+    if (await save(owner, current => ({ connections: current.connections.some(other => other.targetId === edge.targetId && other.label === edge.label)
+      ? current.connections : [...current.connections, edge] }))) closeConnection();
   };
   /** Removes the edge from whichever identity holds it, matched in the stored row rather than by position. */
   const removeConnection = async (ownerId: string, edge: { targetId: string; label: string }) => {
@@ -187,11 +189,11 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
             <form onSubmit={event => void addDetail(event)} className="flex flex-col gap-2 rounded-md border border-border-subtle p-2">
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="flex flex-col gap-1 text-xs text-text-secondary">{t('detailForm.label')}
-                  <input autoFocus list={`${ids}-labels`} value={detailForm.label} placeholder={t('detailForm.labelPlaceholder')} className={field}
+                  <input autoFocus list={`${ids}-labels`} value={detailForm.label} maxLength={100} placeholder={t('detailForm.labelPlaceholder')} className={field}
                     onChange={event => setDetailForm({ ...detailForm, label: event.target.value, private: labels.privateByDefault(event.target.value) || (detailForm.private && !labels.privateByDefault(detailForm.label)) })} />
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-text-secondary">{t('detailForm.value')}
-                  <input value={detailForm.value} className={field} onChange={event => setDetailForm({ ...detailForm, value: event.target.value })} />
+                  <input value={detailForm.value} maxLength={2000} className={field} onChange={event => setDetailForm({ ...detailForm, value: event.target.value })} />
                 </label>
               </div>
               <datalist id={`${ids}-labels`}>{labels.detailLabels.map(label => <option key={label} value={label} />)}</datalist>
@@ -236,7 +238,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
               {targets.length ? (
                 <div className="grid gap-2 sm:grid-cols-2">
                   <label className="flex flex-col gap-1 text-xs text-text-secondary">{t('connectionForm.phrase', { name: identity.name })}
-                    <input autoFocus list={`${ids}-phrases`} value={connectionForm.phrase} placeholder={t('connectionForm.phrasePlaceholder')} className={field}
+                    <input autoFocus list={`${ids}-phrases`} value={connectionForm.phrase} maxLength={100} placeholder={t('connectionForm.phrasePlaceholder')} className={field}
                       onChange={event => setConnectionForm({ ...connectionForm, phrase: event.target.value })} />
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-text-secondary">{t('connectionForm.target')}

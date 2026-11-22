@@ -1,7 +1,7 @@
 import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react';
 import type { Folder, Identity } from '../../types';
 import { foundKey, guessIdentity, type FoundName } from '../../lib/identity-model';
-import { belongsTo, buildIdentityIndex, linkFor } from '../../lib/identity-match';
+import { belongsTo, buildIdentityIndex, linkFor, type IdentityIndex } from '../../lib/identity-match';
 import { useIgnoredNames } from '../../hooks/useIgnoredNames';
 import { IdentityLinksContext, type IdentityLinks } from './identity-links';
 import type { IdentityChange } from './identity-labels';
@@ -24,6 +24,11 @@ interface Props {
   children: ReactNode;
 }
 
+function sameIndex(next: IdentityIndex, previous: IdentityIndex): boolean {
+  return next.folders.size === previous.folders.size && [...next.folders].every(([id, folder]) => previous.folders.get(id) === folder)
+    && next.actors.size === previous.actors.size && [...next.actors].every(actor => previous.actors.has(actor));
+}
+
 export function IdentityLinksProvider({ identities, isVisible, threatActors, folders, readOnly = false, onCreate, onUpdate, onOpen, children }: Props) {
   const { isIgnored, ignore } = useIgnoredNames();
   // Rebuilt while rendering when its inputs change; investigations whose identities did not change
@@ -31,7 +36,11 @@ export function IdentityLinksProvider({ identities, isVisible, threatActors, fol
   const [built, setBuilt] = useState(() => ({ identities, isVisible, threatActors, index: buildIdentityIndex(identities, { isVisible, threatActors }) }));
   let index = built.index;
   if (built.identities !== identities || built.isVisible !== isVisible || built.threatActors !== threatActors) {
-    index = buildIdentityIndex(identities, { isVisible, threatActors, previous: built.index });
+    const next = buildIdentityIndex(identities, { isVisible, threatActors, previous: built.index });
+    // The visibility check is a new function whenever any data changes (a note saved). When no
+    // investigation's index and no threat actor changed, the same index is kept, so the chips,
+    // IOC owners, reports and graph that read it are not re-rendered.
+    index = sameIndex(next, built.index) ? built.index : next;
     setBuilt({ identities, isVisible, threatActors, index });
   }
   const [picked, setPicked] = useState<FoundName | null>(null);

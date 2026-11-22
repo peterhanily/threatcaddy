@@ -152,6 +152,7 @@
   "form.save": "Guardar",
   "form.cancel": "Cancelar",
   "form.errorName": "Asígnele un nombre, o un alias si no se conoce el nombre real.",
+  "form.errorDuplicate": "Este nombre ya lo usa otra identidad en esta investigación.",
   "form.errorType": "Elija un tipo o escriba uno propio.",
   "form.errorInvestigation": "Elija una investigación.",
   "form.errorDetailLabel": "Indique qué detalle es, por ejemplo Correo electrónico o IBAN.",

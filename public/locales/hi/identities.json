@@ -152,6 +152,7 @@
   "form.save": "सहेजें",
   "form.cancel": "रद्द करें",
   "form.errorName": "इसे एक नाम दें, या असली नाम पता न हो तो हैंडल।",
+  "form.errorDuplicate": "यह नाम इस जाँच में किसी दूसरी पहचान के लिए पहले से इस्तेमाल हो रहा है।",
   "form.errorType": "कोई प्रकार चुनें, या अपना खुद का लिखें।",
   "form.errorInvestigation": "कोई जाँच चुनें।",
   "form.errorDetailLabel": "बताएँ कि यह जानकारी क्या है, जैसे ईमेल या IBAN।",

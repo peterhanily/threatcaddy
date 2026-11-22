@@ -122,6 +122,9 @@ describe('an identity\'s profile', () => {
     await user.selectOptions(within(card).getByRole('combobox', { name: '…whom or what' }), 'laptop');
     await user.click(within(card).getByRole('button', { name: 'Add' }));
     expect(lastUpdate(props.onUpdate, lee)).toEqual({ id: 'lee', fields: { connections: [...lee.connections, { targetId: 'laptop', label: 'administers' }] } });
+    // Added again (or already stored meanwhile), it is kept once.
+    const already = { ...lee, connections: [...lee.connections, { targetId: 'laptop', label: 'administers' }] };
+    expect(lastUpdate(props.onUpdate, already).fields?.connections).toEqual(already.connections);
   });
 
   it('removes an incoming connection from the identity that holds it', async () => {
@@ -141,6 +144,12 @@ describe('adding, editing, merging and trashing', () => {
     const dialog = screen.getByRole('dialog', { name: 'Add an identity' });
     await user.click(within(dialog).getByRole('button', { name: 'Add' }));
     expect(within(dialog).getByRole('alert')).toHaveTextContent('Give it a name');
+    // A name (or other name) another identity in the investigation has is refused: it would make links ambiguous.
+    await user.type(within(dialog).getByRole('textbox', { name: 'Name' }), 'lee park');
+    await user.click(within(dialog).getByRole('button', { name: 'Add' }));
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('This name is already used by another identity in this investigation.');
+    expect(props.onCreate).not.toHaveBeenCalled();
+    await user.clear(within(dialog).getByRole('textbox', { name: 'Name' }));
     await user.type(within(dialog).getByRole('textbox', { name: 'Name' }), 'Ana Silva');
     await user.selectOptions(within(dialog).getByRole('combobox', { name: 'Works at' }), 'org');
     await user.click(within(dialog).getByRole('checkbox', { name: /A contact/ }));
@@ -181,7 +190,7 @@ describe('adding, editing, merging and trashing', () => {
     const meanwhile = { ...dana, aliases: [...dana.aliases, 'D. Okafor-Ruiz'], description: 'Changed by a teammate' };
     const { fields } = lastUpdate(props.onUpdate, meanwhile);
     expect(fields).toMatchObject({ name: 'Dana Okafor', description: 'Changed by a teammate' });
-    expect(fields.aliases).toEqual(['D. Okafor-Ruiz', 'Dana O.']);
+    expect(fields?.aliases).toEqual(['D. Okafor-Ruiz', 'Dana O.']);
   });
 
   it('moves to the trash only after confirmation', async () => {

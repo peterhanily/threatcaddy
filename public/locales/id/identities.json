@@ -152,6 +152,7 @@
   "form.save": "Simpan",
   "form.cancel": "Batal",
   "form.errorName": "Beri nama, atau nama samaran jika nama aslinya tidak diketahui.",
+  "form.errorDuplicate": "Nama ini sudah dipakai identitas lain dalam investigasi ini.",
   "form.errorType": "Pilih jenis, atau ketik jenis Anda sendiri.",
   "form.errorInvestigation": "Pilih investigasi.",
   "form.errorDetailLabel": "Sebutkan jenis detailnya, misalnya Email atau IBAN.",

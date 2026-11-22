@@ -152,6 +152,7 @@
   "form.save": "保存",
   "form.cancel": "取消",
   "form.errorName": "请填写名称；如果不知道真实姓名，可填写网名。",
+  "form.errorDuplicate": "此调查中的另一个身份已使用这个名称。",
   "form.errorType": "请选择类型，或自行输入。",
   "form.errorInvestigation": "请选择一个调查。",
   "form.errorDetailLabel": "请说明这是什么信息，例如邮箱或 IBAN。",

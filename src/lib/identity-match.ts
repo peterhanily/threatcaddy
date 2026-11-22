@@ -155,16 +155,22 @@ export const MENTION_START = /[\s([{"'“‘«]/;
 
 export interface Mention { start: number; end: number; identity: Identity }
 
+/** Characters compared per text: ordinary text full of "@" signs stays far below it, while a
+ * crafted note (long names, many word breaks after each "@") stops there instead of stalling. */
+const MAX_MENTION_WORK = 20_000_000;
+
 /**
  * `@Name` mentions in text: the longest name or other name of an identity in the
- * investigation that follows an `@` and ends at a word boundary. Linear in the text: each
- * `@` tries at most `MAX_MENTION_LENGTH` end positions, with no regex built from names.
+ * investigation that follows an `@` and ends at a word boundary. Each `@` that could start a
+ * name tries at most `MAX_MENTION_LENGTH` end positions, with no regex built from names, and the
+ * text is scanned until `MAX_MENTION_WORK` characters have been compared, so a crafted note cannot stall a render.
  */
 export function findMentions(text: string, folder: FolderIndex | undefined): Mention[] {
   if (!folder || folder.names.size === 0) return [];
   const longest = Math.min(folder.longestName, MAX_MENTION_LENGTH);
   const mentions: Mention[] = [];
   let from = 0;
+  let work = 0;
   for (let at = text.indexOf('@'); at !== -1; at = text.indexOf('@', from)) {
     from = at + 1;
     if (at > 0 && !MENTION_START.test(text[at - 1])) continue;
@@ -174,6 +180,8 @@ export function findMentions(text: string, folder: FolderIndex | undefined): Men
     for (let end = Math.min(region.length, longest); end > 0; end--) {
       if (end < region.length && WORD.test(region[end])) continue;
       if (/\s/.test(region[end - 1])) continue;
+      work += end;
+      if (work > MAX_MENTION_WORK) return mentions;
       const key = sameText(region.slice(0, end));
       // A handle stored with its "@" ("@ghost_ledger") matches as typed.
       const found = folder.names.get(key) ?? folder.names.get(`@${key}`);

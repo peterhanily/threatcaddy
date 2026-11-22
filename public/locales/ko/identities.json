@@ -152,6 +152,7 @@
   "form.save": "저장",
   "form.cancel": "취소",
   "form.errorName": "이름을 입력하세요. 실명을 모르면 핸들을 입력하세요.",
+  "form.errorDuplicate": "이 이름은 이 조사의 다른 신원이 이미 사용하고 있습니다.",
   "form.errorType": "유형을 선택하거나 직접 입력하세요.",
   "form.errorInvestigation": "조사를 선택하세요.",
   "form.errorDetailLabel": "어떤 세부 정보인지 입력하세요. 예: 이메일 또는 IBAN.",

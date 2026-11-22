@@ -152,6 +152,7 @@
   "form.save": "Сохранить",
   "form.cancel": "Отмена",
   "form.errorName": "Укажите имя или никнейм, если настоящее имя неизвестно.",
+  "form.errorDuplicate": "Это имя уже использует другой субъект в этом расследовании.",
   "form.errorType": "Выберите тип или введите свой.",
   "form.errorInvestigation": "Выберите расследование.",
   "form.errorDetailLabel": "Укажите, что это за поле, например Email или IBAN.",

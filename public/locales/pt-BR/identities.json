@@ -152,6 +152,7 @@
   "form.save": "Salvar",
   "form.cancel": "Cancelar",
   "form.errorName": "Dê um nome, ou um apelido se o nome real não for conhecido.",
+  "form.errorDuplicate": "Este nome já é usado por outra identidade nesta investigação.",
   "form.errorType": "Escolha um tipo ou digite o seu.",
   "form.errorInvestigation": "Escolha uma investigação.",
   "form.errorDetailLabel": "Diga o que é o detalhe, por exemplo E-mail ou IBAN.",

@@ -54,7 +54,9 @@ export function MarkdownPreview({ content, defanged, allNotes, onNavigateToNote,
       const identity = identityFolder?.identities.find((item) => item.id === mention.getAttribute('data-identity-id'));
       // A name more than one identity holds opens the list filtered to it, so a person chooses.
       const name = (mention.textContent ?? '').replace(/^@/, '');
-      const ambiguous = (identityFolder?.names.get(sameText(name))?.length ?? 0) > 1;
+      // A handle stored with its "@" ("@ghost_ledger") is keyed with it, as findMentions looks it up.
+      const holders = identityFolder?.names.get(sameText(name)) ?? identityFolder?.names.get(sameText(`@${name}`));
+      const ambiguous = (holders?.length ?? 0) > 1;
       if (identity) identityLinks?.open(identity, ambiguous ? name : undefined);
       return;
     }

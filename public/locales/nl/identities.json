@@ -152,6 +152,7 @@
   "form.save": "Opslaan",
   "form.cancel": "Annuleren",
   "form.errorName": "Geef een naam op, of een handle als de echte naam niet bekend is.",
+  "form.errorDuplicate": "Deze naam wordt al gebruikt door een andere identiteit in dit onderzoek.",
   "form.errorType": "Kies een type of typ er zelf een.",
   "form.errorInvestigation": "Kies een onderzoek.",
   "form.errorDetailLabel": "Geef aan wat het detail is, bijvoorbeeld E-mail of IBAN.",

@@ -1476,7 +1476,7 @@ const AppInner = memo(function AppInner({
   /** Starts a note about an identity in its investigation, mentioning it so it links. */
   const handleAddNoteAboutIdentity = useCallback(async (identity: Identity) => {
     const folder = folders.find((f) => f.id === identity.folderId);
-    const note = await loggedCreateNote({ folderId: identity.folderId, clsLevel: folder?.clsLevel, title: identity.name, content: `@${identity.name} ` });
+    const note = await loggedCreateNote({ folderId: identity.folderId, clsLevel: folder?.clsLevel, title: identity.name, content: `${identity.name.startsWith('@') ? '' : '@'}${identity.name} ` });
     setShowTrash(false); setShowArchive(false);
     setSelectedNoteId(note.id);
     navigateTo('notes', { selectedNoteId: note.id });
