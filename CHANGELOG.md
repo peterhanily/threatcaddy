@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+Identities: a place to record the people, organizations, systems and accounts in an investigation, linked to the timeline, notes, IOCs, the graph, reports, Products and AI. The local database moves to version 35 (a new `identities` table; no existing table changes) and the team server adds migration `0025_identities`. A backup that contains identities can only be restored by a version that has them, and there is no downgrade.
+
+### Identities
+
+- **Identities view.** One investigation or all of them: an A–Z list with search and type and contact filters, profiles with details, a status (compromised, suspicious, cleared), a contact flag, connections that read correctly from both sides, organization pages with their people, and org charts. Add and Edit use a form; merge and delete ask first. Trashed identities appear in Trash and can be restored. Identities count on the investigation cards, the Dashboard has a "Compromised identities" tile, the Activity log has an identity filter, global search finds identities, and the sample investigations include some.
+- **Private details.** Phone, address, personal email, date of birth and similar labels start out private: masked until you choose Show, never shown while screensharing, left out of the CSV export unless you tick them, never matched or linked, and never sent to AI. They are encrypted at rest when local encryption is on. Backups and investigation exports are full copies and include them. They sync with the investigation like other content, and the team server keeps earlier revisions of every synced record, so a removed private detail can still reach a member who pulls the history.
+- **Linking.** A timeline event's Actor and Assets show as chips that open the identity they name; the Actor field suggests threat actors and identities as separate groups. Typing `@` in a note suggests identities, and `@Name` mentions become links in the preview. IOCs whose value is an identity's detail show a "Belongs to" column. A name that is not yet an identity shows as a dashed chip that can add it, link it to an existing identity as another name, or ignore it on this device. Each profile lists the events, notes and IOCs that name it and can start a note about it. "Found in this investigation" suggests identities from event actors, IOC attribution and account-like IOCs.
+- **Import, export, graph, reports and Products.** Data Import reads identities from CSV or JSON: a name already in the investigation is filled in and never duplicated, organizations are created when missing, and a row whose name matches two identities is refused. The Identities view exports CSV that is safe to open in a spreadsheet and imports back unchanged. The entity graph shows identities and their connections, with a Focus layout centred on the selected node; above 300 identities their nodes start hidden. The MITRE report and heatmap group by identity, IOC statistics' Top Actor uses the matched identity, and Products has an "Affected people and systems" source.
+
+### CaddyAI and AgentCaddy
+
+- Five new tools (63 in all): `search_identities`, `read_identity`, `create_identity`, `update_identity` and `connect_identities`. In chat, `@identity:` mentions an identity and answers link to the identities they name.
+- Private details never reach a model: not in results, not through search, and not through what a write replies. Whether a new detail is private depends on its label alone.
+- An agent's identity change always waits for a person's approval, whatever the investigation's policy, and "Approve all" leaves it for individual review. Timeline Builder can change identities; IOC Enricher, Hypothesis Writer, Reporter and Network Forensics can search and read them; Legal Counsel, Compliance Officer and Communications Lead see only names, types and statuses. The agent bridge and the supervisor do not have the tools.
+
+### Team sync and compatibility
+
+- Identities sync with an investigation through a team server that supports them. The server lists the tables it syncs and sends each client only the tables it asks for, so ThreatCaddy 2.0.4 and earlier keep syncing normally on an updated server and never receive identities. A client on an older server keeps its identities on the device and the sync status says so.
+- A pull now skips a table the client does not know instead of stopping, so the next new table will not break newer clients.
+- Server bots never receive identity events and cannot read or write identities.
+- A portable backup with no identities leaves the table out, so older versions can still read it. Encrypted backups always list the table, so an encrypted backup made with this version needs this version or later to restore.
+
+
 ## v2.0.4 — 2026-11-20
 
 Fixes from a security review of what ThreatCaddy exposes publicly: the hosted site, the standalone file, the browser extension and the team server image. The app no longer runs inside a frame, the standalone file runs only when opened from a file, whiteboards no longer load embedded web content, and the hosted page runs only its own inline scripts. ThreatCaddy now uses no feature of a browser extension older than 1.1.3, such as the Chrome Web Store's 1.1.1, and its install links point to the GitHub release. The team server's Compose file publishes the API on host loopback only, `TRUSTED_PROXY_IPS` accepts CIDR ranges, and `/health` reports only its status and version. No database migrations and no stored data format changes. See the [upgrade and channel notes](docs/releases/v2.0.4.md). The extension is released at 1.1.5.

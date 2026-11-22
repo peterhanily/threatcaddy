@@ -77,13 +77,15 @@ docs/                   Documentation
 
 - **ChatThread** -- LLM conversation threads with tool-use support, enabling AI-assisted analysis within investigations.
 
+- **Identity** -- A person, organization, system or account in one investigation (custom types are allowed). It holds other names, labelled details (some marked private), connections to other identities in the same investigation with a phrase such as "works at" or "reports to", a status (compromised, suspicious, cleared) and a contact flag. Other entities never store identity IDs: timeline actors and assets, note mentions and IOC values are matched to identities by text when shown (`src/lib/identity-match.ts`), so no existing table, backup field or server column changed. Private details are masked in the UI, never sent to AI, and left out of the Identities CSV export unless chosen.
+
 ### 3.2 Entity Relationships
 
 All entities support cross-linking through `linkedNoteIds`, `linkedTaskIds`, and `linkedTimelineEventIds` arrays. IOCs use typed relationships with the following link types: resolves-to, downloads, communicates-with, drops, hosts, attributed-to, exploits, uses-technique, detected-by, alerts-on, and related-to.
 
 ### 3.3 Client-Side Storage (IndexedDB via Dexie)
 
-The migration definitions in `src/db.ts` are authoritative. Tables include notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, activityLog, standaloneIOCs, chatThreads, evidenceItems, templates, integrations, and internal sync, migration and clip-receipt records. The portable backup registry explicitly distinguishes supported portable content from runtime/internal state.
+The migration definitions in `src/db.ts` are authoritative. Tables include notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, activityLog, standaloneIOCs, chatThreads, evidenceItems, identities, templates, integrations, and internal sync, migration and clip-receipt records. The portable backup registry explicitly distinguishes supported portable content from runtime/internal state.
 
 ### 3.4 Server-Side Storage (PostgreSQL via Drizzle ORM)
 
@@ -94,7 +96,7 @@ Drizzle ORM with the `postgres.js` driver manages the connection pool (max 20 co
 ### 3.5 Entity Relationship Summary
 
 - Users have sessions, investigation memberships, files, backups, and bot configs.
-- Folders contain notes, tasks, timeline events, whiteboards, standalone IOCs, chat threads, and posts.
+- Folders contain notes, tasks, timeline events, whiteboards, standalone IOCs, evidence items, identities, chat threads, and posts.
 - Folders have investigation members that bind users to specific roles.
 - Timelines contain timeline events.
 - Bot configs have bot runs.
@@ -210,6 +212,8 @@ In-memory sliding window rate limiting, keyed by IP address. Limits are configur
 
 **Tool calls.** Investigation content can carry instructions aimed at the model, so a call is judged by where it reaches, not by why the model made it. `classifyToolCall` (`src/lib/tool-reach.ts`) records whether a call writes, makes an outbound request (web fetch, vendor lookups, skills, SIEM or ticket calls), reaches another investigation, changes agents, or was taken from reply text. `decideToolCall` turns that into run, ask or deny for each surface: chat in Act, YOLO or Plan mode, agents, the supervisor and the agent bridge. Decision sites use it to show a chat approval card or queue an agent proposal; `dispatchTool` runs it again for every call, and runs a call that needs a person only with a single-use `HumanApproval` bound to that call's name, input and investigation. Only the chat card handler (`ChatView.tsx`) and the agent panel's approval of a queued action (`agent-action-approval.ts`) mint one (an import-boundary test enforces this). For agents, the investigation's saved auto-approve settings are a ceiling on each agent's own settings (`resolveEffectivePolicy`), and `buildAgentToolset` remains the single list of tools an agent is offered and may run.
 
+**Identities.** The five identity tools (`src/lib/llm-tools-identities.ts`) never return, search or confirm a private detail: whether a new detail is private depends on its label alone, and replies do not depend on private values. They read ids exactly as `tool-reach` does, so the reach rules above apply. An agent's identity write always needs approval (`shouldAutoApprove`) and is never part of "Approve all" (`agent-action-approval.ts`); observer agents get a name-only search; the agent bridge and the supervisor do not have the tools.
+
 **Local-only investigations** are not listed, searched or read by AI calls made from an investigation that can sync, meaning any investigation that is not local-only, whether or not a team server is bound yet (`isShareableFolder` in `src/lib/ai-scope.ts`). A home with no local folder row, such as a team investigation viewed without syncing it (remote mode) or an evicted folder, counts as able to sync. CaddyAI's list and search results (`list_investigations`, `search_across_investigations`) report how many investigations were left out; the bridge's `investigations()` does not. Before an investigation that holds AI-written content stops being local-only, the investigation details panel asks for confirmation (`hasAiWrittenContent` in `src/lib/ai-content.ts`, a best-effort check).
 
 ---
@@ -246,8 +250,8 @@ ThreatCaddy supports multiple interchange formats for interoperability with othe
 
 | Format | Direction | Description |
 |---|---|---|
-| JSON | Import/Export | Portable backup of 19 supported entity tables, or single-investigation export; operational sync/receipt stores and credentials are not a raw database dump |
-| CSV | Export | IOC export with configurable column selection |
+| JSON | Import/Export | Portable backup of 20 supported entity tables, or single-investigation export; operational sync/receipt stores and credentials are not a raw database dump |
+| CSV | Import/Export | IOC export with configurable column selection; identities export from the Identities view (private details only when chosen) and import through Data Import |
 | STIX 2.1 | Import/Export | Full bundle with Indicator SDOs, Vulnerability SDOs, Relationship SROs, and TLP markings using official OASIS UUIDs |
 | MISP | Import/Export | Event-level export and import with attribute type mapping |
 | Markdown | Import/Export | Individual note export; import from Markdown files via file picker (`Ctrl+O`), drag-and-drop, or PWA file handler |
@@ -319,7 +323,7 @@ Bots are granted explicit capabilities that gate what operations they can perfor
 
 | Capability | Grants |
 |---|---|
-| read_entities | Search, list, read notes/tasks/IOCs/timeline events |
+| read_entities | Search, list, read notes/tasks/IOCs/timeline events (never identities) |
 | create_entities | Create notes, tasks, IOCs, timeline events |
 | update_entities | Update existing entities |
 | post_to_feed | Post to CaddyShack social feed |

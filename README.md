@@ -96,7 +96,7 @@ Set `POSTGRES_PASSWORD`, a stable `BOT_MASTER_KEY`, the Ed25519 `JWT_PRIVATE_KEY
 Human-driven conversational AI assistant with a deep toolset for threat investigation.
 
 - **Multi-provider** — Anthropic, OpenAI, Google Gemini, Mistral and local endpoints such as Ollama, LM Studio and vLLM. Select an available model and configure credentials in Settings; provider availability and model names can change.
-- **58 tools** — 46 core tools to search, read, create, and update all entities; 7 delegation tools for Lead Analyst coordination; 5 executive tools for CISO/Chief of Staff. Covers IOC extraction, URL fetching, report generation, and cross-investigation analysis
+- **63 tools** — 51 core tools to search, read, create, and update all entities, including identities; 7 delegation tools for Lead Analyst coordination; 5 executive tools for CISO/Chief of Staff. Covers IOC extraction, URL fetching, report generation, and cross-investigation analysis
 - **Slash commands** — `/fetch`, `/search`, `/note`, `/task`, `/iocs`, `/summary`, `/timeline`, `/report`, `/triage`, `/graph`, `/link`
 - **Customizable system prompt** — Editable in Settings with CTI/IR tradecraft baked into the default (MITRE ATT&CK, Diamond Model, Kill Chain, Pyramid of Pain, estimative language, TLP/PAP)
 - **Persistent threads** with auto-generated titles; stays active in the background when switching tabs
@@ -162,11 +162,20 @@ REST endpoints that expose skills through `GET /skills` and `POST /execute` (see
 - **IOC extraction** — Auto-extract IPv4, IPv6, domains, URLs, emails, hashes (MD5/SHA-1/SHA-256), CVEs, MITRE ATT&CK IDs, YARA rules, Sigma rules, and file paths
 - **Standalone IOCs** — Manage IOCs with type, confidence, subtypes, analyst notes, attribution, and classification
 - **IOC relationships** — Many-to-many links with typed, directional relationships (e.g. domain "resolves-to" IP, hash "exploits" CVE)
-- **Entity graph** — Interactive force-directed graph of IOCs, notes, tasks, and timeline events with drag-to-link, filtering, and multiple layouts
+- **Entity graph** — Interactive force-directed graph of IOCs, notes, tasks, timeline events and identities with drag-to-link, filtering, and multiple layouts, including a Focus layout centred on one node
 - **IOC dashboard** — Aggregate stats: type/confidence distribution, top actors, timeline, frequency tables
 - **TLP/PAP classification** — Traffic Light Protocol and Permissible Actions Protocol levels on entities and investigations
 - **Export** — JSON, CSV (grouped or flat), STIX 2.1 bundles; push to OCI object storage
 - **Evidence import** — PDF, Word, RTF, Excel, CSV, JSON, XML, logs, text and screenshots: up to 20 files and 50 MiB per import, 25 MiB per file. Parsing runs in a cancellable worker; very large documents import partially with a warning, unreadable or encrypted Office files import as metadata only, and decompression is bounded: oversized parts are cut, while archives with too many entries, too much compressed data or sizes that do not match their contents reject the batch without saving anything
+
+### Identities
+
+- **People, organizations, systems and accounts** — An Identities view for one investigation or all of them: an A–Z list with search and type and contact filters, a profile with details, a status (compromised, suspicious, cleared) and connections that read correctly from both sides ("reports to" and "manages"), plus org charts. Merge and delete ask first, and trashed identities can be restored from Trash
+- **Private details** — Phone numbers, home addresses and similar details are private: masked until you choose Show, never shown while screensharing, left out of the Identities CSV export unless you tick them, and never sent to AI. They are encrypted at rest when local encryption is on. Backups and investigation exports are full copies and include them, and they sync with the investigation like other content; the team server keeps earlier revisions (see [backup and recovery](docs/backup-recovery.md))
+- **Linked across the investigation** — A timeline event's Actor and Assets, `@Name` mentions in notes, and IOCs whose value is an identity's detail link to its profile. A name not yet in Identities can be added, linked to an existing identity as another name, or ignored on this device. Each profile lists the events, notes and IOCs that name it, and "Found in this investigation" suggests identities from event actors, IOC attribution and account-like IOCs
+- **Import, export, graph and reports** — Import from CSV or JSON in Data Import (a name already in the investigation is filled in, never duplicated); CSV export that is safe to open in a spreadsheet; identity nodes and connections in the entity graph; grouping by identity in the MITRE report and heatmap; an "Affected people and systems" source in Products; global search; and a Dashboard "Compromised identities" tile
+- **AI** — CaddyAI and agents can search, read, create and update identities and connect them, and you can mention one in chat with `@identity:`. Private details never reach a model. An agent's identity change always waits for your approval and is never included in "Approve all"; the Legal Counsel, Compliance Officer and Communications Lead agents see only names, types and statuses
+- **Compatibility** — Identities sync only with a team server that supports them: an older server leaves them on the device and the sync status says so, and older ThreatCaddy clients on a new server carry on without them. A backup that contains identities can only be restored by a version that has them
 
 ### Timeline & Whiteboard
 

@@ -107,6 +107,8 @@ Bots can narrow which events they receive using `triggers.eventFilters`:
 
 Additionally, bots have a **scope** (`global` or `investigation`) that filters events by folder. A bot scoped to specific investigations will not receive events from other investigations.
 
+Identities never reach bots: a change to the `identities` table raises no bot event (`BOT_HIDDEN_TABLES` in `sync-service.ts`), and no bot tool reads or writes the table. A chat thread's events carry the whole thread, so public identity data that a CaddyAI tool returned in a conversation is part of it.
+
 ### Depth and Breadth Limits
 
 Bots can emit events (by creating/updating entities), which could trigger other bots, creating chains. Two safeguards prevent runaway loops:
