@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { IdentitiesView, type IdentitiesViewProps } from '../components/Identities/IdentitiesView';
@@ -45,6 +45,22 @@ beforeEach(() => localStorage.clear());
 afterEach(() => vi.restoreAllMocks());
 
 describe('the rolodex', () => {
+  it('is one tab stop: the arrow keys, Home and End move between identities and show each', async () => {
+    const { user, list } = setup();
+    const rows = () => within(list()).getAllByRole('button').filter(button => button.hasAttribute('data-identity-row'));
+    expect(rows().filter(row => row.tabIndex === 0)).toHaveLength(1);
+    rows()[0].focus();
+    await user.keyboard('{ArrowDown}');
+    expect(rows()[1]).toHaveFocus();
+    expect(rows()[1]).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('article', { name: 'Halvorsen Shipping' })).toBeInTheDocument();
+    await user.keyboard('{End}');
+    expect(rows().at(-1)).toHaveFocus();
+    await user.keyboard('{Home}');
+    expect(rows()[0]).toHaveFocus();
+    expect(rows().filter(row => row.tabIndex === 0)).toEqual([rows()[0]]);
+  });
+
   it('lists live identities A–Z, filters by type and contact, and searches public details only', async () => {
     const { user, list } = setup();
     const names = () => within(list()).getAllByRole('button').filter(button => !button.hasAttribute('aria-pressed')).map(button => button.textContent);
@@ -130,6 +146,8 @@ describe('an identity\'s profile', () => {
   it('removes an incoming connection from the identity that holds it', async () => {
     const { user, props } = setup({ selectRequest: { id: 'lee', request: 1 } });
     await user.click(within(profile('Lee Park')).getByRole('button', { name: 'Remove connection: manages Dana Okafor' }));
+    // The removed row's button goes away; focus continues from Add a connection, not the page.
+    expect(within(profile('Lee Park')).getByRole('button', { name: 'Add a connection' })).toHaveFocus();
     expect(lastUpdate(props.onUpdate, dana)).toEqual({ id: 'dana', fields: { connections: dana.connections.filter(edge => edge.targetId !== 'lee') } });
     // The edge is found in the stored row, not by position: an edge added first does not shift it.
     const shifted = { ...dana, connections: [{ targetId: 'laptop', label: 'uses' }, ...dana.connections] };
@@ -200,6 +218,8 @@ describe('adding, editing, merging and trashing', () => {
     expect(props.onTrash).not.toHaveBeenCalled();
     await user.click(within(screen.getByRole('dialog', { name: 'Move Dana Okafor to the trash?' })).getByRole('button', { name: 'Move to trash' }));
     expect(props.onTrash).toHaveBeenCalledWith('dana');
+    // The profile that opened the form is gone: focus continues from the search box.
+    await waitFor(() => expect(screen.getByRole('searchbox', { name: 'Search identities' })).toHaveFocus());
   });
 });
 
@@ -234,6 +254,8 @@ describe('names found in the investigation', () => {
     await user.click(within(screen.getByRole('region', { name: /^Not yet in Identities/ })).getByRole('button', { name: /fin-db01/ }));
     await user.click(screen.getByRole('button', { name: 'Ignore on this device' }));
     expect(within(screen.getByRole('region', { name: /^Not yet in Identities/ })).queryByRole('button', { name: /fin-db01/ })).not.toBeInTheDocument();
+    // Its chip is gone: focus moves on to the next found name, not the page.
+    expect(within(screen.getByRole('region', { name: /^Not yet in Identities/ })).getAllByRole('button')[0]).toHaveFocus();
     // Only a hash is kept, never the readable name.
     const stored = localStorage.getItem('threatcaddy-identities-ignored-v2') ?? '';
     expect(JSON.parse(stored)).toEqual([ignoredHash(JSON.stringify(['case', 'fin-db01']))]);

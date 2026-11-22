@@ -1598,7 +1598,7 @@ function AllIOCsTab({
                           const role = ta('iocList.belongsToHeader');
                           return (
                             <button type="button" onClick={() => identityLinks.open(owner.identity, ambiguous ? row.value : undefined)} title={role}
-                              aria-label={ambiguous ? tc('identityChip.ambiguous', { text: row.value, role }) : tc('identityChip.open', { text: row.value, role, name: owner.identity.name })}
+                              aria-label={ambiguous ? tc('identityChip.ambiguous', { text: owner.identity.name, role }) : tc('identityChip.open', { text: row.value, role, name: owner.identity.name })}
                               className="inline-flex max-w-[160px] items-center gap-1 text-xs text-accent-blue hover:underline">
                               <Contact size={10} aria-hidden="true" className="shrink-0" /><span className="truncate">{owner.identity.name}</span>
                               {ambiguous && <span className="shrink-0 text-text-muted">+{owner.others}</span>}

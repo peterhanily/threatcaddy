@@ -13,7 +13,8 @@ import type { AddPrefill } from './IdentityFormModal';
  * the app; until then the labels are their keys.
  */
 export function useIdentityLabels(options?: { suspense?: boolean }) {
-  const { t } = useTranslation('identities', { useSuspense: options?.suspense ?? true });
+  const { t, i18n } = useTranslation('identities', { useSuspense: options?.suspense ?? true });
+  const language = i18n.language;
   return useMemo(() => {
     const typeLabels = Object.fromEntries(BUILTIN_TYPES.map(type => [type, t(`type.${type}`)])) as Record<BuiltinType, string>;
     const phraseLabels = Object.fromEntries((Object.keys(CONNECTION_PHRASES) as ConnectionPhrase[])
@@ -34,8 +35,10 @@ export function useIdentityLabels(options?: { suspense?: boolean }) {
         ? t(`${outgoing ? 'connection' : 'connectionReverse'}.${CONNECTION_PHRASES[label]}`) : label),
       /** Phone, address and similar labels start out private (English or the interface language). */
       privateByDefault: (label: string) => isPrivateLabel(label, privateLabels),
+      /** Names or places as a list in the interface language ("A, B, C"; "A、B、C"; "A وB وC"). */
+      list: (items: readonly string[]) => new Intl.ListFormat(language, { type: 'conjunction', style: 'narrow' }).format(items),
     };
-  }, [t]);
+  }, [t, language]);
 }
 export type IdentityLabels = ReturnType<typeof useIdentityLabels>;
 /** An identity's new field values, or a function that computes them from the stored row. */

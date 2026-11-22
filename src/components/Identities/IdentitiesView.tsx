@@ -18,6 +18,10 @@ import { IdentityExportDialog } from './IdentityExportDialog';
 
 type Filter = 'all' | 'contact' | 'other' | (typeof BUILTIN_TYPES)[number];
 const FILTERS: Filter[] = ['all', 'person', 'contact', 'organization', 'system', 'account', 'other'];
+// A letter heading before the first name that starts with it; accents do not split a letter (Ö goes under O).
+const initialOf = (identity: Identity) => [...looseText(identity.name)][0]?.toUpperCase() ?? '';
+/** Below Tailwind's lg breakpoint the profile sits under the list. */
+const stacked = () => !!window.matchMedia && !window.matchMedia('(min-width: 1024px)').matches;
 const matchesFilter = (identity: Identity, filter: Filter) => filter === 'all' || (filter === 'contact' ? !!identity.contact
   : filter === 'other' ? !isBuiltinType(identity.type) : identity.type === filter);
 
@@ -97,9 +101,32 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const found = useMemo(() => (readOnly ? [] : foundNames({ identities: known, events, iocs, threatActors, isIgnored })),
     [readOnly, known, events, iocs, threatActors, isIgnored]);
 
-  const rows = live.filter(identity => matchesFilter(identity, filter) && identityMatches(identity, query, labels.typeLabel(identity.type)));
+  // Worked out once per change, not on every render: a staff list can hold 20,000 identities.
+  const rows = useMemo(() => live.filter(identity => matchesFilter(identity, filter) && identityMatches(identity, query, labels.typeLabel(identity.type))),
+    [live, filter, query, labels]);
   const selected = live.find(identity => identity.id === selectedId) ?? rows[0] ?? live[0];
-  const filters = FILTERS.filter(option => option === 'all' || option === filter || live.some(identity => matchesFilter(identity, option)));
+  const filterCounts = useMemo(() => new Map(FILTERS.map(option => [option, live.filter(identity => matchesFilter(identity, option)).length])), [live]);
+  const filters = FILTERS.filter(option => option === 'all' || option === filter || (filterCounts.get(option) ?? 0) > 0);
+  const headings = useMemo(() => rows.map((identity, index) => (index === 0 || initialOf(identity) !== initialOf(rows[index - 1]) ? initialOf(identity) : null)), [rows]);
+  const selectedFolderId = selected?.folderId;
+  const sameInvestigation = useMemo(() => live.filter(identity => identity.folderId === selectedFolderId), [live, selectedFolderId]);
+  const listRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+  /** One tab stop for the whole list: the arrow keys, Home and End move between identities. */
+  const moveInList = (event: React.KeyboardEvent) => {
+    const at = rows.findIndex(identity => identity.id === selected?.id);
+    const next = event.key === 'ArrowDown' ? Math.min(at + 1, rows.length - 1) : event.key === 'ArrowUp' ? Math.max(at - 1, 0)
+      : event.key === 'Home' ? 0 : event.key === 'End' ? rows.length - 1 : -1;
+    if (next < 0 || !rows.length) return;
+    event.preventDefault();
+    setSelectedId(rows[next].id);
+    listRef.current?.querySelector<HTMLElement>(`[data-identity-row="${CSS.escape(rows[next].id)}"]`)?.focus();
+  };
+  /** At narrow widths the profile is below the list, so a chosen identity is brought into view. */
+  const choose = (identity: Identity) => {
+    setSelectedId(identity.id);
+    if (stacked()) requestAnimationFrame(() => profileRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }));
+  };
   // Note text is normalised once per change to the notes, not each time an identity is chosen.
   const noteTexts = useMemo(() => new Map((notes ?? []).map(note => [note.id, noteMatchText(note)])), [notes]);
   const activity = useMemo(() => (selected ? activityOf(selected, { events, notes: notes ?? [], iocs, noteTexts }) : undefined), [selected, events, notes, iocs, noteTexts]);
@@ -110,19 +137,27 @@ export function IdentitiesView(props: IdentitiesViewProps) {
     catch (cause) { addToast('error', t('toast.failed', { error: cause instanceof Error ? cause.message : String(cause) })); throw cause; }
   }, [addToast, t]);
   const searchBox = useRef<HTMLInputElement>(null);
+  const foundRegion = useRef<HTMLDivElement>(null);
+  /** Where focus goes once a dialog has closed and what opened it is gone: the search box after a
+   * trashed profile, the next found name after one was handled (else the search box). */
+  const focusAfter = useRef<'search' | 'found' | null>(null);
+  useEffect(() => {
+    if (!focusAfter.current || form || picked) return;
+    const next = focusAfter.current === 'found' ? foundRegion.current?.querySelector<HTMLElement>('button') : null;
+    focusAfter.current = null;
+    (next ?? searchBox.current)?.focus();
+  });
   const open = useCallback((identity: Identity) => {
     if (folderId && identity.folderId !== folderId) { onOpenElsewhere?.(identity); return; }
     setSelectedId(identity.id); setTab('rolodex');
     if (!rows.some(row => row.id === identity.id)) { setQuery(''); setFilter('all'); }
   }, [folderId, onOpenElsewhere, rows]);
   const ignore = (name: FoundName) => {
+    focusAfter.current = 'found';
     ignoreName(name.folderId, name.text); setPicked(null);
     addToast('info', t('toast.ignored', { text: name.text }));
   };
 
-  // A letter heading before the first name that starts with it; accents do not split a letter (Ö goes under O).
-  const initialOf = (identity: Identity) => [...looseText(identity.name)][0]?.toUpperCase() ?? '';
-  const headings = rows.map((identity, index) => (index === 0 || initialOf(identity) !== initialOf(rows[index - 1]) ? initialOf(identity) : null));
   const canAdd = !readOnly && folders.length > 0;
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bg-primary">
@@ -164,7 +199,9 @@ export function IdentitiesView(props: IdentitiesViewProps) {
               labels={labels} onSelectOrganization={setOrganizationId} onOpen={open} />
           ) : (
             <>
-              <FoundNamesPanel found={found} folders={folders} showInvestigation={showInvestigation} labels={labels} onPick={setPicked} />
+              <div ref={foundRegion} className="contents">
+                <FoundNamesPanel found={found} folders={folders} showInvestigation={showInvestigation} labels={labels} onPick={setPicked} />
+              </div>
               <div className="grid items-start gap-4 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.6fr)]">
                 <section aria-label={t('list.label')} className="flex min-w-0 flex-col gap-2">
                   <label htmlFor={`${ids}-search`} className="sr-only">{t('search.label')}</label>
@@ -174,17 +211,18 @@ export function IdentitiesView(props: IdentitiesViewProps) {
                     {filters.map(option => (
                       <button key={option} type="button" aria-pressed={filter === option} onClick={() => setFilter(option)}
                         className={cn('rounded-full border px-2 py-0.5 text-xs', filter === option ? 'border-accent bg-accent/15 text-accent' : 'border-border-subtle text-text-secondary hover:text-text-primary')}>
-                        {t(`filter.${option}`)} <span className="text-text-muted">{live.filter(identity => matchesFilter(identity, option)).length}</span>
+                        {t(`filter.${option}`)} <span className="text-text-muted">{filterCounts.get(option) ?? 0}</span>
                       </button>
                     ))}
                   </div>
-                  <div role="list" className="max-h-[70vh] overflow-y-auto rounded-lg border border-border-subtle bg-bg-surface p-1">
+                  <div ref={listRef} role="list" onKeyDown={moveInList} className="max-h-[70vh] overflow-y-auto rounded-lg border border-border-subtle bg-bg-surface p-1">
                     {rows.map((identity, index) => {
                       const heading = headings[index];
                       return (
                         <div key={identity.id} role="listitem">
                           {heading && <div aria-hidden="true" className="px-2 pt-2 text-[10px] font-semibold text-text-muted">{heading}</div>}
-                          <button type="button" aria-current={selected?.id === identity.id ? 'true' : undefined} onClick={() => setSelectedId(identity.id)}
+                          <button type="button" data-identity-row={identity.id} aria-current={selected?.id === identity.id ? 'true' : undefined} onClick={() => choose(identity)}
+                            tabIndex={selected?.id === identity.id || (!rows.some(row => row.id === selected?.id) && index === 0) ? 0 : -1}
                             className={cn('flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-start hover:bg-bg-hover', selected?.id === identity.id && 'bg-accent/10')}>
                             <IdentityAvatar identity={identity} />
                             <span className="min-w-0 flex-1">
@@ -206,11 +244,12 @@ export function IdentitiesView(props: IdentitiesViewProps) {
                   </div>
                 </section>
                 {selected ? (
+                  <div ref={profileRef} className="min-w-0 scroll-mt-2">
                   <IdentityProfile
                     key={selected.id}
                     identity={selected}
                     byId={byId}
-                    sameInvestigation={live.filter(identity => identity.folderId === selected.folderId)}
+                    sameInvestigation={sameInvestigation}
                     everywhere={everywhere}
                     folders={folders}
                     showInvestigation={showInvestigation}
@@ -228,6 +267,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
                         onAddNote={readOnly || !onAddNote ? undefined : identity => { void run(() => onAddNote(identity)).catch(() => { /* Reported. */ }); }} />
                     )}
                   </IdentityProfile>
+                  </div>
                 ) : <p className="rounded-lg border border-border-subtle bg-bg-surface p-4 text-sm text-text-muted">{live.length ? t('profile.select') : t('list.empty')}</p>}
               </div>
             </>
@@ -252,8 +292,8 @@ export function IdentitiesView(props: IdentitiesViewProps) {
             setForm(null);
             if (selectedId === identity.id) setSelectedId('');
             addToast('success', t('toast.trashed', { name: identity.name }));
-            // Its profile is gone; continue from the list.
-            searchBox.current?.focus();
+            // Its profile is gone; continue from the list once the dialog has closed.
+            focusAfter.current = 'search';
           }}
           onSaved={(identity, message) => {
             setForm(null);
@@ -275,8 +315,9 @@ export function IdentitiesView(props: IdentitiesViewProps) {
           labels={labels}
           onClose={() => setPicked(null)}
           onIgnore={() => ignore(picked)}
-          onAddNew={() => { setPicked(null); setForm({ prefill: prefillFromFound(picked, labels) }); }}
+          onAddNew={() => { focusAfter.current = 'found'; setPicked(null); setForm({ prefill: prefillFromFound(picked, labels) }); }}
           onAddAsOtherName={identity => {
+            focusAfter.current = 'found';
             const text = picked.text;
             setPicked(null);
             void run(() => onUpdate(identity.id, withOtherName(text)), t('toast.otherNameAdded', { text, name: identity.name })).catch(() => { /* Reported. */ });

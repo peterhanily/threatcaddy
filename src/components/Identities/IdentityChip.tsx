@@ -27,18 +27,18 @@ export function IdentityChip({ folderId, text, source, tone, role }: {
       <button type="button" onClick={() => links.open(link.identity, ambiguous ? text : undefined)} title={`${role}: ${link.identity.name}`}
         aria-label={ambiguous ? t('identityChip.ambiguous', { text, role }) : t('identityChip.open', { text, role, name: link.identity.name })}
         className={cn(base, TONES[tone].linked, 'hover:underline focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent')}>
-        <Contact size={9} aria-hidden="true" className="shrink-0" /><span className="truncate">{text}</span>
+        <Contact size={9} aria-hidden="true" className="shrink-0" /><span dir="auto" className="truncate">{text}</span>
       </button>
     );
   }
   if (links?.resolve && folderId && link.state === 'notYet') {
     const resolve = links.resolve;
     return (
-      <button type="button" onClick={() => resolve(folderId, text, source)} title={role} aria-label={t('identityChip.notYet', { text, role })}
+      <button type="button" onClick={() => resolve(folderId, text, source)} title={`${role}: ${text}`} aria-label={t('identityChip.notYet', { text, role })}
         className={cn(base, TONES[tone].notYet, 'border border-dashed hover:border-solid')}>
-        <span className="truncate">{text}</span>
+        <span dir="auto" className="truncate">{text}</span>
       </button>
     );
   }
-  return <span title={role} className={cn(base, TONES[tone].plain)}><span className="truncate">{text}</span></span>;
+  return <span title={`${role}: ${text}`} className={cn(base, TONES[tone].plain)}><span dir="auto" className="truncate">{text}</span></span>;
 }

@@ -214,7 +214,18 @@ export function orgChart(organization: Identity, identities: readonly Identity[]
 
 /** Organisations with at least one person, as listed under their People. */
 export function chartableOrganizations(identities: readonly Identity[]): Identity[] {
-  return identities.filter(organization => live(organization) && isOrganization(organization) && membersOf(organization, identities).people.length > 0).sort(byName);
+  // One pass over the people (as membersOf counts them), not one per organisation: a staff list
+  // can hold 20,000 identities and a thousand organisations.
+  const byId = new Map(identities.map(identity => [identity.id, identity]));
+  const withPeople = new Set<string>();
+  for (const person of identities) {
+    if (!live(person) || !isPerson(person)) continue;
+    for (const edge of person.connections) {
+      const organization = MEMBERSHIP.includes(edge.label) ? byId.get(edge.targetId) : undefined;
+      if (organization && organization.id !== person.id && organization.folderId === person.folderId) withPeople.add(organization.id);
+    }
+  }
+  return identities.filter(organization => live(organization) && isOrganization(organization) && withPeople.has(organization.id)).sort(byName);
 }
 
 /** Search over the name, other names, description, type and details that are not private. */

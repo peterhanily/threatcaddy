@@ -7,6 +7,7 @@ import { TimelineEventCard } from '../components/Timeline/TimelineEventCard';
 import { MitreReport } from '../components/Timeline/MitreReport';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
 import { ToastProvider } from '../contexts/ToastContext';
+import { Modal } from '../components/Common/Modal';
 import type { TimelineEvent } from '../types';
 
 /**
@@ -34,6 +35,33 @@ function actorRow(name: string): HTMLElement {
 }
 
 describe('AttributionComboInput today', () => {
+  it('closes only its suggestions on Escape inside a dialog, and closes them when focus leaves', () => {
+    Element.prototype.scrollIntoView = () => {};
+    const onClose = vi.fn();
+    function Harness() {
+      const [value, setValue] = useState('');
+      return (
+        <Modal open onClose={onClose} title="New event">
+          <AttributionComboInput value={value} onChange={setValue} actors={['APT29', 'Lazarus Group']} placeholder="Actor" />
+          <button type="button">Next</button>
+        </Modal>
+      );
+    }
+    render(<Harness />);
+    const input = screen.getByPlaceholderText('Actor');
+    fireEvent.focus(input);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled(); // What was typed in the dialog is kept.
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1); // With the list closed, Escape closes the dialog as usual.
+    fireEvent.focus(input);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    fireEvent.blur(input);
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
   it('suggests attribution actors by case-insensitive substring and accepts free text', () => {
     Element.prototype.scrollIntoView = () => {}; // jsdom has no layout; restored in afterEach
     function Harness() {

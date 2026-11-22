@@ -155,9 +155,10 @@ export const MENTION_START = /[\s([{"'“‘«]/;
 
 export interface Mention { start: number; end: number; identity: Identity }
 
-/** Characters compared per text: ordinary text full of "@" signs stays far below it, while a
- * crafted note (long names, many word breaks after each "@") stops there instead of stalling. */
-const MAX_MENTION_WORK = 20_000_000;
+/** Characters compared per text. 90,000 "@" signs that could each start a name cost about 3.4
+ * million; a crafted note (long names, many word breaks after each "@") would cost over 170
+ * million, and stops here instead of stalling a render. */
+const MAX_MENTION_WORK = 8_000_000;
 
 /**
  * `@Name` mentions in text: the longest name or other name of an identity in the

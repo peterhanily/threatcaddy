@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useMemo, useState, type ReactNode } from 'react';
 import { Star } from 'lucide-react';
 import type { Folder, Identity } from '../../types';
 import { chartableOrganizations, orgChart, type OrgChart } from '../../lib/identity-model';
@@ -16,10 +16,11 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
   const { t } = labels;
   const ids = useId();
   const [open, setOpen] = useState<Record<string, boolean>>({});
-  const organizations = chartableOrganizations(identities);
-  if (!organizations.length) return <p className="rounded-lg border border-border-subtle bg-bg-surface p-4 text-sm text-text-muted">{t('org.empty')}</p>;
+  // Worked out when the identities or the organisation change, not when a team is shown or hidden.
+  const organizations = useMemo(() => chartableOrganizations(identities), [identities]);
   const organization = organizations.find(candidate => candidate.id === selectedOrganizationId) ?? organizations[0];
-  const chart = orgChart(organization, identities);
+  const chart = useMemo(() => (organization ? orgChart(organization, identities) : undefined), [organization, identities]);
+  if (!organization || !chart) return <p className="rounded-lg border border-border-subtle bg-bg-surface p-4 text-sm text-text-muted">{t('org.empty')}</p>;
 
   const card = (person: Identity) => (
     <button type="button" onClick={() => onOpen(person)} className="flex w-full min-w-0 items-center gap-2 rounded-md border border-border-subtle bg-bg-raised p-2 text-start hover:border-accent">
@@ -81,7 +82,7 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
         </div>
       ))}
       {chart.unplaced.length > 0 && (chart.roots.length
-        ? <p className="text-xs text-text-muted">{t('org.noManager', { names: chart.unplaced.map(person => person.name).join(', ') })}</p>
+        ? <p className="text-xs text-text-muted">{t('org.noManager', { names: labels.list(chart.unplaced.map(person => person.name)) })}</p>
         : (
           <section aria-label={organization.name} className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-bg-surface p-2">
             <p className="text-xs text-text-muted">{t('org.nobodyManaged', { name: organization.name })}</p>

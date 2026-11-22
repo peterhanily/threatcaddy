@@ -11,7 +11,7 @@ const button = 'rounded-md border border-border-subtle px-3 py-1.5 text-sm text-
 const primary = 'inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-accent-hover';
 
 const whereOf = (found: FoundName, labels: IdentityLabels) =>
-  [...new Set(found.sources.map(source => labels.t(`found.where.${source.kind}`)))].join(', ');
+  labels.list([...new Set(found.sources.map(source => labels.t(`found.where.${source.kind}`)))]);
 
 export function FoundNamesPanel({ found, folders, showInvestigation, labels, onPick }: {
   found: FoundName[]; folders: Folder[]; showInvestigation: boolean; labels: IdentityLabels; onPick: (found: FoundName) => void;

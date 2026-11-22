@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import type { Folder, Identity, IdentityStatus } from '../../types';
 import { IDENTITY_STATUSES } from '../../lib/entity-enums';
 import {
-  CONNECTION_PHRASES, alsoElsewhere, byName, canonicalPhrase, connectionsOf, isOrganization, isPerson, maskDetail, membersOf,
+  CONNECTION_PHRASES, alsoElsewhere, byName, canonicalPhrase, connectionsOf, isOrganization, isPerson, maskDetail, membersOf, sameText,
 } from '../../lib/identity-model';
 import { cn } from '../../lib/utils';
 import type { IdentityChange } from './identity-labels';
@@ -87,6 +87,8 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
   };
   /** Removes the edge from whichever identity holds it, matched in the stored row rather than by position. */
   const removeConnection = async (ownerId: string, edge: { targetId: string; label: string }) => {
+    // The removed row's button goes away: focus continues from "Add a connection".
+    connectionButton.current?.focus();
     await save(ownerId, current => {
       const position = current.connections.findIndex(candidate => candidate.targetId === edge.targetId && candidate.label === edge.label);
       return { connections: position < 0 ? current.connections : current.connections.filter((_, index) => index !== position) };
@@ -106,7 +108,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
         <div className="min-w-0 flex-1">
           <h2 className="break-words text-lg font-semibold text-text-primary">{identity.name}</h2>
           <p className="text-sm text-text-secondary">{identitySubtitle(identity, byId, labels)}</p>
-          {identity.aliases.length > 0 && <p className="text-xs text-text-muted">{t('profile.otherNames', { names: identity.aliases.join(', ') })}</p>}
+          {identity.aliases.length > 0 && <p className="text-xs text-text-muted">{t('profile.otherNames', { names: labels.list(identity.aliases) })}</p>}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <label className="sr-only" htmlFor={`${ids}-status`}>{t('status.label')}</label>
             <select
@@ -164,8 +166,11 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
             <p id={`${ids}-sharing`} className="text-xs text-text-muted">{t('details.hiddenWhileSharing')}</p>
           )}
           <ul className="flex flex-col gap-1.5">
-            {identity.details.map(detail => {
+            {identity.details.map((detail, position) => {
               const visible = !detail.private || (shown.has(detail.id) && !screensharing);
+              // Two details with one label get distinct button names ("Remove Email 2"), never their private value.
+              const same = identity.details.filter(other => sameText(other.label) === sameText(detail.label));
+              const named = same.length > 1 ? `${detail.label} ${identity.details.slice(0, position + 1).filter(other => sameText(other.label) === sameText(detail.label)).length}` : detail.label;
               return (
                 <li key={detail.id} className="grid grid-cols-[minmax(5rem,auto)_1fr_auto] items-start gap-2 text-sm">
                   <span className="text-xs text-text-muted">{detail.label}</span>
@@ -175,18 +180,18 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                       ? <span className="inline-flex items-center gap-0.5 rounded bg-bg-raised px-1 text-[10px] text-text-muted"><Lock size={10} />{t('details.private')}</span>
                       : <button type="button" disabled={screensharing} title={screensharing ? t('details.hiddenWhileSharing') : undefined}
                           aria-describedby={screensharing ? `${ids}-sharing` : undefined}
-                          aria-label={t('details.showAria', { label: detail.label.toLowerCase() })} className={cn(linkButton, 'disabled:cursor-not-allowed disabled:opacity-50')}
+                          aria-label={t('details.showAria', { label: named.toLowerCase() })} className={cn(linkButton, 'disabled:cursor-not-allowed disabled:opacity-50')}
                           onClick={() => setShown(previous => new Set(previous).add(detail.id))}>{t('details.show')}</button>)}
                   </span>
-                  {!readOnly && <button type="button" aria-label={t('details.remove', { label: detail.label })} className="rounded p-0.5 text-text-muted hover:text-text-primary"
-                    onClick={() => void save(identity.id, current => ({ details: current.details.filter(other => other.id !== detail.id) }))}><X size={13} /></button>}
+                  {!readOnly && <button type="button" aria-label={t('details.remove', { label: named })} className="rounded p-0.5 text-text-muted hover:text-text-primary"
+                    onClick={() => { detailButton.current?.focus(); /* The row's button goes away: continue from "Add a detail". */ void save(identity.id, current => ({ details: current.details.filter(other => other.id !== detail.id) })); }}><X size={13} /></button>}
                 </li>
               );
             })}
             {!identity.details.length && <li className="text-xs text-text-muted">{t('details.none')}</li>}
           </ul>
           {!readOnly && (detailForm ? (
-            <form onSubmit={event => void addDetail(event)} className="flex flex-col gap-2 rounded-md border border-border-subtle p-2">
+            <form onSubmit={event => void addDetail(event)} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); closeDetail(); } }} className="flex flex-col gap-2 rounded-md border border-border-subtle p-2">
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="flex flex-col gap-1 text-xs text-text-secondary">{t('detailForm.label')}
                   <input autoFocus list={`${ids}-labels`} value={detailForm.label} maxLength={100} placeholder={t('detailForm.labelPlaceholder')} className={field}
@@ -234,7 +239,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
             {!connections.length && <li className="text-xs text-text-muted">{t('connections.none')}</li>}
           </ul>
           {!readOnly && (connectionForm ? (
-            <form onSubmit={event => void addConnection(event)} className="flex flex-col gap-2 rounded-md border border-border-subtle p-2">
+            <form onSubmit={event => void addConnection(event)} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); closeConnection(); } }} className="flex flex-col gap-2 rounded-md border border-border-subtle p-2">
               {targets.length ? (
                 <div className="grid gap-2 sm:grid-cols-2">
                   <label className="flex flex-col gap-1 text-xs text-text-secondary">{t('connectionForm.phrase', { name: identity.name })}

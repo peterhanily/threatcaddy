@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Upload, Briefcase, MessageSquare, Search, Lock, LockOpen, Share2, FileText, Download, AlertTriangle, Contact } from 'lucide-react';
 import type { Note, Task, TimelineEvent, Tag, Folder, EditorMode, Settings, NoteAnnotation } from '../../types';
@@ -15,6 +15,7 @@ import { ResizeHandle } from '../Common/ResizeHandle';
 import { EntityLinker } from '../Common/EntityLinker';
 import { SlashCommandMenu } from './SlashCommandMenu';
 import { LinkAutocompleteMenu } from './LinkAutocompleteMenu';
+import { optionId } from './menu-ids';
 import type { LinkCandidate } from './LinkAutocompleteMenu';
 import { useMentionAutocomplete } from './useMentionAutocomplete';
 import { useIdentityLinks } from '../Identities/identity-links';
@@ -362,6 +363,8 @@ export function NoteEditor({
   const identityLinks = useIdentityLinks();
   const mention = useMentionAutocomplete({ textareaRef, content, folder: note.trashed ? undefined : identityLinks?.folder(note.folderId),
     onContentChange: handleContentChange });
+  const linkListId = useId();
+  const mentionListId = useId();
 
   const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (mention.handleKeyDown(e)) return;
@@ -560,6 +563,9 @@ export function NoteEditor({
       .slice(0, 20)
       .map(n => ({ id: n.id, title: n.title }));
   }, [linkMenuOpen, linkFilter, allNotes, note.id]);
+  /** The [[ or @ menu now open, for the editor's ARIA attributes. */
+  const openMenu = linkMenuOpen && linkCandidates.length > 0 ? { id: linkListId, active: linkActiveIndex }
+    : mention.open ? { id: mentionListId, active: mention.activeIndex } : null;
 
   // Reset link active index when filter changes
   useEffect(() => {
@@ -1039,6 +1045,10 @@ export function NoteEditor({
                   }, 0);
                 }}
                 onKeyDown={handleEditorKeyDown}
+                // The [[ and @ menus are listboxes the editor controls while it keeps focus.
+                aria-autocomplete={note.trashed ? undefined : 'list'}
+                aria-controls={openMenu?.id}
+                aria-activedescendant={openMenu ? optionId(openMenu.id, openMenu.active) : undefined}
                 className="note-editor flex-1 w-full p-2 sm:p-4 ps-1 bg-transparent text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-0 border-none text-sm leading-relaxed"
                 placeholder={t('editor.contentPlaceholder')}
                 readOnly={note.trashed}
@@ -1060,6 +1070,7 @@ export function NoteEditor({
                   position={linkMenuPosition}
                   onSelect={executeLinkSelection}
                   menuRef={linkMenuRef}
+                  listId={linkListId}
                 />
               )}
               {mention.open && (
@@ -1071,8 +1082,11 @@ export function NoteEditor({
                   menuRef={mention.menuRef}
                   header={t('mentionMenu.header')}
                   icon={Contact}
+                  listId={mentionListId}
                 />
               )}
+              {/* Says a menu opened, so Enter or Tab choosing from it is not a surprise. */}
+              <div aria-live="polite" className="sr-only">{openMenu ? (openMenu.id === mentionListId ? t('mentionMenu.header') : t('linkMenu.header')) : ''}</div>
             </div>
           )}
           {editorMode === 'split' && (

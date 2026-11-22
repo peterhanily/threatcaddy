@@ -82,6 +82,9 @@ export function AttributionComboInput({ value, onChange, actors, identities, pla
         }
         break;
       case 'Escape':
+        // Closes the list only: the dialog around the field must not close and lose what was typed.
+        e.preventDefault();
+        e.stopPropagation();
         setOpen(false);
         break;
     }
@@ -109,6 +112,8 @@ export function AttributionComboInput({ value, onChange, actors, identities, pla
         onFocus={() => {
           if (filtered.length > 0) setOpen(true);
         }}
+        // Tabbing away closes the list (an option is chosen on mousedown, which keeps the focus here).
+        onBlur={() => setOpen(false)}
         onKeyDown={handleKeyDown}
         className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
         placeholder={placeholder ?? t('attribution.placeholder')}

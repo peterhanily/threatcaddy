@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render as renderView, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render as renderView, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { ToastProvider } from '../contexts/ToastContext';
 import { NoteEditor } from '../components/Notes/NoteEditor';
@@ -44,7 +44,11 @@ describe('[[ note links today', () => {
     render(<NoteEditor {...props} note={current} allNotes={[current, ...others]} />);
     const body = screen.getByPlaceholderText('Start writing in markdown...');
     await type(body, 'See [[lu');
-    const options = screen.getAllByRole('button').filter((b) => /lure|Lure|triage|Lunch/.test(b.textContent ?? ''));
+    // The suggestions are a listbox of options tied to the editor (aria-controls, aria-activedescendant).
+    const listbox = screen.getByRole('listbox', { name: 'Link to note' });
+    const options = within(listbox).getAllByRole('option');
+    expect(listbox).toHaveAttribute('id', body.getAttribute('aria-controls'));
+    expect(body).toHaveAttribute('aria-activedescendant', options[0].id);
     expect(options.map((b) => b.textContent?.trim())).toEqual(['Lure analysis', 'A lure kit']);
     fireEvent.mouseDown(options[0]); // suggestions are chosen on mousedown so the textarea keeps focus
     expect(body).toHaveValue('See [[Lure analysis]]');
@@ -55,10 +59,10 @@ describe('[[ note links today', () => {
     render(<NoteEditor {...props} note={current} allNotes={[current, ...others]} />);
     const body = screen.getByPlaceholderText('Start writing in markdown...');
     await type(body, 'See [[lu');
-    expect(screen.getByRole('button', { name: /Lure analysis/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Lure analysis/ })).toBeInTheDocument();
     await type(body, 'Run `[[lu');
-    expect(screen.queryByRole('button', { name: /Lure analysis/ })).toBeNull();
+    expect(screen.queryByRole('option', { name: /Lure analysis/ })).toBeNull();
     await type(body, 'See [[Lure analysis]] then');
-    expect(screen.queryByRole('button', { name: /Lure analysis/ })).toBeNull();
+    expect(screen.queryByRole('option', { name: /Lure analysis/ })).toBeNull();
   });
 });
