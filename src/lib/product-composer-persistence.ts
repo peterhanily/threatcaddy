@@ -100,7 +100,7 @@ export function createProductComposerPersistence({ input, originSnapshot, origin
         db.timelineEvents.where('folderId').equals(folderId).filter(active).limit(maximum).toArray(),
         db.standaloneIOCs.where('folderId').equals(folderId).filter(active).limit(maximum).toArray(),
         db.evidenceItems.where('folderId').equals(folderId).filter(active).limit(maximum).toArray(),
-        db.identities.where('folderId').equals(folderId).filter(active).limit(maximum).toArray(),
+        db.identities.where('folderId').equals(folderId).filter(active).limit(PRODUCT_COMPOSER_LIMITS.identityItems + 1).toArray(),
       ]);
       const current: ProductComposerSnapshot = { folder, notes, tasks, timelineEvents, iocs, evidence, identities };
       // Includes newly added sources and current embedded indicator labels,

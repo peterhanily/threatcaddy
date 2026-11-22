@@ -131,6 +131,7 @@
   "mapping.identity-detail": "ตัวตน: รายละเอียด (ชื่อคอลัมน์คือป้ายกำกับ)",
   "mapping.identity-connection": "ตัวตน: ความเชื่อมโยง (ชื่อคอลัมน์คือวลี)",
   "mapping.identity-connections": "ตัวตน: ความเชื่อมโยงหลายรายการ (วลี: ชื่อ)",
+  "mapping.identity-classification": "ตัวตน: การจำแนก",
   "mapping.ignore": "ละเว้น",
   "mentionCategory.note": "บันทึก",
   "mentionCategory.ioc": "IOC",

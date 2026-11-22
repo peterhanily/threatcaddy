@@ -25,6 +25,9 @@ interface GraphCanvasProps {
 
 export default function GraphCanvas({ data, layout, focusNodeId, onSelectNode, onDoubleClickNode, onSelectMulti, onLinkNodes, theme, fitTrigger }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // The node the Focus layout centres on, read when the graph is rebuilt, and the last one laid out.
+  const focusRef = useRef(focusNodeId);
+  const focusLaidOut = useRef<string | undefined>(undefined);
   const cyRef = useRef<cytoscape.Core | null>(null);
   // Stable refs for callbacks so cytoscape event handlers always use latest versions
   const onSelectNodeRef = useRef(onSelectNode);
@@ -44,9 +47,9 @@ export default function GraphCanvas({ data, layout, focusNodeId, onSelectNode, o
   const isDark = theme === 'dark';
 
   const getLayoutOptions = useCallback((name: LayoutName, focus?: cytoscape.NodeSingular) => {
-    switch (name) {
+    switch (focus || name !== 'focus' ? name : 'cose-bilkent') {
       case 'focus': {
-        // Rings around the selected node; without one, the force-directed layout.
+        // Rings around the selected node (without one, the switch uses the force-directed layout).
         if (!focus) return { name: 'cose-bilkent', animate: false };
         const rings = focusRings(focus);
         return {
@@ -413,12 +416,24 @@ export default function GraphCanvas({ data, layout, focusNodeId, onSelectNode, o
     });
 
     // Run layout
-    const focus = layout === 'focus' && focusNodeId ? cy.getElementById(focusNodeId) : undefined;
+    const focus = layout === 'focus' && focusRef.current ? cy.getElementById(focusRef.current) : undefined;
     cy.layout(getLayoutOptions(layout, focus?.nonempty() ? focus : undefined) as cytoscape.LayoutOptions).run();
+    focusLaidOut.current = layout === 'focus' ? focusRef.current : undefined;
     cy.fit(undefined, 40);
-    // The focus layout follows the selection; other layouts do not move when a node is chosen.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, layout, getLayoutOptions, layout === 'focus' ? focusNodeId : undefined]);
+  }, [data, layout, getLayoutOptions]);
+
+  // The Focus layout follows the selected node by moving the existing nodes: no rebuild, so the
+  // selection and its highlight stay. Clearing the selection leaves the nodes where they are.
+  useEffect(() => {
+    focusRef.current = focusNodeId;
+    const cy = cyRef.current;
+    if (!cy || layout !== 'focus' || !focusNodeId || focusLaidOut.current === focusNodeId) return;
+    const focus = cy.getElementById(focusNodeId);
+    if (focus.empty()) return;
+    cy.layout(getLayoutOptions('focus', focus) as cytoscape.LayoutOptions).run();
+    focusLaidOut.current = focusNodeId;
+    cy.fit(undefined, 40);
+  }, [layout, focusNodeId, getLayoutOptions]);
 
   // Fit-to-view on trigger change
   useEffect(() => {

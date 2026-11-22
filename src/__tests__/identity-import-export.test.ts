@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Folder, Identity } from '../types';
 import { identitiesToCsv } from '../lib/identity-export';
 import { buildIdentities, identityMappingFor, looksLikeIdentities } from '../lib/identity-import';
-import { detectSchema, parseInput, type ColumnMapping } from '../lib/data-import';
+import { buildSummaryNote, detectSchema, parseInput, type ColumnMapping } from '../lib/data-import';
 
 const folders: Folder[] = [{ id: 'case', name: 'Halvorsen BEC', order: 0, createdAt: 1 }];
 const make = (id: string, name: string, extra: Partial<Identity> = {}): Identity => ({ id, folderId: 'case', type: 'person', name, aliases: [],
@@ -47,7 +47,7 @@ describe('import', () => {
     expect(looksLikeIdentities(headers)).toBe(true);
     expect(looksLikeIdentities(['timestamp', 'name', 'type'])).toBe(false);
     expect(headers.map(identityMappingFor)).toEqual(['identity-name', 'identity-type', 'ignore', 'identity-status', 'identity-contact', 'identity-description',
-      'identity-organization', 'identity-aliases', 'identity-detail', 'identity-detail', 'identity-connection', 'identity-connections', 'ignore', 'ignore', 'ignore']);
+      'identity-organization', 'identity-aliases', 'identity-detail', 'identity-detail', 'identity-connection', 'identity-connections', 'identity-classification', 'ignore', 'ignore']);
   });
 
   it('round-trips an export into an empty investigation, private details still private', () => {
@@ -112,4 +112,75 @@ describe('import', () => {
     expect(result.created).toHaveLength(10_050);
     expect(performance.now() - started).toBeLessThan(5000);
   });
+
+  it('keeps log and indicator exports as they were detected, and still recognises identity lists', () => {
+    const mapped = (headers: string[]) => detectSchema(headers).map(detection => detection.mapping);
+    expect(mapped(['name', 'status', '_time', 'src_ip', 'sha256'])).toEqual(expect.arrayContaining(['timestamp', 'ioc-ipv4', 'ioc-sha256']));
+    expect(mapped(['name', 'status', '_time', 'src_ip', 'sha256']).some(mapping => mapping.startsWith('identity-'))).toBe(false);
+    expect(mapped(['name', 'status', 'src_ip'])).toContain('ioc-ipv4');
+    expect(mapped(['Name', 'Type', 'Email', 'Hostname'])).toEqual(['identity-name', 'identity-type', 'identity-detail', 'identity-detail']);
+    // ThreatCaddy's own export is always an identity list, even with Created and IP columns.
+    expect(mapped(['Name', 'Other names', 'IP address', 'Connections', 'Created'])).toEqual(['identity-name', 'identity-aliases', 'identity-detail', 'identity-connections', 'ignore']);
+  });
+
+  it('round-trips classification, details labelled like a field, and never lowers either', () => {
+    const secret = make('s', 'Secret Source', { clsLevel: 'SECRET', details: [{ id: 'r', label: 'Role', value: 'CFO' }, { id: 't', label: 'type', value: 'contractor' }] });
+    const csv = identitiesToCsv([secret], { byId: new Map([[secret.id, secret]]), folders });
+    expect(csv.split('\r\n')[0]).toContain('Role (detail),type (detail)');
+    const { result } = reimport(csv, [], { clsLevel: 'TLP:GREEN' });
+    expect(result.created[0]).toMatchObject({ clsLevel: 'SECRET', type: 'person' });
+    expect(result.created[0].details.map(({ label, value }) => `${label}=${value}`)).toEqual(['Role=CFO', 'type=contractor']);
+  });
+
+  it('gives the chosen organisation only to identities that belong to none, and records who imported', () => {
+    const acme = make('acme', 'Acme', { type: 'organization' });
+    const globex = make('globex', 'Globex', { type: 'organization' });
+    const alice = make('alice', 'Alice', { connections: [{ targetId: 'acme', label: 'works at' }] });
+    const { result } = reimport('Name,Type\nAlice,person\nBob,person\n', [acme, globex, alice], { defaultOrganizationId: 'globex', author: 'Fictional analyst' });
+    expect(result.updated).toEqual([]);
+    expect(result.created).toEqual([expect.objectContaining({ name: 'Bob', createdBy: 'Fictional analyst', connections: [{ targetId: 'globex', label: 'works at' }] })]);
+    const touched = reimport('Name,Status\nAlice,suspicious\n', [alice], { author: 'Fictional analyst' }).result.updated;
+    expect(touched).toEqual([{ id: 'alice', changes: { status: 'suspicious', updatedBy: 'Fictional analyst' } }]);
+  });
+
+  it('keeps private columns out of the import summary note, however they were mapped', () => {
+    const parsed = parseInput('Name,Email,Phone,Home address (private)\nDana Okafor,dana@halvorsen.example,+44 7700 900999,1 Fictional Road\n');
+    const mappings = new Map<string, ColumnMapping>(detectSchema(parsed.headers).map(detection => [detection.column, detection.mapping]));
+    const summary = buildSummaryNote(parsed, mappings, { timelineEventsCreated: 0, iocsExtracted: 0, identitiesCreated: 1, identitiesUpdated: 0, summaryNoteCreated: true, errors: [] });
+    expect(summary.content).toContain('dana@halvorsen.example');
+    expect(summary.content).not.toContain('7700');
+    expect(summary.content).not.toContain('Fictional Road');
+  });
+
+  it('reports a name two identities share, another identity\'s name as an other name, and a person given as organization', () => {
+    const twinA = make('a', 'Sam Lee');
+    const twinB = make('b', 'Sam Lee');
+    const lee = make('lee', 'Lee Park');
+    const { result } = reimport('Name,Type,Other names,Organization\nSam Lee,person,,\nAna Silva,person,Lee Park,Lee Park\n', [twinA, twinB, lee]);
+    expect(result.updated).toEqual([]);
+    expect(result.created.map(identity => [identity.name, identity.aliases, identity.connections])).toEqual([['Ana Silva', [], []]]);
+    expect(result.errors).toEqual([
+      'Row 2: “Sam Lee” names more than one identity in this investigation; skipped. Merge them, then import again.',
+      'Row 3: “Lee Park” is already another identity\'s name; not added as another name of “Ana Silva”.',
+      'Row 3: “Lee Park” is not one organization in this investigation; its organization was skipped.',
+    ]);
+  });
+
+  it('treats interface-language private labels as private, and undoes the formula apostrophe in headers', () => {
+    const { result } = reimport("Name,Type,Telefon,'+Extra\nDana Okafor,person,+49 30 1234,x\n", [], { isPrivateLabel: label => label === 'Telefon' });
+    expect(result.created[0].details).toEqual([
+      expect.objectContaining({ label: 'Telefon', value: '+49 30 1234', private: true }),
+      expect.objectContaining({ label: '+Extra', value: 'x' }),
+    ]);
+    expect(result.created[0].details[1]).not.toHaveProperty('private');
+  });
+
+  it('exports organisations and connections only to identities in the file', () => {
+    const archivedOrg = make('old', 'Old Holdings', { type: 'organization', archived: true });
+    const worker = make('w', 'Worker', { connections: [{ targetId: 'old', label: 'works at' }, { targetId: 'lee', label: 'reports to' }] });
+    const csv = identitiesToCsv([worker, lee], { byId: new Map([worker, lee, archivedOrg].map(identity => [identity.id, identity])), folders });
+    expect(csv).not.toContain('Old Holdings');
+    expect(csv).toContain('reports to: Lee Park');
+  });
 });
+

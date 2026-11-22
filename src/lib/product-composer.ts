@@ -8,6 +8,8 @@ export const PRODUCT_COMPOSER_LIMITS = {
   documentCharacters: 500_000,
   sourceCharacters: 1_000_000,
   sourceItems: 2_000,
+  /** Identities have their own budget: an imported staff list must not stop products working. */
+  identityItems: 20_000,
   sections: 80,
   titleCharacters: 500,
 } as const;
@@ -66,9 +68,12 @@ function activeInFolder<T extends { folderId?: string; trashed: boolean; archive
   return rows.filter(row => row.folderId === folderId && !row.trashed && !row.archived);
 }
 function scopedSnapshot(snapshot: ProductComposerSnapshot): ProductComposerSnapshot {
-  const collections = [snapshot.notes, snapshot.tasks, snapshot.timelineEvents, snapshot.iocs, snapshot.evidence, snapshot.identities];
+  const collections = [snapshot.notes, snapshot.tasks, snapshot.timelineEvents, snapshot.iocs, snapshot.evidence];
   if (collections.reduce((total, rows) => total + rows.length, 0) > PRODUCT_COMPOSER_LIMITS.sourceItems) {
     throw new ProductComposerValidationError('limit', `The composer supports at most ${PRODUCT_COMPOSER_LIMITS.sourceItems} source items. Narrow the supplied investigation snapshot.`, 'sourceCount', { maximum: PRODUCT_COMPOSER_LIMITS.sourceItems });
+  }
+  if (snapshot.identities.length > PRODUCT_COMPOSER_LIMITS.identityItems) {
+    throw new ProductComposerValidationError('limit', `The composer supports at most ${PRODUCT_COMPOSER_LIMITS.identityItems} identities. Narrow the supplied investigation snapshot.`, 'sourceCount', { maximum: PRODUCT_COMPOSER_LIMITS.identityItems });
   }
   if (!snapshot.folder.id) throw new ProductComposerValidationError('structure', 'Choose an investigation before composing a product.', 'chooseInvestigation');
   return {
@@ -99,7 +104,8 @@ export function deriveProductComposerClassification(
   includeLevel(source.folder.clsLevel);
   includeLevel(baseline?.clsLevel);
   for (const entity of entities) includeLevel(entity.clsLevel);
-  let sourceCount = entities.length;
+  // Identities have their own budget (checked above); the shared one counts the other sources and their indicators.
+  let sourceCount = entities.length - source.identities.length;
   for (const entity of [...source.notes, ...source.tasks, ...source.timelineEvents]) {
     for (const ioc of entity.iocAnalysis?.iocs ?? []) {
       if (++sourceCount > PRODUCT_COMPOSER_LIMITS.sourceItems) throw new ProductComposerValidationError('limit', 'The classification snapshot exceeds the 2,000-source limit including embedded indicators. Narrow the source snapshot.', 'classificationCount');

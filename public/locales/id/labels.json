@@ -131,6 +131,7 @@
   "mapping.identity-detail": "Identitas: Detail (nama kolom menjadi labelnya)",
   "mapping.identity-connection": "Identitas: Hubungan (nama kolom menjadi frasanya)",
   "mapping.identity-connections": "Identitas: Daftar hubungan (frasa: nama)",
+  "mapping.identity-classification": "Identitas: Klasifikasi",
   "mapping.ignore": "Abaikan",
   "mentionCategory.note": "Catatan",
   "mentionCategory.ioc": "IOC",

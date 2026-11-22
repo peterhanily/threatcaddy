@@ -131,6 +131,7 @@
   "mapping.identity-detail": "Identidad: Detalle (el nombre de la columna es el campo)",
   "mapping.identity-connection": "Identidad: Relación (el nombre de la columna es la frase)",
   "mapping.identity-connections": "Identidad: Relaciones (frase: nombre)",
+  "mapping.identity-classification": "Identidad: Clasificación",
   "mapping.ignore": "Ignorar",
   "mentionCategory.note": "Notas",
   "mentionCategory.ioc": "IOCs",

@@ -131,6 +131,7 @@
   "mapping.identity-detail": "Identiteit: Detail (de kolomnaam is het label)",
   "mapping.identity-connection": "Identiteit: Relatie (de kolomnaam is de omschrijving)",
   "mapping.identity-connections": "Identiteit: Relaties (omschrijving: naam)",
+  "mapping.identity-classification": "Identiteit: Classificatie",
   "mapping.ignore": "Negeren",
   "mentionCategory.note": "Notities",
   "mentionCategory.ioc": "IOC's",

@@ -144,6 +144,15 @@ describe('classification and save boundary', () => {
     expect(deriveProductComposerClassification(snapshot(sources))).toBe('TLP:RED');
   });
 
+  it('gives identities their own budget, so an imported staff list does not stop products working', () => {
+    const many = Array.from({ length: 5000 }, (_, i) => identity(`i${i}`));
+    const notes = Array.from({ length: 1999 }, (_, i) => note(`n${i}`));
+    expect(() => deriveProductComposerClassification(snapshot({ notes, identities: many }))).not.toThrow();
+    expect(deriveProductComposerClassification(snapshot({ identities: [...many, identity('red', { clsLevel: 'TLP:RED' })] }))).toBe('TLP:RED');
+    expect(() => deriveProductComposerClassification(snapshot({ identities: Array.from({ length: PRODUCT_COMPOSER_LIMITS.identityItems + 1 }, (_, i) => identity(`x${i}`)) })))
+      .toThrow('at most 20000 identities');
+  });
+
   it('combines folder, baseline and embedded IOC markings using the configured hierarchy', () => {
     const data = snapshot({ folder: { ...snapshot().folder, clsLevel: 'PUBLIC' }, notes: [note('n', {
       iocAnalysis: { extractedAt: 0, iocs: [{ id: 'embedded', value: 'fictional.example', type: 'domain', confidence: 'low', firstSeen: 0, dismissed: false, clsLevel: 'SECRET' }] },

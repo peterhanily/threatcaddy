@@ -131,6 +131,7 @@
   "mapping.identity-detail": "هویت: مشخصه (نام ستون عنوان آن است)",
   "mapping.identity-connection": "هویت: ارتباط (نام ستون عبارت آن است)",
   "mapping.identity-connections": "هویت: ارتباط‌ها (عبارت: نام)",
+  "mapping.identity-classification": "هویت: طبقه‌بندی",
   "mapping.ignore": "نادیده گرفتن",
   "mentionCategory.note": "یادداشت‌ها",
   "mentionCategory.ioc": "IOCها",

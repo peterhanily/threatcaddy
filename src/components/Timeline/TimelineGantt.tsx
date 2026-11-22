@@ -69,11 +69,11 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
   const labelRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const identityLinks = useIdentityLinks();
-  /** The actor as written, with the identity it names when that reads differently ("T. Lindqvist → Tomas Lindqvist"). */
+  /** The actor as written, with the identity it names when that reads differently ("T. Lindqvist (Tomas Lindqvist)"). */
   const actorText = (event: TimelineEvent) => {
     const actor = event.actor ?? '';
     const label = reportGroup(identityLinks?.linkFor(event.folderId, actor), actor).label;
-    return label.trim().toLowerCase() === actor.trim().toLowerCase() ? actor : `${actor} → ${label}`;
+    return label.trim().toLowerCase() === actor.trim().toLowerCase() ? actor : `${actor} (${label})`;
   };
   const [groupByType, setGroupByType] = useState(false);
 

@@ -131,6 +131,7 @@
   "mapping.identity-detail": "Identité : Détail (le nom de la colonne est le libellé)",
   "mapping.identity-connection": "Identité : Relation (le nom de la colonne est l'expression)",
   "mapping.identity-connections": "Identité : Relations (expression : nom)",
+  "mapping.identity-classification": "Identité : Classification",
   "mapping.ignore": "Ignorer",
   "mentionCategory.note": "Notes",
   "mentionCategory.ioc": "IOCs",

@@ -16,10 +16,13 @@ import { useIdentityLabels, type IdentityChange } from '../Identities/identity-l
 import { GraphConnectDialog } from './GraphConnectDialog';
 import { useNavigation } from '../../contexts/NavigationContext';
 import { useInvestigation } from '../../contexts/InvestigationContext';
+import { useToast } from '../../contexts/ToastContext';
 
 const GraphCanvas = React.lazy(() => import('./GraphCanvas'));
 
 const ALL_IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as IOCType[];
+/** Above this many identities, their nodes start hidden (the force-directed layout slows down). */
+const IDENTITY_NODES_SHOWN_BY_DEFAULT = 300;
 
 interface GraphViewProps {
   notes: Note[];
@@ -73,6 +76,8 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
   const [visibleIOCTypes, setVisibleIOCTypes] = useState<Set<IOCType>>(new Set(ALL_IOC_TYPES));
   const [visibleEdgeTypes, setVisibleEdgeTypes] = useState<Set<EdgeTypeFilter>>(new Set(['contains-ioc', 'ioc-relationship', 'timeline-link', 'entity-link', 'identity-connection', 'identity-link']));
   const [connectState, setConnectState] = useState<{ from: Identity; to: Identity } | null>(null);
+  /** Whether the analyst chose to show identity nodes; null follows the default (shown up to a limit). */
+  const [identityNodesChoice, setIdentityNodesChoice] = useState<boolean | null>(null);
   const [editingIOCNode, setEditingIOCNode] = useState<GraphNode | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [linkDialogState, setLinkDialogState] = useState<{ sourceNodeId: string; targetNodeId: string } | null>(null);
@@ -89,7 +94,9 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
   const effectiveTasks = selectedFolderId && scopeMode === 'investigation' && scopedTasks ? scopedTasks : tasks;
   const effectiveEvents = selectedFolderId && scopeMode === 'investigation' && scopedTimelineEvents ? scopedTimelineEvents : timelineEvents;
   const effectiveIdentities = selectedFolderId && scopeMode === 'investigation' && scopedIdentities ? scopedIdentities : identities;
-  const identitiesById = useMemo(() => new Map((identities ?? []).map(identity => [identity.id, identity])), [identities]);
+  // Local and, in a remote investigation, the server's identities: nodes can come from either.
+  const identitiesById = useMemo(() => new Map([...(identities ?? []), ...(scopedIdentities ?? [])].map(identity => [identity.id, identity])), [identities, scopedIdentities]);
+  const { addToast } = useToast();
 
   // Stable ref to full graph data for use in cytoscape callbacks
   const fullGraphDataRef = React.useRef<ReturnType<typeof buildGraphData>>({ nodes: [], edges: [] });
@@ -110,12 +117,18 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
     fullGraphDataRef.current = fullGraphData;
   }, [fullGraphData]);
 
+  // Many identities make the force-directed layout slow (1,500 take seconds), so above a limit
+  // they start hidden until the analyst ticks them.
+  const identityNodeCount = useMemo(() => fullGraphData.nodes.filter(node => node.type === 'identity').length, [fullGraphData.nodes]);
+  const identitiesAutoHidden = identityNodesChoice === null && identityNodeCount > IDENTITY_NODES_SHOWN_BY_DEFAULT;
+  const showIdentityNodes = identityNodesChoice ?? identityNodeCount <= IDENTITY_NODES_SHOWN_BY_DEFAULT;
+
   // Filter graph data
   const filteredGraphData = useMemo(() => {
     const query = searchQuery.toLowerCase();
     const filteredNodes = fullGraphData.nodes.filter((node) => {
       // Node type filter
-      if (!visibleNodeTypes.has(node.type)) return false;
+      if (node.type === 'identity' ? !showIdentityNodes : !visibleNodeTypes.has(node.type)) return false;
       // IOC type filter
       if (node.type === 'ioc' && node.iocType && !visibleIOCTypes.has(node.iocType)) return false;
       // Search filter
@@ -127,7 +140,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
       (e) => nodeIds.has(e.source) && nodeIds.has(e.target) && visibleEdgeTypes.has(e.type),
     );
     return { nodes: filteredNodes, edges: filteredEdges };
-  }, [fullGraphData, visibleNodeTypes, visibleIOCTypes, visibleEdgeTypes, searchQuery]);
+  }, [fullGraphData, visibleNodeTypes, visibleIOCTypes, visibleEdgeTypes, searchQuery, showIdentityNodes]);
 
   const selectedNode = useMemo(
     () => filteredGraphData.nodes.find((n) => n.id === selectedNodeId)
@@ -137,6 +150,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
   );
 
   const toggleNodeType = (type: NodeTypeFilter) => {
+    if (type === 'identity') { setIdentityNodesChoice(!showIdentityNodes); return; }
     setVisibleNodeTypes((prev) => {
       const next = new Set(prev);
       if (next.has(type)) next.delete(type);
@@ -218,10 +232,11 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
     const to = targetId.startsWith('identity:') ? identitiesById.get(targetId.slice('identity:'.length)) : undefined;
     if (from || to || sourceId.startsWith('identity:') || targetId.startsWith('identity:')) {
       if (from && to && onUpdateIdentity && from.folderId === to.folderId) setConnectState({ from, to });
+      else addToast('info', t(onUpdateIdentity ? 'view.connectIdentitiesOnly' : 'view.connectReadOnly'));
       return;
     }
     setLinkDialogState({ sourceNodeId: sourceId, targetNodeId: targetId });
-  }, [identitiesById, onUpdateIdentity]);
+  }, [identitiesById, onUpdateIdentity, addToast, t]);
 
   const handleOpenNewTab = useCallback((node: GraphNode) => {
     const entityId = node.sourceEntityIds[0];
@@ -317,7 +332,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
             <label key={key} className="flex items-center gap-2 text-xs cursor-pointer">
               <input
                 type="checkbox"
-                checked={visibleNodeTypes.has(key)}
+                checked={key === 'identity' ? showIdentityNodes : visibleNodeTypes.has(key)}
                 onChange={() => toggleNodeType(key)}
                 className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-accent"
               />
@@ -326,6 +341,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
               <span className="text-gray-600 ms-auto">{nodeTypeCounts[key]}</span>
             </label>
           ))}
+          {identitiesAutoHidden && <p className="text-[10px] text-gray-500">{t('view.identitiesHiddenMany', { count: IDENTITY_NODES_SHOWN_BY_DEFAULT })}</p>}
         </div>
 
         {/* IOC type filters */}

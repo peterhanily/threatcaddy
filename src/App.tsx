@@ -2414,7 +2414,7 @@ const AppInner = memo(function AppInner({
         defaultFolderId={underlyingFolderId}
         onCreateTimeline={loggedCreateTimeline}
         onImportComplete={handleDataImportComplete}
-        identities={identitiesHook.identities}
+        identities={screensafeIdentities}
       /></Suspense>
 
       {pendingImportFile && <BackupImportDialog

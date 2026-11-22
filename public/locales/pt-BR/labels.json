@@ -131,6 +131,7 @@
   "mapping.identity-detail": "Identidade: Detalhe (o nome da coluna é o rótulo)",
   "mapping.identity-connection": "Identidade: Conexão (o nome da coluna é a frase)",
   "mapping.identity-connections": "Identidade: Conexões (frase: nome)",
+  "mapping.identity-classification": "Identidade: Classificação",
   "mapping.ignore": "Ignorar",
   "mentionCategory.note": "Notas",
   "mentionCategory.ioc": "IOCs",

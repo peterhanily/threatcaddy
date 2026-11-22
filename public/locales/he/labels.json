@@ -131,6 +131,7 @@
   "mapping.identity-detail": "זהות: פרט (שם העמודה הוא התווית)",
   "mapping.identity-connection": "זהות: קשר (שם העמודה הוא הביטוי)",
   "mapping.identity-connections": "זהות: קשרים (ביטוי: שם)",
+  "mapping.identity-classification": "זהות: סיווג",
   "mapping.ignore": "התעלם",
   "mentionCategory.note": "הערות",
   "mentionCategory.ioc": "IOCs",

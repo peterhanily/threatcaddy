@@ -15,6 +15,8 @@ describe('Identities strings in every language', () => {
     // The same keys as English, allowing each language its own plural forms (_few, _many…).
     const families = (keys: string[]) => [...new Set(keys.map(key => key.replace(/_(zero|one|two|few|many|other)$/, '')))];
     expect(families(Object.keys(translated))).toEqual(families(Object.keys(english)));
+    // Every plural family keeps its _other form, the one every language uses.
+    for (const key of Object.keys(english).filter(key => key.endsWith('_other'))) expect(translated, `${locale} ${key}`).toHaveProperty([key]);
     for (const key of ['header.descScoped', 'detailForm.private', 'merge.confirmMessage', 'found.hint', 'trash.confirmMessage', 'readOnly.remote', 'org.desc']) {
       expect(translated[key], `${locale} ${key}`).not.toBe(english[key]);
     }

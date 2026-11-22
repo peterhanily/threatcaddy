@@ -224,18 +224,18 @@ export function IOCStatsView({
   // Attributions are grouped by the identity they name, when they name exactly one.
   const identityLinks = useIdentityLinks();
   const topActors = useMemo(() => {
-    const actorMap = new Map<string, { name: string; count: number; types: Map<IOCType, number> }>();
+    const actorMap = new Map<string, { name: string; identity?: Identity; count: number; types: Map<IOCType, number> }>();
     for (const ioc of uniqueIOCs) {
       if (!ioc.attribution) continue;
       const group = reportGroup(identityLinks?.linkFor(ioc.attributionFolderId, ioc.attribution), ioc.attribution);
       let entry = actorMap.get(group.key);
-      if (!entry) { entry = { name: group.label, count: 0, types: new Map() }; actorMap.set(group.key, entry); }
+      if (!entry) { entry = { name: group.label, identity: group.identity, count: 0, types: new Map() }; actorMap.set(group.key, entry); }
       entry.count++;
       entry.types.set(ioc.type, (entry.types.get(ioc.type) || 0) + 1);
     }
     return Array.from(actorMap.entries())
       .map(([key, data]) => ({
-        key, name: data.name, count: data.count,
+        key, name: data.name, identity: data.identity, count: data.count,
         topTypes: Array.from(data.types.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t]) => t),
       }))
       .sort((a, b) => b.count - a.count);
@@ -527,7 +527,13 @@ export function IOCStatsView({
                   <tbody>
                     {displayedActors.map((actor) => (
                       <tr key={actor.key} className="border-b border-gray-800/50">
-                        <td className="py-1.5 pe-4 text-purple-400 font-medium">{actor.name}</td>
+                        <td className="py-1.5 pe-4 text-purple-400 font-medium">
+                          {actor.identity && identityLinks ? (
+                            <button type="button" onClick={() => identityLinks.open(actor.identity as Identity)} className="inline-flex items-center gap-1 hover:underline">
+                              <Contact size={11} aria-hidden="true" />{actor.name}
+                            </button>
+                          ) : actor.name}
+                        </td>
                         <td className="py-1.5 px-2 text-end text-gray-300 tabular-nums">{actor.count}</td>
                         <td className="py-1.5 ps-4">
                           <div className="flex gap-1">

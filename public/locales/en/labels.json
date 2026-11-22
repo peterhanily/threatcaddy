@@ -144,6 +144,7 @@
   "mapping.identity-detail": "Identity: Detail (the column name is the label)",
   "mapping.identity-connection": "Identity: Connection (the column name is the phrase)",
   "mapping.identity-connections": "Identity: Connections (phrase: name)",
+  "mapping.identity-classification": "Identity: Classification",
   "mapping.ignore": "Ignore",
 
   "mentionCategory.note": "Notes",

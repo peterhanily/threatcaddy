@@ -407,3 +407,29 @@ test('shows identities on the graph with their own node and edge filters, and th
   await identitiesFilter.getByRole('checkbox').uncheck();
   await expect(page.getByText(/^1 nodes?/)).toBeVisible();
 });
+
+test('starts with many identities hidden on the graph, and keeps the keyboard selection in the focus layout', async ({ page }) => {
+  const many = Array.from({ length: 301 }, (_, i) => identity(`p${i}`, 'case', `Person ${i}`));
+  await seed(page, {
+    folders: [folder('case', 'Fictional BEC case')],
+    timelines: [{ id: 'tl', name: 'Main', order: 0, createdAt: now, updatedAt: now }],
+    timelineEvents: [event('e1', 'case', 'Payment approved', { actor: 'Person 1' }), event('e2', 'case', 'Mail forwarded', { actor: 'Person 2' }),
+      event('e3', 'case', 'Rule created', { actor: 'Person 3' })],
+    identities: many,
+  }, { view: 'graph', selectedFolderId: 'case' });
+  const identitiesFilter = page.locator('label').filter({ hasText: /^Identities/ });
+  await expect(identitiesFilter.getByRole('checkbox')).not.toBeChecked();
+  await expect(page.getByText('Hidden while there are more than 300: tick to show them (the layout is slower).')).toBeVisible();
+  await expect(page.getByText('3 nodes, 0 edges')).toBeVisible();
+  await identitiesFilter.getByRole('checkbox').check();
+  await expect(page.getByText('304 nodes, 3 edges')).toBeVisible({ timeout: 30_000 });
+  await identitiesFilter.getByRole('checkbox').uncheck();
+
+  await page.locator('select').filter({ has: page.getByRole('option', { name: 'Focus on the selected node' }) }).selectOption('focus');
+  await page.getByRole('img', { name: 'Investigation graph visualization' }).focus();
+  await page.keyboard.press('Tab');
+  const first = await page.locator('.w-72 .text-sm.font-medium').first().innerText();
+  await page.keyboard.press('Tab');
+  // The selection moved on: the focus layout no longer rebuilds the graph and loses it.
+  await expect(page.locator('.w-72 .text-sm.font-medium').first()).not.toHaveText(first);
+});

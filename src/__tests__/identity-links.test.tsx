@@ -9,6 +9,7 @@ import { TimelineEventCard } from '../components/Timeline/TimelineEventCard';
 import { TimelineEventForm } from '../components/Timeline/TimelineEventForm';
 import { MarkdownPreview } from '../components/Notes/MarkdownPreview';
 import { MitreReport } from '../components/Timeline/MitreReport';
+import { MitreHeatmap } from '../components/Timeline/MitreHeatmap';
 import { useMentionAutocomplete } from '../components/Notes/useMentionAutocomplete';
 import { renderMarkdown } from '../lib/markdown';
 import { buildIdentityIndex, type FolderIndex } from '../lib/identity-match';
@@ -246,6 +247,18 @@ describe('reports', () => {
     expect(screen.getByText('Dana Okafor').closest('button')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Tomas Lindqvist' }));
     expect(onOpen).toHaveBeenCalledWith(tomas);
+  });
+
+  it('shares one report row between same-named identities in different investigations, and counts one heatmap actor', () => {
+    const other = make('tomas-2', 'Tomas Lindqvist', { folderId: 'other' });
+    const events = [
+      event({ id: 'a', actor: 'Tomas Lindqvist', mitreAttackIds: ['T1566'] }),
+      event({ id: 'b', actor: 'Tomas Lindqvist', folderId: 'other', mitreAttackIds: ['T1566'] }),
+      event({ id: 'c', actor: 'T. Lindqvist', mitreAttackIds: ['T1566'] }),
+    ];
+    withLinks(<><MitreReport events={events} /><MitreHeatmap events={events} colorMode="actors" onTechniqueClick={vi.fn()} /></>, { identities: [tomas, other] });
+    expect(screen.getAllByRole('button', { name: 'Tomas Lindqvist' })).toHaveLength(1);
+    expect(document.querySelector('button[title^="T1566:"]')?.getAttribute('title')).toMatch(/· 1 actor$/);
   });
 });
 

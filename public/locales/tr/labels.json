@@ -131,6 +131,7 @@
   "mapping.identity-detail": "Kimlik: Ayrıntı (sütun adı etikettir)",
   "mapping.identity-connection": "Kimlik: Bağlantı (sütun adı ifadedir)",
   "mapping.identity-connections": "Kimlik: Bağlantılar (ifade: ad)",
+  "mapping.identity-classification": "Kimlik: Sınıflandırma",
   "mapping.ignore": "Yoksay",
   "mentionCategory.note": "Notlar",
   "mentionCategory.ioc": "IOC'ler",

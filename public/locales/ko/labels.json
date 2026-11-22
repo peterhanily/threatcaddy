@@ -131,6 +131,7 @@
   "mapping.identity-detail": "신원: 세부 정보 (열 이름이 레이블)",
   "mapping.identity-connection": "신원: 연결 (열 이름이 연결 문구)",
   "mapping.identity-connections": "신원: 연결 목록 (문구: 이름)",
+  "mapping.identity-classification": "신원: 분류",
   "mapping.ignore": "무시",
   "mentionCategory.note": "노트",
   "mentionCategory.ioc": "IOC",

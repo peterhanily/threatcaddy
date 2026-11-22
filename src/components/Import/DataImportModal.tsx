@@ -8,6 +8,8 @@ import type { ImportResult, ColumnMapping, ParseResult } from '../../lib/data-im
 import { isUserTimeline } from '../../lib/sync-capture-policy';
 import { buildIdentities } from '../../lib/identity-import';
 import { byName, isOrganization } from '../../lib/identity-model';
+import { getCurrentUserName } from '../../lib/utils';
+import { useIdentityLabels } from '../Identities/identity-labels';
 import {
   detectFormat,
   parseInput,
@@ -60,6 +62,8 @@ export function DataImportModal({
   identities = [],
 }: DataImportModalProps) {
   const { t } = useTranslation('import');
+  // Phone, address and similar labels are private by default in the interface language too.
+  const { privateByDefault } = useIdentityLabels();
   const [step, setStep] = useState<Step>('input');
   const [rawText, setRawText] = useState('');
   const [detectedFormat, setDetectedFormat] = useState('');
@@ -93,6 +97,8 @@ export function DataImportModal({
       setCreateEvents(true);
       setExtractIOCsFlag(true);
       setCreateNote(true);
+      setImportIdentities(true);
+      setIdentityOrganizationId('');
       setNewTimelineName('');
       setImportResult(null);
       setImportError('');
@@ -261,7 +267,7 @@ export function DataImportModal({
           const existing = await db.identities.where('folderId').equals(folderId).toArray();
           const { created, updated, errors } = buildIdentities(parseResult.rows, columnMappings, {
             folderId, existing, clsLevel: folders.find((f) => f.id === folderId)?.clsLevel,
-            defaultOrganizationId: identityOrganizationId || undefined, now,
+            defaultOrganizationId: identityOrganizationId || undefined, author: getCurrentUserName(), isPrivateLabel: privateByDefault, now,
           });
           if (created.length) await db.identities.bulkAdd(created);
           for (const { id, changes } of updated) await db.identities.update(id, { ...changes, updatedAt: now });
@@ -278,6 +284,7 @@ export function DataImportModal({
           columnMappings,
           result,
           folderId || undefined,
+          privateByDefault,
         );
         await db.notes.put(note);
         result.summaryNoteCreated = true;
@@ -291,7 +298,7 @@ export function DataImportModal({
       setStep('done');
     }
   }, [parseResult, createEvents, hasTimestamp, timelineId, timelines, columnMappings, folderId, extractIOCsFlag, hasIOCColumns, createNote, newTimelineName, onCreateTimeline,
-    willImportIdentities, folders, identityOrganizationId]);
+    willImportIdentities, folders, identityOrganizationId, privateByDefault]);
 
   // Done
   const handleDone = useCallback(() => {
