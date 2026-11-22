@@ -124,6 +124,25 @@ describe('useIdentities', () => {
     expect(result.current.identities.map(row => row.id).sort()).toEqual(['keep', 'laptop', 'manager', 'org']);
   });
 
+  it('keeps both descriptions when merging two that differ', async () => {
+    await db.identities.bulkAdd([identity('keep', { description: 'Finance director' }), identity('gone', { description: 'Approved the 14 March transfer' }),
+      identity('same-a', { description: 'Vendor' }), identity('same-b', { description: 'vendor' })]);
+    const { result } = await mount('case');
+    await act(async () => { await result.current.mergeIdentities('keep', 'gone'); });
+    expect((await db.identities.get('keep'))?.description).toBe('Finance director\n\nApproved the 14 March transfer');
+    await act(async () => { await result.current.mergeIdentities('same-a', 'same-b'); });
+    expect((await db.identities.get('same-a'))?.description).toBe('Vendor');
+  });
+
+  it('fails a save to an identity deleted or merged elsewhere, and drops it from view', async () => {
+    await db.identities.add(identity('stale'));
+    const { result } = await mount('case');
+    await db.identities.delete('stale'); // Another tab merged or deleted it.
+    await act(async () => { await expect(result.current.updateIdentity('stale', { description: 'x' })).rejects.toThrow('Not found'); });
+    expect(await db.identities.get('stale')).toBeUndefined();
+    expect(result.current.identities).toEqual([]);
+  });
+
   it('keeps a detail private if either copy was private, and the more serious status', async () => {
     await db.identities.bulkAdd([
       identity('keep', { status: 'cleared', details: [{ id: 'p', label: 'Phone', value: '+44 20 7946 0000' }] }),

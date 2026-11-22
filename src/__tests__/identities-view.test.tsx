@@ -169,6 +169,21 @@ describe('adding, editing, merging and trashing', () => {
     expect(props.onMerge).toHaveBeenCalledWith('dana', 'lee');
   });
 
+  it('saves only what was edited, on top of changes made meanwhile elsewhere', async () => {
+    const { user, props } = setup({ selectRequest: { id: 'dana', request: 1 } });
+    await user.click(within(profile('Dana Okafor')).getByRole('button', { name: 'Edit' }));
+    const form = within(screen.getByRole('dialog', { name: 'Edit Dana Okafor' }));
+    const otherNames = form.getByLabelText('Other names (one per line)');
+    await user.clear(otherNames);
+    await user.type(otherNames, 'Dana O.');
+    await user.click(form.getByRole('button', { name: 'Save' }));
+    // While the form was open, a teammate's sync added an other name and changed the description.
+    const meanwhile = { ...dana, aliases: [...dana.aliases, 'D. Okafor-Ruiz'], description: 'Changed by a teammate' };
+    const { fields } = lastUpdate(props.onUpdate, meanwhile);
+    expect(fields).toMatchObject({ name: 'Dana Okafor', description: 'Changed by a teammate' });
+    expect(fields.aliases).toEqual(['D. Okafor-Ruiz', 'Dana O.']);
+  });
+
   it('moves to the trash only after confirmation', async () => {
     const { user, props } = setup({ selectRequest: { id: 'dana', request: 1 } });
     await user.click(within(profile('Dana Okafor')).getByRole('button', { name: 'Edit' }));

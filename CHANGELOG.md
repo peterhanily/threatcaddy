@@ -22,6 +22,7 @@ Identities: a place to record the people, organizations, systems and accounts in
 - Identities sync with an investigation through a team server that supports them. The server lists the tables it syncs and sends each client only the tables it asks for, so ThreatCaddy 2.0.4 and earlier keep syncing normally on an updated server and never receive identities. A client on an older server keeps its identities on the device and the sync status says so.
 - A pull now skips a table the client does not know instead of stopping, so the next new table will not break newer clients.
 - Server bots never receive identity events and cannot read or write identities.
+- In a team that still has 2.0.4 clients, archiving or unarchiving an investigation in 2.0.4 does not change its identities. To bring them back, unarchive the investigation in this version (archive it first if 2.0.4 already unarchived it).
 - A portable backup with no identities leaves the table out, so older versions can still read it. Encrypted backups always list the table, so an encrypted backup made with this version needs this version or later to restore.
 
 

@@ -162,7 +162,9 @@ export async function setInvestigationArchived(id: string, archived: boolean): P
     for (const name of FOLDER_CONTENT_TABLES) {
       const candidates = await db.table<EntityRecord>(name).where('folderId').equals(id).filter(row => !row.trashed).toArray();
       const changed = archived ? candidates.filter(row => !row.archived)
-        : candidates.filter(row => row.archived && (!previous || rows[name]?.includes(row.id)));
+        // Identities cannot be archived one by one, so unarchiving brings them all back, including ones
+        // a 2.0.4 teammate's unarchive left archived (2.0.4 does not know the table).
+        : candidates.filter(row => row.archived && (name === 'identities' || !previous || rows[name]?.includes(row.id)));
       if (archived) rows[name] = [...new Set([...(rows[name] ?? []), ...changed.map(row => row.id)])];
       for (const row of changed) await db.table(name).update(row.id, { archived, updatedAt: now });
     }

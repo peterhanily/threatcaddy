@@ -55,7 +55,10 @@ discarding supported local fields or authorship metadata.
 A backup with no identities leaves that table out, so versions of ThreatCaddy
 from before identities can still read it. A backup that contains identities
 can only be restored by a version that has them. Backups made before
-identities existed restore normally and hold none.
+identities existed restore normally. A portable file from before then holds no
+identities, so Replace All clears them. A server or encrypted backup from before
+then leaves identities as they are, except those in an investigation that
+Replace removes because the backup does not have it.
 
 ### Hosted App: JSON Backup and a Restore Drill
 

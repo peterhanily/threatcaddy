@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { db } from '../db';
+import i18n from '../i18n';
 import type { Identity, IdentityConnection, IdentityStatus } from '../types';
 import { purgeOldTrash } from '../lib/trash-purge';
 import { deleteEntitiesWithReferences } from '../lib/entity-relations';
@@ -99,7 +100,10 @@ export function useIdentities(folderId?: string) {
       await db.identities.update(id, patched);
       return patched;
     });
-    if (updated) setIdentities((prev) => prev.map((identity) => (identity.id === id ? { ...identity, ...updated } : identity)));
+    if (updated) { setIdentities((prev) => prev.map((identity) => (identity.id === id ? { ...identity, ...updated } : identity))); return; }
+    // Deleted or merged elsewhere (another tab, a teammate): drop it from view and say the save failed.
+    setIdentities((prev) => prev.filter((identity) => identity.id !== id));
+    throw new Error(i18n.t('error.notFound', { ns: 'common' }));
   }, []);
 
   /** Also removes every connection that points to it. */
@@ -155,7 +159,9 @@ export function useIdentities(folderId?: string) {
       const retarget = (edges: IdentityConnection[]) => edges.map(edge => edge.targetId === goneId ? { ...edge, targetId: keepId } : edge);
       const merged: Identity = {
         ...keep,
-        description: keep.description || gone.description,
+        // Both descriptions are kept: merge cannot be undone, so the analyst's text is never dropped.
+        description: keep.description && gone.description && !sameText(keep.description, gone.description)
+          ? `${keep.description}\n\n${gone.description}` : keep.description || gone.description,
         aliases,
         status: statusRank(gone.status) < statusRank(keep.status) ? gone.status : keep.status,
         contact: keep.contact || gone.contact || undefined,

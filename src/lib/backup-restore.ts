@@ -218,6 +218,18 @@ async function prepare(payload: BackupPayload, mode: Mode, parent?: BackupPayloa
     preview.tables.push(name);
     preview.changes.push({ table: name, added, updated, deleted: deletes.size });
   }
+  // A backup from before identities omits them, so Replace leaves identities as they are. An
+  // investigation it removes takes its identities with it, as it takes its notes and tasks.
+  if (mode === 'replace' && incoming.get('identities') === undefined && !payload.deletedIds?.identities?.length) {
+    const removedFolders = new Set(operations.find(op => op.table === 'folders')?.deletes ?? []);
+    const orphaned = (before.get('identities') ?? []).filter(row => typeof row.folderId === 'string' && removedFolders.has(row.folderId)).map(row => row.id);
+    if (orphaned.length) {
+      operations.push({ table: 'identities', puts: [], deletes: orphaned });
+      preview.deleted += orphaned.length;
+      preview.tables.push('identities');
+      preview.changes.push({ table: 'identities', added: 0, updated: 0, deleted: orphaned.length });
+    }
+  }
   protectRetainedReferences(before, operations);
   if (payload.type === 'differential') {
     const after = new Map([...before].map(([name, rows]) => [name, new Map(rows.map(row => [row.id, row]))]));

@@ -70,8 +70,17 @@ export function IdentityFormModal({ editing, prefill, folders, defaultFolderId, 
         const aliases = otherNames.split('\n').map(alias => alias.trim())
           .filter((alias, index, all) => alias && sameText(alias) !== sameText(name) && all.findIndex(other => sameText(other) === sameText(alias)) === index);
         const organizationChanged = !isOrganization({ type: resolvedType }) && organizationId !== initialOrganizationId;
+        // Only what was changed in the form is applied, on top of the stored identity, so another
+        // name or a description added meanwhile (sync, an agent, another tab) is not overwritten.
+        const removed = editing.aliases.filter(alias => !aliases.some(kept => sameText(kept) === sameText(alias)));
+        const added = aliases.filter(alias => !editing.aliases.some(old => sameText(old) === sameText(alias)));
         await onUpdate(editing.id, current => ({
-          name: name.trim(), type: resolvedType, description: description.trim() || undefined, aliases,
+          name: sameText(name) === sameText(editing.name) ? current.name : name.trim(),
+          type: resolvedType === editing.type ? current.type : resolvedType,
+          description: description.trim() === (editing.description ?? '').trim() ? current.description : description.trim() || undefined,
+          aliases: [...current.aliases.filter(alias => !removed.some(gone => sameText(gone) === sameText(alias))),
+            ...added.filter(alias => !current.aliases.some(other => sameText(other) === sameText(alias)))]
+            .filter(alias => sameText(alias) !== sameText(name)),
           ...(organizationChanged ? { connections: withOrganization({ ...current, type: resolvedType }, initialOrganizationId || undefined, organizationId || undefined) } : {}),
         }));
         onSaved({ ...editing, name: name.trim() });

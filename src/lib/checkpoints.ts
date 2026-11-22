@@ -96,6 +96,13 @@ export async function restoreCheckpoint(checkpointId: string): Promise<boolean> 
     for (const entity of checkpoint.snapshot) {
       if (entity.data === null) await db.table(entity.table).delete(entity.entityId);
       else await db.table(entity.table).put(entity.data);
+      // An undone identity takes with it the connections made to it (connect_identities is not undoable on its own).
+      if (entity.table === 'identities' && entity.data === null) {
+        const pointing = await db.identities.filter(row => row.connections.some(edge => edge.targetId === entity.entityId)).toArray();
+        for (const row of pointing) {
+          await db.identities.update(row.id, { connections: row.connections.filter(edge => edge.targetId !== entity.entityId), updatedAt: Date.now() });
+        }
+      }
     }
     await db.checkpoints.update(checkpointId, { restored: true });
     return true;

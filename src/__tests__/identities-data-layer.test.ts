@@ -251,7 +251,9 @@ describe('investigation lifecycle', () => {
     expect((await db.identities.toArray()).every(row => row.archived)).toBe(true);
     await setInvestigationArchived('case', false);
     expect((await db.identities.get('dana'))?.archived).toBe(false);
-    expect((await db.identities.get('archived-already'))?.archived).toBe(true);
+    // Identities cannot be archived one by one, so unarchiving the investigation brings every one back,
+    // including those archived elsewhere (a 2.0.4 teammate's unarchive leaves them archived).
+    expect((await db.identities.get('archived-already'))?.archived).toBe(false);
     await deleteEntitiesWithReferences({ folders: ['case'] }, 'case');
     expect(await db.identities.count()).toBe(0);
   });
