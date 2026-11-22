@@ -106,6 +106,7 @@
       <li>API keys you configure for AI features (e.g., OpenAI, Anthropic, Google, or other LLM providers) are stored locally in your browser.</li>
       <li>Settings → AI → “Where AI data goes” shows the route AI requests take. A local model with a configured endpoint is called directly; only chat titles and conversation summaries reach it through the extension. Otherwise requests go through the browser extension or your team server: Browser Extension and Team Server routing use only that route, and Auto uses the team server while you are signed in to one, otherwise the extension. With no available route, nothing is sent. The extension receives client-configured credentials needed for its requests; a team server can use its own provider credentials, and its operator can read the prompts, investigation content and tool results that pass through it.</li>
       <li>Prompts, selected context, attachments and tool results may contain investigation data. They are sent to the configured service when you use these features. Custom endpoints and proxies are additional trust boundaries; review their operators and retention policies.</li>
+      <li>Identity details marked private (such as a phone number or home address) are never included in tool results or context that ThreatCaddy sends to an AI service. Names and other identity details can be. Text that you or the AI write in a conversation is sent as written.</li>
     </ul>
 
     <h2>Extension Permissions</h2>
