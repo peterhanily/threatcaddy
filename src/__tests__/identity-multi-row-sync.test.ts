@@ -16,7 +16,12 @@ import { setEncryptionMeta, clearEncryptionMeta } from '../lib/encryptionStore';
 import { SyncEngine } from '../lib/sync-engine';
 import { ensureSyncWorkspace } from '../lib/sync-workspace';
 import { deleteEntitiesWithReferences } from '../lib/entity-relations';
+import { mergeIdentities } from '../lib/merge-identities';
+import { mergeIdentityRows } from '../lib/identity-merge';
+import { compactHeldQueue } from '../lib/sync-outgoing';
+import { LEGACY_SYNC_TABLES } from '../lib/sync-state';
 import { useIdentities } from '../hooks/useIdentities';
+import { authStorageKey } from '../lib/auth-storage';
 import type { Identity } from '../types';
 
 const api = vi.hoisted(() => ({ push: vi.fn(), pull: vi.fn() }));
@@ -49,6 +54,8 @@ async function seed(rows: Identity[], revisions: Record<string, number>) {
     await db.table('_syncMeta').bulkPut([
       { key: 'syncHistoryGenerationV1', value: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
       { key: 'syncCursorV2', value: '100' }, { key: 'syncCursorTablesV1', value: [...SYNC_TABLES] }, { key: 'initialPushDoneV2', value: true },
+      // As in a workspace that has pulled from a current server: it syncs every table.
+      { key: 'syncServerTablesV1', value: [...SYNC_TABLES] },
       { key: revisionKey('folders', 'f1'), value: 1 },
       ...Object.entries(revisions).map(([id, value]) => ({ key: revisionKey('identities', id), value })),
     ]);
@@ -171,6 +178,122 @@ describe('DATA-1: a merge over sync', () => {
     schedule.mockRestore();
   });
 
+  it('does not deadlock when merges are chained back onto each other', async () => {
+    await mergeIdentities('keep', 'gone');
+    await mergeIdentities('other', 'keep');
+    for (let cycle = 0; cycle < 4; cycle++) await engine.sync();
+    expect(await db.table('_syncQueue').count()).toBe(0);
+    expect(server.get('identities:gone')?.deleted).toBe(true);
+    expect(server.get('identities:keep')?.deleted).toBe(true);
+    expect(server.get('identities:other')?.data?.aliases).toEqual(['Dana Okafor', 'D. Okafor-Reyes', 'dokafor']);
+  });
+
+  it('cancelling keeps what was queued besides the merge: a later delete, and edits made before it', async () => {
+    server.set('identities:keep', { version: 2, data: { ...keep, description: 'Finance lead', version: 2, ...stamp } });
+    await db.identities.update('gone', { description: 'Edited before the merge', updatedAt: 5 });
+    await mergeIdentities('keep', 'gone');
+    await deleteEntitiesWithReferences({ identities: ['other'] });
+    const onConflict = vi.fn(); engine.setConflictHandler(onConflict);
+    await engine.sync();
+    await engine.resolveConflicts(onConflict.mock.calls[0][0], 'theirs');
+    expect((await db.identities.get('gone'))?.description).toBe('Edited before the merge');
+    await engine.sync();
+    expect(server.get('identities:gone')?.data?.description).toBe('Edited before the merge');
+    expect(server.get('identities:gone')?.deleted).toBeFalsy();
+    expect(server.get('identities:other')?.deleted).toBe(true);
+    expect(await db.table('_syncQueue').count()).toBe(0);
+  });
+
+  it('cancelling after changes were compacted for an older server (then upgraded) still keeps the edit and the later delete', async () => {
+    // Held for a server that did not sync identities: the edit, the merge and the delete compact into the held entries.
+    await db.table('_syncMeta').put({ key: 'syncServerTablesV1', value: [...LEGACY_SYNC_TABLES] });
+    await db.identities.update('gone', { description: 'Edited before the merge', updatedAt: 5 });
+    await mergeIdentities('keep', 'gone');
+    await deleteEntitiesWithReferences({ identities: ['other'] });
+    expect((await db.table('_syncQueue').toArray()).map(entry => [entry.entityId, entry.op, entry.after?.entityId])).toEqual([
+      ['keep', 'put', undefined], ['gone', 'delete', 'keep'], ['other', 'delete', 'keep']]);
+    // The server is upgraded, and a teammate's edit of the kept identity reaches it first.
+    await db.table('_syncMeta').put({ key: 'syncServerTablesV1', value: [...SYNC_TABLES] });
+    server.set('identities:keep', { version: 2, data: { ...keep, description: 'Finance lead', version: 2, ...stamp } });
+    const onConflict = vi.fn(); engine.setConflictHandler(onConflict);
+    await engine.sync();
+    await engine.resolveConflicts(onConflict.mock.calls[0][0], 'theirs');
+    await engine.sync();
+    expect(server.get('identities:gone')?.data?.description).toBe('Edited before the merge');
+    expect(server.get('identities:gone')?.deleted).toBeFalsy();
+    expect(server.get('identities:other')?.deleted).toBe(true);
+    expect(await db.table('_syncQueue').count()).toBe(0);
+  });
+
+  it('cancelling the outer of two chained merges keeps the inner one whole', async () => {
+    const zed = base('zed', 'Zed Ahmed');
+    await db.transaction('rw', [db.identities, db.table('_syncMeta'), db.table('_syncQueue')], async () => {
+      suppressSyncInCurrentTransaction();
+      await db.identities.add(zed);
+      await db.table('_syncMeta').put({ key: revisionKey('identities', 'zed'), value: 1 });
+    });
+    server.set('identities:zed', { version: 2, data: { ...zed, description: 'Teammate edit', version: 2, ...stamp } });
+    await mergeIdentities('keep', 'gone');
+    await mergeIdentities('zed', 'keep');
+    const onConflict = vi.fn(); engine.setConflictHandler(onConflict);
+    await engine.sync();
+    const conflicts = onConflict.mock.calls[0][0] as Array<{ entityId: string; mergedFrom?: string[] }>;
+    expect(conflicts.map(conflict => [conflict.entityId, conflict.mergedFrom])).toEqual([['zed', ['Dana Okafor']]]);
+    await engine.resolveConflicts(conflicts, 'theirs');
+    for (let cycle = 0; cycle < 3; cycle++) await engine.sync();
+    // The inner merge completed: the kept identity holds what was merged into it before its own delete went.
+    expect(server.get('identities:keep')?.deleted).toBeFalsy();
+    expect(server.get('identities:keep')?.data?.aliases).toEqual(['D. Okafor-Reyes', 'dokafor']);
+    expect(server.get('identities:gone')?.deleted).toBe(true);
+    expect(server.get('identities:other')?.data?.connections).toEqual([{ targetId: 'keep', label: 'reports to' }]);
+    expect(await db.table('_syncQueue').count()).toBe(0);
+  });
+
+  it('shows a conflict instead of merging a teammate\'s version moved to another investigation', async () => {
+    server.set('identities:gone', { version: 2, data: { ...gone, folderId: 'f2', version: 2, ...stamp } });
+    await merge();
+    const onConflict = vi.fn(); engine.setConflictHandler(onConflict);
+    await engine.sync();
+    await engine.sync();
+    expect((onConflict.mock.calls.at(-1)?.[0] as Array<{ entityId: string }>).map(conflict => conflict.entityId)).toEqual(['gone']);
+    expect((await db.identities.get('keep'))?.details.map(detail => detail.value)).toEqual(['+1 555 0100']);
+  });
+
+  it('points a teammate\'s new connection to the merged-away identity at the kept one when merging their version', async () => {
+    server.set('identities:gone', { version: 2, data: { ...gone, description: 'Teammate edit', version: 2, ...stamp } });
+    await merge();
+    // Pulled here after the merge: a teammate linked Yan to the merged-away identity.
+    const yan = base('yan', 'Yan Liu', { connections: [{ targetId: 'gone', label: 'works with' }] });
+    await db.transaction('rw', [db.identities, db.table('_syncMeta'), db.table('_syncQueue')], async () => {
+      suppressSyncInCurrentTransaction();
+      await db.identities.add(yan);
+      await db.table('_syncMeta').put({ key: revisionKey('identities', 'yan'), value: 1 });
+    });
+    server.set('identities:yan', { version: 1, data: { ...yan, version: 1, ...stamp } });
+    for (let cycle = 0; cycle < 4; cycle++) await engine.sync();
+    expect(server.get('identities:gone')?.deleted).toBe(true);
+    expect(server.get('identities:yan')?.data?.connections).toEqual([{ targetId: 'keep', label: 'works with' }]);
+  });
+
+  it('drops the merged-away copy held for a server that does not sync identities once the kept identity is deleted', async () => {
+    await mergeIdentities('keep', 'gone');
+    const held = async () => (await db.table('_syncQueue').toArray()).find(entry => entry.entityId === 'gone');
+    await db.transaction('rw', ['_syncQueue', '_syncMeta'], () => compactHeldQueue(new Set(LEGACY_SYNC_TABLES)));
+    expect((await held())?.restore).toEqual(gone);
+    await deleteEntitiesWithReferences({ identities: ['keep'] });
+    await db.transaction('rw', ['_syncQueue', '_syncMeta'], () => compactHeldQueue(new Set(LEGACY_SYNC_TABLES)));
+    expect((await held())?.op).toBe('delete');
+    expect((await held())?.restore).toBeUndefined();
+    expect(JSON.stringify(await db.table('_syncQueue').toArray())).not.toContain('+1 555 0100');
+  });
+
+  it('keeps both descriptions unless the merged one is already a paragraph of the kept one', () => {
+    const merged = (a: string, b: string) => mergeIdentityRows(base('k', 'K', { description: a }), base('g', 'G', { description: b }), 1).description;
+    expect(merged('Not linked to APT29 infrastructure', 'APT29')).toBe('Not linked to APT29 infrastructure\n\nAPT29');
+    expect(merged('Finance lead\n\nContractor', 'Contractor')).toBe('Finance lead\n\nContractor');
+    expect(merged('Finance lead', 'finance  LEAD')).toBe('Finance lead');
+  });
+
   it('keeps the merged-away copy encrypted in the queue when the workspace is encrypted', async () => {
     const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
     setEncryptionMeta({ version: 1, salt: 'fixture-salt', wrappedKey: 'fixture-wrapped', recoverySalt: 'fixture-recovery-salt', recoveryWrappedKey: 'fixture-recovery-key', enabledAt: 1 } as never);
@@ -212,6 +335,39 @@ describe('DATA-3: deleting an investigation', () => {
     expect(await db.table('_syncQueue').count()).toBe(0);
   });
 
+  it('still sends the delete of an item moved into the investigation since the last sync', async () => {
+    await db.transaction('rw', [db.folders, db.table('_syncMeta'), db.table('_syncQueue')], async () => {
+      suppressSyncInCurrentTransaction();
+      await db.folders.add({ id: 'f2', name: 'Other case', order: 1, createdAt: 1, updatedAt: 1 } as never);
+      await db.table('_syncMeta').put({ key: revisionKey('folders', 'f2'), value: 1 });
+    });
+    server.set('folders:f2', { version: 1, data: { id: 'f2', name: 'Other case' } });
+    await db.identities.update('p0', { folderId: 'f2', updatedAt: 2 });
+    server.set('identities:p0', { version: 1, data: { ...base('p0', 'Person 0'), folderId: 'f2', version: 1 } });
+    // Back into the investigation, then the investigation is deleted, before any of it is sent.
+    await db.identities.update('p0', { folderId: 'f1', updatedAt: 3 });
+    await deleteEntitiesWithReferences({ folders: ['f1'] }, 'f1');
+    await engine.sync();
+    expect(sentKeys().sort()).toEqual(['delete f1', 'delete p0']);
+    expect(server.get('identities:p0')?.deleted).toBe(true);
+    expect(await db.table('_syncQueue').count()).toBe(0);
+  });
+
+  it('brings the items back with Keep theirs on the investigation\'s delete', async () => {
+    server.set('folders:f1', { version: 2, data: { id: 'f1', name: 'Renamed by a teammate', version: 2, ...stamp } });
+    api.pull.mockImplementation(async (_since, _folder, cursor) => cursor === '0'
+      ? { changes: Array.from({ length: 20 }, (_, i) => ({ table: 'identities', op: 'put', version: 1, ...base(`p${i}`, `Person ${i}`), ...stamp })), cursor: '300', hasMore: false, tables: [...SYNC_TABLES] }
+      : { changes: [], cursor, hasMore: false, tables: [...SYNC_TABLES] });
+    await deleteEntitiesWithReferences({ folders: ['f1'] }, 'f1');
+    const onConflict = vi.fn(); engine.setConflictHandler(onConflict);
+    await engine.sync();
+    await engine.resolveConflicts(onConflict.mock.calls[0][0], 'theirs');
+    await engine.sync();
+    expect(sentKeys()).toEqual(['delete f1']);
+    expect(await db.identities.count()).toBe(20);
+    expect(await db.table('_syncQueue').count()).toBe(0);
+  });
+
   it('keeps the items\' deletes when the investigation\'s delete is refused', async () => {
     api.push.mockImplementationOnce(async (changes: Array<{ table: string; entityId: string }>) => ({
       results: changes.map(change => ({ table: change.table, entityId: change.entityId, status: 'rejected' })),
@@ -228,7 +384,11 @@ describe('DATA-2: the 30-day purge on a second device', () => {
   const members = Array.from({ length: 5 }, (_, i) => base(`m${i}`, `Member ${i}`, { connections: [{ targetId: 'org', label: 'works at' }] }));
   const local = base('local', 'Never synced', { trashed: true, trashedAt: Date.now() - 31 * DAY });
 
+  const signIn = () => localStorage.setItem(authStorageKey, JSON.stringify({ serverUrl: 'https://test.invalid', accessToken: 'fixture', refreshToken: 'fixture-refresh',
+    user: { id: 'u1', email: 'u1@example.invalid', displayName: 'Fixture analyst' } }));
+  afterEach(() => { localStorage.removeItem(authStorageKey); });
   beforeEach(async () => {
+    signIn();
     await seed([org, ...members, local], { org: 2, ...Object.fromEntries(members.map(member => [member.id, 1])) });
     server.set('identities:org', { version: 3, deleted: true });
     for (const member of members) server.set(`identities:${member.id}`, { version: 2, data: { ...member, connections: [], version: 2, ...stamp } });
@@ -244,7 +404,8 @@ describe('DATA-2: the 30-day purge on a second device', () => {
     await waitFor(() => expect(hook.result.current.loadedSuccessfully).toBe(true));
     expect(await db.identities.get('local')).toBeUndefined();
     expect(await db.identities.get('org')).toBeDefined();
-    expect(await db.table('_syncQueue').count()).toBe(0);
+    // Only the never-synced row's delete is queued; nothing of what the server holds.
+    expect((await db.table('_syncQueue').toArray()).map(entry => [entry.entityId, entry.op])).toEqual([['local', 'delete']]);
     const onConflict = vi.fn(); engine.setConflictHandler(onConflict);
     const reloaded = vi.fn(); engine.setRemoteChangeHandler(reloaded);
     await engine.sync();
@@ -252,19 +413,44 @@ describe('DATA-2: the 30-day purge on a second device', () => {
     expect(await db.identities.get('org')).toBeUndefined();
     expect(reloaded.mock.calls.some(([, tables]) => (tables as Set<string>).has('identities'))).toBe(true);
     expect(onConflict).not.toHaveBeenCalled();
-    expect(sent()).toEqual([]);
+    // Only the never-synced row's delete went (the server holds nothing for it).
+    expect(sentKeys()).toEqual(['delete local']);
+    hook.unmount();
+  });
+
+  it('purges everything expired as before when signed out (no pull is coming)', async () => {
+    localStorage.removeItem(authStorageKey);
+    const hook = renderHook(() => useIdentities());
+    await waitFor(() => expect(hook.result.current.loadedSuccessfully).toBe(true));
+    expect(await db.identities.get('org')).toBeUndefined();
+    expect(await db.identities.get('local')).toBeUndefined();
+    hook.unmount();
+  });
+
+  it('does not keep trash past a week more waiting for a pull that does not come', async () => {
+    await db.identities.update('org', { trashedAt: Date.now() - 38 * DAY });
+    const hook = renderHook(() => useIdentities());
+    await waitFor(() => expect(hook.result.current.loadedSuccessfully).toBe(true));
+    expect(await db.identities.get('org')).toBeUndefined();
     hook.unmount();
   });
 
   it('purges what the server holds after the first pull', async () => {
+    // No other device purged: the server still holds the organisation and its members as this device does.
     api.pull.mockImplementation(async (_since, _folder, cursor) => ({ changes: [], cursor, hasMore: false, tables: [...SYNC_TABLES] }));
     server.set('identities:org', { version: 2, data: { ...org, version: 2, ...stamp } });
+    for (const member of members) server.set(`identities:${member.id}`, { version: 1, data: { ...member, version: 1, ...stamp } });
     const hook = renderHook(() => useIdentities());
     await waitFor(() => expect(hook.result.current.loadedSuccessfully).toBe(true));
     expect(await db.identities.get('org')).toBeDefined();
     await engine.sync();
     await act(async () => { await hook.result.current.reload(); });
     expect(await db.identities.get('org')).toBeUndefined();
+    const onConflict = vi.fn(); engine.setConflictHandler(onConflict);
+    await engine.sync();
+    expect(onConflict).not.toHaveBeenCalled();
+    expect(server.get('identities:org')?.deleted).toBe(true);
+    expect(await db.table('_syncQueue').count()).toBe(0);
     hook.unmount();
   });
 });

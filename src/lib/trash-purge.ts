@@ -3,8 +3,11 @@ import { deleteEntitiesWithReferences, ENTITY_RELATIONS } from './entity-relatio
 import { PendingChangesError } from './pending-changes';
 import { db } from '../db';
 import { deferTrashPurge, hasPulledThisSession, revisionKey } from './sync-state';
+import { readStoredAuth } from './auth-storage';
 
 const TRASH_PURGE_DAYS = 30;
+/** How much longer trash the team server holds may wait for a pull (a retired or unreachable server). */
+const PULL_GRACE_DAYS = 7;
 
 interface Trashable {
   id: string;
@@ -22,12 +25,18 @@ export async function purgeOldTrash<T extends Trashable>(
 ): Promise<T[]> {
   const purgeThreshold = Date.now() - TRASH_PURGE_DAYS * 86400000;
   let toPurge = items.filter((item) => item.trashed && item.trashedAt && item.trashedAt < purgeThreshold);
-  if (toPurge.length && !hasPulledThisSession()) {
-    // Rows the team server holds wait for this session's first pull: another device may already have
-    // purged them, and deleting them again from a stale revision would only make conflicts (DATA-2).
-    const revisions = await db.table('_syncMeta').bulkGet(toPurge.map(item => revisionKey(table.name, item.id)));
-    const synced = new Set(toPurge.filter((_, index) => revisions[index]?.value).map(item => item.id));
-    if (synced.size) {
+  const graceThreshold = purgeThreshold - PULL_GRACE_DAYS * 86400000;
+  if (toPurge.some(item => (item.trashedAt ?? 0) >= graceThreshold) && !hasPulledThisSession() && readStoredAuth()) {
+    // Signed in to a team server: rows it holds wait for this session's first pull, since another device
+    // may already have purged them and deleting them again from a stale revision only makes conflicts
+    // (DATA-2). Signed out, they are purged as before (the server accepts the same purge again).
+    // Up to PULL_GRACE_DAYS: a device that never pulls (server retired or unreachable, sync paused)
+    // still purges, and the server accepts a purge another device already made.
+    const recent = toPurge.filter(item => (item.trashedAt ?? 0) >= graceThreshold);
+    const revisions = await db.table('_syncMeta').bulkGet(recent.map(item => revisionKey(table.name, item.id)));
+    const synced = new Set(recent.filter((_, index) => revisions[index]?.value).map(item => item.id));
+    // A pull that finished while this was read reloads nothing more: purge now instead.
+    if (synced.size && !hasPulledThisSession()) {
       deferTrashPurge(table.name);
       toPurge = toPurge.filter(item => !synced.has(item.id));
     }

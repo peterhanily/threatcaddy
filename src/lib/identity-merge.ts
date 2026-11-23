@@ -40,7 +40,10 @@ export function mergeIdentityRows(keep: Identity, gone: Identity, now: number): 
     if (same >= 0) { if (detail.private) details[same] = { ...details[same], private: true }; continue; }
     details.push(details.some(kept => kept.id === detail.id) ? { ...detail, id: nanoid() } : detail);
   }
-  const holdsDescription = !gone.description || (!!keep.description && normalized(keep.description).includes(normalized(gone.description)));
+  // Already there as a whole paragraph (this identity was folded in before): not repeated.
+  const paragraphs = (text: string) => `\n\n${text.trim()}\n\n`;
+  const holdsDescription = !gone.description || (!!keep.description
+    && (sameText(keep.description, gone.description) || paragraphs(keep.description).includes(paragraphs(gone.description))));
   return {
     ...keep,
     description: holdsDescription ? keep.description || gone.description : keep.description ? `${keep.description}\n\n${gone.description}` : gone.description,

@@ -60,6 +60,15 @@ export async function compactHeldQueue(serverTables: ReadonlySet<string>, only?:
     const key = JSON.stringify([entry.table, entry.entityId]);
     groups.set(key, [...(groups.get(key) ?? []), entry]);
   }
+  // What each merge waits for: a merge's copy (restore) is kept only while it can still be cancelled,
+  // so not once the kept identity is deleted here (or was never stored and is gone).
+  const targets = [...new Set(entries.flatMap(entry => entry.after && entry.restore !== undefined ? [entry.after.entityId] : []))];
+  const targetOps = new Map<string, string>();
+  if (targets.length) {
+    for (const entry of await db.table('_syncQueue').where('entityId').anyOf(targets).sortBy('seq') as SyncQueueEntry[]) {
+      targetOps.set(JSON.stringify([entry.table, entry.entityId]), entry.op);
+    }
+  }
   for (const entries of groups.values()) {
     const first = entries[0], last = entries[entries.length - 1];
     const seqs = entries.map(entry => entry.seq).filter((seq): seq is number => seq !== undefined);
@@ -68,14 +77,18 @@ export async function compactHeldQueue(serverTables: ReadonlySet<string>, only?:
       || !!(await db.table('_syncMeta').get(revisionKey(last.table, last.entityId)))?.value;
     if (last.op === 'delete' && !await stored()) {
       await db.table('_syncQueue').bulkDelete(seqs);
-    } else if (entries.length > 1) {
-      await db.table('_syncQueue').bulkDelete(seqs.slice(0, -1));
-      // A hold (a merge waiting for its kept identity) stays with the entry that is kept.
-      const hold = entries.find(entry => entry.after);
-      if (last.clientVersion !== first.clientVersion || (hold && !last.after)) {
-        await db.table('_syncQueue').put({ ...last, clientVersion: first.clientVersion, ...(hold && !last.after ? { after: hold.after, restore: hold.restore } : {}) });
-      }
+      continue;
     }
+    // A hold (a merge waiting for its kept identity) stays with the entry that is kept.
+    const hold = entries.find(entry => entry.after);
+    const copy = hold?.restore !== undefined && hold.after && targetOps.get(JSON.stringify([hold.after.table, hold.after.entityId])) === 'put' ? hold.restore : undefined;
+    const next: SyncQueueEntry = { ...last, clientVersion: first.clientVersion, ...(hold?.after ? { after: hold.after } : {}) };
+    delete next.restore;
+    if (copy !== undefined) next.restore = copy;
+    const unchanged = entries.length === 1 && last.clientVersion === next.clientVersion && last.after === next.after && last.restore === next.restore;
+    if (unchanged) continue;
+    await db.table('_syncQueue').bulkDelete(seqs.slice(0, -1));
+    await db.table('_syncQueue').put(next);
   }
 }
 

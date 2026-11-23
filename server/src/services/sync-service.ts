@@ -159,11 +159,11 @@ function canonicalJson(value: unknown): string {
   return JSON.stringify(value instanceof Date ? value.getTime() : value ?? null);
 }
 
-/** Whether writing this put would change none of the stored columns it names. */
+/** Whether the stored row is exactly the row this put describes: every column the client owns, a
+ * field it left out counting as empty. So the client may take the stored revision as its own. */
 function sameAsStored(tableName: string, clean: Record<string, unknown>, stored: Record<string, unknown>): boolean {
-  const columns = getTableColumns(getTable(tableName));
-  // A field that is not a column is not stored, so a write would not change it either.
-  return Object.entries(clean).every(([key, value]) => !Object.hasOwn(columns, key) || canonicalJson(value) === canonicalJson(stored[key]));
+  return Object.keys(getTableColumns(getTable(tableName))).filter(key => !SERVER_MANAGED_FIELDS.has(key))
+    .every(key => canonicalJson(clean[key]) === canonicalJson(stored[key]));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

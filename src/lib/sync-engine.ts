@@ -6,7 +6,7 @@ import { SERVER_UNREPRESENTED_FIELDS, preserveUnsyncedFields, readableSyncRecord
 import { MAX_SYNC_REQUEST_NODES } from './sync-push-limits';
 import { deleteCheckpointsFor } from './checkpoints';
 import { forgetIgnoredNames } from './ignored-names';
-import { mergeIdentityRows, undoRetarget } from './identity-merge';
+import { distinctConnections, mergeIdentityRows, retarget, undoRetarget } from './identity-merge';
 import type { Identity, IdentityConnection } from '../types';
 import { MAX_PUSH_BYTES, SERVER_TABLES_KEY, agentDeploymentIds, compactHeldQueue, outgoingChange, serverSyncTables, serverTablesOf, syncItemLabel, validVersion,
   type HeldReason, type SyncQueueEntry } from './sync-outgoing';
@@ -269,13 +269,31 @@ export class SyncEngine {
     const deletedFolders = new Set([...groups.values()]
       .filter(entries => entries[0].table === 'folders' && entries[entries.length - 1].op === 'delete').map(entries => entries[0].entityId));
     const covered = new Map<string, SyncQueueEntry[]>();
+    const afterOf = new Map<string, string>();
     for (const [key, entries] of groups) {
-      const last = entries[entries.length - 1];
       const after = entries.find(entry => entry.after)?.after;
-      if (after && queuedKeys.has(entityKey(after.table, after.entityId))) {
-        waitedOn.add(entityKey(after.table, after.entityId));
+      if (after) afterOf.set(key, entityKey(after.table, after.entityId));
+    }
+    // Rows that wait on each other in a circle (merges chained back onto each other) go now.
+    const waits = (key: string) => {
+      const target = afterOf.get(key);
+      if (!target || !queuedKeys.has(target)) return false;
+      const seen = new Set([key]);
+      for (let next: string | undefined = target; next; next = afterOf.get(next)) {
+        if (seen.has(next)) return false;
+        seen.add(next);
+      }
+      return true;
+    };
+    for (const [key, entries] of [...groups]) {
+      const last = entries[entries.length - 1];
+      const after = afterOf.get(key);
+      if (after && waits(key)) {
+        waitedOn.add(after);
         groups.delete(key);
-      } else if (last.table !== 'folders' && last.op === 'delete' && typeof last.folderId === 'string' && deletedFolders.has(last.folderId)) {
+      } else if (last.table !== 'folders' && entries.every(entry => entry.op === 'delete') && typeof last.folderId === 'string' && deletedFolders.has(last.folderId)) {
+        // Only rows whose queued changes are all deletes: an unsent move into the investigation must still
+        // reach the server, so that row's delete is sent as usual.
         covered.set(last.folderId, [...covered.get(last.folderId) ?? [], ...entries]);
         groups.delete(key);
       }
@@ -405,21 +423,34 @@ export class SyncEngine {
     const groups = new Map<string, SyncQueueEntry[]>();
     for (const entry of held) groups.set(entityKey(entry.table, entry.entityId), [...groups.get(entityKey(entry.table, entry.entityId)) ?? [], entry]);
     for (const entries of groups.values()) {
+      // The merge's (held) entries go. Compaction may have folded other changes of the row into them, so
+      // what the row needs now is queued again: whatever stays queued besides comes first.
       const { table: name, entityId: id } = entries[0];
-      const all = queue.filter(entry => entry.table === name && entry.entityId === id);
+      const earliest = queue.find(entry => entry.table === name && entry.entityId === id);
       const restore = entries.find(entry => entry.restore !== undefined)?.restore;
-      await dynamicDb.table('_syncQueue').bulkDelete(all.map(entry => entry.seq).filter((seq): seq is number => seq !== undefined));
+      await dynamicDb.table('_syncQueue').bulkDelete(entries.map(entry => entry.seq).filter((seq): seq is number => seq !== undefined));
       if (name !== 'identities' || !isRecord(restore)) continue;
+      const requeue = async (op: 'put' | 'delete', data?: Identity) => dynamicDb.table('_syncQueue').add({ table: name, entityId: id,
+        folderId: data?.folderId ?? earliest?.folderId, op, ...(data ? { data } : {}), clientVersion: earliest?.clientVersion ?? 0 });
+      const current = await dynamicDb.table(name).get(id) as Identity | undefined;
       if (typeof restore.id === 'string') {
-        // The merged-away identity: the server still holds it as it was (its delete was never sent).
-        if (!await dynamicDb.table(name).get(id)) await dynamicDb.table(name).put(restore);
+        // The merged-away identity comes back as it was merged, edits made before the merge included
+        // (the server never received its delete, and may not have those edits).
+        if (!current) {
+          await dynamicDb.table(name).put(restore);
+          await requeue('put', restore as unknown as Identity);
+        }
         continue;
       }
-      const current = await dynamicDb.table(name).get(id) as Identity | undefined;
-      if (!current || !Array.isArray(restore.connections) || typeof restore.mergedFrom !== 'string') continue;
+      if (!current) {
+        // Deleted here since the merge: its delete is queued.
+        await requeue('delete');
+        continue;
+      }
+      if (!Array.isArray(restore.connections) || typeof restore.mergedFrom !== 'string') continue;
       const reconnected = { ...current, connections: undoRetarget(current.connections, restore.connections as IdentityConnection[], entityId, restore.mergedFrom, id), updatedAt: Date.now() };
       await dynamicDb.table(name).put(reconnected);
-      await dynamicDb.table('_syncQueue').add({ table: name, entityId: id, folderId: current.folderId, op: 'put', data: reconnected, clientVersion: all[0]?.clientVersion ?? 0 });
+      await requeue('put', reconnected);
     }
     return groups.size > 0;
   }
@@ -435,9 +466,17 @@ export class SyncEngine {
       await this.assertCurrentWorkspace(epoch);
       const kept = await dynamicDb.table('identities').get(fold.keepId) as Identity | undefined;
       const theirs = readableSyncRecord('identities', fold.serverData, goneId) as Identity | null;
-      if (!kept || !theirs) return false;
-      // Not suppressed: the kept identity's new version is queued as any edit is.
-      await dynamicDb.table('identities').put(mergeIdentityRows(kept, theirs, Date.now()));
+      // Moved to another investigation meanwhile: merging it would copy it across investigations.
+      if (!kept || !theirs || theirs.folderId !== kept.folderId) return false;
+      // Not suppressed: these new versions are queued as any edit is.
+      const now = Date.now();
+      await dynamicDb.table('identities').put(mergeIdentityRows(kept, theirs, now));
+      // Connections a teammate made to it since (pulled here) point at the kept identity, as merge does.
+      const pointing = (kept.folderId ? await dynamicDb.table('identities').where('folderId').equals(kept.folderId).toArray() as Identity[] : [])
+        .filter(row => row.id !== fold.keepId && row.connections.some(edge => edge.targetId === goneId));
+      for (const row of pointing) {
+        await dynamicDb.table('identities').put({ ...row, connections: distinctConnections(retarget(row.connections, goneId, fold.keepId), row.id), updatedAt: now });
+      }
       for (const entry of await dynamicDb.table('_syncQueue').where('entityId').equals(goneId).toArray() as SyncQueueEntry[]) {
         if (entry.table === 'identities') await dynamicDb.table('_syncQueue').put({ ...entry, clientVersion: fold.serverVersion });
       }
@@ -706,6 +745,16 @@ export class SyncEngine {
           await dynamicDb.table('_syncQueue').bulkDelete(entries.map(e => e.seq!));
           // Keeping their version of a merge's kept identity cancels the merge (DATA-1).
           if (await this.cancelHeldBehind(table, conflict.entityId, queue)) affected.add(table);
+          // Keeping their investigation (its delete was not taken) keeps its items: their deletes, which
+          // that delete covered, go too, and the replay below brings the items back (DATA-3).
+          if (table === 'folders' && entries.some(entry => entry.op === 'delete')) {
+            const items = new Map<string, SyncQueueEntry[]>();
+            for (const entry of queue) {
+              if (entry.table !== 'folders' && entry.folderId === conflict.entityId) items.set(entityKey(entry.table, entry.entityId), [...items.get(entityKey(entry.table, entry.entityId)) ?? [], entry]);
+            }
+            const covered = [...items.values()].filter(group => group.every(entry => entry.op === 'delete')).flat();
+            await dynamicDb.table('_syncQueue').bulkDelete(covered.map(entry => entry.seq).filter((seq): seq is number => seq !== undefined));
+          }
           // A pull may have skipped a newer revision while this entity was
           // pending. Replay the committed log after accepting the reviewed
           // version, so that skipped updates cannot remain invisible forever.

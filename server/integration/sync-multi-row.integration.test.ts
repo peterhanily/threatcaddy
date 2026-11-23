@@ -97,6 +97,11 @@ describe('multi-row changes the server accepts', () => {
     await processPush([{ table: 'identities', entityId: 'dana', op: 'put', clientVersion: 1, data: person('Dana', { connections: [{ label: 'manages', targetId: 'lee' }], details: [{ id: 'd1', label: 'Email', value: 'dana@example.invalid', private: false }] }) }], 'owner', { authorize: true });
     const same = await processPush([{ table: 'identities', entityId: 'dana', op: 'put', clientVersion: 1, data: person('Dana', { connections: [{ targetId: 'lee', label: 'manages' }], details: [{ private: false, value: 'dana@example.invalid', label: 'Email', id: 'd1' }] }) }], 'owner', { authorize: true });
     expect(same.map(r => [r.status, r.unchanged])).toEqual([['accepted', true]]);
+    // A field the put leaves out that the stored row has (a teammate set it) is a difference: the client
+    // would otherwise take a revision whose content it does not hold.
+    await processPush([{ table: 'identities', entityId: 'lee', op: 'put', clientVersion: 1, data: person('Lee', { contact: true }) }], 'owner', { authorize: true });
+    const missing = await processPush([{ table: 'identities', entityId: 'lee', op: 'put', clientVersion: 1, data: person('Lee') }], 'owner', { authorize: true });
+    expect(missing.map(r => r.status)).toEqual(['conflict']);
     const different = await processPush([{ table: 'identities', entityId: 'dana', op: 'put', clientVersion: 1, data: person('Dana', { status: 'compromised' }) }], 'owner', { authorize: true });
     expect(different.map(r => r.status)).toEqual(['conflict']);
     await processPush([{ table: 'notes', entityId: 'n1', op: 'delete', clientVersion: 1 }], 'owner', { authorize: true });
