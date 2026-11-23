@@ -1,4 +1,5 @@
 import { useId, useRef, useState, useEffect } from 'react';
+import { clearIgnoredNames } from '../../lib/ignored-names';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, Lock, AlertTriangle } from 'lucide-react';
 import { deriveWrappingKey, unwrapMasterKey, base64ToArrayBuffer, arrayBufferToBase64, exportKeyRaw } from '../../lib/crypto';
@@ -115,6 +116,7 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
     setResetting(true);
     try {
       await db.delete();
+      clearIgnoredNames();
       clearEncryptionMeta();
       clearSessionCache();
       // A fresh workspace must sign in again; it never re-downloads team data

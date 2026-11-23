@@ -50,4 +50,14 @@ describe('push broadcasts', () => {
     expect((await push('notes', record)).status).toBe(200);
     expect(mocks.broadcast).toHaveBeenCalledWith('folder-1', expect.objectContaining({ table: 'notes', data: record }), 'user-1');
   });
+
+  it('log an identity change without the person\'s name (the activity log is read by every member and outlives a deletion)', async () => {
+    const record = { id: 'id-1', folderId: 'folder-1', name: 'Dana Okafor', type: 'person', version: 2, details: [] };
+    expect((await push('identities', record)).status).toBe(200);
+    expect(mocks.audit).toHaveBeenCalledWith([expect.objectContaining({ category: 'identities', itemId: 'id-1', itemTitle: undefined, folderId: 'folder-1' })]);
+    expect(JSON.stringify(mocks.audit.mock.calls)).not.toContain('Dana Okafor');
+    await push('notes', { id: 'id-1', folderId: 'folder-1', title: 'Weekly notes', version: 2 });
+    expect(mocks.audit).toHaveBeenLastCalledWith([expect.objectContaining({ category: 'notes', itemTitle: 'Weekly notes' })]);
+  });
 });
+

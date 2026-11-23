@@ -89,7 +89,9 @@ app.post('/push', requireRole('admin', 'analyst'), async (c) => {
       action: change.op === 'delete' ? 'delete' : 'update',
       detail: `Synced ${change.op} on ${change.table}`,
       itemId: change.entityId,
-      itemTitle: (result.serverRecord?.title as string) || (result.serverRecord?.name as string),
+      // A person's name stays out of the activity log, which every member reads and which outlives a
+      // deletion; the id is enough to find the identity.
+      itemTitle: change.table === 'identities' ? undefined : (result.serverRecord?.title as string) || (result.serverRecord?.name as string),
       folderId,
     });
   }

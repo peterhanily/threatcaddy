@@ -274,8 +274,9 @@ describe('names found in the investigation', () => {
     // Its chip is gone: focus moves on to the next found name, not the page.
     expect(within(screen.getByRole('region', { name: /^Not yet in Identities/ })).getAllByRole('button')[0]).toHaveFocus();
     // Only a hash is kept, never the readable name.
-    const stored = localStorage.getItem('threatcaddy-identities-ignored-v2') ?? '';
-    expect(JSON.parse(stored)).toEqual([ignoredHash(JSON.stringify(['case', 'fin-db01']))]);
+    await waitFor(() => expect(localStorage.getItem('threatcaddy-identities-ignored-v3')).not.toBeNull());
+    const stored = localStorage.getItem('threatcaddy-identities-ignored-v3') ?? '';
+    expect(JSON.parse(stored)).toEqual({ v: 3, folders: { case: [ignoredHash(JSON.stringify(['case', 'fin-db01']))] } });
     expect(stored).not.toContain('fin-db01');
   });
 });

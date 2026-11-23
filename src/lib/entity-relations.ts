@@ -1,6 +1,8 @@
 import { db } from '../db';
 import { withEntityDraftBarrier } from './entity-drafts';
 import { integrationWrite } from './integration-cancellation';
+import { deleteCheckpointsFor } from './checkpoints';
+import { forgetIgnoredNames } from './ignored-names';
 import { markPending, clearPending } from './pending-changes';
 
 export type EntityRecord = Record<string, unknown> & { id: string };
@@ -83,7 +85,7 @@ export async function deleteEntitiesWithReferences(deletions: Record<string, str
     const pending = Symbol('entity deletion');
     markPending(pending);
     try {
-      await integrationWrite(Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), signal, async () => {
+      await integrationWrite([...Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), db.checkpoints], signal, async () => {
         assertCurrent();
         await prepare?.();
         if (onlyExpiredTrashBefore !== undefined) {
@@ -123,10 +125,14 @@ export async function deleteEntitiesWithReferences(deletions: Record<string, str
           }
           if (changedRows.length) await db.table(table).bulkPut(changedRows);
         }
+        // AI undo checkpoints would otherwise keep a deleted row's full copy (PRIV-1).
+        await deleteCheckpointsFor(removed);
         assertCurrent();
       });
     } finally { clearPending(pending); }
   });
+  // Names ignored in a deleted investigation are forgotten on this device (PRIV-4).
+  if (deletions.folders?.length) await forgetIgnoredNames(deletions.folders);
 }
 
 export async function changeTagEverywhere(id: string, replacement?: { name?: string; color?: string }): Promise<void> {

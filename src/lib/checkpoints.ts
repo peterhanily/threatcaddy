@@ -109,6 +109,20 @@ export async function restoreCheckpoint(checkpointId: string): Promise<boolean> 
   });
 }
 
+/**
+ * Deletes the AI undo checkpoints that hold a copy of any removed row (an undo of it could no
+ * longer apply) or belong to a removed chat thread, so a deleted identity's details, private
+ * ones included, do not outlive it here. `removed` maps table names to removed ids. Call inside a
+ * transaction that includes db.checkpoints.
+ */
+export async function deleteCheckpointsFor(removed: ReadonlyMap<string, ReadonlySet<string>>): Promise<void> {
+  const threads = removed.get('chatThreads');
+  const holds = (checkpoint: Checkpoint) => (threads?.has(checkpoint.threadId) ?? false)
+    || checkpoint.snapshot.some(entity => removed.get(entity.table)?.has(entity.entityId) ?? false);
+  const doomed = (await db.checkpoints.toArray()).filter(holds).map(checkpoint => checkpoint.id);
+  if (doomed.length) await db.checkpoints.bulkDelete(doomed);
+}
+
 export async function getCheckpointsForThread(threadId: string): Promise<Checkpoint[]> {
   return db.checkpoints.where('threadId').equals(threadId).reverse().sortBy('createdAt');
 }

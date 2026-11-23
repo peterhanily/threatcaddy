@@ -9,7 +9,7 @@ import i18n from '../i18n';
 import type { SyncChange } from './server-api';
 import { outgoingSyncData } from './sync-sanitize';
 import { MAX_SYNC_REQUEST_NODES, outgoingRefusal, syncDataNodes, type OutgoingRefusal } from './sync-push-limits';
-import { LEGACY_SYNC_TABLES, isSyncTable } from './sync-state';
+import { LEGACY_SYNC_TABLES, SYNC_TABLES, isSyncTable, revisionKey } from './sync-state';
 
 export const MAX_PUSH_BYTES = 900_000; // Leave room beneath the server's 1 MiB body limit.
 const MAX_ASSET_PUSH_BYTES = 15 * 1024 * 1024; // Dedicated 16 MiB sync route.
@@ -28,6 +28,36 @@ export const serverTablesOf = (listed: unknown): ReadonlySet<string> =>
   new Set(Array.isArray(listed) && listed.every(name => typeof name === 'string') ? listed : LEGACY_SYNC_TABLES);
 export async function serverSyncTables(): Promise<ReadonlySet<string>> {
   return serverTablesOf((await db.table('_syncMeta').get(SERVER_TABLES_KEY))?.value);
+}
+
+/**
+ * Changes to a table the team server does not sync (identities on a 2.0.4 server) stay queued on
+ * this device until it does. They are kept compact, so no earlier copy of an edited or deleted row,
+ * private details included, lingers and every sync cycle stays cheap: one entry per entity (its
+ * latest operation, keeping the first entry's clientVersion, as push would send it), and nothing at
+ * all for an entity the server never stored that was then deleted. Call inside a read-write
+ * transaction that includes _syncQueue and _syncMeta, with the workspace unlocked.
+ */
+export async function compactHeldQueue(serverTables: ReadonlySet<string>): Promise<void> {
+  const held = SYNC_TABLES.filter(table => !serverTables.has(table));
+  if (!held.length) return;
+  const groups = new Map<string, SyncQueueEntry[]>();
+  for (const entry of await db.table('_syncQueue').where('table').anyOf(held).sortBy('seq') as SyncQueueEntry[]) {
+    const key = JSON.stringify([entry.table, entry.entityId]);
+    groups.set(key, [...(groups.get(key) ?? []), entry]);
+  }
+  for (const entries of groups.values()) {
+    const first = entries[0], last = entries[entries.length - 1];
+    const seqs = entries.map(entry => entry.seq).filter((seq): seq is number => seq !== undefined);
+    const stored = (validVersion(first.clientVersion) && first.clientVersion > 0)
+      || !!(await db.table('_syncMeta').get(revisionKey(last.table, last.entityId)))?.value;
+    if (last.op === 'delete' && !stored) {
+      await db.table('_syncQueue').bulkDelete(seqs);
+    } else if (entries.length > 1) {
+      await db.table('_syncQueue').bulkDelete(seqs.slice(0, -1));
+      if (last.clientVersion !== first.clientVersion) await db.table('_syncQueue').put({ ...last, clientVersion: first.clientVersion });
+    }
+  }
 }
 
 /** The server's assigneeId refers to users; an agent deployment id stays on this device. */

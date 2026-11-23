@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRef, useState, type ReactNode } from 'react';
 import type { Folder, Identity, TimelineEvent } from '../types';
@@ -101,8 +101,10 @@ describe('timeline chips', () => {
     await user.click(screen.getByRole('button', { name: 'Unknown Caller (Actor), not yet in Identities' }));
     await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Ignore on this device' }));
     expect(screen.getByText('Unknown Caller').closest('button')).toBeNull();
-    const stored = localStorage.getItem('threatcaddy-identities-ignored-v2') ?? '';
-    expect(JSON.parse(stored)).toEqual([ignoredHash(foundKey('case', 'Unknown Caller'))]);
+    await waitFor(() => expect(localStorage.getItem('threatcaddy-identities-ignored-v3')).not.toBeNull());
+    const stored = localStorage.getItem('threatcaddy-identities-ignored-v3') ?? '';
+    // Kept per investigation, as a hash of the name only.
+    expect(JSON.parse(stored)).toEqual({ v: 3, folders: { case: [ignoredHash(foundKey('case', 'Unknown Caller'))] } });
     expect(stored).not.toContain('Unknown');
   });
 

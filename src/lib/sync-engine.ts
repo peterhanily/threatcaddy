@@ -4,7 +4,7 @@ import type { Dexie as DexieType } from 'dexie';
 import { syncPush, syncPull, type SyncChange, type SyncResult } from './server-api';
 import { SERVER_UNREPRESENTED_FIELDS, preserveUnsyncedFields, readableSyncRecord } from './sync-sanitize';
 import { MAX_SYNC_REQUEST_NODES } from './sync-push-limits';
-import { MAX_PUSH_BYTES, SERVER_TABLES_KEY, agentDeploymentIds, outgoingChange, serverSyncTables, serverTablesOf, syncItemLabel, validVersion,
+import { MAX_PUSH_BYTES, SERVER_TABLES_KEY, agentDeploymentIds, compactHeldQueue, outgoingChange, serverSyncTables, serverTablesOf, syncItemLabel, validVersion,
   type HeldReason, type SyncQueueEntry } from './sync-outgoing';
 import { LEGACY_SYNC_TABLES, SYNC_TABLES, isSyncTable, onOutboxCommit, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
 import type { WSClient } from './ws-client';
@@ -213,6 +213,13 @@ export class SyncEngine {
     if (locked()) return;
     const history = (await dynamicDb.table('_syncMeta').get(HISTORY_KEY))?.value;
     if (typeof history !== 'string') throw new Error('Server history has not been verified; pending edits were retained.');
+    const serverTables = await serverSyncTables();
+    // Changes the server cannot take yet stay on this device, one entry per entity (see compactHeldQueue).
+    await dynamicDb.transaction('rw', '_syncQueue', '_syncMeta', '_localMigrations', async () => {
+      await this.assertCurrentWorkspace(epoch);
+      suppressSyncInCurrentTransaction();
+      await compactHeldQueue(serverTables);
+    });
     const queue: SyncQueueEntry[] = await dynamicDb.table('_syncQueue').toArray();
     if (epoch !== this.epoch) return;
     const groups = new Map<string, SyncQueueEntry[]>();
@@ -222,7 +229,9 @@ export class SyncEngine {
       // Older builds queued demo tags and timelines; like capture, keep them on this device unless the server holds them.
       if (entry.op === 'put' && isSampleGlobalRecord(entry.table, entry.entityId)
         && !(await dynamicDb.table('_syncMeta').get(revisionKey(entry.table, entry.entityId)))?.value) { samples.push(entry); continue; }
-      if (await this.isLocalOnly(entry.table, entry.entityId, entry.data, entry.folderId, true)) continue;
+      // Held (the server does not sync its table): nothing is sent, so the local-only check, a few
+      // reads per entry, is skipped; the entry still counts for the held notice.
+      if (serverTables.has(entry.table) && await this.isLocalOnly(entry.table, entry.entityId, entry.data, entry.folderId, true)) continue;
       const key = entityKey(entry.table, entry.entityId);
       groups.set(key, [...(groups.get(key) ?? []), entry]);
     }
@@ -238,7 +247,6 @@ export class SyncEngine {
     const conflicts: SyncResult[] = [];
     const encoder = new TextEncoder();
     const agents = await agentDeploymentIds();
-    const serverTables = await serverSyncTables();
     const refused: Array<{ table: string; entityId: string; refusal: Exclude<HeldReason, 'oversized'> }> = [];
     const batches: Array<{ entries: SyncQueueEntry[]; change: SyncChange }[]> = [];
     let current: { entries: SyncQueueEntry[]; change: SyncChange }[] = [];
@@ -308,10 +316,10 @@ export class SyncEngine {
           await dynamicDb.table('_syncMeta').put({ key: revisionKey(sent.table, sent.entityId), value: result.serverVersion });
           // Edits made while this request was in flight continue from our own
           // accepted revision, never from a concurrent peer's unreviewed version.
-          const remaining: SyncQueueEntry[] = await dynamicDb.table('_syncQueue').toArray();
+          // Only this entity's entries (indexed), not the whole queue for each accepted change.
+          const remaining: SyncQueueEntry[] = await dynamicDb.table('_syncQueue').where('entityId').equals(sent.entityId).toArray();
           for (const pending of remaining) {
-            if (pending.table === sent.table && pending.entityId === sent.entityId &&
-                (pending.clientVersion ?? 0) === sent.clientVersion) {
+            if (pending.table === sent.table && (pending.clientVersion ?? 0) === sent.clientVersion) {
               await dynamicDb.table('_syncQueue').put({ ...pending, clientVersion: result.serverVersion });
             }
           }
