@@ -5,6 +5,8 @@ import i18n from '../i18n';
 import type { Identity, IdentityConnection, IdentityStatus } from '../types';
 import { purgeOldTrash } from '../lib/trash-purge';
 import { deleteEntitiesWithReferences } from '../lib/entity-relations';
+import { deleteCheckpointsFor } from '../lib/checkpoints';
+import { compactHeldChangesFor } from '../lib/sync-outgoing';
 import { conservativeClsLevel } from '../lib/classification';
 import { IDENTITY_STATUSES } from '../lib/entity-enums';
 import { sameText as normalized } from '../lib/identity-model';
@@ -87,7 +89,7 @@ export function useIdentities(folderId?: string) {
   /** A rename keeps the old name as another name, so earlier mentions still match. `updates`
    * may be computed from the stored row, so changes made in quick succession build on each other. */
   const updateIdentity = useCallback(async (id: string, updates: Partial<Identity> | ((current: Identity) => Partial<Identity>)) => {
-    const updated = await db.transaction('rw', db.identities, async () => {
+    const updated = await db.transaction('rw', db.identities, db.checkpoints, async () => {
       const existing = await db.identities.get(id);
       if (!existing) return undefined;
       const patched: Partial<Identity> = { ...(typeof updates === 'function' ? updates(existing) : updates), updatedAt: Date.now() };
@@ -98,9 +100,17 @@ export function useIdentities(folderId?: string) {
         patched.aliases = aliases;
       }
       await db.identities.update(id, patched);
+      // An AI undo checkpoint of this identity can no longer apply once it is edited, and keeps a
+      // copy of details since removed (a private phone edited out): it goes (PRIV-1).
+      await deleteCheckpointsFor(new Map([['identities', new Set([id])]]));
       return patched;
     });
-    if (updated) { setIdentities((prev) => prev.map((identity) => (identity.id === id ? { ...identity, ...updated } : identity))); return; }
+    if (updated) {
+      setIdentities((prev) => prev.map((identity) => (identity.id === id ? { ...identity, ...updated } : identity)));
+      // Held for a server that does not sync identities: the earlier copy is not kept (PRIV-2).
+      void compactHeldChangesFor(new Map([['identities', new Set([id])]]));
+      return;
+    }
     // Deleted or merged elsewhere (another tab, a teammate): drop it from view and say the save failed.
     setIdentities((prev) => prev.filter((identity) => identity.id !== id));
     throw new Error(i18n.t('error.notFound', { ns: 'common' }));

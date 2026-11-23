@@ -9,7 +9,7 @@ import i18n from '../i18n';
 import type { SyncChange } from './server-api';
 import { outgoingSyncData } from './sync-sanitize';
 import { MAX_SYNC_REQUEST_NODES, outgoingRefusal, syncDataNodes, type OutgoingRefusal } from './sync-push-limits';
-import { LEGACY_SYNC_TABLES, SYNC_TABLES, isSyncTable, revisionKey } from './sync-state';
+import { LEGACY_SYNC_TABLES, SYNC_TABLES, isSyncTable, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
 
 export const MAX_PUSH_BYTES = 900_000; // Leave room beneath the server's 1 MiB body limit.
 const MAX_ASSET_PUSH_BYTES = 15 * 1024 * 1024; // Dedicated 16 MiB sync route.
@@ -38,26 +38,48 @@ export async function serverSyncTables(): Promise<ReadonlySet<string>> {
  * all for an entity the server never stored that was then deleted. Call inside a read-write
  * transaction that includes _syncQueue and _syncMeta, with the workspace unlocked.
  */
-export async function compactHeldQueue(serverTables: ReadonlySet<string>): Promise<void> {
-  const held = SYNC_TABLES.filter(table => !serverTables.has(table));
+export async function compactHeldQueue(serverTables: ReadonlySet<string>, only?: ReadonlyMap<string, ReadonlySet<string>>): Promise<void> {
+  const held = SYNC_TABLES.filter(table => !serverTables.has(table) && (!only || only.get(table)?.size));
   if (!held.length) return;
+  const heldTables = new Set<string>(held);
+  // `only`: just these rows' entries, read by index.
+  const entries = only
+    ? (await db.table('_syncQueue').where('entityId').anyOf([...new Set(held.flatMap(table => [...only.get(table) ?? []]))]).toArray() as SyncQueueEntry[])
+      .filter(entry => heldTables.has(entry.table) && (only.get(entry.table)?.has(entry.entityId) ?? false))
+      .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0))
+    : await db.table('_syncQueue').where('table').anyOf(held).sortBy('seq') as SyncQueueEntry[];
   const groups = new Map<string, SyncQueueEntry[]>();
-  for (const entry of await db.table('_syncQueue').where('table').anyOf(held).sortBy('seq') as SyncQueueEntry[]) {
+  for (const entry of entries) {
     const key = JSON.stringify([entry.table, entry.entityId]);
     groups.set(key, [...(groups.get(key) ?? []), entry]);
   }
   for (const entries of groups.values()) {
     const first = entries[0], last = entries[entries.length - 1];
     const seqs = entries.map(entry => entry.seq).filter((seq): seq is number => seq !== undefined);
-    const stored = (validVersion(first.clientVersion) && first.clientVersion > 0)
+    // Whether the server ever stored it matters only for a delete (one read, only then).
+    const stored = async () => (validVersion(first.clientVersion) && first.clientVersion > 0)
       || !!(await db.table('_syncMeta').get(revisionKey(last.table, last.entityId)))?.value;
-    if (last.op === 'delete' && !stored) {
+    if (last.op === 'delete' && !await stored()) {
       await db.table('_syncQueue').bulkDelete(seqs);
     } else if (entries.length > 1) {
       await db.table('_syncQueue').bulkDelete(seqs.slice(0, -1));
       if (last.clientVersion !== first.clientVersion) await db.table('_syncQueue').put({ ...last, clientVersion: first.clientVersion });
     }
   }
+}
+
+/**
+ * Compacts these rows' held changes at once, without waiting for a sync cycle (which runs only
+ * after a successful pull), so a deletion or an edit made while the server is unreachable leaves
+ * no earlier copy queued. `rows` maps table names to ids. Never fails the change it follows.
+ */
+export async function compactHeldChangesFor(rows: ReadonlyMap<string, ReadonlySet<string>>): Promise<void> {
+  try {
+    await db.transaction('rw', ['_syncQueue', '_syncMeta'], async () => {
+      suppressSyncInCurrentTransaction();
+      await compactHeldQueue(await serverSyncTables(), rows);
+    });
+  } catch { /* The change is saved; the next sync cycle compacts its entries. */ }
 }
 
 /** The server's assigneeId refers to users; an agent deployment id stays on this device. */

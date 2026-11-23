@@ -3,6 +3,7 @@ import { withEntityDraftBarrier } from './entity-drafts';
 import { integrationWrite } from './integration-cancellation';
 import { deleteCheckpointsFor } from './checkpoints';
 import { forgetIgnoredNames } from './ignored-names';
+import { compactHeldChangesFor } from './sync-outgoing';
 import { markPending, clearPending } from './pending-changes';
 
 export type EntityRecord = Record<string, unknown> & { id: string };
@@ -131,6 +132,8 @@ export async function deleteEntitiesWithReferences(deletions: Record<string, str
       });
     } finally { clearPending(pending); }
   });
+  // Changes held for a server that does not sync these rows keep no earlier copy (PRIV-2).
+  await compactHeldChangesFor(new Map(Object.entries(deletions).map(([table, ids]) => [table, new Set(ids)])));
   // Names ignored in a deleted investigation are forgotten on this device (PRIV-4).
   if (deletions.folders?.length) await forgetIgnoredNames(deletions.folders);
 }

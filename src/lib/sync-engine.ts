@@ -4,6 +4,8 @@ import type { Dexie as DexieType } from 'dexie';
 import { syncPush, syncPull, type SyncChange, type SyncResult } from './server-api';
 import { SERVER_UNREPRESENTED_FIELDS, preserveUnsyncedFields, readableSyncRecord } from './sync-sanitize';
 import { MAX_SYNC_REQUEST_NODES } from './sync-push-limits';
+import { deleteCheckpointsFor } from './checkpoints';
+import { forgetIgnoredNames } from './ignored-names';
 import { MAX_PUSH_BYTES, SERVER_TABLES_KEY, agentDeploymentIds, compactHeldQueue, outgoingChange, serverSyncTables, serverTablesOf, syncItemLabel, validVersion,
   type HeldReason, type SyncQueueEntry } from './sync-outgoing';
 import { LEGACY_SYNC_TABLES, SYNC_TABLES, isSyncTable, onOutboxCommit, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
@@ -224,14 +226,23 @@ export class SyncEngine {
     if (epoch !== this.epoch) return;
     const groups = new Map<string, SyncQueueEntry[]>();
     const samples: SyncQueueEntry[] = [];
+    // Held entries are checked once per investigation, not once per entry.
+    const localOnlyFolders = new Map<string, boolean>();
     for (const entry of queue) {
       if (!isSyncTable(entry.table)) continue; // retain unsupported legacy work
       // Older builds queued demo tags and timelines; like capture, keep them on this device unless the server holds them.
       if (entry.op === 'put' && isSampleGlobalRecord(entry.table, entry.entityId)
         && !(await dynamicDb.table('_syncMeta').get(revisionKey(entry.table, entry.entityId)))?.value) { samples.push(entry); continue; }
-      // Held (the server does not sync its table): nothing is sent, so the local-only check, a few
-      // reads per entry, is skipped; the entry still counts for the held notice.
-      if (serverTables.has(entry.table) && await this.isLocalOnly(entry.table, entry.entityId, entry.data, entry.folderId, true)) continue;
+      if (serverTables.has(entry.table)) {
+        if (await this.isLocalOnly(entry.table, entry.entityId, entry.data, entry.folderId, true)) continue;
+      } else {
+        // Held (the server does not sync its table): only whether its investigation is local-only
+        // matters for the held notice, so that is read once per investigation.
+        const folder = typeof entry.folderId === 'string' ? entry.folderId : typeof entry.data?.folderId === 'string' ? entry.data.folderId : undefined;
+        if (!folder) continue;
+        if (!localOnlyFolders.has(folder)) localOnlyFolders.set(folder, await this.isLocalOnly(entry.table, entry.entityId, entry.data, folder, true));
+        if (localOnlyFolders.get(folder)) continue;
+      }
       const key = entityKey(entry.table, entry.entityId);
       groups.set(key, [...(groups.get(key) ?? []), entry]);
     }
@@ -428,7 +439,11 @@ export class SyncEngine {
     const affected = new Set<string>();
     const agents = await agentDeploymentIds();
     let skippedChanged = false;
-    const applied = await dynamicDb.transaction('rw', [...SYNC_TABLES, '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
+    // Rows a newer remote revision changed or deleted: their AI undo checkpoints can no longer apply,
+    // and a deleted row's copy must not outlive it (PRIV-1); deleted investigations' ignored names too.
+    const replaced = new Map<string, Set<string>>();
+    const deletedFolders: string[] = [];
+    const applied = await dynamicDb.transaction('rw', [...SYNC_TABLES, 'checkpoints', '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
       if (epoch !== this.epoch) return false;
       await this.assertCurrentWorkspace(epoch);
       if (generation !== undefined && generation !== this.replayGeneration) return false;
@@ -457,8 +472,12 @@ export class SyncEngine {
         const known = (await dynamicDb.table('_syncMeta').get(revisionKey(table, id)))?.value ?? 0;
         if (version < known) continue;
         const skipKey = skippedKey(table, id);
+        // A deleted row, or an identity a newer revision changed (not the echo of this device's own
+        // accepted change): its checkpoints could no longer apply, and may hold removed details.
+        if (op === 'delete' || (table === 'identities' && version > known)) replaced.set(table, (replaced.get(table) ?? new Set()).add(id));
         if (op === 'delete') {
           await dynamicDb.table(table).delete(id);
+          if (table === 'folders') deletedFolders.push(id);
         } else {
           const record = readableSyncRecord(table, change, id);
           if (!record) {
@@ -478,11 +497,13 @@ export class SyncEngine {
         }
         affected.add(table);
       }
+      if (replaced.size) await deleteCheckpointsFor(replaced);
       if (cursor !== undefined && generation === this.replayGeneration) await dynamicDb.table('_syncMeta').put({ key: CURSOR_KEY, value: cursor });
       if (history !== undefined) await dynamicDb.table('_syncMeta').put({ key: HISTORY_KEY, value: history });
       await this.assertCurrentWorkspace(epoch);
       return true;
     });
+    if (applied && deletedFolders.length) await forgetIgnoredNames(deletedFolders);
     if (epoch === this.epoch && affected.size) this.onRemoteChange?.(changes, affected);
     if (epoch === this.epoch && skippedChanged) this.onError?.(await this.skippedNotice());
     return applied;
@@ -540,7 +561,9 @@ export class SyncEngine {
     const affected = new Set<string>();
     const agents = await agentDeploymentIds();
     let skippedChanged = false;
-    await dynamicDb.transaction('rw', [...SYNC_TABLES, '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
+    const replaced = new Map<string, Set<string>>();
+    const deletedFolders: string[] = [];
+    await dynamicDb.transaction('rw', [...SYNC_TABLES, 'checkpoints', '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
       await this.assertCurrentWorkspace(epoch);
       suppressSyncInCurrentTransaction();
       for (const conflict of conflicts) {
@@ -558,8 +581,12 @@ export class SyncEngine {
           await dynamicDb.table('_syncQueue').bulkDelete(entries.slice(0, -1).map(e => e.seq!));
           await dynamicDb.table('_syncQueue').put({ ...latest, clientVersion: version });
         } else {
+          // Their version replaces this device's row: its AI undo checkpoints can no longer apply.
+          const replace = () => replaced.set(table, (replaced.get(table) ?? new Set()).add(conflict.entityId));
           if (!conflict.serverData || conflict.serverData.deletedAt) {
             await dynamicDb.table(table).delete(conflict.entityId);
+            replace();
+            if (table === 'folders') deletedFolders.push(conflict.entityId);
           } else {
             const record = readableSyncRecord(table, conflict.serverData, conflict.entityId);
             if (!record) {
@@ -570,6 +597,7 @@ export class SyncEngine {
               continue;
             }
             await dynamicDb.table(table).put(await this.withLocalFields(table, conflict.serverData, record, conflict.entityId, agents));
+            replace();
           }
           await dynamicDb.table('_syncQueue').bulkDelete(entries.map(e => e.seq!));
           // A pull may have skipped a newer revision while this entity was
@@ -581,7 +609,9 @@ export class SyncEngine {
         await dynamicDb.table('_syncMeta').put({ key: revisionKey(table, conflict.entityId), value: version });
       }
       await this.assertCurrentWorkspace(epoch);
+      if (replaced.size) await deleteCheckpointsFor(replaced);
     });
+    if (deletedFolders.length) await forgetIgnoredNames(deletedFolders);
     if (epoch === this.epoch && affected.size) this.onRemoteChange?.([], affected);
     if (epoch === this.epoch && skippedChanged) this.onError?.(await this.skippedNotice());
     this.scheduleSync();

@@ -104,7 +104,9 @@ export async function restoreCheckpoint(checkpointId: string): Promise<boolean> 
         }
       }
     }
-    await db.checkpoints.update(checkpointId, { restored: true });
+    // Kept as a marker (a later write in the same turn is refused), without the rows it held:
+    // an undone create_identity must not leave the person's details here (PRIV-1).
+    await db.checkpoints.update(checkpointId, { restored: true, snapshot: [] });
     return true;
   });
 }
@@ -116,11 +118,18 @@ export async function restoreCheckpoint(checkpointId: string): Promise<boolean> 
  * transaction that includes db.checkpoints.
  */
 export async function deleteCheckpointsFor(removed: ReadonlyMap<string, ReadonlySet<string>>): Promise<void> {
-  const threads = removed.get('chatThreads');
-  const holds = (checkpoint: Checkpoint) => (threads?.has(checkpoint.threadId) ?? false)
-    || checkpoint.snapshot.some(entity => removed.get(entity.table)?.has(entity.entityId) ?? false);
-  const doomed = (await db.checkpoints.toArray()).filter(holds).map(checkpoint => checkpoint.id);
-  if (doomed.length) await db.checkpoints.bulkDelete(doomed);
+  const threads = [...removed.get('chatThreads') ?? []];
+  const rows = [...removed].filter(([table, ids]) => entityTables.has(table) && ids.size);
+  const doomed = new Set<string>();
+  // A thread's checkpoints by index; snapshots are read (and decrypted) only when a row they could
+  // hold was removed, not for every deletion (whiteboards, evidence…).
+  if (threads.length) for (const id of await db.checkpoints.where('threadId').anyOf(threads).primaryKeys()) doomed.add(String(id));
+  if (rows.length && await db.checkpoints.count()) {
+    for (const checkpoint of await db.checkpoints.toArray()) {
+      if (checkpoint.snapshot.some(entity => removed.get(entity.table)?.has(entity.entityId) ?? false)) doomed.add(checkpoint.id);
+    }
+  }
+  if (doomed.size) await db.checkpoints.bulkDelete([...doomed]);
 }
 
 export async function getCheckpointsForThread(threadId: string): Promise<Checkpoint[]> {

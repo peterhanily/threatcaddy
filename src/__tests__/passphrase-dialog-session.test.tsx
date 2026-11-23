@@ -12,8 +12,10 @@ const derive = vi.hoisted(() => async (passphrase: string, salt: ArrayBuffer) =>
 // The same PBKDF2 to AES-KW contract with a test-sized work factor.
 vi.mock('../lib/crypto', async importOriginal => ({ ...await importOriginal<typeof import('../lib/crypto')>(), deriveWrappingKey: vi.fn(derive) }));
 vi.mock('../lib/workspace-initialization', () => ({ initializeWorkspace: vi.fn(async () => {}) }));
+vi.mock('../lib/page-reload', () => ({ reloadPage: vi.fn() }));
 import { initializeWorkspace } from '../lib/workspace-initialization';
 import { PassphraseDialog } from '../components/Encryption/PassphraseDialog';
+import { reloadPage } from '../lib/page-reload';
 
 const PASSPHRASE = 'fictional correct passphrase';
 const SESSION_CHANGED = 'The encryption session changed while unlocking';
@@ -64,5 +66,17 @@ describe('PassphraseDialog when the session changes during unlock', () => {
     render(<PassphraseDialog onUnlocked={vi.fn()} />);
     unlock('fictional wrong passphrase');
     expect(await screen.findByRole('alert')).toHaveTextContent('Wrong passphrase.');
+  });
+});
+
+describe('PassphraseDialog Delete All Data', () => {
+  it('forgets the names ignored on this device, which are not in the database it deletes', async () => {
+    localStorage.setItem('threatcaddy-identities-ignored-v3', JSON.stringify({ v: 3, folders: { case: ['2510b5d1324d7e48'] } }));
+    render(<PassphraseDialog onUnlocked={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Forgot passphrase?' }));
+    fireEvent.change(screen.getByLabelText('Type DELETE to confirm.'), { target: { value: 'DELETE' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Delete All Data & Start Fresh' }));
+    await vi.waitFor(() => expect(reloadPage).toHaveBeenCalled());
+    expect(localStorage.getItem('threatcaddy-identities-ignored-v3')).toBeNull();
   });
 });
