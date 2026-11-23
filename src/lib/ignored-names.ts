@@ -1,4 +1,3 @@
-import { useCallback, useSyncExternalStore } from 'react';
 import { foundKey, ignoredHash } from './identity-model';
 import { workspaceStorageKey } from './workspace-profiles';
 import { isEncryptionEnabled } from './encryptionStore';
@@ -13,7 +12,8 @@ import { decryptField, encryptField } from './crypto';
  * and "Delete all data" forgets them all. One store, so the Identities view and the timeline agree.
  */
 const storageKey = () => workspaceStorageKey('threatcaddy-identities-ignored-v3');
-type Ignored = ReadonlyMap<string, ReadonlySet<string>>;
+/** Hashes of ignored names, per investigation. */
+export type Ignored = ReadonlyMap<string, ReadonlySet<string>>;
 const EMPTY: Ignored = new Map();
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach(listener => listener());
@@ -34,7 +34,8 @@ function readRaw(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
 }
 
-function snapshot(): Ignored {
+/** The current list (stable until it changes), for useSyncExternalStore. */
+export function ignoredSnapshot(): Ignored {
   const key = storageKey();
   if (memory?.key === key) return memory.ignored;
   const raw = readRaw(key);
@@ -75,7 +76,7 @@ async function write(key: string, ignored: Ignored): Promise<void> {
 
 function update(change: (current: Map<string, ReadonlySet<string>>) => void): Promise<void> {
   const key = storageKey();
-  const next = new Map(snapshot());
+  const next = new Map(ignoredSnapshot());
   change(next);
   // Shown at once; stored once encrypted (when the workspace is).
   cache = { key, raw: readRaw(key), ignored: next };
@@ -83,7 +84,8 @@ function update(change: (current: Map<string, ReadonlySet<string>>) => void): Pr
   return write(key, next);
 }
 
-function subscribe(listener: () => void) {
+/** Calls `listener` when the list changes (in this tab or another). */
+export function subscribeIgnored(listener: () => void) {
   listeners.add(listener);
   const onStorage = (event: StorageEvent) => { if (event.key === null || event.key === storageKey()) listener(); };
   window.addEventListener('storage', onStorage);
@@ -92,7 +94,7 @@ function subscribe(listener: () => void) {
 
 /** Forgets the names ignored in these investigations (they were deleted). */
 export function forgetIgnoredNames(folderIds: readonly string[]): Promise<void> {
-  if (!folderIds.some(folderId => snapshot().has(folderId))) return Promise.resolve();
+  if (!folderIds.some(folderId => ignoredSnapshot().has(folderId))) return Promise.resolve();
   return update(next => { for (const folderId of folderIds) next.delete(folderId); });
 }
 
@@ -104,11 +106,10 @@ export function clearIgnoredNames(): void {
   notify();
 }
 
-export function useIgnoredNames() {
-  const ignored = useSyncExternalStore(subscribe, snapshot, snapshot);
-  const isIgnored = useCallback((folderId: string, text: string) => ignored.get(folderId)?.has(ignoredHash(foundKey(folderId, text))) ?? false, [ignored]);
-  const ignore = useCallback((folderId: string, text: string) => {
-    void update(next => { next.set(folderId, new Set(next.get(folderId) ?? []).add(ignoredHash(foundKey(folderId, text)))); });
-  }, []);
-  return { isIgnored, ignore };
+/** Whether a name is ignored in an investigation. */
+export const isIgnoredIn = (ignored: Ignored, folderId: string, text: string) => ignored.get(folderId)?.has(ignoredHash(foundKey(folderId, text))) ?? false;
+
+/** Ignores a name in an investigation on this device. */
+export function ignoreName(folderId: string, text: string): Promise<void> {
+  return update(next => { next.set(folderId, new Set(next.get(folderId) ?? []).add(ignoredHash(foundKey(folderId, text)))); });
 }
