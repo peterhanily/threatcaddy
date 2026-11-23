@@ -217,6 +217,10 @@ export interface SyncResult {
   localData?: Record<string, unknown>;
   /** Why the server refused the change in validation; absent for permission and scope rejections. */
   reason?: string;
+  /** Accepted without a write: the row already was as the change asked. */
+  unchanged?: boolean;
+  /** On this device only: the names of identities merged into this one, whose changes wait for it. */
+  mergedFrom?: string[];
 }
 
 export async function syncPush(changes: SyncChange[], generation: string): Promise<{ results: SyncResult[] }> {

@@ -24,6 +24,8 @@ import { SyncEngine } from ${source('lib/sync-engine.ts')};
 import { configureServerApi } from ${source('lib/server-api.ts')};
 import { exportJSON } from ${source('lib/export.ts')};
 import { evictSyncedFolder } from ${source('lib/sync-cache.ts')};
+import { mergeIdentities } from ${source('lib/merge-identities.ts')};
+import { deleteEntitiesWithReferences } from ${source('lib/entity-relations.ts')};
 const engine = new SyncEngine();
 let errors = [], conflicts = [];
 engine.setErrorHandler(error => { if (error) errors.push(error); });
@@ -43,6 +45,8 @@ window.syncFixture = {
   async pending() { return await db.table('_syncQueue').count(); },
   async evict(id) { await evictSyncedFolder(id); },
   async download(id) { await engine.pullFolder(id); },
+  async merge({ keepId, goneId }) { await mergeIdentities(keepId, goneId); },
+  async deleteInvestigation(id) { await deleteEntitiesWithReferences({ folders: [id] }, id); },
 };
 `;
 
@@ -188,6 +192,65 @@ try {
         fieldsEqual(synced, rows.identities, ['name', 'contact', 'details']);
       }
       check('an identity syncs between browsers, and an emptied status stays empty on both');
+
+      // A merge uploads as several rows: the merged-away identity's delete and the reconnection wait
+      // for the kept identity, so a teammate's concurrent edit can never half-apply it (DATA-1).
+      const person = (id: string, name: string, extra: Row = {}) => ({ ...common, id, type: 'person', name, aliases: [], details: [], connections: [], updatedAt: Date.now(), ...extra });
+      const goneRow = async () => (await database.sql`SELECT deleted_at FROM identities WHERE id = 'merge-gone'`)[0];
+      await put(first, 'identities', person('merge-keep', 'Dana Okafor'));
+      await put(first, 'identities', person('merge-gone', 'D. Okafor-Reyes', { aliases: ['dokafor'], details: [{ id: 'merge-phone', label: 'Phone', value: '+1 555 0142', private: true }] }));
+      await put(first, 'identities', person('merge-other', 'Lee Park', { connections: [{ targetId: 'merge-gone', label: 'reports to' }] }));
+      assert.deepEqual(await invoke(first, 'sync'), []);
+      assert.deepEqual(await invoke(second, 'sync'), []);
+      await put(second, 'identities', { ...await get(second, 'identities', 'merge-keep'), description: 'Finance lead', updatedAt: Date.now() });
+      assert.deepEqual(await invoke(second, 'sync'), []);
+      await invoke(first, 'merge', { keepId: 'merge-keep', goneId: 'merge-gone' });
+      const mergeConflicts = await invoke<Row[]>(first, 'sync');
+      assert.deepEqual(mergeConflicts.map(conflict => [conflict.entityId, conflict.status, conflict.mergedFrom]), [['merge-keep', 'conflict', ['D. Okafor-Reyes']]]);
+      assert.equal((await goneRow()).deleted_at, null);
+      await invoke(first, 'resolve', 'theirs');
+      assert.deepEqual(await invoke(first, 'sync'), []);
+      assert.deepEqual(await invoke(second, 'sync'), []);
+      for (const device of [first, second]) {
+        assert.equal((await get(device, 'identities', 'merge-keep'))?.description, 'Finance lead');
+        assert.deepEqual(((await get(device, 'identities', 'merge-gone'))?.details as Row[]).map(detail => detail.value), ['+1 555 0142']);
+        assert.deepEqual((await get(device, 'identities', 'merge-other'))?.connections, [{ targetId: 'merge-gone', label: 'reports to' }]);
+      }
+      assert.equal((await goneRow()).deleted_at, null);
+      assert.equal(await invoke(first, 'pending'), 0);
+      check('a merge waits for the kept identity, and Keep theirs on a teammate\'s edit cancels it without losing anything');
+
+      await put(second, 'identities', { ...await get(second, 'identities', 'merge-gone'), updatedAt: Date.now(),
+        details: [{ id: 'merge-phone', label: 'Phone', value: '+1 555 0142', private: true }, { id: 'merge-email', label: 'Email', value: 'dokafor@example.invalid' }] });
+      assert.deepEqual(await invoke(second, 'sync'), []);
+      await invoke(first, 'merge', { keepId: 'merge-keep', goneId: 'merge-gone' });
+      for (let cycle = 0; cycle < 4; cycle++) assert.deepEqual(await invoke(first, 'sync'), []);
+      assert.equal(await invoke(first, 'pending'), 0);
+      assert.notEqual((await goneRow()).deleted_at, null);
+      assert.deepEqual(await invoke(second, 'sync'), []);
+      for (const device of [first, second]) {
+        assert.equal(await get(device, 'identities', 'merge-gone'), null);
+        const kept = await get(device, 'identities', 'merge-keep');
+        assert.deepEqual((kept?.details as Row[]).map(detail => detail.value).sort(), ['+1 555 0142', 'dokafor@example.invalid']);
+        assert.deepEqual(kept?.aliases, ['D. Okafor-Reyes', 'dokafor']);
+        assert.deepEqual((await get(device, 'identities', 'merge-other'))?.connections, [{ targetId: 'merge-keep', label: 'reports to' }]);
+      }
+      check('a teammate\'s change to the merged-away identity is merged too, with no conflict and no duplicate name');
+
+      // Deleting an investigation with its identities uploads its delete; the items need nothing more (DATA-3).
+      await put(first, 'folders', { id: 'sync-drop', name: 'Synthetic dropped case', order: 1, createdAt: now, updatedAt: now });
+      for (let index = 0; index < 5; index++) await put(first, 'identities', { ...person(`drop-${index}`, `Dropped person ${index}`), folderId: 'sync-drop' });
+      assert.deepEqual(await invoke(first, 'sync'), []);
+      assert.deepEqual(await invoke(second, 'sync'), []);
+      assert.ok(await get(second, 'identities', 'drop-0'));
+      await invoke(first, 'deleteInvestigation', 'sync-drop');
+      assert.deepEqual(await invoke(first, 'sync'), []);
+      assert.deepEqual(await invoke(first, 'sync'), []);
+      assert.equal(await invoke(first, 'pending'), 0);
+      assert.notEqual((await database.sql`SELECT deleted_at FROM folders WHERE id = 'sync-drop'`)[0].deleted_at, null);
+      assert.deepEqual(await invoke(second, 'sync'), []);
+      assert.equal(await get(second, 'identities', 'drop-0'), null);
+      check('deleting an investigation with its identities leaves nothing refused or queued, and reaches the other browser');
 
       for (const choice of ['theirs', 'mine']) {
         await put(first, 'tasks', { ...await get(first, 'tasks', 'sync-task'), title: `First device ${choice}`, updatedAt: Date.now() });

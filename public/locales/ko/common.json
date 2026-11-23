@@ -375,6 +375,7 @@
   "syncStatus.heldBlocksLocalCopyRemoval": "로컬 복사본을 제거하지 않았습니다. 이 조사의 항목 {{count}}개에 팀 서버가 받아들일 수 없어 동기화가 이 기기에 보류 중인 변경 사항이 있습니다({{items}}). 영구 삭제하거나(휴지통으로 옮기는 것만으로는 충분하지 않음) 업로드할 수 있도록 편집한 후(예: 매우 긴 텍스트 줄이기) 다시 시도하세요.",
   "syncStatus.rejectedInvalid": "팀 서버가 이 변경을 유효하지 않은 것으로 거부했습니다({{reason}}). 이 기기에는 계속 저장되어 있습니다. 동기화하려면 수정하세요.",
   "syncStatus.theirsUnreadable": "이 기기에서 팀 서버 버전을 읽을 수 없으므로 내 버전만 유지할 수 있습니다.",
+  "syncStatus.mergeHeld": "이 신원으로 병합 대기 중: {{names}}. “Mine”은 병합을 완료하고, “Theirs”는 병합을 취소하고 병합된 내용을 되돌립니다.",
   "syncStatus.itemType.notes": "노트",
   "syncStatus.itemType.tasks": "태스크",
   "syncStatus.itemType.folders": "조사",

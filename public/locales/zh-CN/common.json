@@ -270,6 +270,7 @@
   "syncStatus.heldBlocksLocalCopyRemoval": "未移除本地副本：此调查中有 {{count}} 个项目的更改因团队服务器无法接受而被同步暂缓保存在此设备上（{{items}}）。请永久删除它们（仅移到回收站不够），或编辑它们使其能够上传（例如，缩短很长的文本），然后重试。",
   "syncStatus.rejectedInvalid": "团队服务器以无效为由拒绝了此更改（{{reason}}）。它仍保存在此设备上；请更正后再同步。",
   "syncStatus.theirsUnreadable": "此设备无法读取团队服务器上的版本，因此只能保留您的版本。",
+  "syncStatus.mergeHeld": "等待合并到此身份：{{names}}。“Mine”完成合并；“Theirs”取消合并并恢复已合并的内容。",
   "syncStatus.itemType.notes": "笔记",
   "syncStatus.itemType.tasks": "任务",
   "syncStatus.itemType.folders": "调查",

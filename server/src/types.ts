@@ -36,6 +36,8 @@ export interface SyncResult {
   previousFolderId?: string;
   /** Why a change was rejected by validation; absent for permission and scope rejections. */
   reason?: string;
+  /** Accepted without a write: the row already was as the change asked (nothing to announce or log). */
+  unchanged?: boolean;
 }
 
 // WebSocket message types

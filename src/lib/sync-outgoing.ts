@@ -16,7 +16,14 @@ const MAX_ASSET_PUSH_BYTES = 15 * 1024 * 1024; // Dedicated 16 MiB sync route.
 const encoder = new TextEncoder();
 export const validVersion = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0;
 
-export interface SyncQueueEntry extends SyncChange { seq?: number; folderId?: string }
+export interface SyncQueueEntry extends SyncChange {
+  seq?: number;
+  folderId?: string;
+  /** Sent only once this row's queued change is accepted (see holdSyncUntilAccepted). */
+  after?: { table: string; entityId: string };
+  /** What undoing the held change needs (a merge: the merged-away row, or connections before it). Encrypted at rest. */
+  restore?: unknown;
+}
 /** 'oversized': too large for any upload request. 'unsupported': the team server does not sync its table. */
 export type HeldReason = OutgoingRefusal | 'oversized' | 'unsupported';
 
@@ -63,7 +70,11 @@ export async function compactHeldQueue(serverTables: ReadonlySet<string>, only?:
       await db.table('_syncQueue').bulkDelete(seqs);
     } else if (entries.length > 1) {
       await db.table('_syncQueue').bulkDelete(seqs.slice(0, -1));
-      if (last.clientVersion !== first.clientVersion) await db.table('_syncQueue').put({ ...last, clientVersion: first.clientVersion });
+      // A hold (a merge waiting for its kept identity) stays with the entry that is kept.
+      const hold = entries.find(entry => entry.after);
+      if (last.clientVersion !== first.clientVersion || (hold && !last.after)) {
+        await db.table('_syncQueue').put({ ...last, clientVersion: first.clientVersion, ...(hold && !last.after ? { after: hold.after, restore: hold.restore } : {}) });
+      }
     }
   }
 }

@@ -68,7 +68,7 @@ app.post('/push', requireRole('admin', 'analyst'), async (c) => {
   for (let index = 0; index < changes.length; index++) {
     const change = changes[index];
     const result = results[index];
-    if (result.status !== 'accepted') continue;
+    if (result.status !== 'accepted' || result.unchanged) continue;
     const folderId = change.table === 'folders' ? change.entityId : result.serverRecord?.folderId as string | undefined;
     if (result.previousFolderId && result.previousFolderId !== folderId) {
       await broadcastToFolder(result.previousFolderId, {

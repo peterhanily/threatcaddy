@@ -270,6 +270,7 @@
   "syncStatus.heldBlocksLocalCopyRemoval": "Die lokale Kopie wurde nicht entfernt: {{count}} Element(e) in dieser Untersuchung haben Änderungen, die die Synchronisierung auf diesem Gerät zurückhält, weil der Teamserver sie nicht annehmen kann ({{items}}). Löschen Sie sie dauerhaft (in den Papierkorb verschieben reicht nicht) oder bearbeiten Sie sie so, dass sie hochgeladen werden können (zum Beispiel sehr langen Text kürzen), und versuchen Sie es dann erneut.",
   "syncStatus.rejectedInvalid": "Der Teamserver hat diese Änderung als ungültig abgelehnt ({{reason}}). Sie bleibt auf diesem Gerät gespeichert; korrigieren Sie sie, um sie zu synchronisieren.",
   "syncStatus.theirsUnreadable": "Dieses Gerät kann die Version des Teamservers nicht lesen, daher kann nur Ihre Version behalten werden.",
+  "syncStatus.mergeHeld": "Wartet darauf, in diese Identität zusammengeführt zu werden: {{names}}. „Mine“ schließt die Zusammenführung ab; „Theirs“ bricht sie ab und stellt das Zusammengeführte wieder her.",
   "syncStatus.itemType.notes": "Notiz",
   "syncStatus.itemType.tasks": "Aufgabe",
   "syncStatus.itemType.folders": "Untersuchung",

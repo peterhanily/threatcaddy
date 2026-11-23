@@ -2,24 +2,15 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { nanoid } from 'nanoid';
 import { db } from '../db';
 import i18n from '../i18n';
-import type { Identity, IdentityConnection, IdentityStatus } from '../types';
+import type { Identity } from '../types';
 import { purgeOldTrash } from '../lib/trash-purge';
 import { deleteEntitiesWithReferences } from '../lib/entity-relations';
 import { deleteCheckpointsFor } from '../lib/checkpoints';
 import { compactHeldChangesFor } from '../lib/sync-outgoing';
-import { conservativeClsLevel } from '../lib/classification';
-import { IDENTITY_STATUSES } from '../lib/entity-enums';
 import { sameText as normalized } from '../lib/identity-model';
+import { mergeIdentities as mergeIdentityRecords } from '../lib/merge-identities';
 
 const sameText = (a: string, b: string) => normalized(a) === normalized(b);
-/** Lower is more serious; no status ranks last. */
-const statusRank = (status?: IdentityStatus) => (status ? IDENTITY_STATUSES.indexOf(status) : IDENTITY_STATUSES.length);
-
-/** One edge per target and label, and never to itself. */
-function distinctConnections(edges: IdentityConnection[], selfId: string): IdentityConnection[] {
-  return edges.filter((edge, index) => edge.targetId !== selfId
-    && edges.findIndex(other => other.targetId === edge.targetId && sameText(other.label, edge.label)) === index);
-}
 
 /** Manages the people, organizations, systems and accounts recorded in investigations. */
 export function useIdentities(folderId?: string) {
@@ -149,43 +140,7 @@ export function useIdentities(folderId?: string) {
    * privacy marking are kept. Only identities in the same investigation can be merged.
    */
   const mergeIdentities = useCallback(async (keepId: string, goneId: string) => {
-    if (keepId === goneId) throw new Error('Choose two different identities to merge.');
-    await deleteEntitiesWithReferences({ identities: [goneId] }, undefined, undefined, undefined, undefined, async () => {
-      const [keep, gone] = await db.identities.bulkGet([keepId, goneId]);
-      if (!keep || !gone) throw new Error('Identity not found; nothing was merged.');
-      if (keep.folderId !== gone.folderId) throw new Error('Only identities in the same investigation can be merged.');
-      const now = Date.now();
-      const aliases = [...keep.aliases];
-      for (const name of [gone.name, ...gone.aliases]) {
-        if (name.trim() && !sameText(name, keep.name) && !aliases.some(alias => sameText(alias, name))) aliases.push(name);
-      }
-      const details = [...keep.details];
-      for (const detail of gone.details) {
-        const same = details.findIndex(kept => sameText(kept.label, detail.label) && sameText(kept.value, detail.value));
-        // The same detail stays private if either identity marked it private.
-        if (same >= 0) { if (detail.private) details[same] = { ...details[same], private: true }; continue; }
-        details.push(details.some(kept => kept.id === detail.id) ? { ...detail, id: nanoid() } : detail);
-      }
-      const retarget = (edges: IdentityConnection[]) => edges.map(edge => edge.targetId === goneId ? { ...edge, targetId: keepId } : edge);
-      const merged: Identity = {
-        ...keep,
-        // Both descriptions are kept: merge cannot be undone, so the analyst's text is never dropped.
-        description: keep.description && gone.description && !sameText(keep.description, gone.description)
-          ? `${keep.description}\n\n${gone.description}` : keep.description || gone.description,
-        aliases,
-        status: statusRank(gone.status) < statusRank(keep.status) ? gone.status : keep.status,
-        contact: keep.contact || gone.contact || undefined,
-        details,
-        connections: distinctConnections(retarget([...keep.connections, ...gone.connections]), keepId),
-        tags: [...new Set([...keep.tags, ...gone.tags])],
-        clsLevel: conservativeClsLevel([keep.clsLevel, gone.clsLevel]),
-        updatedAt: now,
-      };
-      const others = (await db.identities.toArray())
-        .filter(row => row.id !== keepId && row.id !== goneId && row.connections.some(edge => edge.targetId === goneId))
-        .map(row => ({ ...row, connections: distinctConnections(retarget(row.connections), row.id), updatedAt: now }));
-      await db.identities.bulkPut([merged, ...others]);
-    });
+    await mergeIdentityRecords(keepId, goneId);
     await loadIdentities();
   }, [loadIdentities]);
 

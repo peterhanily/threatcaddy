@@ -31,6 +31,35 @@ export function suppressSyncInCurrentTransaction() {
   suppressed.add(tx.idbtrans);
 }
 export function isSyncSuppressed(transaction: object) { return suppressed.has(transaction); }
+
+/** Whether this sync session has completed a pull: until then, trash the server holds is not purged
+ * (another device may have purged or restored it already; purging first only makes conflicts). */
+let pulledThisSession = false;
+const deferredTrashPurges = new Set<string>();
+export function setSessionPulled(pulled: boolean) { pulledThisSession = pulled; }
+export function hasPulledThisSession() { return pulledThisSession; }
+/** A table whose expired trash waits for the first pull; the sync engine reloads it then. */
+export function deferTrashPurge(table: string) { deferredTrashPurges.add(table); }
+export function takeDeferredTrashPurges(): Set<string> {
+  const tables = new Set(deferredTrashPurges);
+  deferredTrashPurges.clear();
+  return tables;
+}
+
+/** A change to several rows whose other rows' queued changes wait until one row's change is accepted. */
+export interface SyncHold { after: { table: string; entityId: string }; restore: ReadonlyMap<string, unknown> }
+const holds = new WeakMap<object, SyncHold>();
+/**
+ * Inside a write transaction: the changes queued in it for the rows in `restore` (ids) wait until
+ * `table`/`entityId`'s queued change is accepted, each with its `restore` value kept (encrypted) for
+ * undoing it. A merge uses it so its delete never reaches the server before the merged identity does.
+ */
+export function holdSyncUntilAccepted(table: string, entityId: string, restore: ReadonlyMap<string, unknown>) {
+  const tx = Dexie.currentTransaction;
+  if (!tx) throw new Error('A sync hold requires a database transaction');
+  holds.set(tx.idbtrans, { after: { table, entityId }, restore });
+}
+export function syncHold(transaction: object): SyncHold | undefined { return holds.get(transaction); }
 export function onOutboxCommit(listener: () => void) {
   listeners.add(listener);
   return () => { listeners.delete(listener); };

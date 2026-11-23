@@ -6,9 +6,11 @@ import { SERVER_UNREPRESENTED_FIELDS, preserveUnsyncedFields, readableSyncRecord
 import { MAX_SYNC_REQUEST_NODES } from './sync-push-limits';
 import { deleteCheckpointsFor } from './checkpoints';
 import { forgetIgnoredNames } from './ignored-names';
+import { mergeIdentityRows, undoRetarget } from './identity-merge';
+import type { Identity, IdentityConnection } from '../types';
 import { MAX_PUSH_BYTES, SERVER_TABLES_KEY, agentDeploymentIds, compactHeldQueue, outgoingChange, serverSyncTables, serverTablesOf, syncItemLabel, validVersion,
   type HeldReason, type SyncQueueEntry } from './sync-outgoing';
-import { LEGACY_SYNC_TABLES, SYNC_TABLES, isSyncTable, onOutboxCommit, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
+import { LEGACY_SYNC_TABLES, SYNC_TABLES, isSyncTable, onOutboxCommit, revisionKey, suppressSyncInCurrentTransaction, setSessionPulled, hasPulledThisSession, takeDeferredTrashPurges } from './sync-state';
 import type { WSClient } from './ws-client';
 import { ensureSyncWorkspace, type SyncWorkspacePause } from './sync-workspace';
 import { assertSyncCaptureReady, ensureSyncCaptureCoverage, normalizeSyncWorkspaceIdentity, isSyncWorkspaceIdentity,
@@ -26,6 +28,11 @@ const RECOVERY_KEY = SYNC_RECOVERY_KEY;
 const HISTORY_KEY = 'syncHistoryGenerationV1';
 const RECOVERY_MESSAGE = SYNC_HISTORY_MESSAGE;
 const entityKey = (table: string, id: string) => JSON.stringify([table, id]);
+const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
+/** The names of identities merged into this one whose changes wait for it (its conflict says so). */
+const mergedNames = (queue: SyncQueueEntry[], table: string, entityId: string) => queue
+  .filter(entry => entry.after?.table === table && entry.after.entityId === entityId && entry.op === 'delete')
+  .flatMap(entry => isRecord(entry.restore) && typeof entry.restore.name === 'string' ? [entry.restore.name] : []);
 /** Server rows this client could not read: { version, folderId } only, never their content. */
 const skippedKey = (table: string, id: string) => JSON.stringify(['syncSkipped', table, id]);
 const SKIPPED_PREFIX = '["syncSkipped",';
@@ -109,6 +116,7 @@ export class SyncEngine {
   start() {
     if (this.running) return;
     this.running = true;
+    setSessionPulled(false);
     const epoch = ++this.epoch;
     this.unsubscribe = onOutboxCommit(() => this.scheduleSync());
     queueMicrotask(() => { if (this.epoch === epoch) this.onReady?.(); });
@@ -123,6 +131,7 @@ export class SyncEngine {
 
   stop() {
     this.running = false;
+    setSessionPulled(false);
     ++this.epoch;
     this.unsubscribe?.();
     this.unsubscribe = null;
@@ -159,6 +168,12 @@ export class SyncEngine {
         // server. A reset is a reconciliation decision, not a cursor rewind.
         await this.pull(epoch);
         if (epoch !== this.epoch) return;
+        if (!hasPulledThisSession()) {
+          // Trash this device could not purge before pulling (the server holds it) is purged now.
+          setSessionPulled(true);
+          const deferred = takeDeferredTrashPurges();
+          if (deferred.size) this.onRemoteChange?.([], deferred);
+        }
         await this.push(epoch);
         if (epoch === this.epoch) await this.pull(epoch);
       } catch (error) {
@@ -246,6 +261,25 @@ export class SyncEngine {
       const key = entityKey(entry.table, entry.entityId);
       groups.set(key, [...(groups.get(key) ?? []), entry]);
     }
+    // A change that waits for another row's change (a merge waits for the kept identity) stays queued
+    // while that row has anything queued. An investigation's queued delete covers its items' deletes:
+    // they are not sent, and are dropped once it is accepted (the server publishes them to everyone).
+    const queuedKeys = new Set(queue.map(entry => entityKey(entry.table, entry.entityId)));
+    const waitedOn = new Set<string>();
+    const deletedFolders = new Set([...groups.values()]
+      .filter(entries => entries[0].table === 'folders' && entries[entries.length - 1].op === 'delete').map(entries => entries[0].entityId));
+    const covered = new Map<string, SyncQueueEntry[]>();
+    for (const [key, entries] of groups) {
+      const last = entries[entries.length - 1];
+      const after = entries.find(entry => entry.after)?.after;
+      if (after && queuedKeys.has(entityKey(after.table, after.entityId))) {
+        waitedOn.add(entityKey(after.table, after.entityId));
+        groups.delete(key);
+      } else if (last.table !== 'folders' && last.op === 'delete' && typeof last.folderId === 'string' && deletedFolders.has(last.folderId)) {
+        covered.set(last.folderId, [...covered.get(last.folderId) ?? [], ...entries]);
+        groups.delete(key);
+      }
+    }
     if (samples.length) {
       await dynamicDb.transaction('rw', '_syncQueue', '_syncMeta', '_localMigrations', async () => {
         await this.assertCurrentWorkspace(epoch);
@@ -256,6 +290,8 @@ export class SyncEngine {
     // Parents are accepted before their child entities.
     const ordered = [...groups.values()].sort((a, b) => Number(b[0].table === 'folders') - Number(a[0].table === 'folders'));
     const conflicts: SyncResult[] = [];
+    const folds: Array<{ conflict: SyncResult; keepId: string; serverData: Record<string, unknown>; serverVersion: number }> = [];
+    let released = false;
     const encoder = new TextEncoder();
     const agents = await agentDeploymentIds();
     const refused: Array<{ table: string; entityId: string; refusal: Exclude<HeldReason, 'oversized'> }> = [];
@@ -318,7 +354,14 @@ export class SyncEngine {
           const sent = changes[i], result = results[i];
           if (!result || result.entityId !== sent.entityId || (result.table && result.table !== sent.table)) continue;
           if (result.status !== 'accepted') {
-            conflicts.push({ ...result, table: sent.table, localData: sent.data });
+            const merge = batch[i].find(entry => entry.after && isRecord(entry.restore) && typeof entry.restore.id === 'string');
+            // A merged-away identity a teammate changed meanwhile: their version is merged too (below).
+            if (merge?.after && result.status === 'conflict' && sent.op === 'delete' && sent.table === 'identities' && result.serverData && !result.serverData.deletedAt && validVersion(result.serverVersion)) {
+              folds.push({ conflict: { ...result, table: sent.table, localData: sent.data }, keepId: merge.after.entityId, serverData: result.serverData, serverVersion: result.serverVersion });
+              continue;
+            }
+            const mergedFrom = mergedNames(queue, sent.table, sent.entityId);
+            conflicts.push({ ...result, table: sent.table, localData: sent.data, ...(mergedFrom.length ? { mergedFrom } : {}) });
             continue;
           }
           if (!validVersion(result.serverVersion)) continue; // do not lose work on malformed acknowledgements
@@ -334,11 +377,72 @@ export class SyncEngine {
               await dynamicDb.table('_syncQueue').put({ ...pending, clientVersion: result.serverVersion });
             }
           }
+          if (sent.table === 'folders' && sent.op === 'delete') {
+            await dynamicDb.table('_syncQueue').bulkDelete((covered.get(sent.entityId) ?? []).map(entry => entry.seq).filter((seq): seq is number => seq !== undefined));
+          }
+          if (waitedOn.has(entityKey(sent.table, sent.entityId)) && !remaining.some(pending => pending.table === sent.table)) released = true;
         }
         await this.assertCurrentWorkspace(epoch);
       });
     }
+    for (const fold of folds) {
+      if (epoch !== this.epoch) return;
+      if (!await this.foldMergedIdentity(epoch, fold)) conflicts.push(fold.conflict);
+    }
     if (epoch === this.epoch && conflicts.length) this.onConflict?.(conflicts);
+    // What waited for an accepted change goes now, not at the next interval.
+    if (epoch === this.epoch && released) this.scheduleSync();
+  }
+
+  /**
+   * Cancels the changes held behind a row whose own change was given up ("Keep theirs"): a merge's
+   * merged-away identity comes back as it was, and identities the merge reconnected point at it again
+   * (queued as a new change). Runs inside resolveConflicts' transaction, with capture suppressed;
+   * `queue` is the queue as that transaction read it for this conflict.
+   */
+  private async cancelHeldBehind(table: string, entityId: string, queue: SyncQueueEntry[]): Promise<boolean> {
+    const held = queue.filter(entry => entry.after?.table === table && entry.after.entityId === entityId);
+    const groups = new Map<string, SyncQueueEntry[]>();
+    for (const entry of held) groups.set(entityKey(entry.table, entry.entityId), [...groups.get(entityKey(entry.table, entry.entityId)) ?? [], entry]);
+    for (const entries of groups.values()) {
+      const { table: name, entityId: id } = entries[0];
+      const all = queue.filter(entry => entry.table === name && entry.entityId === id);
+      const restore = entries.find(entry => entry.restore !== undefined)?.restore;
+      await dynamicDb.table('_syncQueue').bulkDelete(all.map(entry => entry.seq).filter((seq): seq is number => seq !== undefined));
+      if (name !== 'identities' || !isRecord(restore)) continue;
+      if (typeof restore.id === 'string') {
+        // The merged-away identity: the server still holds it as it was (its delete was never sent).
+        if (!await dynamicDb.table(name).get(id)) await dynamicDb.table(name).put(restore);
+        continue;
+      }
+      const current = await dynamicDb.table(name).get(id) as Identity | undefined;
+      if (!current || !Array.isArray(restore.connections) || typeof restore.mergedFrom !== 'string') continue;
+      const reconnected = { ...current, connections: undoRetarget(current.connections, restore.connections as IdentityConnection[], entityId, restore.mergedFrom, id), updatedAt: Date.now() };
+      await dynamicDb.table(name).put(reconnected);
+      await dynamicDb.table('_syncQueue').add({ table: name, entityId: id, folderId: current.folderId, op: 'put', data: reconnected, clientVersion: all[0]?.clientVersion ?? 0 });
+    }
+    return groups.size > 0;
+  }
+
+  /**
+   * A merge's delete conflicted because a teammate changed the merged-away identity: their version is
+   * merged into the kept identity too, and the delete retries against it once that is accepted. False
+   * (shown as a conflict) when the kept identity is gone or their version cannot be read here.
+   */
+  private async foldMergedIdentity(epoch: number, fold: { conflict: SyncResult; keepId: string; serverData: Record<string, unknown>; serverVersion: number }): Promise<boolean> {
+    const goneId = fold.conflict.entityId;
+    return dynamicDb.transaction('rw', ['identities', '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
+      await this.assertCurrentWorkspace(epoch);
+      const kept = await dynamicDb.table('identities').get(fold.keepId) as Identity | undefined;
+      const theirs = readableSyncRecord('identities', fold.serverData, goneId) as Identity | null;
+      if (!kept || !theirs) return false;
+      // Not suppressed: the kept identity's new version is queued as any edit is.
+      await dynamicDb.table('identities').put(mergeIdentityRows(kept, theirs, Date.now()));
+      for (const entry of await dynamicDb.table('_syncQueue').where('entityId').equals(goneId).toArray() as SyncQueueEntry[]) {
+        if (entry.table === 'identities') await dynamicDb.table('_syncQueue').put({ ...entry, clientVersion: fold.serverVersion });
+      }
+      return true;
+    });
   }
 
   private async pull(epoch: number) {
@@ -600,6 +704,8 @@ export class SyncEngine {
             replace();
           }
           await dynamicDb.table('_syncQueue').bulkDelete(entries.map(e => e.seq!));
+          // Keeping their version of a merge's kept identity cancels the merge (DATA-1).
+          if (await this.cancelHeldBehind(table, conflict.entityId, queue)) affected.add(table);
           // A pull may have skipped a newer revision while this entity was
           // pending. Replay the committed log after accepting the reviewed
           // version, so that skipped updates cannot remain invisible forever.

@@ -59,5 +59,14 @@ describe('push broadcasts', () => {
     await push('notes', { id: 'id-1', folderId: 'folder-1', title: 'Weekly notes', version: 2 });
     expect(mocks.audit).toHaveBeenLastCalledWith([expect.objectContaining({ category: 'notes', itemTitle: 'Weekly notes' })]);
   });
-});
 
+  it('announce and log nothing for a change the server accepted without a write (the row already was as asked)', async () => {
+    mocks.push.mockResolvedValue([{ table: 'notes', entityId: 'id-1', status: 'accepted', serverVersion: 4, unchanged: true }]);
+    const response = await app.request('/api/sync/push', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', changes: [{ table: 'notes', op: 'delete', entityId: 'id-1', clientVersion: 1 }] }) });
+    expect(response.status).toBe(200);
+    expect((await response.json()).results).toEqual([expect.objectContaining({ status: 'accepted', serverVersion: 4, unchanged: true })]);
+    expect(mocks.broadcast).not.toHaveBeenCalled();
+    expect(mocks.audit).not.toHaveBeenCalled();
+  });
+});

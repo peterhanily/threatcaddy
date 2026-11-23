@@ -270,6 +270,7 @@
   "syncStatus.heldBlocksLocalCopyRemoval": "ローカルコピーは削除されませんでした。この調査内の {{count}} 件の項目に、チームサーバーが受け付けられないため同期がこのデバイスに保留している変更があります（{{items}}）。完全に削除する（ゴミ箱に移動するだけでは不十分です）か、アップロードできるように編集して（たとえば、非常に長いテキストを短くする）から、もう一度お試しください。",
   "syncStatus.rejectedInvalid": "チームサーバーはこの変更を無効として拒否しました（{{reason}}）。このデバイスには保存されたままです。同期するには修正してください。",
   "syncStatus.theirsUnreadable": "このデバイスではチームサーバーのバージョンを読み取れないため、自分のバージョンのみ保持できます。",
+  "syncStatus.mergeHeld": "このアイデンティティへのマージを待機中: {{names}}。「Mine」でマージを完了し、「Theirs」でマージを取り消してマージした内容を元に戻します。",
   "syncStatus.itemType.notes": "ノート",
   "syncStatus.itemType.tasks": "タスク",
   "syncStatus.itemType.folders": "調査",

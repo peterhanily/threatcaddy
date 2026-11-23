@@ -270,6 +270,7 @@
   "syncStatus.heldBlocksLocalCopyRemoval": "Salinan lokal tidak dihapus: {{count}} item dalam investigasi ini memiliki perubahan yang ditahan sinkronisasi di perangkat ini karena server tim tidak dapat menerimanya ({{items}}). Hapus secara permanen (memindahkannya ke sampah tidak cukup) atau edit agar dapat diunggah (misalnya, persingkat teks yang sangat panjang), lalu coba lagi.",
   "syncStatus.rejectedInvalid": "Server tim menolak perubahan ini karena tidak valid ({{reason}}). Perubahan ini tetap tersimpan di perangkat ini; perbaiki agar dapat disinkronkan.",
   "syncStatus.theirsUnreadable": "Perangkat ini tidak dapat membaca versi server tim, jadi hanya versi Anda yang dapat dipertahankan.",
+  "syncStatus.mergeHeld": "Menunggu digabungkan ke identitas ini: {{names}}. “Mine” menyelesaikan penggabungan; “Theirs” membatalkannya dan memulihkan yang telah digabungkan.",
   "syncStatus.itemType.notes": "Catatan",
   "syncStatus.itemType.tasks": "Tugas",
   "syncStatus.itemType.folders": "Investigasi",

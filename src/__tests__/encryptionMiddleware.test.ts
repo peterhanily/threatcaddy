@@ -97,7 +97,8 @@ describe('ENCRYPTED_FIELDS', () => {
     expect(tables).toContain('installedIntegrations');
     expect(tables).toContain('integrationRuns');
     expect(tables.sort()).toEqual(db.tables.map(table => table.name).filter(name => !['_syncMeta', '_localMigrations', '_clipReceipts'].includes(name)).sort());
-    expect(ENCRYPTED_FIELDS._syncQueue).toEqual(['data']);
+    // `restore`: a held merge's copy of the merged-away identity (private details included).
+    expect(ENCRYPTED_FIELDS._syncQueue).toEqual(['data', 'restore']);
     expect(ENCRYPTED_FIELDS._syncMeta).toBeUndefined();
     expect(ENCRYPTED_FIELDS._localMigrations).toBeUndefined();
     expect(ENCRYPTED_FIELDS._clipReceipts).toBeUndefined();

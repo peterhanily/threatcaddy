@@ -270,6 +270,7 @@
   "syncStatus.heldBlocksLocalCopyRemoval": "Nie usunięto lokalnej kopii: elementy w tym śledztwie mają zmiany, które synchronizacja wstrzymuje na tym urządzeniu, ponieważ serwer zespołu nie może ich przyjąć (liczba: {{count}}; {{items}}). Usuń je trwale (przeniesienie do kosza nie wystarczy) lub edytuj je tak, aby można je było przesłać (na przykład skróć bardzo długi tekst), a następnie spróbuj ponownie.",
   "syncStatus.rejectedInvalid": "Serwer zespołu odrzucił tę zmianę jako nieprawidłową ({{reason}}). Pozostaje zapisana na tym urządzeniu; popraw ją, aby zsynchronizować.",
   "syncStatus.theirsUnreadable": "To urządzenie nie może odczytać wersji z serwera zespołu, więc można zachować tylko Twoją wersję.",
+  "syncStatus.mergeHeld": "Oczekuje na scalenie z tą tożsamością: {{names}}. „Mine” kończy scalanie; „Theirs” je anuluje i przywraca to, co zostało scalone.",
   "syncStatus.itemType.notes": "Notatka",
   "syncStatus.itemType.tasks": "Zadanie",
   "syncStatus.itemType.folders": "Śledztwo",

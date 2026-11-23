@@ -270,6 +270,7 @@
   "syncStatus.heldBlocksLocalCopyRemoval": "A cópia local não foi removida: {{count}} item(ns) desta investigação têm alterações que a sincronização retém neste dispositivo porque o servidor da equipe não pode aceitá-las ({{items}}). Exclua-os permanentemente (movê-los para a lixeira não basta) ou edite-os para que possam ser enviados (por exemplo, encurte textos muito longos) e tente novamente.",
   "syncStatus.rejectedInvalid": "O servidor da equipe recusou esta alteração por ser inválida ({{reason}}). Ela continua salva neste dispositivo; corrija-a para sincronizá-la.",
   "syncStatus.theirsUnreadable": "Este dispositivo não consegue ler a versão do servidor da equipe, então só a sua versão pode ser mantida.",
+  "syncStatus.mergeHeld": "Aguardando a mesclagem nesta identidade: {{names}}. “Mine” conclui a mesclagem; “Theirs” a cancela e restaura o que foi mesclado.",
   "syncStatus.itemType.notes": "Nota",
   "syncStatus.itemType.tasks": "Tarefa",
   "syncStatus.itemType.folders": "Investigação",

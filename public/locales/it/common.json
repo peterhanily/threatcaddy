@@ -270,6 +270,7 @@
   "syncStatus.heldBlocksLocalCopyRemoval": "La copia locale non è stata rimossa: {{count}} elemento/i di questa indagine hanno modifiche che la sincronizzazione trattiene su questo dispositivo perché il server del team non può accettarle ({{items}}). Eliminali definitivamente (spostarli nel cestino non basta) oppure modificali in modo che possano essere caricati (ad esempio, accorcia un testo molto lungo), poi riprova.",
   "syncStatus.rejectedInvalid": "Il server del team ha rifiutato questa modifica perché non valida ({{reason}}). Resta salvata su questo dispositivo; correggila per sincronizzarla.",
   "syncStatus.theirsUnreadable": "Questo dispositivo non può leggere la versione del server del team, quindi si può mantenere solo la tua versione.",
+  "syncStatus.mergeHeld": "In attesa di essere unita a questa identità: {{names}}. «Mine» completa l’unione; «Theirs» la annulla e ripristina ciò che era stato unito.",
   "syncStatus.itemType.notes": "Nota",
   "syncStatus.itemType.tasks": "Attività",
   "syncStatus.itemType.folders": "Indagine",

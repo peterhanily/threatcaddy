@@ -1,6 +1,8 @@
 import type { EntityTable } from 'dexie';
 import { deleteEntitiesWithReferences, ENTITY_RELATIONS } from './entity-relations';
 import { PendingChangesError } from './pending-changes';
+import { db } from '../db';
+import { deferTrashPurge, hasPulledThisSession, revisionKey } from './sync-state';
 
 const TRASH_PURGE_DAYS = 30;
 
@@ -19,7 +21,17 @@ export async function purgeOldTrash<T extends Trashable>(
   table: EntityTable<T, 'id'>,
 ): Promise<T[]> {
   const purgeThreshold = Date.now() - TRASH_PURGE_DAYS * 86400000;
-  const toPurge = items.filter((item) => item.trashed && item.trashedAt && item.trashedAt < purgeThreshold);
+  let toPurge = items.filter((item) => item.trashed && item.trashedAt && item.trashedAt < purgeThreshold);
+  if (toPurge.length && !hasPulledThisSession()) {
+    // Rows the team server holds wait for this session's first pull: another device may already have
+    // purged them, and deleting them again from a stale revision would only make conflicts (DATA-2).
+    const revisions = await db.table('_syncMeta').bulkGet(toPurge.map(item => revisionKey(table.name, item.id)));
+    const synced = new Set(toPurge.filter((_, index) => revisions[index]?.value).map(item => item.id));
+    if (synced.size) {
+      deferTrashPurge(table.name);
+      toPurge = toPurge.filter(item => !synced.has(item.id));
+    }
+  }
   if (toPurge.length > 0) {
     if (!ENTITY_RELATIONS[table.name]) throw new Error('No safe purge lifecycle registered for ' + table.name);
     try {

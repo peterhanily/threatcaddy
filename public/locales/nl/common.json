@@ -270,6 +270,7 @@
   "syncStatus.heldBlocksLocalCopyRemoval": "De lokale kopie is niet verwijderd: {{count}} item(s) in dit onderzoek hebben wijzigingen die synchronisatie op dit apparaat tegenhoudt omdat de teamserver ze niet kan accepteren ({{items}}). Verwijder ze definitief (naar de prullenbak verplaatsen is niet genoeg) of bewerk ze zodat ze geüpload kunnen worden (maak bijvoorbeeld zeer lange tekst korter) en probeer het daarna opnieuw.",
   "syncStatus.rejectedInvalid": "De teamserver heeft deze wijziging als ongeldig geweigerd ({{reason}}). Ze blijft op dit apparaat opgeslagen; corrigeer ze om ze te synchroniseren.",
   "syncStatus.theirsUnreadable": "Dit apparaat kan de versie van de teamserver niet lezen, dus alleen uw eigen versie kan worden behouden.",
+  "syncStatus.mergeHeld": "Wacht om samengevoegd te worden met deze identiteit: {{names}}. ‘Mine’ voltooit het samenvoegen; ‘Theirs’ annuleert het en herstelt wat was samengevoegd.",
   "syncStatus.itemType.notes": "Notitie",
   "syncStatus.itemType.tasks": "Taak",
   "syncStatus.itemType.folders": "Onderzoek",

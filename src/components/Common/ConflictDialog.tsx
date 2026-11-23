@@ -109,6 +109,7 @@ export function ConflictDialog({ conflicts, onResolve, onResolveAll, onClose }: 
                 </>}
               </div>
               {conflict.status === 'conflict' && !keepTheirs && <p className="mt-1 text-xs text-[var(--color-amber-200)]">{t('syncStatus.theirsUnreadable')}</p>}
+              {conflict.mergedFrom?.length ? <p className="mt-1 text-xs text-[var(--color-amber-200)]">{t('syncStatus.mergeHeld', { names: conflict.mergedFrom.join(', ') })}</p> : null}
               {conflict.status === 'rejected' && <p className="mt-1 text-xs text-[var(--color-amber-200)]">{typeof conflict.reason === 'string' && conflict.reason
                 ? t('syncStatus.rejectedInvalid', { reason: conflict.reason.slice(0, 200) })
                 : 'The server rejected this change. It remains saved locally; check your permissions before retrying.'}</p>}

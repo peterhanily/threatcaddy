@@ -270,6 +270,7 @@
   "syncStatus.heldBlocksLocalCopyRemoval": "No se eliminó la copia local: {{count}} elemento(s) de esta investigación tienen cambios que la sincronización retiene en este dispositivo porque el servidor del equipo no puede aceptarlos ({{items}}). Elimínelos permanentemente (moverlos a la papelera no basta) o edítelos para que puedan subirse (por ejemplo, acorte el texto muy largo) y, después, vuelva a intentarlo.",
   "syncStatus.rejectedInvalid": "El servidor del equipo rechazó este cambio por no ser válido ({{reason}}). Sigue guardado en este dispositivo; corríjalo para sincronizarlo.",
   "syncStatus.theirsUnreadable": "Este dispositivo no puede leer la versión del servidor del equipo, así que solo se puede conservar su versión.",
+  "syncStatus.mergeHeld": "Pendiente de fusionarse con esta identidad: {{names}}. «Mine» completa la fusión; «Theirs» la cancela y restaura lo que se fusionó.",
   "syncStatus.itemType.notes": "Nota",
   "syncStatus.itemType.tasks": "Tarea",
   "syncStatus.itemType.folders": "Investigación",

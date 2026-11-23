@@ -150,6 +150,22 @@ function stripServerFields(data: Record<string, unknown> | undefined, tableName:
   return clean;
 }
 
+/** JSON with object keys sorted, so jsonb values (stored with their own key order) compare by content. */
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value instanceof Date ? value.getTime() : value ?? null);
+}
+
+/** Whether writing this put would change none of the stored columns it names. */
+function sameAsStored(tableName: string, clean: Record<string, unknown>, stored: Record<string, unknown>): boolean {
+  const columns = getTableColumns(getTable(tableName));
+  // A field that is not a column is not stored, so a write would not change it either.
+  return Object.entries(clean).every(([key, value]) => !Object.hasOwn(columns, key) || canonicalJson(value) === canonicalJson(stored[key]));
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getTable(name: string): any {
   const table = Object.hasOwn(TABLE_MAP, name) ? TABLE_MAP[name] : undefined;
@@ -321,13 +337,17 @@ export async function processPush(
       }
       // A retained child never bypasses its deleted/missing parent's boundary,
       // including moves out of that parent into another accessible folder.
+      // The one exception completes a deletion: deleting an item of an investigation that is itself
+      // deleted (earlier in this batch, or before). Its delete was already published to every member.
+      let inDeletedFolder = false;
       if ((options.authorize || options.authorizeMutation) && change.table !== 'folders' && !GLOBAL_SYNC_TABLES.has(change.table)) {
         const scopes = new Set([sourceFolder, op === 'put' ? destinationFolder : undefined].filter((id): id is string => typeof id === 'string'));
         let live = true;
         for (const folderId of scopes) {
-          const [folder] = await tx.select({ id: schema.folders.id }).from(schema.folders)
-            .where(and(eq(schema.folders.id, folderId), isNull(schema.folders.deletedAt))).limit(1);
-          if (!folder) { live = false; break; }
+          const [folder] = await tx.select({ id: schema.folders.id, deletedAt: schema.folders.deletedAt }).from(schema.folders)
+            .where(eq(schema.folders.id, folderId)).limit(1);
+          if (folder?.deletedAt && op === 'delete' && folderId === sourceFolder) { inDeletedFolder = true; continue; }
+          if (!folder || folder.deletedAt) { live = false; break; }
         }
         if (!live) { result[index] = { table: change.table, entityId, status: 'rejected' }; continue; }
       }
@@ -356,8 +376,18 @@ export async function processPush(
       // writer lock. The HTTP route never passes trustedInternal.
       const baseline = change.clientVersion ?? (options.trustedInternal ? serverVersion : undefined);
       if ((current && baseline !== serverVersion) || (!current && baseline !== undefined && baseline !== 0 && op === 'put')) {
-        result[index] = { table: change.table, entityId, status: 'conflict', serverVersion, serverData: current };
-        continue;
+        // Nothing to resolve when the change would leave the row as it is: deleting a row that is
+        // already deleted, or a put equal to the stored row (two devices made the same change, such
+        // as the same 30-day purge). Accepted without a write, an event or a new revision.
+        if (current && (op === 'delete' ? !!current.deletedAt : !current.deletedAt && sameAsStored(change.table, cleanData, current))) {
+          result[index] = { table: change.table, entityId, status: 'accepted', serverVersion, unchanged: true };
+          continue;
+        }
+        // Deleting an item of a deleted investigation completes that deletion whatever its revision.
+        if (!inDeletedFolder) {
+          result[index] = { table: change.table, entityId, status: 'conflict', serverVersion, serverData: current };
+          continue;
+        }
       }
       if (change.table === 'evidenceItems' && op === 'put') {
         try { validateEvidencePreview(cleanData, current); } catch (error) { rejectInvalid(error); continue; }

@@ -270,6 +270,7 @@
   "syncStatus.heldBlocksLocalCopyRemoval": "Yerel kopya kaldırılmadı: bu incelemedeki {{count}} öğenin, ekip sunucusu kabul edemediği için eşitlemenin bu cihazda beklettiği değişiklikleri var ({{items}}). Bunları kalıcı olarak silin (çöp kutusuna taşımak yeterli değildir) veya yüklenebilmeleri için düzenleyin (örneğin çok uzun metni kısaltın), ardından yeniden deneyin.",
   "syncStatus.rejectedInvalid": "Ekip sunucusu bu değişikliği geçersiz olduğu için reddetti ({{reason}}). Bu cihazda kayıtlı kalır; eşitlemek için düzeltin.",
   "syncStatus.theirsUnreadable": "Bu cihaz ekip sunucusundaki sürümü okuyamıyor; bu nedenle yalnızca sizin sürümünüz korunabilir.",
+  "syncStatus.mergeHeld": "Bu kimlikle birleştirilmeyi bekliyor: {{names}}. “Mine” birleştirmeyi tamamlar; “Theirs” birleştirmeyi iptal eder ve birleştirilenleri geri getirir.",
   "syncStatus.itemType.notes": "Not",
   "syncStatus.itemType.tasks": "Görev",
   "syncStatus.itemType.folders": "İnceleme",

@@ -38,7 +38,8 @@ export const ENCRYPTED_FIELDS: Record<string, string[]> = {
   agentProfiles: ['name', 'description', 'systemPrompt', 'soul', 'policy'],
   agentDeployments: ['policyOverrides', 'lastHandoffReconciliation'],
   agentMeetings: ['agenda', 'structuredOutput'],
-  _syncQueue: ['data'],
+  // `restore`: what undoing a held multi-row change needs (a merged-away identity's row).
+  _syncQueue: ['data', 'restore'],
 };
 
 let sessionKey: CryptoKey | null = null;
