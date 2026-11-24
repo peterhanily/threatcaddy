@@ -481,7 +481,12 @@ const a11yRows = () => ({
 
 test('shows a private detail with a toggle that keeps focus, and names each status in words', async ({ page }) => {
   await seed(page, a11yRows(), { view: 'identities', selectedFolderId: 'case' });
-  await expect(row(page, 'Dana Okafor')).toContainText('Compromised');
+  // In words on screen, not only for screen readers (WCAG 1.4.1).
+  expect(await row(page, 'Dana Okafor').evaluate(element => {
+    const copy = element.cloneNode(true) as HTMLElement;
+    copy.querySelectorAll('.sr-only').forEach(node => node.remove());
+    return copy.textContent;
+  })).toContain('Compromised');
   await row(page, 'Dana Okafor').click();
   const show = card(page, 'Dana Okafor').getByRole('button', { name: 'Show private phone' });
   await expect(show).toHaveAttribute('aria-pressed', 'false');
@@ -555,7 +560,10 @@ test('fits long Russian card labels, and the German header on a phone', async ({
   // Every count label on the card stays inside its cell (and there are labels to check).
   expect(await page.locator('main .grid-cols-4 > div > span:last-child').count()).toBeGreaterThan(0);
   const spilled = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('main .grid-cols-4 > div > span:last-child')]
-    .filter(label => { const box = label.getBoundingClientRect(), cell = (label.parentElement as HTMLElement).getBoundingClientRect(); return box.left < cell.left - 1 || box.right > cell.right + 1; })
+    .filter(label => {
+      const box = label.getBoundingClientRect(), cell = (label.parentElement as HTMLElement).getBoundingClientRect();
+      return label.scrollWidth > label.clientWidth + 1 || box.left < cell.left - 1 || box.right > cell.right + 1;
+    })
     .map(label => label.textContent));
   expect(spilled).toEqual([]);
 
