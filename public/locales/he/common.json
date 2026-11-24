@@ -312,5 +312,11 @@
   "bootGuard.open": "פתיחת ThreatCaddy",
   "identityChip.open": "{{text}} ({{role}}), פתיחת {{name}} בזהויות",
   "identityChip.notYet": "{{text}} ({{role}}), עדיין לא בזהויות",
-  "identityChip.ambiguous": "{{text}} ({{role}}), יותר מזהות אחת תואמת"
+  "identityChip.ambiguous": "{{text}} ({{role}}), יותר מזהות אחת תואמת",
+  "toolChange.changes": "משנה את {{name}}",
+  "toolChange.creates": "יוצר את {{name}}",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "לא נמצא במכשיר זה: {{id}}",
+  "toolChange.changed": "שונה",
+  "toolChange.private": "פרטי"
 }

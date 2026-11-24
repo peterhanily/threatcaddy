@@ -312,5 +312,11 @@
   "bootGuard.open": "打开 ThreatCaddy",
   "identityChip.open": "{{text}}（{{role}}），在身份中打开 {{name}}",
   "identityChip.notYet": "{{text}}（{{role}}），尚未加入身份",
-  "identityChip.ambiguous": "{{text}}（{{role}}），匹配到多个身份"
+  "identityChip.ambiguous": "{{text}}（{{role}}），匹配到多个身份",
+  "toolChange.changes": "更改 {{name}}",
+  "toolChange.creates": "创建 {{name}}",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "此设备上未找到：{{id}}",
+  "toolChange.changed": "已更改",
+  "toolChange.private": "私密"
 }

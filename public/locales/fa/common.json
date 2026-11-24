@@ -312,5 +312,11 @@
   "bootGuard.open": "باز کردن ThreatCaddy",
   "identityChip.open": "{{text}} ({{role}})، باز کردن {{name}} در هویت‌ها",
   "identityChip.notYet": "{{text}} ({{role}})، هنوز در هویت‌ها نیست",
-  "identityChip.ambiguous": "{{text}} ({{role}})، بیش از یک هویت مطابقت دارد"
+  "identityChip.ambiguous": "{{text}} ({{role}})، بیش از یک هویت مطابقت دارد",
+  "toolChange.changes": "{{name}} را تغییر می‌دهد",
+  "toolChange.creates": "{{name}} را ایجاد می‌کند",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "در این دستگاه پیدا نشد: {{id}}",
+  "toolChange.changed": "تغییر کرد",
+  "toolChange.private": "خصوصی"
 }

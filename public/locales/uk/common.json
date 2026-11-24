@@ -312,5 +312,11 @@
   "bootGuard.open": "Відкрити ThreatCaddy",
   "identityChip.open": "{{text}} ({{role}}), відкрити {{name}} у розділі «Суб'єкти»",
   "identityChip.notYet": "{{text}} ({{role}}), ще немає в розділі «Суб'єкти»",
-  "identityChip.ambiguous": "{{text}} ({{role}}), збігається більше ніж один суб'єкт"
+  "identityChip.ambiguous": "{{text}} ({{role}}), збігається більше ніж один суб'єкт",
+  "toolChange.changes": "Змінює: {{name}}",
+  "toolChange.creates": "Створює: {{name}}",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "Не знайдено на цьому пристрої: {{id}}",
+  "toolChange.changed": "змінено",
+  "toolChange.private": "приватне"
 }

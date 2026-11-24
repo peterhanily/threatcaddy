@@ -33,7 +33,16 @@ export function toolExecutionError(error: string): ToolExecutionResult {
 /** Truncate tool results and signal truncation to the LLM */
 export function truncateToolResult(result: string, maxLen: number): string {
   if (result.length <= maxLen) return result;
-  return result.substring(0, maxLen) + `\n\n[TRUNCATED: showing ${maxLen.toLocaleString()} of ${result.length.toLocaleString()} chars. Use more specific queries or filters to get complete data.]`;
+  const note = `Showing ${maxLen.toLocaleString()} of ${result.length.toLocaleString()} characters. Use more specific queries, filters or paging to get complete data.`;
+  let json = false;
+  try { json = typeof JSON.parse(result) === 'object'; } catch { /* Text. */ }
+  if (!json) return result.substring(0, maxLen) + `\n\n[TRUNCATED: ${note}]`;
+  // JSON stays JSON: the start of the result as a string, marked truncated (escaping can lengthen it).
+  for (let kept = maxLen; kept > 0; kept = Math.floor(kept * 0.9)) {
+    const wrapped = JSON.stringify({ truncated: true, note, partial: result.substring(0, kept) });
+    if (wrapped.length <= maxLen + 400) return wrapped;
+  }
+  return JSON.stringify({ truncated: true, note });
 }
 
 /** Preserve existing payloads while making handler errors visible to every caller. */

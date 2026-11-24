@@ -237,6 +237,9 @@ export async function executeTool(
 ): Promise<ToolExecutionResult> {
   if (IDENTITY_WRITE_TOOLS.has(toolUse.name)) await prepareIdentityLabels();
   if (!constraints?.signal || !atomicLocalTools.has(toolUse.name)) return dispatchTool(toolUse, folderId, agentContext, constraints);
+  // A tool that refuses rolls its writes back by aborting; it is its own answer the model sees
+  // (a duplicate name, the phrases it may use…), not the abort's.
+  let refused: ToolExecutionResult | undefined;
   try {
     return await db.transaction('rw', db.tables, async () => {
       const transaction = Dexie.currentTransaction;
@@ -246,12 +249,13 @@ export async function executeTool(
         constraints.signal!.throwIfAborted();
         const result = await dispatchTool(toolUse, folderId, agentContext, constraints);
         constraints.signal!.throwIfAborted();
-        if (result.isError) { transaction?.abort(); return result; }
+        if (result.isError) { refused = result; transaction?.abort(); return result; }
         return result;
       } finally { constraints.signal!.removeEventListener('abort', abort); }
     });
   } catch (error) {
-    return toolExecutionError(constraints.signal.aborted ? 'Tool execution was cancelled; local changes rolled back.' : error instanceof Error ? error.message : 'Tool write failed.');
+    if (constraints.signal.aborted) return toolExecutionError('Tool execution was cancelled; local changes rolled back.');
+    return refused ?? toolExecutionError(error instanceof Error ? error.message : 'Tool write failed.');
   }
 }
 
@@ -410,7 +414,10 @@ async function dispatchTool(
       case 'reflect_on_performance':         result = await executeReflectOnPerformance(inp, agentContext?.profileId); break;
       case 'read_soul':                      result = await executeReadSoul(inp, agentContext?.profileId, agentRole); break;
       case 'search_identities':              result = await executeSearchIdentities(inp, folderId, { brief: agentRole === 'observer' }); break;
-      case 'read_identity':                  result = await executeReadIdentity(inp, folderId); break;
+      case 'read_identity':                  result = agentRole === 'observer'
+        // Stakeholder agents get names, types and statuses only (search_identities, brief), never a full read.
+        ? JSON.stringify({ error: 'Stakeholder agents see identities\' names, types and statuses only; use search_identities.' })
+        : await executeReadIdentity(inp, folderId); break;
       case 'create_identity':                result = await executeCreateIdentity(inp, folderId, creator); break;
       case 'update_identity':                result = await executeUpdateIdentity(inp, creator); break;
       case 'connect_identities':             result = await executeConnectIdentities(inp, folderId, creator); break;

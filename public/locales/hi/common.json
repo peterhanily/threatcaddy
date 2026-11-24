@@ -312,5 +312,11 @@
   "bootGuard.open": "ThreatCaddy खोलें",
   "identityChip.open": "{{text}} ({{role}}), पहचान में {{name}} खोलें",
   "identityChip.notYet": "{{text}} ({{role}}), अभी पहचान में नहीं है",
-  "identityChip.ambiguous": "{{text}} ({{role}}), एक से अधिक पहचान मेल खाती हैं"
+  "identityChip.ambiguous": "{{text}} ({{role}}), एक से अधिक पहचान मेल खाती हैं",
+  "toolChange.changes": "{{name}} को बदलता है",
+  "toolChange.creates": "{{name}} बनाता है",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "इस डिवाइस पर नहीं मिला: {{id}}",
+  "toolChange.changed": "बदला गया",
+  "toolChange.private": "निजी"
 }

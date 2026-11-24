@@ -469,6 +469,8 @@ export function buildAgentToolset(opts: {
     const explicitlyAllowed = profileAllow ?? new Set<string>();
     combined = combined.filter(t => {
       const cls = getActionClass(t.name);
+      // An identity's full read (details, connections) is never a stakeholder's, whatever its tool list.
+      if (t.name === 'read_identity') return false;
       return cls === 'read' || (cls === 'create' && explicitlyAllowed.has(t.name));
     });
   }

@@ -656,12 +656,13 @@ export const TOOL_DEFINITIONS = [
   },
   {
     name: 'read_identity',
-    description: 'Get one identity by id or exact name: its type, status, description, other names, organization, public details and connections. Private details are never returned.',
+    description: 'Get one identity by id or exact name: its type, status, description, other names, organization, public details and connections (an organization\'s members are among its connections). Lists return up to 50 items each with their totals; when there are more, the result gives nextOffset to read the next page. Private details are never returned.',
     input_schema: {
       type: 'object' as const,
       properties: {
         id: { type: 'string', description: 'Identity ID' },
         name: { type: 'string', description: 'Exact name or other name. Used if id is not provided.' },
+        offset: { type: 'number', description: 'Skip this many other names, details and connections (the nextOffset of a previous read).' },
       },
       required: [],
     },

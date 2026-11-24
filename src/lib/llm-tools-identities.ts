@@ -45,6 +45,8 @@ export async function prepareIdentityLabels(): Promise<void> {
 function translatedPrivateLabels(): string[] {
   return i18n.hasResourceBundle(i18n.language, 'identities') ? PRIVATE_DETAIL_LABELS.map(key => i18n.t(`detailLabel.${key}`, { ns: 'identities' })) : [];
 }
+/** Whether a detail with this label will be stored as private (the rule addDetails applies). */
+export const detailWillBePrivate = (label: unknown) => isPrivateLabel(clean(label, 100), translatedPrivateLabels());
 const list = (value: unknown) => (Array.isArray(value) ? value : value == null || value === '' ? [] : [value]).slice(0, MAX_ITEMS);
 const error = (message: string) => JSON.stringify({ error: message });
 
@@ -60,13 +62,25 @@ async function besides(stored: Identity): Promise<Identity[]> {
   return stored.folderId ? scope(stored.folderId) : (await scope()).filter(identity => !identity.folderId);
 }
 
+/** What one result may hold, as the note tools do: synced or imported rows can be far larger. */
+const MAX_SNIPPET = 200;          // a description in a search (search_notes)
+const MAX_DESCRIPTION = 8000;     // a description in a read (read_note)
+const MAX_VALUE = 500;            // a name, label or detail value
+const SEARCH_OTHER_NAMES = 10;    // other names a search lists
+const PAGE = 50;                  // other names, details and connections per read
+const cut = (text: string | undefined, max: number) => (text && text.length > max ? `${text.slice(0, max)}…` : text);
+
 /** The details anyone can see; private ones are never returned. */
-const publicDetails = (identity: Identity) => identity.details.filter(detail => !detail.private).map(({ label, value }) => ({ label, value }));
+const publicDetails = (identity: Identity) => identity.details.filter(detail => !detail.private)
+  .map(({ label, value }) => ({ label: cut(label, MAX_VALUE), value: cut(value, MAX_VALUE) }));
 
 function summary(identity: Identity, byId: ReadonlyMap<string, Identity>) {
   return {
-    id: identity.id, name: identity.name, type: identity.type, status: identity.status, contact: !!identity.contact,
-    description: identity.description, otherNames: identity.aliases, organization: organizationOf(identity, byId)?.name,
+    id: identity.id, name: cut(identity.name, MAX_VALUE), type: identity.type, status: identity.status, contact: !!identity.contact,
+    description: cut(identity.description, MAX_SNIPPET),
+    otherNames: identity.aliases.slice(0, SEARCH_OTHER_NAMES).map(name => cut(name, MAX_VALUE)),
+    ...(identity.aliases.length > SEARCH_OTHER_NAMES ? { otherNamesTotal: identity.aliases.length } : {}),
+    organization: cut(organizationOf(identity, byId)?.name, MAX_VALUE),
     archived: identity.archived || undefined,
   };
 }
@@ -97,13 +111,14 @@ export async function executeSearchIdentities(input: Record<string, unknown>, fo
   const byId = new Map(rows.map(identity => [identity.id, identity]));
   // identityMatches looks at the name, other names, description, type and details that are not private.
   const wanted = looseText(query);
+  // Brief: the name only, so a stakeholder cannot recover other names letter by letter.
   const matches = (identity: Identity) => (options.brief
-    ? !wanted || [identity.name, ...identity.aliases].some(name => looseText(name).includes(wanted))
+    ? !wanted || looseText(identity.name).includes(wanted)
     : identityMatches(identity, query, identity.type));
   const matched = rows.filter(identity => !identity.archived && (!type || sameText(identity.type) === type)
     && (!status || identity.status === status) && matches(identity)).sort(byName);
   return JSON.stringify({ count: matched.length, identities: matched.slice(0, limit).map(identity => (options.brief
-    ? { id: identity.id, name: identity.name, type: identity.type, status: identity.status }
+    ? { id: identity.id, name: cut(identity.name, MAX_VALUE), type: identity.type, status: identity.status }
     : summary(identity, byId))) });
 }
 
@@ -119,11 +134,19 @@ export async function executeReadIdentity(input: Record<string, unknown>, folder
     ...identity.connections.map(edge => ({ phrase: edge.label, direction: 'out' as const, other: byId.get(edge.targetId) })),
     ...rows.flatMap(other => other.connections.filter(edge => edge.targetId === identity.id)
       .map(edge => ({ phrase: edge.label, direction: 'in' as const, other }))),
-  ].flatMap(({ phrase, direction, other }) => (other && !other.trashed ? [{ phrase, direction, id: other.id, name: other.name }] : []));
+  ].flatMap(({ phrase, direction, other }) => (other && !other.trashed ? [{ phrase: cut(phrase, MAX_VALUE), direction, id: other.id, name: cut(other.name, MAX_VALUE) }] : []));
+  // A page of each list (an organisation's members are its incoming connections), with totals.
+  const offset = Math.max(0, Math.floor(Number(input.offset) || 0));
+  const page = <T,>(items: T[]) => items.slice(offset, offset + PAGE);
+  const details = publicDetails(identity);
+  const more = [identity.aliases, details, connections].some(items => items.length > offset + PAGE);
   return JSON.stringify({
     ...summary(identity, byId),
-    details: publicDetails(identity),
-    connections,
+    description: cut(identity.description, MAX_DESCRIPTION),
+    otherNames: page(identity.aliases).map(name => cut(name, MAX_VALUE)), otherNamesTotal: identity.aliases.length,
+    details: page(details), detailsTotal: details.length,
+    connections: page(connections), connectionsTotal: connections.length,
+    ...(more ? { nextOffset: offset + PAGE } : {}),
     tags: identity.tags, clsLevel: identity.clsLevel,
     createdAt: identity.createdAt, updatedAt: identity.updatedAt,
   });

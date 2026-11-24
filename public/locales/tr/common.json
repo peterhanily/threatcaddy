@@ -312,5 +312,11 @@
   "bootGuard.open": "ThreatCaddy'yi aç",
   "identityChip.open": "{{text}} ({{role}}), Kimlikler'de {{name}} öğesini aç",
   "identityChip.notYet": "{{text}} ({{role}}), henüz Kimlikler'de yok",
-  "identityChip.ambiguous": "{{text}} ({{role}}), birden fazla kimlik eşleşiyor"
+  "identityChip.ambiguous": "{{text}} ({{role}}), birden fazla kimlik eşleşiyor",
+  "toolChange.changes": "{{name}} değiştirilir",
+  "toolChange.creates": "{{name}} oluşturulur",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "Bu cihazda bulunamadı: {{id}}",
+  "toolChange.changed": "değişti",
+  "toolChange.private": "özel"
 }

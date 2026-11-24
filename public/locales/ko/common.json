@@ -417,5 +417,11 @@
   "bootGuard.open": "ThreatCaddy 열기",
   "identityChip.open": "{{text}} ({{role}}), 신원에서 {{name}} 열기",
   "identityChip.notYet": "{{text}} ({{role}}), 아직 신원에 없음",
-  "identityChip.ambiguous": "{{text}} ({{role}}), 여러 신원이 일치함"
+  "identityChip.ambiguous": "{{text}} ({{role}}), 여러 신원이 일치함",
+  "toolChange.changes": "{{name}} 변경",
+  "toolChange.creates": "{{name}} 생성",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "이 기기에서 찾을 수 없음: {{id}}",
+  "toolChange.changed": "변경됨",
+  "toolChange.private": "비공개"
 }

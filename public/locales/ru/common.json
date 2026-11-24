@@ -312,5 +312,11 @@
   "bootGuard.open": "Открыть ThreatCaddy",
   "identityChip.open": "{{text}} ({{role}}), открыть {{name}} в разделе «Субъекты»",
   "identityChip.notYet": "{{text}} ({{role}}), ещё нет в разделе «Субъекты»",
-  "identityChip.ambiguous": "{{text}} ({{role}}), совпадает более одного субъекта"
+  "identityChip.ambiguous": "{{text}} ({{role}}), совпадает более одного субъекта",
+  "toolChange.changes": "Изменяет: {{name}}",
+  "toolChange.creates": "Создаёт: {{name}}",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "Не найдено на этом устройстве: {{id}}",
+  "toolChange.changed": "изменено",
+  "toolChange.private": "личное"
 }

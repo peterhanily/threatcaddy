@@ -312,5 +312,11 @@
   "bootGuard.open": "فتح ThreatCaddy",
   "identityChip.open": "{{text}} ({{role}})، فتح {{name}} في الهويات",
   "identityChip.notYet": "{{text}} ({{role}})، غير موجود في الهويات بعد",
-  "identityChip.ambiguous": "{{text}} ({{role}})، أكثر من هوية واحدة مطابقة"
+  "identityChip.ambiguous": "{{text}} ({{role}})، أكثر من هوية واحدة مطابقة",
+  "toolChange.changes": "يغيّر {{name}}",
+  "toolChange.creates": "ينشئ {{name}}",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "غير موجود على هذا الجهاز: {{id}}",
+  "toolChange.changed": "تم التغيير",
+  "toolChange.private": "خاص"
 }

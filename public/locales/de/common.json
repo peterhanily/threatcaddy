@@ -312,5 +312,11 @@
   "bootGuard.open": "ThreatCaddy öffnen",
   "identityChip.open": "{{text}} ({{role}}), {{name}} in Identitäten öffnen",
   "identityChip.notYet": "{{text}} ({{role}}), noch nicht in Identitäten",
-  "identityChip.ambiguous": "{{text}} ({{role}}), mehrere Identitäten passen"
+  "identityChip.ambiguous": "{{text}} ({{role}}), mehrere Identitäten passen",
+  "toolChange.changes": "Ändert {{name}}",
+  "toolChange.creates": "Erstellt {{name}}",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "Auf diesem Gerät nicht gefunden: {{id}}",
+  "toolChange.changed": "geändert",
+  "toolChange.private": "privat"
 }

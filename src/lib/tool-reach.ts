@@ -7,7 +7,7 @@
 import { db } from '../db';
 import type { AgentPolicy, Settings, ToolUseBlock } from '../types';
 import {
-  AGENT_AUTO_FETCH_HOSTS, AGENT_CONTROL_TOOLS, AGENT_NEVER_TOOLS, CROSS_CASE_READ_TOOLS,
+  AGENT_AUTO_FETCH_HOSTS, AGENT_CONTROL_TOOLS, AGENT_NEVER_TOOLS, CROSS_CASE_READ_TOOLS, IDENTITY_WRITE_TOOLS,
   isEgressToolName, isTrustedFetchUrl, shouldAutoApprove,
 } from './caddy-agent-policy';
 import { isWriteTool } from './llm-tool-defs';
@@ -240,6 +240,11 @@ export function decideToolCall(reach: ToolReach, ctx: { surface: ToolSurface; po
     return surface === 'chat-yolo' ? run : ask('egress');
   }
   if (reach.write) {                                                                               // 13
+    // Identity writes need a person wherever an agent proposes them, whatever its tool list or policy.
+    if (IDENTITY_WRITE_TOOLS.has(reach.name)) {
+      if (surface === 'bridge' || surface === 'supervisor') return deny('Identity changes need a person; this surface cannot ask one.');
+      if (surface === 'agent') return ask('policy');
+    }
     if (surface === 'chat-act') return ask('write');
     if (surface === 'agent') return byPolicy(p => shouldAutoApprove(reach.name, p), 'policy');
     return run;

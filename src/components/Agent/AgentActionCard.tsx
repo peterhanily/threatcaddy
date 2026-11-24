@@ -7,6 +7,7 @@ import { db } from '../../db';
 import { cn, formatDate } from '../../lib/utils';
 import { getToolActionClass } from '../../lib/caddy-agent-policy';
 import { classifyToolCall } from '../../lib/tool-reach';
+import { ToolChangeSummary } from '../Common/ToolChangeSummary';
 
 interface AgentActionCardProps {
   action: AgentAction;
@@ -165,6 +166,9 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
           {t('action.hostIsIoc')}
         </p>
       )}
+
+      {/* What it changes, by stored name: the target is otherwise only an id. */}
+      {isPending && <ToolChangeSummary tool={action.toolName} input={action.toolInput} className="mt-1 ps-6" />}
 
       {/* Rationale preview: model text, not a system statement */}
       <p className="text-xs text-text-muted mt-1.5 line-clamp-2 ps-6">

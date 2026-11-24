@@ -417,5 +417,11 @@
   "bootGuard.open": "เปิด ThreatCaddy",
   "identityChip.open": "{{text}} ({{role}}), เปิด {{name}} ในรายการตัวตน",
   "identityChip.notYet": "{{text}} ({{role}}), ยังไม่อยู่ในรายการตัวตน",
-  "identityChip.ambiguous": "{{text}} ({{role}}), มีตัวตนที่ตรงกันมากกว่าหนึ่งรายการ"
+  "identityChip.ambiguous": "{{text}} ({{role}}), มีตัวตนที่ตรงกันมากกว่าหนึ่งรายการ",
+  "toolChange.changes": "เปลี่ยน {{name}}",
+  "toolChange.creates": "สร้าง {{name}}",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "ไม่พบในอุปกรณ์นี้: {{id}}",
+  "toolChange.changed": "เปลี่ยนแล้ว",
+  "toolChange.private": "ส่วนตัว"
 }

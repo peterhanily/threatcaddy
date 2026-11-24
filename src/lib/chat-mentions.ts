@@ -195,7 +195,8 @@ export async function resolveMentions(text: string, homeFolderId: string | undef
           organizationName ? `Organization: ${organizationName}` : '',
           ...identity.details.filter(detail => !detail.private).map(detail => `${detail.label}: ${detail.value}`),
         ].filter(Boolean).join('\n');
-        contextParts.push(`[Referenced Identity: "${identity.name}"]\n${details}`);
+        // Capped as a note mention is: an identity can hold thousands of details.
+        contextParts.push(`[Referenced Identity: "${identity.name.slice(0, 200)}"]\n${details.length > 4000 ? `${details.slice(0, 4000)}…` : details}`);
         displayText = displayText.replace(m.full, `@${identity.name}`);
       }
     } else if (m.type === 'investigation') {

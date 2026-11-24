@@ -312,5 +312,11 @@
   "bootGuard.open": "ThreatCaddy openen",
   "identityChip.open": "{{text}} ({{role}}), {{name}} openen in Identiteiten",
   "identityChip.notYet": "{{text}} ({{role}}), nog niet in Identiteiten",
-  "identityChip.ambiguous": "{{text}} ({{role}}), meer dan één identiteit komt overeen"
+  "identityChip.ambiguous": "{{text}} ({{role}}), meer dan één identiteit komt overeen",
+  "toolChange.changes": "Wijzigt {{name}}",
+  "toolChange.creates": "Maakt {{name}}",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "Niet gevonden op dit apparaat: {{id}}",
+  "toolChange.changed": "gewijzigd",
+  "toolChange.private": "privé"
 }

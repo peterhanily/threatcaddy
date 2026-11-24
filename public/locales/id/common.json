@@ -312,5 +312,11 @@
   "bootGuard.open": "Buka ThreatCaddy",
   "identityChip.open": "{{text}} ({{role}}), buka {{name}} di Identitas",
   "identityChip.notYet": "{{text}} ({{role}}), belum ada di Identitas",
-  "identityChip.ambiguous": "{{text}} ({{role}}), lebih dari satu identitas cocok"
+  "identityChip.ambiguous": "{{text}} ({{role}}), lebih dari satu identitas cocok",
+  "toolChange.changes": "Mengubah {{name}}",
+  "toolChange.creates": "Membuat {{name}}",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "Tidak ditemukan di perangkat ini: {{id}}",
+  "toolChange.changed": "diubah",
+  "toolChange.private": "pribadi"
 }

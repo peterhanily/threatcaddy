@@ -312,5 +312,11 @@
   "bootGuard.open": "ThreatCaddy を開く",
   "identityChip.open": "{{text}}（{{role}}）、アイデンティティで {{name}} を開く",
   "identityChip.notYet": "{{text}}（{{role}}）、まだアイデンティティにありません",
-  "identityChip.ambiguous": "{{text}}（{{role}}）、複数のアイデンティティが一致します"
+  "identityChip.ambiguous": "{{text}}（{{role}}）、複数のアイデンティティが一致します",
+  "toolChange.changes": "{{name}} を変更",
+  "toolChange.creates": "{{name}} を作成",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "このデバイスに見つかりません: {{id}}",
+  "toolChange.changed": "変更あり",
+  "toolChange.private": "非公開"
 }

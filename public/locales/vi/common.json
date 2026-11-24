@@ -312,5 +312,11 @@
   "bootGuard.open": "Mở ThreatCaddy",
   "identityChip.open": "{{text}} ({{role}}), mở {{name}} trong Danh tính",
   "identityChip.notYet": "{{text}} ({{role}}), chưa có trong Danh tính",
-  "identityChip.ambiguous": "{{text}} ({{role}}), có nhiều hơn một danh tính khớp"
+  "identityChip.ambiguous": "{{text}} ({{role}}), có nhiều hơn một danh tính khớp",
+  "toolChange.changes": "Thay đổi {{name}}",
+  "toolChange.creates": "Tạo {{name}}",
+  "toolChange.connects": "{{from}} {{phrase}} {{to}}",
+  "toolChange.missing": "Không tìm thấy trên thiết bị này: {{id}}",
+  "toolChange.changed": "đã thay đổi",
+  "toolChange.private": "riêng tư"
 }
