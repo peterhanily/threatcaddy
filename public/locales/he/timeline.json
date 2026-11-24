@@ -43,6 +43,7 @@
   "eventCard.actor": "גורם",
   "eventCard.asset": "נכס",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: הצג את כל הנכסים",
   "eventForm.title": "כותרת",
   "eventForm.titlePlaceholder": "כותרת אירוע...",
   "eventForm.titleRequired": "כותרת אירוע נדרשת",

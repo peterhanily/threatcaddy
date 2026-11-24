@@ -8,7 +8,7 @@ import { useIgnoredNames } from '../../hooks/useIgnoredNames';
 import { activityOf, noteMatchText } from '../../lib/identity-match';
 import { IdentityActivitySection } from './IdentityActivity';
 import { cn } from '../../lib/utils';
-import { IdentityAvatar, InvestigationPill } from './identity-ui';
+import { IdentityAvatar, InvestigationPill, IsolatedText } from './identity-ui';
 import { STATUS_DOT, identitySubtitle, prefillFromFound, useIdentityLabels, withOtherName, type IdentityChange } from './identity-labels';
 import { IdentityProfile } from './IdentityProfile';
 import { IdentityFormModal, type AddPrefill } from './IdentityFormModal';
@@ -149,7 +149,9 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   /** At narrow widths the profile is below the list, so a chosen identity is brought into view. */
   const choose = (identity: Identity) => {
     setSelectedId(identity.id);
-    if (stacked()) requestAnimationFrame(() => profileRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }));
+    // Smoothly, unless the system asks for reduced motion.
+    const behavior = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    if (stacked()) requestAnimationFrame(() => profileRef.current?.scrollIntoView?.({ block: 'start', behavior }));
   };
   // Note text is normalised once per change to the notes, not each time an identity is chosen.
   const noteTexts = useMemo(() => new Map((notes ?? []).map(note => [note.id, noteMatchText(note)])), [notes]);
@@ -186,7 +188,8 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bg-primary">
       <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-border-subtle px-4 py-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+        {/* At least 16rem for the title and description: on a phone the buttons wrap below, not squeeze them. */}
+        <div className="flex min-w-0 flex-[1_1_16rem] items-center gap-2">
           <Contact size={20} className="shrink-0 text-accent-blue" aria-hidden="true" />
           <div className="min-w-0">
             <h1 className="text-base font-semibold text-text-primary">{t('header.title')}</h1>
@@ -249,7 +252,11 @@ export function IdentitiesView(props: IdentitiesViewProps) {
                       ))}
                     </div>
                   )}
-                  <div ref={listRef} role="list" onKeyDown={moveInList} className="max-h-[70vh] overflow-y-auto rounded-lg border border-border-subtle bg-bg-surface p-1">
+                  {/* Always present, so a screen reader announces what a search or filter leaves (WCAG 4.1.3). */}
+                  <p role="status" className={cn('px-1 text-xs text-text-muted', !narrowed && 'sr-only')}>
+                    {narrowed ? (rows.length ? t('list.matches', { number: rows.length }) : t('list.noMatches')) : ''}
+                  </p>
+                  {(rows.length > 0 || !live.length) && <div ref={listRef} role="list" onKeyDown={moveInList} className="max-h-[70vh] overflow-y-auto rounded-lg border border-border-subtle bg-bg-surface p-1">
                     {rows.map((identity, index) => {
                       const heading = headings[index];
                       return (
@@ -261,21 +268,22 @@ export function IdentitiesView(props: IdentitiesViewProps) {
                             <IdentityAvatar identity={identity} />
                             <span className="min-w-0 flex-1">
                               <span className="flex items-center gap-1 truncate text-sm text-text-primary">
-                                {identity.name}
+                                <span dir="auto" className="min-w-0 truncate">{identity.name}</span>
                                 {identity.contact && <><Star size={12} aria-hidden="true" className="shrink-0 fill-current text-amber-400" /><span className="sr-only">{t('list.contactSr')}</span></>}
                               </span>
                               <span className="block truncate text-xs text-text-muted">
                                 {showInvestigation && <><InvestigationPill folder={folders.find(folder => folder.id === identity.folderId)} missingLabel={t('list.orphan')} />{' '}</>}
-                                {identitySubtitle(identity, byId, labels)}
+                                <IsolatedText text={identitySubtitle(identity, byId, labels)} />
                               </span>
                             </span>
-                            {identity.status && <><span aria-hidden="true" className={cn('h-2 w-2 shrink-0 rounded-full', STATUS_DOT[identity.status])} /><span className="sr-only">, {labels.statusLabel(identity.status)}</span></>}
+                            {/* The status in words, not by colour alone (WCAG 1.4.1). */}
+                            {identity.status && <span className="flex shrink-0 items-center gap-1 text-[11px] text-text-muted"><span aria-hidden="true" className={cn('h-2 w-2 rounded-full', STATUS_DOT[identity.status])} /><span className="sr-only">, </span>{labels.statusLabel(identity.status)}</span>}
                           </button>
                         </div>
                       );
                     })}
-                    {!rows.length && <p role="listitem" className="p-3 text-xs text-text-muted">{live.length ? t('list.noMatches') : t('list.empty')}</p>}
-                  </div>
+                    {!live.length && <p role="listitem" className="p-3 text-xs text-text-muted">{t('list.empty')}</p>}
+                  </div>}
                 </section>
                 {selected ? (
                   <div ref={profileRef} className="min-w-0 scroll-mt-2">

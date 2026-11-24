@@ -43,6 +43,7 @@
   "eventCard.actor": "Actor",
   "eventCard.asset": "Asset",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: alle assets tonen",
   "eventForm.title": "Titel",
   "eventForm.titlePlaceholder": "Gebeurtenistitel...",
   "eventForm.titleRequired": "Gebeurtenistitel is verplicht",

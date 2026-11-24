@@ -38,6 +38,7 @@
   "list.label": "Tożsamości",
   "list.empty": "Brak tożsamości. Dodaj tożsamość lub nazwę znalezioną w tym dochodzeniu.",
   "list.noMatches": "Brak wyników.",
+  "list.matches": "Wyniki: {{number}}",
   "list.contactSr": ", kontakt",
   "list.orphan": "Dochodzenia nie ma na tym urządzeniu",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "To ta sama tożsamość co inna? Scal ją z tą",
   "merge.button": "Scal",
+  "merge.errorSame": "Wybierz dwie różne tożsamości do scalenia.",
+  "merge.errorNotFound": "Nie znaleziono tożsamości; niczego nie scalono.",
+  "merge.errorOtherInvestigation": "Scalać można tylko tożsamości z tego samego dochodzenia.",
   "merge.confirmTitle": "Scalić tożsamości?",
   "merge.confirmMessage": "Tożsamość {{gone}} zostanie scalona z {{keep}}. Jej nazwy, szczegóły, powiązania i tagi trafią do {{keep}}, a tożsamość {{gone}} zostanie usunięta. Tej operacji nie można cofnąć.",
 

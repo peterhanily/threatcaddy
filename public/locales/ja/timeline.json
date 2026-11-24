@@ -43,6 +43,7 @@
   "eventCard.actor": "アクター",
   "eventCard.asset": "アセット",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: すべてのアセットを表示",
   "eventForm.title": "タイトル",
   "eventForm.titlePlaceholder": "イベントタイトル...",
   "eventForm.titleRequired": "イベントタイトルは必須です",

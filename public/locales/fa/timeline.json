@@ -43,6 +43,7 @@
   "eventCard.actor": "عامل",
   "eventCard.asset": "دارایی",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: نمایش همه دارایی‌ها",
   "eventForm.title": "عنوان",
   "eventForm.titlePlaceholder": "عنوان رویداد...",
   "eventForm.titleRequired": "عنوان رویداد لازم است",

@@ -43,6 +43,7 @@
   "eventCard.actor": "ผู้กระทำ",
   "eventCard.asset": "ทรัพย์สิน",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: แสดงทรัพย์สินทั้งหมด",
   "eventForm.title": "ชื่อเรื่อง",
   "eventForm.titlePlaceholder": "ชื่อเหตุการณ์...",
   "eventForm.titleRequired": "ต้องระบุชื่อเหตุการณ์",

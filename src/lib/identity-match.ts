@@ -11,8 +11,14 @@ import { detailKey, knownTexts, looseText, sameText, sortedByName } from './iden
 export const MAX_MATCH_LENGTH = 200;
 /** The longest name an `@` mention can name, in characters. */
 const MAX_MENTION_LENGTH = 100;
-/** Shorter names and details are not looked for in note text: too many false mentions. */
+/** Shorter names and details (in characters, a vowel sign counted: राम is three) are not looked for in
+ * note text: too many false mentions. Written in Chinese, Japanese or Korean, two characters are a name (王伟, 田中). */
 const MIN_MENTION_LENGTH = 3;
+const IDEOGRAPHIC = /^[\p{scx=Han}\p{scx=Hiragana}\p{scx=Katakana}\p{scx=Hangul}]+$/u;
+const lookedFor = (text: string) => {
+  const characters = [...text].length;
+  return characters >= MIN_MENTION_LENGTH || (characters === 2 && IDEOGRAPHIC.test(text));
+};
 
 export interface FolderIndex {
   /** Names and other names of identities that can be linked, A–Z; also used for `@` mentions. */
@@ -153,8 +159,48 @@ export function reportGroup(link: TextLink | undefined, text: string): { key: st
 /** A letter, digit or combining mark: accents written as separate marks (NFD text) and the vowel
  * signs of Hindi or Thai belong to the word, so "@José" is not "@Jose" plus a mark. */
 const WORD = /[\p{L}\p{M}\p{N}_]/u;
-/** Where an `@` can start a mention: at the start, or after a space, an opening bracket or a quote. */
-export const MENTION_START = /[\s([{"'“‘«]/;
+/** Scripts written without spaces between words: their word boundaries come from `Intl.Segmenter`. */
+const UNSPACED = /[\p{scx=Han}\p{scx=Hiragana}\p{scx=Katakana}\p{scx=Thai}\p{scx=Lao}\p{scx=Khmer}\p{scx=Myanmar}]/u;
+const HANGUL = /\p{scx=Hangul}/u;
+/** Korean writes a particle straight after a name (김철수가, 김철수에게, 김철수 씨): the name ends before it. */
+const KOREAN_PARTICLE = /^(?:이|가|은|는|을|를|의|에게|에|께서|께|한테|와|과|랑|이랑|하고|도|만|로|으로|에서|부터|까지|보다|처럼|이나|나|님|씨|아|야)/u;
+/** Locale-independent: dictionary word breaks for Chinese, Japanese and Thai do not depend on the locale. */
+const WORDS = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter('en', { granularity: 'word' }) : undefined;
+/** Characters of context either side of a match given to the segmenter. */
+const SEGMENT_CONTEXT = 16;
+/** Where an `@` can start a mention: at the start, or after a space, an opening bracket, a quote, or
+ * the punctuation of Chinese and Japanese (，、。（「【：). */
+export const MENTION_START = /[\s([{"'“‘«\u3001-\u303f\uff01-\uff0f\uff1a-\uff1f\uff3b-\uff40\uff5b-\uff65]/;
+
+/** The character (a whole code point) just before and just at `at`. */
+const charBefore = (text: string, at: number) => (at > 0 ? String.fromCodePoint(text.codePointAt(at >= 2 && /[\udc00-\udfff]/.test(text[at - 1]) ? at - 2 : at - 1) ?? 0) : '');
+const charAt = (text: string, at: number) => (at < text.length ? String.fromCodePoint(text.codePointAt(at) ?? 0) : '');
+
+/** Word boundaries the segmenter finds in `text` around `from`–`to`. `budget.work` counts the characters it reads. */
+function segmentBoundaries(text: string, from: number, to: number, budget: { work: number }): Set<number> {
+  const start = Math.max(0, from - SEGMENT_CONTEXT);
+  const window = text.slice(start, Math.min(text.length, to + SEGMENT_CONTEXT));
+  budget.work += window.length;
+  const boundaries = new Set<number>();
+  if (WORDS) for (const { index } of WORDS.segment(window)) boundaries.add(start + index);
+  boundaries.add(start + window.length);
+  return boundaries;
+}
+
+/**
+ * Whether a name can start (or, with `end`, end) at `at` in `text`: next to a space, punctuation or the
+ * text's edge; between a Korean name and its particle; at a change between Hangul and another script; or,
+ * in Chinese, Japanese or Thai, where the segmenter puts a word boundary (`boundaries`, worked out once).
+ */
+function wordBoundary(text: string, at: number, end: boolean, boundaries: () => Set<number>): boolean {
+  const before = charBefore(text, at), after = charAt(text, at);
+  if (!before || !after || !WORD.test(before) || !WORD.test(after)) return true;
+  const unspaced = UNSPACED.test(before) || UNSPACED.test(after);
+  const hangulBefore = HANGUL.test(before), hangulAfter = HANGUL.test(after);
+  if (hangulBefore && hangulAfter) return end && KOREAN_PARTICLE.test(text.slice(at, at + 3));
+  if (hangulBefore !== hangulAfter && !unspaced) return true;
+  return unspaced && boundaries().has(at);
+}
 
 export interface Mention { start: number; end: number; identity: Identity }
 
@@ -182,9 +228,12 @@ export function findMentions(text: string, folder: FolderIndex | undefined,
     const region = text.slice(at + 1, at + 1 + longest + 1).split('\n')[0];
     // Most "@" signs start no name: skip them without trying every length.
     if (!folder.firstLetters.has(sameText(region.slice(0, 2)).charAt(0))) continue;
+    let segmented: Set<number> | undefined;
+    const boundaries = () => (segmented ??= segmentBoundaries(text, at + 1, at + 1 + region.length, budget));
     for (let end = Math.min(region.length, longest); end > 0; end--) {
-      if (end < region.length && WORD.test(region[end])) continue;
       if (/\s/.test(region[end - 1])) continue;
+      // The mention ends where a word does: in Chinese or Japanese text, often straight before more text.
+      if (!wordBoundary(text, at + 1 + end, true, boundaries)) continue;
       budget.work += end;
       if (budget.work > MAX_MENTION_WORK) return mentions;
       const key = sameText(region.slice(0, end));
@@ -201,14 +250,21 @@ export function findMentions(text: string, folder: FolderIndex | undefined,
 }
 
 /** Whether `haystack` (already through `sameText`) contains `needle` as whole words. Each match
- * examined spends the needle's length from `budget` (what finding it compared); false once spent. */
+ * examined spends what finding it compared from `budget` (the needle, and any text segmented around it);
+ * false once spent. */
 function containsWords(haystack: string, needle: string, budget: { left: number }): boolean {
   for (let at = haystack.indexOf(needle); at !== -1; at = haystack.indexOf(needle, at + 1)) {
     budget.left -= needle.length;
     if (budget.left < 0) return false;
-    const before = at > 0 ? haystack[at - 1] : '';
-    const after = haystack[at + needle.length] ?? '';
-    if (!(before && WORD.test(before)) && !(after && WORD.test(after))) return true;
+    let segmented: Set<number> | undefined;
+    const boundaries = () => {
+      if (segmented) return segmented;
+      const work = { work: 0 };
+      segmented = segmentBoundaries(haystack, at, at + needle.length, work);
+      budget.left -= work.work;
+      return segmented;
+    };
+    if (wordBoundary(haystack, at, false, boundaries) && wordBoundary(haystack, at + needle.length, true, boundaries)) return true;
   }
   return false;
 }
@@ -246,7 +302,7 @@ export function activityOf(identity: Identity, records: {
   const keys = new Set(knownTexts(identity));
   const details = new Set(identity.details.filter(detail => !detail.private).map(detail => detailKey(detail.value)));
   const names = new Set([identity.name, ...identity.aliases].map(sameText).filter(Boolean));
-  const searchable = [...keys].filter(text => text.length >= MIN_MENTION_LENGTH && text.length <= MAX_MATCH_LENGTH);
+  const searchable = [...keys].filter(text => lookedFor(text) && text.length <= MAX_MATCH_LENGTH);
   // The name first (knownTexts lists it first), then other names and details, up to the cap.
   const words = searchable.slice(0, MAX_ACTIVITY_WORDS);
   const budget = { left: MAX_ACTIVITY_WORK };

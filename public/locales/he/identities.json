@@ -38,6 +38,7 @@
   "list.label": "זהויות",
   "list.empty": "אין עדיין זהויות. הוסף אחת, או הוסף שם שנמצא בחקירה זו.",
   "list.noMatches": "אין התאמות.",
+  "list.matches": "התאמות: {{number}}",
   "list.contactSr": ", איש קשר",
   "list.orphan": "החקירה לא נמצאת במכשיר זה",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "זהה לזהות אחרת? מזג אותה לתוך זו",
   "merge.button": "מזג",
+  "merge.errorSame": "בחר שתי זהויות שונות למיזוג.",
+  "merge.errorNotFound": "הזהות לא נמצאה; לא מוזג דבר.",
+  "merge.errorOtherInvestigation": "ניתן למזג רק זהויות באותה חקירה.",
   "merge.confirmTitle": "למזג זהויות?",
   "merge.confirmMessage": "{{gone}} ימוזג לתוך {{keep}}. השמות, הפרטים, הקשרים והתגיות שלו יעברו אל {{keep}}, ו-{{gone}} יימחק. לא ניתן לבטל פעולה זו.",
 

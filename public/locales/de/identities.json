@@ -38,6 +38,7 @@
   "list.label": "Identitäten",
   "list.empty": "Noch keine Identitäten. Fügen Sie eine hinzu oder übernehmen Sie einen Namen aus dieser Untersuchung.",
   "list.noMatches": "Keine Treffer.",
+  "list.matches": "Treffer: {{number}}",
   "list.contactSr": ", Kontakt",
   "list.orphan": "Untersuchung nicht auf diesem Gerät",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "Ist eine andere Identität dieselbe? In diese zusammenführen",
   "merge.button": "Zusammenführen",
+  "merge.errorSame": "Wählen Sie zwei verschiedene Identitäten zum Zusammenführen.",
+  "merge.errorNotFound": "Identität nicht gefunden; nichts wurde zusammengeführt.",
+  "merge.errorOtherInvestigation": "Nur Identitäten in derselben Untersuchung können zusammengeführt werden.",
   "merge.confirmTitle": "Identitäten zusammenführen?",
   "merge.confirmMessage": "{{gone}} wird in {{keep}} zusammengeführt. Die Namen, Details, Verbindungen und Tags gehen auf {{keep}} über, und {{gone}} wird gelöscht. Dies kann nicht rückgängig gemacht werden.",
 

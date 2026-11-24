@@ -43,6 +43,7 @@
   "eventCard.actor": "Актор",
   "eventCard.asset": "Актив",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: показать все активы",
   "eventForm.title": "Заголовок",
   "eventForm.titlePlaceholder": "Название события...",
   "eventForm.titleRequired": "Название события обязательно",

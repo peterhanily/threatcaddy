@@ -301,7 +301,7 @@ describe('read only and org charts', () => {
       await user.click(within(profile('Halvorsen Shipping')).getByRole('button', { name: 'Open the org chart' }));
       expect(screen.getByRole('combobox', { name: 'Organization' })).toHaveValue('org');
       // Lee heads the chart; Dana's card sits under Lee, and Ana under Dana.
-      const team = screen.getByRole('region', { name: "Dana Okafor's team" });
+      const team = screen.getByRole('group', { name: "Dana Okafor's team" });
       expect(within(team).getByRole('button', { name: open ? 'Hide team (1)' : 'Show team (1)' })).toHaveAttribute('aria-expanded', String(open));
       expect(within(team).queryByRole('button', { name: /^Ana Silva/ }) !== null).toBe(open);
       cleanup();

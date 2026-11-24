@@ -43,6 +43,7 @@
   "eventCard.actor": "अभिनेता",
   "eventCard.asset": "एसेट",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: सभी एसेट दिखाएँ",
   "eventForm.title": "शीर्षक",
   "eventForm.titlePlaceholder": "इवेंट शीर्षक...",
   "eventForm.titleRequired": "इवेंट शीर्षक आवश्यक है",

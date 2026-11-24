@@ -38,6 +38,7 @@
   "list.label": "Danh tính",
   "list.empty": "Chưa có danh tính nào. Hãy thêm một danh tính, hoặc thêm một tên tìm thấy trong cuộc điều tra này.",
   "list.noMatches": "Không có kết quả phù hợp.",
+  "list.matches": "Kết quả khớp: {{number}}",
   "list.contactSr": ", người liên hệ",
   "list.orphan": "Cuộc điều tra không có trên thiết bị này",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "Trùng với một danh tính khác? Gộp danh tính đó vào danh tính này",
   "merge.button": "Gộp",
+  "merge.errorSame": "Chọn hai danh tính khác nhau để gộp.",
+  "merge.errorNotFound": "Không tìm thấy danh tính; không có gì được gộp.",
+  "merge.errorOtherInvestigation": "Chỉ có thể gộp các danh tính trong cùng một cuộc điều tra.",
   "merge.confirmTitle": "Gộp danh tính?",
   "merge.confirmMessage": "{{gone}} sẽ được gộp vào {{keep}}. Tên, chi tiết, mối liên kết và thẻ của nó sẽ chuyển sang {{keep}}, và {{gone}} sẽ bị xóa. Không thể hoàn tác thao tác này.",
 

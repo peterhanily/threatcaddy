@@ -38,6 +38,7 @@
   "list.label": "アイデンティティ",
   "list.empty": "アイデンティティはまだありません。追加するか、この調査で見つかった名前を追加してください。",
   "list.noMatches": "一致するものはありません。",
+  "list.matches": "一致: {{number}} 件",
   "list.contactSr": "、連絡先",
   "list.orphan": "このデバイスにない調査",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "別のアイデンティティと同じですか？このアイデンティティにマージします",
   "merge.button": "マージ",
+  "merge.errorSame": "マージする 2 つの異なるアイデンティティを選んでください。",
+  "merge.errorNotFound": "アイデンティティが見つかりません。何もマージされませんでした。",
+  "merge.errorOtherInvestigation": "マージできるのは同じ調査内のアイデンティティだけです。",
   "merge.confirmTitle": "アイデンティティをマージしますか？",
   "merge.confirmMessage": "{{gone}} を {{keep}} にマージします。名前、詳細、関係、タグは {{keep}} に移動し、{{gone}} は削除されます。この操作は元に戻せません。",
 

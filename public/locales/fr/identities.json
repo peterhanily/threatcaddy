@@ -38,6 +38,7 @@
   "list.label": "Identités",
   "list.empty": "Aucune identité pour l'instant. Ajoutez-en une, ou ajoutez un nom trouvé dans cette enquête.",
   "list.noMatches": "Aucun résultat.",
+  "list.matches": "Résultats : {{number}}",
   "list.contactSr": ", contact",
   "list.orphan": "Enquête absente de cet appareil",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "Identique à une autre identité ? La fusionner avec celle-ci",
   "merge.button": "Fusionner",
+  "merge.errorSame": "Choisissez deux identités différentes à fusionner.",
+  "merge.errorNotFound": "Identité introuvable ; rien n’a été fusionné.",
+  "merge.errorOtherInvestigation": "Seules les identités d’une même investigation peuvent être fusionnées.",
   "merge.confirmTitle": "Fusionner les identités ?",
   "merge.confirmMessage": "Fusion de {{gone}} dans {{keep}} : les noms, détails, relations et étiquettes de {{gone}} passent à {{keep}}, puis cette identité est supprimée. Cette action est irréversible.",
 

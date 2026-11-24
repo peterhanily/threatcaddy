@@ -43,6 +43,7 @@
   "eventCard.actor": "Aktor",
   "eventCard.asset": "Aset",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: tampilkan semua aset",
   "eventForm.title": "Judul",
   "eventForm.titlePlaceholder": "Judul kejadian...",
   "eventForm.titleRequired": "Judul kejadian diperlukan",

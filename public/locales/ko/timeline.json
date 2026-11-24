@@ -43,6 +43,7 @@
   "eventCard.actor": "행위자",
   "eventCard.asset": "자산",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: 모든 자산 표시",
   "eventForm.title": "제목",
   "eventForm.titlePlaceholder": "이벤트 제목...",
   "eventForm.titleRequired": "이벤트 제목이 필요합니다",

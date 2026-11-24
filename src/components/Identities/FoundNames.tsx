@@ -31,7 +31,7 @@ export function FoundNamesPanel({ found, folders, showInvestigation, labels, onP
           <button key={name.key} type="button" onClick={() => onPick(name)}
             className="inline-flex max-w-full items-center gap-1 rounded-full border border-dashed border-border-medium px-2 py-0.5 text-xs text-text-primary hover:border-accent">
             <Plus size={12} aria-hidden="true" />
-            <span className="truncate">{name.text}</span>
+            <span dir="auto" className="truncate">{name.text}</span>
             {showInvestigation && <InvestigationPill folder={folders.find(folder => folder.id === name.folderId)} missingLabel={t('list.orphan')} />}
             <span className="sr-only">, {whereOf(name, labels)}</span>
           </button>

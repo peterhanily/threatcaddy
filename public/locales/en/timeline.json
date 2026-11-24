@@ -45,6 +45,7 @@
   "eventCard.actor": "Actor",
   "eventCard.asset": "Asset",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: show all assets",
 
   "eventForm.title": "Title",
   "eventForm.titlePlaceholder": "Event title...",

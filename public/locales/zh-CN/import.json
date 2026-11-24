@@ -36,6 +36,11 @@
   "identities.privateColumn": "私密",
   "identities.privateColumnAria": "将“{{column}}”作为私密详细信息导入",
   "identities.privateHint": "勾选了“私密”的详细信息列将作为私密详细信息导入：点击“显示”前及屏幕共享期间保持隐藏，绝不会发送给 AI，也不会出现在身份 CSV 导出文件（除非选择包含）、本次导入的摘要笔记及其事件中。电话号码、街道地址、出生日期、护照和国民身份证号码列默认已勾选；请自行检查其他列。",
+  "identities.unrecognised": "英语和界面语言均无法识别：",
+  "identities.unrecognisedTypes": "类型 {{values}}：新身份将其作为独立类型。",
+  "identities.unrecognisedStatuses": "状态 {{values}}：不导入。",
+  "identities.unrecognisedContacts": "联系人 {{values}}：不导入（请使用“是”或“否”）。",
+  "identities.unrecognisedPhrases": "关联 {{values}}：按原文保留，因此组织结构图不会使用。",
   "identities.result": "身份",
   "identities.updated_one": "已更新 {{count}} 个",
   "identities.updated_other": "已更新 {{count}} 个"

@@ -43,6 +43,7 @@
   "eventCard.actor": "Aktör",
   "eventCard.asset": "Varlık",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: tüm varlıkları göster",
   "eventForm.title": "Başlık",
   "eventForm.titlePlaceholder": "Olay başlığı...",
   "eventForm.titleRequired": "Olay başlığı gereklidir",

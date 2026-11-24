@@ -38,6 +38,7 @@
   "list.label": "Identitas",
   "list.empty": "Belum ada identitas. Tambahkan satu, atau tambahkan nama yang ditemukan dalam investigasi ini.",
   "list.noMatches": "Tidak ada yang cocok.",
+  "list.matches": "Cocok: {{number}}",
   "list.contactSr": ", kontak",
   "list.orphan": "Investigasi tidak ada di perangkat ini",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "Sama dengan identitas lain? Gabungkan ke identitas ini",
   "merge.button": "Gabungkan",
+  "merge.errorSame": "Pilih dua identitas yang berbeda untuk digabungkan.",
+  "merge.errorNotFound": "Identitas tidak ditemukan; tidak ada yang digabungkan.",
+  "merge.errorOtherInvestigation": "Hanya identitas dalam investigasi yang sama yang dapat digabungkan.",
   "merge.confirmTitle": "Gabungkan identitas?",
   "merge.confirmMessage": "{{gone}} akan digabungkan ke {{keep}}. Nama, detail, hubungan, dan tag-nya pindah ke {{keep}}, lalu {{gone}} dihapus. Tindakan ini tidak dapat dibatalkan.",
 

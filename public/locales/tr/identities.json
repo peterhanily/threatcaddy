@@ -38,6 +38,7 @@
   "list.label": "Kimlikler",
   "list.empty": "Henüz kimlik yok. Bir tane ekleyin ya da bu soruşturmada bulunan bir adı ekleyin.",
   "list.noMatches": "Eşleşme yok.",
+  "list.matches": "Eşleşme: {{number}}",
   "list.contactSr": ", irtibat kişisi",
   "list.orphan": "Soruşturma bu cihazda değil",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "Başka bir kimlikle aynı mı? Onu bununla birleştirin",
   "merge.button": "Birleştir",
+  "merge.errorSame": "Birleştirmek için iki farklı kimlik seçin.",
+  "merge.errorNotFound": "Kimlik bulunamadı; hiçbir şey birleştirilmedi.",
+  "merge.errorOtherInvestigation": "Yalnızca aynı soruşturmadaki kimlikler birleştirilebilir.",
   "merge.confirmTitle": "Kimlikler birleştirilsin mi?",
   "merge.confirmMessage": "{{gone}} kaydı {{keep}} kaydıyla birleştirilecek. Adları, ayrıntıları, bağlantıları ve etiketleri {{keep}} kaydına taşınır ve {{gone}} silinir. Bu işlem geri alınamaz.",
 

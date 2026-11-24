@@ -38,6 +38,7 @@
   "list.label": "Identidades",
   "list.empty": "Aún no hay identidades. Agregue una, o agregue un nombre encontrado en esta investigación.",
   "list.noMatches": "Sin coincidencias.",
+  "list.matches": "Coincidencias: {{number}}",
   "list.contactSr": ", contacto",
   "list.orphan": "Investigación no disponible en este dispositivo",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "¿Coincide con otra identidad? Fusiónela con esta",
   "merge.button": "Fusionar",
+  "merge.errorSame": "Elija dos identidades distintas para fusionar.",
+  "merge.errorNotFound": "No se encontró la identidad; no se fusionó nada.",
+  "merge.errorOtherInvestigation": "Solo se pueden fusionar identidades de la misma investigación.",
   "merge.confirmTitle": "¿Fusionar identidades?",
   "merge.confirmMessage": "{{gone}} se fusionará con {{keep}}. Sus nombres, detalles, relaciones y etiquetas pasan a {{keep}}, y {{gone}} se elimina. Esta acción no se puede deshacer.",
 

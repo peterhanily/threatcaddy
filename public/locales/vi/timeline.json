@@ -43,6 +43,7 @@
   "eventCard.actor": "Tác nhân",
   "eventCard.asset": "Tài sản",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: hiện tất cả tài sản",
   "eventForm.title": "Tiêu đề",
   "eventForm.titlePlaceholder": "Tiêu đề sự kiện...",
   "eventForm.titleRequired": "Cần tiêu đề sự kiện",

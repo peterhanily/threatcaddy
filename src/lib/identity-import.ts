@@ -10,7 +10,8 @@ import type { ColumnMapping } from './data-import';
 import { IDENTITY_STATUSES } from './entity-enums';
 import {
   CONNECTION_PHRASES, ENGLISH_PHRASE_LABELS, ENGLISH_TYPE_LABELS, MEMBERSHIP_PHRASES, canonicalPhrase, canonicalType, detailKey,
-  guessIdentity, isOrganization, isPerson, isPrivateLabel as isPrivateLabelText, labelWords, sameText,
+  guessIdentity, isBuiltinType, isConnectionPhrase, isOrganization, isPerson, isPrivateLabel as isPrivateLabelText, labelWords, sameText, withConnection,
+  type BuiltinType, type ConnectionPhrase,
 } from './identity-model';
 
 const ENGLISH_TYPES = ENGLISH_TYPE_LABELS;
@@ -87,7 +88,30 @@ export function identityMappingFor(header: string): ColumnMapping {
 /** Undoes the apostrophe a formula-safe export puts before = + - @ (so "+44 …" comes back as written). */
 const value = (raw: string | undefined) => (raw ?? '').replace(/^'(?=[=+\-@\t\r])/, '').trim();
 const lines = (raw: string | undefined) => value(raw).split(/\r?\n/).map(line => value(line)).filter(Boolean);
-const truthy = (raw: string | undefined) => /^(yes|y|true|1|x|✓)$/i.test(value(raw));
+const YES = ['yes', 'y', 'true', '1', 'x', '✓'];
+const NO = ['no', 'n', 'false', '0', '-'];
+
+/** The interface language's words for types, statuses, connections, yes and no (as the Add form and the
+ * profile show them), read besides English: a sheet written in the interface language imports as one in
+ * English does. */
+export interface ImportWords {
+  types?: Readonly<Record<BuiltinType, string>>;
+  statuses?: Readonly<Partial<Record<IdentityStatus, string>>>;
+  phrases?: Readonly<Record<ConnectionPhrase, string>>;
+  reversePhrases?: Readonly<Record<ConnectionPhrase, string>>;
+  yes?: string;
+  no?: string;
+}
+const typeOf = (typed: string, words: ImportWords | undefined, typesInUse: readonly string[]) => canonicalType(typed, words?.types ?? ENGLISH_TYPES, typesInUse);
+const statusOf = (raw: string, words: ImportWords | undefined): IdentityStatus | undefined => {
+  const key = sameText(raw);
+  return STATUSES.find(status => status === key || (!!words?.statuses?.[status] && sameText(words.statuses[status] as string) === key));
+};
+const phraseOf = (text: string, words: ImportWords | undefined) => canonicalPhrase(text, words?.phrases ?? ENGLISH_PHRASES, words?.reversePhrases);
+const isWord = (raw: string, english: readonly string[], word?: string) => {
+  const key = sameText(value(raw));
+  return english.includes(key) || (!!word && sameText(word) === key);
+};
 
 export interface IdentityImport {
   created: Identity[];
@@ -111,6 +135,8 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   /** The detail columns a person chose to import as private (the preview's Private choice). When
    * given, it decides for every detail column; otherwise each column's label does. */
   privateColumns?: ReadonlySet<string>;
+  /** The interface language's words, read besides English. */
+  words?: ImportWords;
   now?: number;
 }): IdentityImport {
   const now = options.now ?? Date.now();
@@ -162,7 +188,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   const tagColumns = columns('identity-tags');
   const detailColumns = columns('identity-detail').map(column => ({ column, label: value(withoutSuffix(withoutSuffix(column))),
     isPrivate: options.privateColumns ? options.privateColumns.has(column) : isPrivateDetailColumn(column, options.isPrivateLabel) }));
-  const connectionColumns = columns('identity-connection').map(column => ({ column, phrase: canonicalPhrase(column, ENGLISH_PHRASES) }));
+  const connectionColumns = columns('identity-connection').map(column => ({ column, phrase: phraseOf(column, options.words) }));
   const connectionsColumns = columns('identity-connections');
   const defaultOrganization = options.defaultOrganizationId ? records.get(options.defaultOrganizationId) : undefined;
 
@@ -174,7 +200,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     const typed = typeColumn ? value(row[typeColumn]) : '';
     // A classification as exported is kept, so a round trip never lowers it; otherwise the investigation's.
     const classification = classificationColumn ? value(row[classificationColumn]).slice(0, 100) : '';
-    const identity = find(name) ?? create(name, typed ? canonicalType(typed, ENGLISH_TYPES, typesInUse) : guessIdentity(name).type, classification);
+    const identity = find(name) ?? create(name, typed ? typeOf(typed, options.words, typesInUse) : guessIdentity(name).type, classification);
     // The level the export writes for an identity without its own (its investigation's, else the
     // default) is read back as inherited, not fixed on it.
     if (classification && !identity.clsLevel && classification !== options.inheritedClsLevel) identity.clsLevel = classification;
@@ -195,9 +221,9 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
       identity.aliases.push(alias);
       remember(alias, identity.id);
     }
-    const status = statusColumn ? sameText(value(row[statusColumn])) : '';
-    if (!identity.status && STATUSES.includes(status as IdentityStatus)) identity.status = status as IdentityStatus;
-    if (contactColumn && truthy(row[contactColumn]) && !identity.contact) identity.contact = true;
+    const status = statusColumn ? statusOf(value(row[statusColumn]), options.words) : undefined;
+    if (!identity.status && status) identity.status = status;
+    if (contactColumn && isWord(row[contactColumn], YES, options.words?.yes) && !identity.contact) identity.contact = true;
     for (const { column, label, isPrivate } of detailColumns) {
       for (const detail of lines(row[column])) {
         const known = identity.details.findIndex(other => sameText(other.label) === sameText(label) && detailKey(other.value) === detailKey(detail));
@@ -227,7 +253,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   rows.forEach((row, index) => {
     const identity = find(value(row[nameColumn]));
     if (!identity) return;
-    const link = (phraseText: string, targetName: string, phrase = canonicalPhrase(phraseText, ENGLISH_PHRASES)) => {
+    const link = (phraseText: string, targetName: string, phrase = phraseOf(phraseText, options.words)) => {
       const target = find(targetName);
       if (!target) {
         error(ambiguous(targetName)
@@ -235,7 +261,13 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
           : `Row ${index + 2}: “${targetName}” (${phraseText}) is not an identity in this investigation; that connection was skipped.`);
         return;
       }
-      if (phrase.reversed) connect(target, identity, phrase.label); else connect(identity, target, phrase.label);
+      const [source, other] = phrase.reversed ? [target, identity] : [identity, target];
+      // The rule the profile, the graph and the AI tools follow: "works at" and "belongs to" only toward an organisation.
+      if (!withConnection(source, other, phrase.label)) {
+        if (source.id !== other.id) error(`Row ${index + 2}: “${other.name}” is not an organization, so “${phraseText}” was skipped.`);
+        return;
+      }
+      connect(source, other, phrase.label);
     };
     for (const { column, phrase } of connectionColumns) for (const target of lines(row[column])) link(column, target, phrase);
     for (const column of connectionsColumns) for (const line of lines(row[column])) {
@@ -259,4 +291,38 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     if (Object.keys(changes).length) updated.push({ id, changes: options.author ? { ...changes, updatedBy: options.author } : changes });
   }
   return { created: [...created].map(id => records.get(id) as Identity), updated, errors };
+}
+
+/** Values the import will not read as a built-in type, a status, yes or no, or a built-in connection (in
+ * English or the interface language), at most `limit` of each, to show before importing: a type is kept
+ * as a type of its own, a status or contact value is not imported, a phrase is kept as written. */
+export function unrecognisedIdentityValues(rows: readonly Record<string, string>[], mappings: ReadonlyMap<string, ColumnMapping>, options: {
+  words?: ImportWords;
+  /** Types the investigation already uses: not new. */
+  typesInUse?: readonly string[];
+  limit?: number;
+} = {}): { types: string[]; statuses: string[]; contacts: string[]; phrases: string[] } {
+  const limit = options.limit ?? 10;
+  const found = { types: new Map<string, string>(), statuses: new Map<string, string>(), contacts: new Map<string, string>(), phrases: new Map<string, string>() };
+  const note = (kind: keyof typeof found, text: string) => { if (found[kind].size < limit && !found[kind].has(sameText(text))) found[kind].set(sameText(text), text); };
+  const columns = (mapping: ColumnMapping) => [...mappings].filter(([, mapped]) => mapped === mapping).map(([column]) => column);
+  const typesInUse = options.typesInUse ?? [];
+  const [typeColumn] = columns('identity-type');
+  const [statusColumn] = columns('identity-status');
+  const [contactColumn] = columns('identity-contact');
+  for (const column of columns('identity-connection')) if (!isConnectionPhrase(phraseOf(column, options.words).label)) note('phrases', value(column));
+  const connectionsColumns = columns('identity-connections');
+  for (const row of rows) {
+    const typed = typeColumn ? value(row[typeColumn]) : '';
+    if (typed && !isBuiltinType(typeOf(typed, options.words, typesInUse)) && !typesInUse.some(type => sameText(type) === sameText(typed))) note('types', typed);
+    const status = statusColumn ? value(row[statusColumn]) : '';
+    if (status && !statusOf(status, options.words)) note('statuses', status);
+    const contact = contactColumn ? value(row[contactColumn]) : '';
+    if (contact && !isWord(contact, YES, options.words?.yes) && !isWord(contact, NO, options.words?.no)) note('contacts', contact);
+    for (const column of connectionsColumns) for (const line of lines(row[column])) {
+      const at = line.indexOf(': ');
+      if (at > 0 && line.length <= MAX_CONNECTION_LINE && !isConnectionPhrase(phraseOf(line.slice(0, at), options.words).label)) note('phrases', line.slice(0, at));
+    }
+  }
+  return { types: [...found.types.values()], statuses: [...found.statuses.values()], contacts: [...found.contacts.values()], phrases: [...found.phrases.values()] };
 }

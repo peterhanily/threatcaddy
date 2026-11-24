@@ -43,6 +43,7 @@
   "eventCard.actor": "Aktor",
   "eventCard.asset": "Zasób",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: pokaż wszystkie zasoby",
   "eventForm.title": "Tytuł",
   "eventForm.titlePlaceholder": "Tytuł zdarzenia...",
   "eventForm.titleRequired": "Tytuł zdarzenia jest wymagany",

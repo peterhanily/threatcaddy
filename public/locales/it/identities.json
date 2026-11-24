@@ -38,6 +38,7 @@
   "list.label": "Identità",
   "list.empty": "Ancora nessuna identità. Aggiungine una, oppure aggiungi un nome trovato in questa indagine.",
   "list.noMatches": "Nessun risultato.",
+  "list.matches": "Risultati: {{number}}",
   "list.contactSr": ", contatto",
   "list.orphan": "Indagine non presente su questo dispositivo",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "È la stessa di un'altra identità? Uniscila a questa",
   "merge.button": "Unisci",
+  "merge.errorSame": "Scegli due identità diverse da unire.",
+  "merge.errorNotFound": "Identità non trovata; non è stato unito nulla.",
+  "merge.errorOtherInvestigation": "Si possono unire solo identità della stessa indagine.",
   "merge.confirmTitle": "Unire le identità?",
   "merge.confirmMessage": "L'identità {{gone}} verrà unita a {{keep}}. I suoi nomi, dettagli, collegamenti e tag passano a {{keep}} e {{gone}} viene eliminata. Questa azione non può essere annullata.",
 

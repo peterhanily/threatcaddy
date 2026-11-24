@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Folder, Identity } from '../../types';
 import { foundKey, guessFrom, guessIdentity, type FoundName } from '../../lib/identity-model';
 import { belongsTo, buildIdentityIndex, linkFor, type IdentityIndex } from '../../lib/identity-match';
@@ -47,6 +47,14 @@ export function IdentityLinksProvider({ identities, isVisible, threatActors, fol
     setBuilt({ identities, isVisible, threatActors, index });
   }
   const [picked, setPicked] = useState<FoundName | null>(null);
+  const returnTo = useRef<HTMLElement | null>(null);
+  const close = useCallback(() => {
+    setPicked(null);
+    const target = returnTo.current;
+    returnTo.current = null;
+    // After the dialog has returned focus to its chip, or found it gone.
+    setTimeout(() => { if (target?.isConnected && (document.activeElement === document.body || !document.activeElement?.isConnected)) target.focus(); });
+  }, []);
 
   const value = useMemo<IdentityLinks>(() => ({
     linkFor: (folderId, text) => {
@@ -60,6 +68,9 @@ export function IdentityLinksProvider({ identities, isVisible, threatActors, fol
       const text = raw.trim();
       const link = linkFor(index, folderId, text);
       if (link.state !== 'notYet') return;
+      // If the chip is gone when the dialog closes (the name was ignored), focus goes to its item (an event's title).
+      const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      returnTo.current = opener?.closest('[data-focus-host]')?.querySelector<HTMLElement>('[data-focus-return]') ?? null;
       setPicked({ key: foundKey(folderId, text), folderId, text, sources: [source],
         guess: guessIdentity(text, guessFrom(source.kind)), looksLike: link.looksLike });
     },
@@ -71,7 +82,7 @@ export function IdentityLinksProvider({ identities, isVisible, threatActors, fol
       {children}
       {picked && (
         <Suspense fallback={null}>
-          <IdentityLinkDialogs found={picked} folders={folders} identities={live} onClose={() => setPicked(null)}
+          <IdentityLinkDialogs found={picked} folders={folders} identities={live} onClose={close}
             onIgnore={() => ignore(picked.folderId, picked.text)} onCreate={onCreate} onUpdate={onUpdate} onTrackActor={onTrackThreatActor} />
         </Suspense>
       )}

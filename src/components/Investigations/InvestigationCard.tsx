@@ -253,7 +253,8 @@ export function InvestigationCard({
                 <span className={cn('text-sm font-bold mt-0.5', val > 0 ? s.color : 'text-text-muted')}>
                   {val}
                 </span>
-                <span className="text-[8px] font-medium text-text-muted uppercase tracking-wide mt-0.5">
+                {/* Long labels ("ДОКАЗАТЕЛЬСТВА") wrap, hyphenated where the language allows, rather than overflow the card. */}
+                <span className="mt-0.5 max-w-full px-0.5 text-center text-[8px] font-medium uppercase leading-tight text-text-muted hyphens-auto [overflow-wrap:anywhere]">
                   {t(s.labelKey)}
                 </span>
               </div>

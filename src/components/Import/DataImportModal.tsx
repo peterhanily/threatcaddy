@@ -6,7 +6,8 @@ import { db } from '../../db';
 import type { Folder, Identity, Timeline } from '../../types';
 import type { ImportResult, ColumnMapping, ParseResult } from '../../lib/data-import';
 import { isUserTimeline } from '../../lib/sync-capture-policy';
-import { buildIdentities, isPrivateDetailColumn } from '../../lib/identity-import';
+import { buildIdentities, isPrivateDetailColumn, unrecognisedIdentityValues, type ImportWords } from '../../lib/identity-import';
+import { IDENTITY_STATUSES } from '../../lib/entity-enums';
 import { byName, isOrganization } from '../../lib/identity-model';
 import { getCurrentUserName } from '../../lib/utils';
 import { useIdentityLabels } from '../Identities/identity-labels';
@@ -65,7 +66,14 @@ export function DataImportModal({ defaultClsLevel,
 }: DataImportModalProps) {
   const { t } = useTranslation('import');
   // Phone, address and similar labels are private by default in the interface language too.
-  const { privateByDefault } = useIdentityLabels();
+  const labels = useIdentityLabels();
+  const { privateByDefault } = labels;
+  const { t: tCommon } = useTranslation('common');
+  // Types, statuses, connections, yes and no as the interface shows them, read besides English.
+  const words = useMemo<ImportWords>(() => ({
+    types: labels.typeLabels, phrases: labels.phraseLabels, reversePhrases: labels.reverseLabels,
+    statuses: Object.fromEntries(IDENTITY_STATUSES.map(status => [status, labels.statusLabel(status)])), yes: tCommon('yes'), no: tCommon('no'),
+  }), [labels, tCommon]);
   const [step, setStep] = useState<Step>('input');
   const [rawText, setRawText] = useState('');
   const [detectedFormat, setDetectedFormat] = useState('');
@@ -194,6 +202,13 @@ export function DataImportModal({ defaultClsLevel,
   // Identities need a name column and an investigation to belong to.
   const hasIdentityName = useMemo(() => [...columnMappings.values()].includes('identity-name'), [columnMappings]);
   const willImportIdentities = importIdentities && hasIdentityName && !!folderId;
+  // Values the import will not recognise, shown before importing (a sheet in another language, say).
+  const unrecognised = useMemo(() => (willImportIdentities && parseResult
+    ? unrecognisedIdentityValues(parseResult.rows, columnMappings, { words, typesInUse: [...new Set(identities.filter(identity => identity.folderId === folderId).map(identity => identity.type))] })
+    : undefined), [willImportIdentities, parseResult, columnMappings, words, identities, folderId]);
+  const unrecognisedLines = unrecognised ? ([['types', 'identities.unrecognisedTypes'], ['statuses', 'identities.unrecognisedStatuses'],
+    ['contacts', 'identities.unrecognisedContacts'], ['phrases', 'identities.unrecognisedPhrases']] as const)
+    .filter(([kind]) => unrecognised[kind].length).map(([kind, key]) => t(key, { values: labels.list(unrecognised[kind].map(text => `“${text}”`)) })) : [];
   const organizations = useMemo(() => identities.filter((identity) => identity.folderId === folderId && isOrganization(identity)
     && !identity.trashed && !identity.archived).sort(byName), [identities, folderId]);
 
@@ -280,7 +295,7 @@ export function DataImportModal({ defaultClsLevel,
           const { created, updated, errors } = buildIdentities(parseResult.rows, columnMappings, {
             folderId, existing, clsLevel: folders.find((f) => f.id === folderId)?.clsLevel,
             inheritedClsLevel: folders.find((f) => f.id === folderId)?.clsLevel || defaultClsLevel,
-            defaultOrganizationId: identityOrganizationId || undefined, author: getCurrentUserName(), isPrivateLabel: privateByDefault, privateColumns, now,
+            defaultOrganizationId: identityOrganizationId || undefined, author: getCurrentUserName(), isPrivateLabel: privateByDefault, privateColumns, words, now,
           });
           if (created.length) await db.identities.bulkAdd(created);
           for (const { id, changes } of updated) await db.identities.update(id, { ...changes, updatedAt: now });
@@ -311,7 +326,7 @@ export function DataImportModal({ defaultClsLevel,
       setImportResult(result);
       setStep('done');
     }
-  }, [parseResult, defaultClsLevel, createEvents, hasTimestamp, timelineId, timelines, columnMappings, folderId, extractIOCsFlag, hasIOCColumns, createNote, newTimelineName, onCreateTimeline,
+  }, [parseResult, defaultClsLevel, words, createEvents, hasTimestamp, timelineId, timelines, columnMappings, folderId, extractIOCsFlag, hasIOCColumns, createNote, newTimelineName, onCreateTimeline,
     willImportIdentities, folders, identityOrganizationId, privateByDefault, privateColumns]);
 
   // Done
@@ -569,6 +584,12 @@ export function DataImportModal({ defaultClsLevel,
 
             {willImportIdentities && (
               <p className="sm:col-span-2 text-[11px] text-gray-400">{t('identities.privateHint')}</p>
+            )}
+            {unrecognisedLines.length > 0 && (
+              <div className="sm:col-span-2 rounded-lg border border-yellow-600/40 bg-yellow-500/10 px-3 py-2 text-[11px] text-yellow-300">
+                <p className="font-medium">{t('identities.unrecognised')}</p>
+                <ul className="mt-1 list-disc ps-4">{unrecognisedLines.map(line => <li key={line}>{line}</li>)}</ul>
+              </div>
             )}
             {willImportIdentities && organizations.length > 0 && (
               <div className="sm:col-span-2">

@@ -23,6 +23,11 @@ export function IdentityAvatar({ identity, size = 'sm' }: { identity: Identity; 
 }
 
 /** The investigation's name in its colour, shown when every investigation is listed. */
+/** A sentence from `isolate`d parts: each part is drawn in its own <bdi>, and the text itself gains no marks. */
+export function IsolatedText({ text }: { text: string }) {
+  return <>{text.split(/[\u2068\u2069]/).map((part, index) => (index % 2 ? <bdi key={index}>{part}</bdi> : part))}</>;
+}
+
 export function InvestigationPill({ folder, missingLabel }: { folder?: Folder; missingLabel: string }) {
   return (
     <span

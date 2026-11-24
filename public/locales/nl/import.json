@@ -36,6 +36,11 @@
   "identities.privateColumn": "Privé",
   "identities.privateColumnAria": "{{column}} importeren als privédetail",
   "identities.privateHint": "Detailkolommen met Privé aangevinkt worden als privédetails geïmporteerd: verborgen tot je op Tonen klikt en tijdens schermdelen, nooit naar AI verzonden en weggelaten uit de CSV-export van Identiteiten (tenzij je ervoor kiest ze op te nemen), de samenvattingsnotitie van deze import en de gebeurtenissen ervan. Kolommen voor telefoonnummers, postadressen, geboortedata, paspoorten en nationale ID-nummers staan standaard aangevinkt; controleer de overige.",
+  "identities.unrecognised": "Niet herkend in het Engels of in de taal van de interface:",
+  "identities.unrecognisedTypes": "Type {{values}}: nieuwe identiteiten krijgen het als eigen type.",
+  "identities.unrecognisedStatuses": "Status {{values}}: niet geïmporteerd.",
+  "identities.unrecognisedContacts": "Contactpersoon {{values}}: niet geïmporteerd (gebruik ja of nee).",
+  "identities.unrecognisedPhrases": "Relatie {{values}}: blijft zoals geschreven, dus organigrammen gebruiken die niet.",
   "identities.result": "Identiteiten",
   "identities.updated_one": "{{count}} bijgewerkt",
   "identities.updated_other": "{{count}} bijgewerkt"

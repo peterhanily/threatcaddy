@@ -38,6 +38,7 @@
   "list.label": "Identiteiten",
   "list.empty": "Nog geen identiteiten. Voeg er een toe, of voeg een naam toe die in dit onderzoek is gevonden.",
   "list.noMatches": "Geen resultaten.",
+  "list.matches": "Resultaten: {{number}}",
   "list.contactSr": ", contactpersoon",
   "list.orphan": "Onderzoek niet op dit apparaat",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "Dezelfde als een andere identiteit? Voeg die samen met deze",
   "merge.button": "Samenvoegen",
+  "merge.errorSame": "Kies twee verschillende identiteiten om samen te voegen.",
+  "merge.errorNotFound": "Identiteit niet gevonden; er is niets samengevoegd.",
+  "merge.errorOtherInvestigation": "Alleen identiteiten in hetzelfde onderzoek kunnen worden samengevoegd.",
   "merge.confirmTitle": "Identiteiten samenvoegen?",
   "merge.confirmMessage": "{{gone}} wordt samengevoegd met {{keep}}. De namen, details, relaties en tags gaan naar {{keep}} en {{gone}} wordt verwijderd. Dit kan niet ongedaan worden gemaakt.",
 

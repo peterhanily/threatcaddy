@@ -38,6 +38,7 @@
   "list.label": "Identities",
   "list.empty": "No identities yet. Add one, or add a name found in this investigation.",
   "list.noMatches": "No matches.",
+  "list.matches": "Matches: {{number}}",
   "list.contactSr": ", contact",
   "list.orphan": "Investigation not on this device",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "Same as another identity? Merge it into this one",
   "merge.button": "Merge",
+  "merge.errorSame": "Choose two different identities to merge.",
+  "merge.errorNotFound": "Identity not found; nothing was merged.",
+  "merge.errorOtherInvestigation": "Only identities in the same investigation can be merged.",
   "merge.confirmTitle": "Merge identities?",
   "merge.confirmMessage": "{{gone}} will be merged into {{keep}}. Its names, details, connections and tags move to {{keep}}, and {{gone}} is deleted. This can't be undone.",
 

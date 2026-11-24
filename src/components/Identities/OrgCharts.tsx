@@ -42,7 +42,7 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
       <IdentityAvatar identity={person} size="md" />
       <span className="min-w-0">
         <span className="flex items-center gap-1 truncate text-sm font-medium text-text-primary">
-          {person.name}{person.contact && <><Star size={12} aria-hidden="true" className="shrink-0 fill-current text-amber-400" /><span className="sr-only">{t('list.contactSr')}</span></>}
+          <span id={`${ids}-name-${person.id}`} dir="auto" className="min-w-0 truncate">{person.name}</span>{person.contact && <><Star size={12} aria-hidden="true" className="shrink-0 fill-current text-amber-400" /><span className="sr-only">{t('list.contactSr')}</span></>}
         </span>
         {person.description && <span className="block truncate text-xs text-text-muted">{person.description}</span>}
         {person.status && <span className={cn('block text-xs', STATUS_TEXT[person.status])}>{labels.statusLabel(person.status)}</span>}
@@ -58,7 +58,8 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
     const size = current.teamSize(person);
     return (
       <>
-        <button type="button" aria-expanded={expanded} onClick={() => setOpen(previous => ({ ...previous, [person.id]: !expanded }))}
+        {/* Whose team: the manager's name describes the button (its label stays what it shows). */}
+        <button type="button" aria-expanded={expanded} aria-describedby={`${ids}-name-${person.id}`} onClick={() => setOpen(previous => ({ ...previous, [person.id]: !expanded }))}
           className="mt-1 text-xs font-medium text-accent hover:underline">
           {expanded ? t('org.hideTeam', { count: size }) : t('org.showTeam', { count: size })}
         </button>
@@ -92,9 +93,10 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
           <div className="w-full max-w-xs">{card(root)}</div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {listed(root, chart.reportsOf(root)).map(report => (
-              <section key={report.id} aria-label={t('org.teamAria', { name: report.name })} className="rounded-lg border border-border-subtle bg-bg-surface p-2">
+              // A group, not a landmark: a large organisation would otherwise add one landmark per report.
+              <div key={report.id} role="group" aria-label={t('org.teamAria', { name: report.name })} className="rounded-lg border border-border-subtle bg-bg-surface p-2">
                 {card(report)}{team(report, chart)}
-              </section>
+              </div>
             ))}
           </div>
           {more(root, chart.reportsOf(root))}

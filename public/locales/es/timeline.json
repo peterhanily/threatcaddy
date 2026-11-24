@@ -43,6 +43,7 @@
   "eventCard.actor": "Actor",
   "eventCard.asset": "Activo",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: mostrar todos los activos",
   "eventForm.title": "Título",
   "eventForm.titlePlaceholder": "Título del evento...",
   "eventForm.titleRequired": "El título del evento es obligatorio",

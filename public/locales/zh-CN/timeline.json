@@ -43,6 +43,7 @@
   "eventCard.actor": "威胁行为者",
   "eventCard.asset": "资产",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}：显示全部资产",
   "eventForm.title": "标题",
   "eventForm.titlePlaceholder": "事件标题...",
   "eventForm.titleRequired": "事件标题是必需的",

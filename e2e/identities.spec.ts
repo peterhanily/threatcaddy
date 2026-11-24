@@ -86,7 +86,7 @@ test('adds, renames, connects and charts identities, keeping private details hid
   await expect(page.getByRole('combobox', { name: 'Organization' })).toHaveValue(/.+/);
   await expect(page.getByRole('button', { name: /Lee Park-Hansen/ })).toBeVisible();
   // Lee heads the chart, and Dana's card sits under Lee.
-  await expect(page.getByRole('region', { name: "Dana Okafor's team" })).toBeVisible();
+  await expect(page.getByRole('group', { name: "Dana Okafor's team" })).toBeVisible();
 
   // The sidebar counts this investigation's identities.
   await expect(page.locator('nav[aria-label="Views"]').getByRole('button', { name: /Identities\s*3/ })).toBeVisible();
@@ -462,4 +462,112 @@ test('starts with many identities hidden on the graph, and keeps the keyboard se
   await page.keyboard.press('Tab');
   // The selection moved on: the focus layout no longer rebuilds the graph and loses it.
   await expect(page.locator('.w-72 .text-sm.font-medium').first()).not.toHaveText(first);
+});
+
+// F7: accessibility in a browser (focus, layout, bidirectional text). Fictional records only.
+const a11yRows = () => ({
+  folders: [folder('case', 'Fictional BEC case')],
+  timelines: [{ id: 'tl', name: 'Main', order: 0, createdAt: now, updatedAt: now }],
+  timelineEvents: [event('e1', 'case', 'Payment approved', { actor: 'Dana Okafor', assets: ['FIN-WS-014', 'Unknown Person', 'OLD-HOST-01', 'Spare Laptop'] })],
+  identities: [
+    identity('org', 'case', 'Halvorsen Shipping', { type: 'organization' }),
+    identity('acme', 'case', 'Acme, Inc.', { type: 'organization' }),
+    identity('ghost', 'case', '@ghost_ledger', { type: 'account' }),
+    identity('dana', 'case', 'Dana Okafor', { status: 'compromised', details: [{ id: 'e', label: 'Email', value: 'dana@halvorsen.example' },
+      { id: 'p', label: 'Phone', value: '+44 7700 900123', private: true }], connections: [{ targetId: 'org', label: 'works at' }] }),
+    identity('ws', 'case', 'FIN-WS-014', { type: 'system' }),
+  ],
+});
+
+test('shows a private detail with a toggle that keeps focus, and names each status in words', async ({ page }) => {
+  await seed(page, a11yRows(), { view: 'identities', selectedFolderId: 'case' });
+  await expect(row(page, 'Dana Okafor')).toContainText('Compromised');
+  await row(page, 'Dana Okafor').click();
+  const show = card(page, 'Dana Okafor').getByRole('button', { name: 'Show private phone' });
+  await expect(show).toHaveAttribute('aria-pressed', 'false');
+  await show.focus();
+  await page.keyboard.press('Enter');
+  await expect(card(page, 'Dana Okafor').getByText('+44 7700 900123')).toBeVisible();
+  await expect(show).toHaveAttribute('aria-pressed', 'true');
+  await expect(show).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(card(page, 'Dana Okafor').getByText('+44 7700 900123')).toHaveCount(0);
+  // Remove buttons are at least 24 by 24 pixels (WCAG 2.5.8).
+  for (const name of ['Remove Email', 'Remove Phone']) {
+    const box = await card(page, 'Dana Okafor').getByRole('button', { name }).boundingBox();
+    expect(Math.min(box?.width ?? 0, box?.height ?? 0)).toBeGreaterThanOrEqual(24);
+  }
+});
+
+test('announces what a search leaves, and No matches', async ({ page }) => {
+  await seed(page, a11yRows(), { view: 'identities', selectedFolderId: 'case' });
+  const search = page.getByRole('searchbox', { name: 'Search identities' });
+  await search.fill('Dana');
+  await expect(page.getByRole('status').filter({ hasText: 'Matches: 1' })).toBeAttached();
+  await search.fill('zzzz');
+  await expect(page.getByRole('status').filter({ hasText: 'No matches.' })).toBeVisible();
+});
+
+test('returns focus to the event after ignoring a name from its chip, and reaches every asset by keyboard', async ({ page }) => {
+  await seed(page, a11yRows(), { view: 'timeline', selectedFolderId: 'case' });
+  const payment = page.getByRole('group', { name: 'Payment approved' });
+  await payment.getByRole('button', { name: '+1: show all assets' }).click();
+  await expect(payment.getByText('Spare Laptop')).toBeVisible();
+  const chip = payment.getByRole('button', { name: 'Unknown Person (Asset), not yet in Identities' });
+  await chip.focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.getByRole('dialog', { name: '“Unknown Person”' });
+  await dialog.getByRole('button', { name: 'Ignore on this device' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(payment.getByRole('button', { name: 'Payment approved' })).toBeFocused();
+});
+
+test('draws a Latin name in its own order in a right-to-left interface', async ({ page }) => {
+  await seed(page, a11yRows(), { view: 'identities', selectedFolderId: 'case' });
+  await page.evaluate(() => localStorage.setItem('threatcaddy-settings', JSON.stringify({ tiAutoExtractEnabled: false, language: 'ar' })));
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  // In reading order the first character is left of the second and the last right of the one before it.
+  const order = (text: string) => page.evaluate((text) => {
+    const out: string[] = [];
+    const walker = document.createTreeWalker(document.querySelector('main') as Node, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.textContent !== text || (node.parentElement?.getBoundingClientRect().width ?? 0) === 0) continue;
+      const range = document.createRange();
+      const x = (i: number) => { range.setStart(node as Node, i); range.setEnd(node as Node, i + 1); return range.getBoundingClientRect().left; };
+      out.push(x(0) < x(1) && x(text.length - 1) > x(text.length - 2) ? 'ok' : 'moved');
+    }
+    return out;
+  }, text);
+  // In the list row and the profile heading.
+  await page.locator('[data-identity-row="ghost"]').click();
+  expect(await order('@ghost_ledger')).toEqual(['ok', 'ok']);
+  await page.locator('[data-identity-row="acme"]').click();
+  expect(await order('Acme, Inc.')).toEqual(['ok', 'ok']);
+});
+
+test('fits long Russian card labels, and the German header on a phone', async ({ page }) => {
+  await seed(page, a11yRows(), { view: 'investigations' });
+  await page.evaluate(() => localStorage.setItem('threatcaddy-settings', JSON.stringify({ tiAutoExtractEnabled: false, language: 'ru' })));
+  await page.reload();
+  const card = page.getByText('Fictional BEC case').first();
+  await expect(card).toBeVisible();
+  // Every count label on the card stays inside its cell.
+  const spilled = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('main .grid-cols-4 > div > span:last-child')]
+    .filter(label => { const box = label.getBoundingClientRect(), cell = (label.parentElement as HTMLElement).getBoundingClientRect(); return box.left < cell.left - 1 || box.right > cell.right + 1; })
+    .map(label => label.textContent));
+  expect(spilled).toEqual([]);
+
+  // On a phone the app opens its executive view unless analyst mode is on.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => {
+    sessionStorage.setItem('tc-analyst-mode', '1');
+    localStorage.setItem('threatcaddy-settings', JSON.stringify({ tiAutoExtractEnabled: false, language: 'de' }));
+    sessionStorage.setItem('threatcaddy-nav-state', JSON.stringify({ view: 'identities', selectedFolderId: 'case' }));
+  });
+  await page.reload();
+  const description = page.getByText('Die Personen, Organisationen, Systeme und Konten in dieser Untersuchung.');
+  await expect(description).toBeVisible();
+  // The buttons wrap below the title instead of squeezing its description into a narrow column.
+  expect((await description.boundingBox())?.width ?? 0).toBeGreaterThan(250);
 });

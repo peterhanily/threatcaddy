@@ -102,12 +102,19 @@ export function isPrivateLabel(label: string, translated: readonly string[] = []
   return translated.some(text => sameText(text) === key);
 }
 
-/** Lower case, single spaces, trimmed: how names and details are compared. */
-export const sameText = (text: string) => text.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
+/** Case folded, single spaces, trimmed: how names and details are compared. Folding goes through upper
+ * case, so "IŞIK" is "Işık" and "STRASSE" is "Straße"; Turkish "İ" loses the dot its lower case adds. */
+export const sameText = (text: string) => text.normalize('NFC').toUpperCase().toLowerCase().replace(/i\u0307/g, 'i').replace(/ß/g, 'ss')
+  .replace(/\s+/g, ' ').trim();
 /** How detail values are compared: also without spaces, so "GB33 BUKB 2020…" matches "GB33BUKB2020…". */
 export const detailKey = (text: string) => sameText(text).replace(/\s/g, '');
+/** Accents: the combining diacritics of Latin, Greek and Cyrillic, and the vowel points of Hebrew and
+ * Arabic. Not the vowel signs of Indic scripts or Thai, which are letters of the name (राम is not रीमा). */
+const ACCENTS: readonly (readonly [number, number])[] = [[0x300, 0x36f], [0x483, 0x489], [0x591, 0x5c7], [0x610, 0x61a], [0x64b, 0x65f],
+  [0x670, 0x670], [0x6d6, 0x6ed], [0x1ab0, 0x1aff], [0x1dc0, 0x1dff], [0xfe20, 0xfe2f]];
+const isAccent = (mark: string) => { const code = mark.codePointAt(0) ?? 0; return ACCENTS.some(([from, to]) => code >= from && code <= to); };
 /** Also ignores accents, for "looks like" suggestions that a person confirms. */
-export const looseText = (text: string) => sameText(text).normalize('NFKD').replace(/\p{M}/gu, '');
+export const looseText = (text: string) => sameText(text).normalize('NFKD').replace(/\p{M}/gu, mark => (isAccent(mark) ? '' : mark));
 
 /** English spellings of built-in types besides their keys. */
 const TYPE_SPELLINGS: Readonly<Record<string, BuiltinType>> = { organisation: 'organization' };

@@ -32,12 +32,14 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
   onDelete,
 }: TimelineEventCardProps) {
   const { t } = useTranslation('timeline');
+  // Asset names past the first few are listed on request, so the keyboard reaches them too.
+  const [allAssets, setAllAssets] = React.useState(false);
   const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType] ?? { label: event.eventType || 'Unknown', color: '#6b7280' };
   const confidenceInfo = CONFIDENCE_LEVELS[event.confidence] ?? { label: event.confidence || 'unknown', color: '#6b7280', description: '' };
   const preview = event.description?.replace(/[#*`_[\]()>-]/g, '').trim() || '';
 
   return (
-    <div role="group" aria-label={event.title || t('eventCard.untitledEvent')}
+    <div role="group" data-focus-host aria-label={event.title || t('eventCard.untitledEvent')}
       onClick={(e) => { if (!(e.target as HTMLElement).closest('button, a, input')) onSelect(event.id); }}
       className={cn(
         'w-full text-start p-3 rounded-lg border transition-colors group',
@@ -95,7 +97,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
 
       {/* Title */}
       <h3 className="font-medium text-sm text-gray-200 truncate mt-1.5">
-        <button type="button" className="w-full text-start truncate" onClick={() => onSelect(event.id)}>{event.title || t('eventCard.untitledEvent')}</button>
+        <button type="button" data-focus-return className="w-full text-start truncate" onClick={() => onSelect(event.id)}>{event.title || t('eventCard.untitledEvent')}</button>
       </h3>
 
       {/* Description preview */}
@@ -155,14 +157,15 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
             <Search size={9} />{event.linkedIOCIds.length}
           </span>
         )}
-        {event.assets.slice(0, SHOWN_ASSETS).map((asset, index) => (
+        {(allAssets ? event.assets : event.assets.slice(0, SHOWN_ASSETS)).map((asset, index) => (
           <IdentityChip key={`${index}:${asset}`} folderId={event.folderId} text={asset} tone="asset" role={t('eventCard.asset')}
             source={{ kind: 'asset', id: event.id, title: event.title }} />
         ))}
-        {event.assets.length > SHOWN_ASSETS && (
-          <span className="text-[10px] text-gray-500" title={event.assets.slice(SHOWN_ASSETS).join(', ')}>
+        {event.assets.length > SHOWN_ASSETS && !allAssets && (
+          <button type="button" className="rounded text-[10px] text-gray-500 hover:text-gray-300 hover:underline" title={event.assets.slice(SHOWN_ASSETS).join(', ')}
+            aria-label={t('eventCard.showAllAssets', { number: event.assets.length - SHOWN_ASSETS })} onClick={() => setAllAssets(true)}>
             {t('eventCard.moreAssets', { count: event.assets.length - SHOWN_ASSETS })}
-          </span>
+          </button>
         )}
         <TagPills tags={event.tags} />
       </div>

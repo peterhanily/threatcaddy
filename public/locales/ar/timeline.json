@@ -43,6 +43,7 @@
   "eventCard.actor": "الجهة الفاعلة",
   "eventCard.asset": "أصل",
   "eventCard.moreAssets": "+{{count}}",
+  "eventCard.showAllAssets": "+{{number}}: عرض كل الأصول",
   "eventForm.title": "العنوان",
   "eventForm.titlePlaceholder": "عنوان الحدث...",
   "eventForm.titleRequired": "عنوان الحدث مطلوب",

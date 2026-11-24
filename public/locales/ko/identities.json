@@ -38,6 +38,7 @@
   "list.label": "신원",
   "list.empty": "아직 신원이 없습니다. 신원을 추가하거나 이 조사에서 발견된 이름을 추가하세요.",
   "list.noMatches": "일치하는 항목이 없습니다.",
+  "list.matches": "일치: {{number}}개",
   "list.contactSr": ", 연락 담당자",
   "list.orphan": "이 기기에 없는 조사",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "다른 신원과 같은가요? 이 신원으로 병합하세요",
   "merge.button": "병합",
+  "merge.errorSame": "병합할 서로 다른 신원 두 개를 선택하세요.",
+  "merge.errorNotFound": "신원을 찾을 수 없어 아무것도 병합되지 않았습니다.",
+  "merge.errorOtherInvestigation": "같은 조사에 있는 신원만 병합할 수 있습니다.",
   "merge.confirmTitle": "신원을 병합할까요?",
   "merge.confirmMessage": "{{gone}}이(가) {{keep}}에 병합됩니다. 이름, 세부 정보, 연결, 태그가 {{keep}}(으)로 옮겨지고 {{gone}}은(는) 삭제됩니다. 이 작업은 취소할 수 없습니다.",
 

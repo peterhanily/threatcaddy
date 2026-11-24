@@ -38,6 +38,7 @@
   "list.label": "Identidades",
   "list.empty": "Nenhuma identidade ainda. Adicione uma ou adicione um nome encontrado nesta investigação.",
   "list.noMatches": "Nenhum resultado.",
+  "list.matches": "Resultados: {{number}}",
   "list.contactSr": ", contato",
   "list.orphan": "Investigação não está neste dispositivo",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "É a mesma que outra identidade? Mescle-a nesta",
   "merge.button": "Mesclar",
+  "merge.errorSame": "Escolha duas identidades diferentes para mesclar.",
+  "merge.errorNotFound": "Identidade não encontrada; nada foi mesclado.",
+  "merge.errorOtherInvestigation": "Só é possível mesclar identidades da mesma investigação.",
   "merge.confirmTitle": "Mesclar identidades?",
   "merge.confirmMessage": "A identidade {{gone}} será mesclada em {{keep}}. Os nomes, detalhes, conexões e tags dela passam para {{keep}}, e a identidade {{gone}} será excluída. Essa ação não pode ser desfeita.",
 

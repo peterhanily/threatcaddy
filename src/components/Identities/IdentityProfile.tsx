@@ -8,8 +8,8 @@ import {
 } from '../../lib/identity-model';
 import { cn } from '../../lib/utils';
 import type { IdentityChange } from './identity-labels';
-import { IdentityAvatar, InvestigationPill } from './identity-ui';
-import { STATUS_DOT, identitySubtitle, type IdentityLabels } from './identity-labels';
+import { IdentityAvatar, InvestigationPill, IsolatedText } from './identity-ui';
+import { STATUS_DOT, identitySubtitle, isolate, type IdentityLabels } from './identity-labels';
 import { ClsBadge } from '../Common/ClsBadge';
 
 /** Items of a long list (connections, systems, the same identity elsewhere) shown before "more". */
@@ -140,7 +140,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
 
   const chip = (other: Identity) => (
     <button type="button" onClick={() => onOpen(other)} className="inline-flex max-w-full items-center gap-1 rounded-full border border-border-subtle bg-bg-raised px-1.5 py-0.5 text-xs text-text-primary hover:border-accent">
-      <IdentityAvatar identity={other} size="xs" /><span className="truncate">{other.name}</span>
+      <IdentityAvatar identity={other} size="xs" /><span dir="auto" className="truncate">{other.name}</span>
     </button>
   );
 
@@ -149,11 +149,11 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
       <header className="flex flex-wrap items-start gap-3">
         <IdentityAvatar identity={identity} size="lg" />
         <div className="min-w-0 flex-1">
-          <h2 className="flex flex-wrap items-center gap-2 break-words text-lg font-semibold text-text-primary">{identity.name}
+          <h2 className="flex flex-wrap items-center gap-2 break-words text-lg font-semibold text-text-primary"><span dir="auto">{identity.name}</span>
             {/* Its classification decides when screensharing hides the investigation: shown, and changed in Edit. */}
             {identity.clsLevel && <ClsBadge level={identity.clsLevel} size="sm" />}</h2>
-          <p className="text-sm text-text-secondary">{identitySubtitle(identity, byId, labels)}</p>
-          {identity.aliases.length > 0 && <p className="text-xs text-text-muted">{t('profile.otherNames', { names: labels.list(identity.aliases) })}</p>}
+          <p className="text-sm text-text-secondary"><IsolatedText text={identitySubtitle(identity, byId, labels)} /></p>
+          {identity.aliases.length > 0 && <p className="text-xs text-text-muted"><IsolatedText text={t('profile.otherNames', { names: labels.list(identity.aliases.map(isolate)) })} /></p>}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <label className="sr-only" htmlFor={`${ids}-status`}>{t('status.label')}</label>
             <select
@@ -221,13 +221,14 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                 <li key={detail.id} className="grid grid-cols-[minmax(5rem,auto)_1fr_auto] items-start gap-2 text-sm">
                   <span className="text-xs text-text-muted">{detail.label}</span>
                   <span className="flex min-w-0 flex-wrap items-center gap-1.5">
-                    <span className={cn('break-all text-text-primary', MONO_LABEL.test(detail.label) && 'font-mono text-xs')}>{visible ? detail.value : maskDetail(detail, screensharing)}</span>
-                    {detail.private && (visible
-                      ? <span className="inline-flex items-center gap-0.5 rounded bg-bg-raised px-1 text-[10px] text-text-muted"><Lock size={10} />{t('details.private')}</span>
-                      : <button type="button" disabled={screensharing} title={screensharing ? t('details.hiddenWhileSharing') : undefined}
-                          aria-describedby={screensharing ? `${ids}-sharing` : undefined}
-                          aria-label={t('details.showAria', { label: named.toLowerCase() })} className={cn(linkButton, 'disabled:cursor-not-allowed disabled:opacity-50')}
-                          onClick={() => setShown(previous => new Set(previous).add(detail.id))}>{t('details.show')}</button>)}
+                    {/* A private value is read out when it is shown. */}
+                    <span aria-live={detail.private ? 'polite' : undefined} dir="auto" className={cn('break-all text-text-primary', MONO_LABEL.test(detail.label) && 'font-mono text-xs')}>{visible ? detail.value : maskDetail(detail, screensharing)}</span>
+                    {detail.private && <span className="inline-flex items-center gap-0.5 rounded bg-bg-raised px-1 text-[10px] text-text-muted"><Lock size={10} aria-hidden="true" />{t('details.private')}</span>}
+                    {/* One toggle that keeps focus (it was replaced by the badge, so focus fell to the page). */}
+                    {detail.private && <button type="button" disabled={screensharing} title={screensharing ? t('details.hiddenWhileSharing') : undefined}
+                      aria-describedby={screensharing ? `${ids}-sharing` : undefined} aria-pressed={visible}
+                      aria-label={t('details.showAria', { label: named.toLowerCase() })} className={cn(linkButton, 'rounded px-1 disabled:cursor-not-allowed disabled:opacity-50', visible && 'bg-accent/15')}
+                      onClick={() => setShown(previous => { const next = new Set(previous); if (next.has(detail.id)) next.delete(detail.id); else next.add(detail.id); return next; })}>{t('details.show')}</button>}
                   </span>
                   {!readOnly && (
                     <span className="flex items-center gap-0.5">
@@ -235,7 +236,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                       <button type="button" disabled={!!detail.private && screensharing}
                         aria-label={t(detail.private ? 'details.makePublicAria' : 'details.makePrivateAria', { label: named })}
                         title={detail.private && screensharing ? t('details.hiddenWhileSharing') : t(detail.private ? 'details.makePublic' : 'details.makePrivate')}
-                        className="rounded p-0.5 text-text-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-6 w-6 items-center justify-center rounded text-text-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={() => {
                           if (!detail.private) setShown(previous => { const next = new Set(previous); next.delete(detail.id); return next; });
                           // Sets what the button says (not a flip of the stored value), so a double click or a
@@ -243,7 +244,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                           const makePrivate = !detail.private;
                           void save(identity.id, current => ({ details: current.details.map(other => (other.id !== detail.id ? other : withPrivacy(other, makePrivate))) }));
                         }}>{detail.private ? <LockOpen size={13} /> : <Lock size={13} />}</button>
-                      <button type="button" aria-label={t('details.remove', { label: named })} className="rounded p-0.5 text-text-muted hover:text-text-primary"
+                      <button type="button" aria-label={t('details.remove', { label: named })} className="inline-flex h-6 w-6 items-center justify-center rounded text-text-muted hover:text-text-primary"
                         onClick={() => { detailButton.current?.focus(); /* The row's button goes away: continue from "Add a detail". */ void save(identity.id, current => ({ details: current.details.filter(other => other.id !== detail.id) })); }}><X size={13} /></button>
                     </span>
                   )}
@@ -295,7 +296,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                 ) : (
                   <>{chip(connection.other)}<span className="text-text-secondary">{t('connections.incomingCustom', { label: connection.label, name: identity.name })}</span></>
                 )}
-                {!readOnly && <button type="button" aria-label={t('connections.removeAria', { phrase: labels.phrase(connection.label, connection.outgoing), name: connection.other.name })} className="ms-auto rounded p-0.5 text-text-muted hover:text-text-primary"
+                {!readOnly && <button type="button" aria-label={t('connections.removeAria', { phrase: labels.phrase(connection.label, connection.outgoing), name: connection.other.name })} className="ms-auto inline-flex h-6 w-6 items-center justify-center rounded text-text-muted hover:text-text-primary"
                   onClick={() => void removeConnection(connection.ownerId, { targetId: connection.outgoing ? connection.other.id : identity.id, label: connection.label })}><X size={13} /></button>}
               </li>
             ))}

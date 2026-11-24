@@ -60,9 +60,15 @@ export const STATUS_DOT: Record<IdentityStatus, string> = {
 };
 
 /** One line under a name: role and organisation for a person; type, description and organisation otherwise. */
+/** Marks user-supplied text inside a translated sentence (FSI…PDI), so `IsolatedText` draws it isolated and
+ * a right-to-left interface does not reorder a Latin name's punctuation ("Acme, Inc." as ".Acme, Inc"). */
+export const isolate = (text: string) => `\u2068${text.replace(/[\u2066-\u2069]/g, '')}\u2069`;
+
 export function identitySubtitle(identity: Identity, byId: ReadonlyMap<string, Identity>, labels: IdentityLabels): string {
-  const organization = organizationOf(identity, byId)?.name;
-  const role = identity.description?.trim();
+  const organizationName = organizationOf(identity, byId)?.name;
+  const organization = organizationName && isolate(organizationName);
+  const description = identity.description?.trim();
+  const role = description && isolate(description);
   if (isPerson(identity)) {
     if (role && organization) return labels.t('subtitle.roleAt', { role, organization });
     return role || organization || labels.typeLabel(identity.type);

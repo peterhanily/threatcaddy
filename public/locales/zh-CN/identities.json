@@ -38,6 +38,7 @@
   "list.label": "身份",
   "list.empty": "暂无身份。请添加一个，或添加在此调查中发现的名称。",
   "list.noMatches": "无匹配结果。",
+  "list.matches": "匹配：{{number}}",
   "list.contactSr": "，联系人",
   "list.orphan": "调查不在此设备上",
 
@@ -168,6 +169,9 @@
 
   "merge.label": "与另一个身份相同？将其合并到此身份",
   "merge.button": "合并",
+  "merge.errorSame": "请选择两个不同的身份进行合并。",
+  "merge.errorNotFound": "未找到身份；未合并任何内容。",
+  "merge.errorOtherInvestigation": "只能合并同一调查中的身份。",
   "merge.confirmTitle": "合并身份？",
   "merge.confirmMessage": "{{gone}} 将合并到 {{keep}}。其名称、详细信息、关联和标签将移至 {{keep}}，{{gone}} 将被删除。此操作无法撤销。",
 
