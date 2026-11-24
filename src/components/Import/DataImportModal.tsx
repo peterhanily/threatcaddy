@@ -10,7 +10,8 @@ import { buildIdentities, isPrivateDetailColumn, unrecognisedIdentityValues, typ
 import { IDENTITY_STATUSES } from '../../lib/entity-enums';
 import { byName, isOrganization } from '../../lib/identity-model';
 import { getCurrentUserName } from '../../lib/utils';
-import { useIdentityLabels } from '../Identities/identity-labels';
+import { isolate, useIdentityLabels } from '../Identities/identity-labels';
+import { IsolatedText } from '../Identities/identity-ui';
 import {
   detectFormat,
   parseInput,
@@ -214,7 +215,7 @@ export function DataImportModal({ defaultClsLevel,
     : undefined), [willImportIdentities, parseResult, columnMappings, words, identities, folderId]);
   const unrecognisedLines = unrecognised ? ([['types', 'identities.unrecognisedTypes'], ['statuses', 'identities.unrecognisedStatuses'],
     ['contacts', 'identities.unrecognisedContacts'], ['phrases', 'identities.unrecognisedPhrases']] as const)
-    .filter(([kind]) => unrecognised[kind].length).map(([kind, key]) => t(key, { values: labels.list(unrecognised[kind].map(text => `“${text}”`)) })) : [];
+    .filter(([kind]) => unrecognised[kind].length).map(([kind, key]) => t(key, { values: labels.list(unrecognised[kind].map(text => `“${isolate(text)}”`)) })) : [];
   const organizations = useMemo(() => identities.filter((identity) => identity.folderId === folderId && isOrganization(identity)
     && !identity.trashed && !identity.archived).sort(byName), [identities, folderId]);
 
@@ -594,7 +595,7 @@ export function DataImportModal({ defaultClsLevel,
             {unrecognisedLines.length > 0 && (
               <div className="sm:col-span-2 rounded-lg border border-yellow-600/40 bg-yellow-500/10 px-3 py-2 text-[11px] text-yellow-300">
                 <p className="font-medium">{t('identities.unrecognised')}</p>
-                <ul className="mt-1 list-disc ps-4">{unrecognisedLines.map(line => <li key={line}>{line}</li>)}</ul>
+                <ul className="mt-1 list-disc ps-4">{unrecognisedLines.map(line => <li key={line}><IsolatedText text={line} /></li>)}</ul>
               </div>
             )}
             {willImportIdentities && organizations.length > 0 && (

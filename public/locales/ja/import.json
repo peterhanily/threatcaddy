@@ -37,7 +37,7 @@
   "identities.privateColumnAria": "{{column}} を非公開の詳細としてインポート",
   "identities.privateHint": "「非公開」にチェックを入れた詳細列は、非公開の詳細としてインポートされます。「表示」をクリックするまで、また画面共有中は隠され、AI に送信されることはなく、アイデンティティの CSV エクスポート（含めることを選んだ場合を除く）、このインポートのサマリーノート、およびそのイベントには含まれません。電話番号、住所、生年月日、パスポート、国民 ID 番号の列は最初からチェックが入っています。その他の列はご自身で確認してください。",
   "identities.unrecognised": "英語でもインターフェースの言語でも認識されません:",
-  "identities.unrecognisedTypes": "種類 {{values}}: 新しいアイデンティティには独自の種類として設定されます。",
+  "identities.unrecognisedTypes": "種類 {{values}}: 書かれたとおりに、カスタムの種類として保持されます。",
   "identities.unrecognisedStatuses": "ステータス {{values}}: インポートされません。",
   "identities.unrecognisedContacts": "連絡先 {{values}}: インポートされません（はい または いいえ を使ってください）。",
   "identities.unrecognisedPhrases": "関係 {{values}}: 書かれたとおりに保持されるため、組織図では使われません。",

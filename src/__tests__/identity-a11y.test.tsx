@@ -9,7 +9,11 @@ import { DataImportModal } from '../components/Import/DataImportModal';
 import { IdentitiesView, type IdentitiesViewProps } from '../components/Identities/IdentitiesView';
 import { ToastProvider } from '../contexts/ToastContext';
 import { mergeIdentities } from '../lib/merge-identities';
-import type { Folder, Identity } from '../types';
+import type { Folder, Identity, TimelineEvent } from '../types';
+import i18n from '../i18n';
+import { TimelineEventCard } from '../components/Timeline/TimelineEventCard';
+import { IdentityProfile } from '../components/Identities/IdentityProfile';
+import { useIdentityLabels } from '../components/Identities/identity-labels';
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const folders: Folder[] = [{ id: 'case', name: 'Fictional case', order: 0, createdAt: 1 }];
@@ -51,7 +55,43 @@ describe('the Identities view', () => {
 
 describe('merging', () => {
   it('explains a refused merge in the interface language', async () => {
-    await expect(mergeIdentities('same', 'same')).rejects.toThrow('Choose two different identities to merge.');
+    const english = i18n.t('merge.errorSame', { ns: 'identities' });
+    i18n.addResource('en', 'identities', 'merge.errorSame', 'In the interface language.');
+    try {
+      await expect(mergeIdentities('same', 'same')).rejects.toThrow('In the interface language.');
+    } finally {
+      i18n.addResource('en', 'identities', 'merge.errorSame', english);
+    }
+  });
+});
+
+describe('the timeline "+N"', () => {
+  it('moves focus to the first asset it shows, as the button goes away', async () => {
+    render(<TimelineEventCard event={{ id: 'ev', folderId: 'case', title: 'Payment approved', timestamp: 1, eventType: 'other', confidence: 'medium', source: '',
+      assets: ['A1', 'A2', 'A3', 'A4', 'A5'], tags: [], starred: false, linkedIOCIds: [], linkedNoteIds: [], linkedTaskIds: [], mitreAttackIds: [], timelineId: 'tl',
+      trashed: false, archived: false, createdAt: 1, updatedAt: 1 } as TimelineEvent} onSelect={vi.fn()} onToggleStar={vi.fn()} />);
+    screen.getByRole('button', { name: '+2: show all assets' }).focus();
+    await userEvent.setup().keyboard('{Enter}');
+    expect(screen.getByText('A5')).toBeInTheDocument();
+    // Without identities the chips are text: focus goes to the event's title, at once.
+    expect(screen.getByRole('button', { name: 'Payment approved' })).toHaveFocus();
+  });
+});
+
+describe('a private detail', () => {
+  function Profile({ identity, screensharing }: { identity: Identity; screensharing: boolean }) {
+    const labels = useIdentityLabels();
+    return <IdentityProfile identity={identity} byId={new Map([[identity.id, identity]])} sameInvestigation={[identity]} everywhere={[identity]} folders={folders}
+      showInvestigation={false} readOnly={false} screensharing={screensharing} labels={labels} onUpdate={vi.fn(async () => {})} onEdit={vi.fn()} onOpen={vi.fn()} onOpenChart={vi.fn()} />;
+  }
+  it('is read out when shown, and not while screensharing masks every value', async () => {
+    const dana = make('dana', 'Dana Okafor', { details: [{ id: 'p', label: 'Phone', value: '+44 7700 900123', private: true }] });
+    const { rerender } = render(<ToastProvider><Profile identity={dana} screensharing={false} /></ToastProvider>);
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Show private phone' }));
+    expect(screen.getByText('+44 7700 900123')).toHaveAttribute('aria-live', 'polite');
+    rerender(<ToastProvider><Profile identity={dana} screensharing /></ToastProvider>);
+    expect(screen.queryByText('+44 7700 900123')).toBeNull();
+    expect(document.querySelector('[aria-live="polite"]')).toBeNull();
   });
 });
 
@@ -66,7 +106,7 @@ describe('the Data Import preview', () => {
     await user.click(screen.getByRole('button', { name: 'Parse & Preview' }));
     const notice = screen.getByText('Not recognised in English or in the interface language:').parentElement as HTMLElement;
     expect(within(notice).getAllByRole('listitem').map(item => item.textContent)).toEqual([
-      'Type “Personne”: new identities get it as a type of their own.',
+      'Type “Personne”: kept as written, as a custom type.',
       'Status “Compromis”: not imported.',
       'Contact “oui”: not imported (use yes or no).',
     ]);
@@ -82,9 +122,9 @@ describe('the Data Import preview', () => {
       await user.click(screen.getAllByRole('textbox')[0]);
       await user.paste('Name,Type\nAna Silva,Vendor');
       await user.click(screen.getByRole('button', { name: 'Parse & Preview' }));
-      return screen.queryByText('Type “Vendor”: new identities get it as a type of their own.');
+      return screen.queryAllByRole('listitem').some(item => item.textContent === 'Type “Vendor”: kept as written, as a custom type.');
     };
-    expect(await preview([vendor(true)])).toBeInTheDocument();
-    expect(await preview([vendor(false)])).toBeNull();
+    expect(await preview([vendor(true)])).toBe(true);
+    expect(await preview([vendor(false)])).toBe(false);
   });
 });

@@ -552,7 +552,8 @@ test('fits long Russian card labels, and the German header on a phone', async ({
   await page.reload();
   const card = page.getByText('Fictional BEC case').first();
   await expect(card).toBeVisible();
-  // Every count label on the card stays inside its cell.
+  // Every count label on the card stays inside its cell (and there are labels to check).
+  expect(await page.locator('main .grid-cols-4 > div > span:last-child').count()).toBeGreaterThan(0);
   const spilled = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('main .grid-cols-4 > div > span:last-child')]
     .filter(label => { const box = label.getBoundingClientRect(), cell = (label.parentElement as HTMLElement).getBoundingClientRect(); return box.left < cell.left - 1 || box.right > cell.right + 1; })
     .map(label => label.textContent));

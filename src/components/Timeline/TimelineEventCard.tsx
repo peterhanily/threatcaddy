@@ -1,4 +1,5 @@
 import React from 'react';
+import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Star, FileText, ListChecks, Trash2, MapPin, Search } from 'lucide-react';
 import type { TimelineEvent } from '../../types';
@@ -158,12 +159,21 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
           </span>
         )}
         {(allAssets ? event.assets : event.assets.slice(0, SHOWN_ASSETS)).map((asset, index) => (
-          <IdentityChip key={`${index}:${asset}`} folderId={event.folderId} text={asset} tone="asset" role={t('eventCard.asset')}
-            source={{ kind: 'asset', id: event.id, title: event.title }} />
+          <span key={`${index}:${asset}`} data-asset className="contents">
+            <IdentityChip folderId={event.folderId} text={asset} tone="asset" role={t('eventCard.asset')}
+              source={{ kind: 'asset', id: event.id, title: event.title }} />
+          </span>
         ))}
         {event.assets.length > SHOWN_ASSETS && !allAssets && (
-          <button type="button" className="rounded text-[10px] text-gray-500 hover:text-gray-300 hover:underline" title={event.assets.slice(SHOWN_ASSETS).join(', ')}
-            aria-label={t('eventCard.showAllAssets', { number: event.assets.length - SHOWN_ASSETS })} onClick={() => setAllAssets(true)}>
+          <button type="button" className="inline-flex min-h-6 min-w-6 items-center justify-center rounded text-[10px] text-gray-500 hover:text-gray-300 hover:underline" title={event.assets.slice(SHOWN_ASSETS).join(', ')}
+            aria-label={t('eventCard.showAllAssets', { number: event.assets.length - SHOWN_ASSETS })}
+            onClick={click => {
+              // The button goes away: focus moves to the first asset it showed (else the event's title).
+              const card = click.currentTarget.closest<HTMLElement>('[data-focus-host]');
+              flushSync(() => setAllAssets(true));
+              const shown = card?.querySelectorAll<HTMLElement>('[data-asset]')[SHOWN_ASSETS]?.querySelector<HTMLElement>('button');
+              (shown ?? card?.querySelector<HTMLElement>('[data-focus-return]'))?.focus();
+            }}>
             {t('eventCard.moreAssets', { count: event.assets.length - SHOWN_ASSETS })}
           </button>
         )}

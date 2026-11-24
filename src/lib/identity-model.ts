@@ -182,9 +182,11 @@ export function nameTakenBy(identities: readonly Identity[], folderId: string | 
  * to" only toward an organisation. Null when it cannot hold it.
  */
 export function withConnection(source: Identity, target: Identity, label: string): IdentityConnection[] | null {
-  if (source.id === target.id || (MEMBERSHIP.includes(label) && !isOrganization(target))) return null;
-  return source.connections.some(edge => edge.targetId === target.id && edge.label === label)
-    ? source.connections : [...source.connections, { targetId: target.id, label }];
+  if (source.id === target.id) return null;
+  // Already held: unchanged, even if the other identity's type has changed since.
+  if (source.connections.some(edge => edge.targetId === target.id && edge.label === label)) return source.connections;
+  if (MEMBERSHIP.includes(label) && !isOrganization(target)) return null;
+  return [...source.connections, { targetId: target.id, label }];
 }
 
 /** The organisation a person works at, or a system or account belongs to. */

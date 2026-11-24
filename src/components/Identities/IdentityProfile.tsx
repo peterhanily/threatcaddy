@@ -221,14 +221,14 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                 <li key={detail.id} className="grid grid-cols-[minmax(5rem,auto)_1fr_auto] items-start gap-2 text-sm">
                   <span className="text-xs text-text-muted">{detail.label}</span>
                   <span className="flex min-w-0 flex-wrap items-center gap-1.5">
-                    {/* A private value is read out when it is shown. */}
-                    <span aria-live={detail.private ? 'polite' : undefined} dir="auto" className={cn('break-all text-text-primary', MONO_LABEL.test(detail.label) && 'font-mono text-xs')}>{visible ? detail.value : maskDetail(detail, screensharing)}</span>
+                    {/* A private value is read out when shown; not while screensharing, which masks every value at once. */}
+                    <span aria-live={detail.private ? (screensharing ? 'off' : 'polite') : undefined} dir="auto" className={cn('break-all text-text-primary', MONO_LABEL.test(detail.label) && 'font-mono text-xs')}>{visible ? detail.value : maskDetail(detail, screensharing)}</span>
                     {detail.private && <span className="inline-flex items-center gap-0.5 rounded bg-bg-raised px-1 text-[10px] text-text-muted"><Lock size={10} aria-hidden="true" />{t('details.private')}</span>}
                     {/* One toggle that keeps focus (it was replaced by the badge, so focus fell to the page). */}
                     {detail.private && <button type="button" disabled={screensharing} title={screensharing ? t('details.hiddenWhileSharing') : undefined}
                       aria-describedby={screensharing ? `${ids}-sharing` : undefined} aria-pressed={visible}
-                      aria-label={t('details.showAria', { label: named.toLowerCase() })} className={cn(linkButton, 'rounded px-1 disabled:cursor-not-allowed disabled:opacity-50', visible && 'bg-accent/15')}
-                      onClick={() => setShown(previous => { const next = new Set(previous); if (next.has(detail.id)) next.delete(detail.id); else next.add(detail.id); return next; })}>{t('details.show')}</button>}
+                      aria-label={t('details.showAria', { label: named.toLowerCase() })} className={cn(linkButton, 'rounded px-1 disabled:cursor-not-allowed disabled:opacity-50', visible && 'bg-accent/20 ring-1 ring-accent')}
+                      onClick={() => setShown(previous => { const next = new Set(previous); if (visible) next.delete(detail.id); else next.add(detail.id); return next; })}>{t('details.show')}</button>}
                   </span>
                   {!readOnly && (
                     <span className="flex items-center gap-0.5">

@@ -37,7 +37,7 @@
   "identities.privateColumnAria": "Import {{column}} as a private detail",
   "identities.privateHint": "Detail columns ticked Private import as private details: hidden until Show and while screensharing, never sent to AI, and left out of the Identities CSV export unless chosen, this import's summary note and its events. Columns for phone numbers, street addresses, dates of birth, passports and national ID numbers start ticked; check the others.",
   "identities.unrecognised": "Not recognised in English or in the interface language:",
-  "identities.unrecognisedTypes": "Type {{values}}: new identities get it as a type of their own.",
+  "identities.unrecognisedTypes": "Type {{values}}: kept as written, as a custom type.",
   "identities.unrecognisedStatuses": "Status {{values}}: not imported.",
   "identities.unrecognisedContacts": "Contact {{values}}: not imported (use yes or no).",
   "identities.unrecognisedPhrases": "Connection {{values}}: kept as written, so org charts do not use it.",

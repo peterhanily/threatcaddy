@@ -6,12 +6,13 @@
  * - Case folding: Turkish İ/ı and German ß.
  * - A11Y-9 Data Import reads the interface language's words and reports what it cannot read.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Identity, IdentityStatus, Note } from '../types';
 import { activityOf, buildIdentityIndex, findMentions, linkFor } from '../lib/identity-match';
-import { CONNECTION_PHRASES, identityMatches, sameText, type ConnectionPhrase } from '../lib/identity-model';
+import { CONNECTION_PHRASES, identityMatches, sameText, withConnection, type ConnectionPhrase } from '../lib/identity-model';
+import { MENTION_START } from '../lib/identity-match';
 import { buildIdentities, unrecognisedIdentityValues, type ImportWords } from '../lib/identity-import';
 import type { ColumnMapping } from '../lib/data-import';
 
@@ -40,6 +41,21 @@ describe('Activity finds names in text written without spaces (A11Y-2)', () => {
     // 아 starts 김민아 (another name), 도 starts 도시가스: neither is a particle here.
     expect(named(make('김민'), '김민아에게 보고했다.')).toBe(false);
     expect(named(make('서울', { type: 'organization' }), '서울도시가스에 연락했다.')).toBe(false);
+    // The copula and a job title written onto the name.
+    expect(named(make('김철수'), '담당자는 김철수입니다.')).toBe(true);
+    expect(named(make('김철수'), '김철수부장이 승인했다.')).toBe(true);
+  });
+
+  it('spends the budget on segmenting as on comparing, so crafted Chinese text cannot stall a profile', () => {
+    // Three 1 MB notes where every second position is a candidate that segmenting must reject.
+    const segment = vi.spyOn(Intl.Segmenter.prototype, 'segment');
+    const notes = Array.from({ length: 3 }, () => note('人民'.repeat(500_000)));
+    const result = activityOf(make('民人'), { events: [], notes, iocs: [] });
+    expect(result).toMatchObject({ notes: [], partial: true });
+    // 50,000,000 characters of budget, a window of at least 34 characters weighted 8: under 184,000 segmentings
+    // (unweighted, the 1,500,000 candidates would each be segmented).
+    expect(segment.mock.calls.length).toBeLessThan(184_000);
+    segment.mockRestore();
   });
 
   it('two-character names in Chinese, Japanese or Korean, but still not two Latin letters', () => {
@@ -82,6 +98,11 @@ describe('@ mentions in Chinese, Japanese and Korean (A11Y-2)', () => {
     expect(findMentions('@JANA STRAUSS approved', buildIdentityIndex([strauss]).folders.get('case')).map(mention => mention.identity)).toEqual([strauss]);
   });
 
+  it('start after punctuation, not after a CJK letter such as 々 or ＿', () => {
+    for (const mark of ['，', '、', '（', '「', '【', '：']) expect(MENTION_START.test(mark)).toBe(true);
+    for (const letter of ['々', '＿', '〇', '＠']) expect(MENTION_START.test(letter)).toBe(false);
+  });
+
   it('still need a space or punctuation before the @, so an email address is no mention', () => {
     expect(findMentions('mail王伟@李娜.example', index)).toEqual([]);
   });
@@ -117,6 +138,15 @@ describe('case folding', () => {
   });
 });
 
+describe('connections', () => {
+  it('keeps a connection already held when the other identity is no longer an organisation', () => {
+    const dana = make('Dana', { connections: [{ targetId: 'acme', label: 'works at' }] });
+    const acme = make('Acme', { id: 'acme', type: 'person' });
+    expect(withConnection(dana, acme, 'works at')).toBe(dana.connections);
+    expect(withConnection(make('Lee'), acme, 'works at')).toBeNull();
+  });
+});
+
 describe('Data Import in the interface language (A11Y-9)', () => {
   const read = (namespace: string) => JSON.parse(readFileSync(join(__dirname, '..', '..', 'public', 'locales', 'fr', `${namespace}.json`), 'utf8')) as Record<string, string>;
   const fr = read('identities'), common = read('common');
@@ -145,6 +175,15 @@ describe('Data Import in the interface language (A11Y-9)', () => {
     // "Lee employs Dana" would be "Dana works at Lee", and Lee is not an organisation: skipped, as in the profile.
     expect(errors).toEqual(['Row 4: “Lee Park” is not an organization, so “emploie” was skipped.']);
     expect(unrecognisedIdentityValues(rows, mappings, { words })).toEqual({ types: [], statuses: [], contacts: [], phrases: [] });
+  });
+
+  it('names, in every language, the yes and no the import reads', () => {
+    for (const language of ['ar', 'de', 'en', 'es', 'fa', 'fr', 'he', 'hi', 'id', 'it', 'ja', 'ko', 'nl', 'pl', 'pt-BR', 'ru', 'th', 'tr', 'uk', 'vi', 'zh-CN']) {
+      const locale = (namespace: string) => JSON.parse(readFileSync(join(__dirname, '..', '..', 'public', 'locales', language, `${namespace}.json`), 'utf8')) as Record<string, string>;
+      const hint = locale('import')['identities.unrecognisedContacts'].toLowerCase();
+      const { yes, no } = locale('common');
+      expect([language, hint.includes(yes.toLowerCase()), hint.includes(no.toLowerCase())]).toEqual([language, true, true]);
+    }
   });
 
   it('says before importing which values it will not read, in a language it does not know', () => {

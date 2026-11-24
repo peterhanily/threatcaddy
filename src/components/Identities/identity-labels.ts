@@ -73,5 +73,7 @@ export function identitySubtitle(identity: Identity, byId: ReadonlyMap<string, I
     if (role && organization) return labels.t('subtitle.roleAt', { role, organization });
     return role || organization || labels.typeLabel(identity.type);
   }
-  return [labels.typeLabel(identity.type), role, organization].filter(Boolean).join(' · ');
+  // A custom type is the analyst's own text, isolated like the other parts.
+  const type = isBuiltinType(identity.type) ? labels.typeLabel(identity.type) : isolate(identity.type);
+  return [type, role, organization].filter(Boolean).join(' · ');
 }

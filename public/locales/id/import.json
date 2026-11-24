@@ -37,7 +37,7 @@
   "identities.privateColumnAria": "Impor {{column}} sebagai detail privat",
   "identities.privateHint": "Kolom detail yang dicentang Privat diimpor sebagai detail privat: disembunyikan sampai Anda mengklik Tampilkan dan selama berbagi layar, tidak pernah dikirim ke AI, dan tidak disertakan dalam ekspor CSV Identitas (kecuali Anda memilih untuk menyertakannya), catatan ringkasan impor ini, maupun kejadiannya. Kolom nomor telepon, alamat jalan, tanggal lahir, paspor, dan nomor ID nasional sudah dicentang sejak awal; periksa kolom lainnya.",
   "identities.unrecognised": "Tidak dikenali dalam bahasa Inggris maupun bahasa antarmuka:",
-  "identities.unrecognisedTypes": "Jenis {{values}}: identitas baru mendapatkannya sebagai jenis tersendiri.",
+  "identities.unrecognisedTypes": "Jenis {{values}}: disimpan sebagaimana tertulis, sebagai jenis kustom.",
   "identities.unrecognisedStatuses": "Status {{values}}: tidak diimpor.",
   "identities.unrecognisedContacts": "Kontak {{values}}: tidak diimpor (gunakan ya atau tidak).",
   "identities.unrecognisedPhrases": "Hubungan {{values}}: disimpan sebagaimana tertulis, sehingga bagan organisasi tidak menggunakannya.",

@@ -165,7 +165,9 @@ const UNSPACED = /[\p{scx=Han}\p{scx=Hiragana}\p{scx=Katakana}\p{scx=Thai}\p{scx
 const HANGUL = /\p{scx=Hangul}/u;
 /** Korean writes particles straight after a name (김철수가, 김철수에게는, 김철수님이): the name ends there when
  * the rest of the word is one or two particles, so 김민 is not found in 김민아 or 서울 in 서울도시가스. */
-const KOREAN_PARTICLES = '(?:이|가|은|는|을|를|의|에게서|에게|에서|에|께서|께|한테서|한테|와|과|이랑|랑|하고|도|만|으로|로|부터|까지|보다|처럼|이나|나|님|씨)';
+// Particles, the copula (김철수입니다, 김철수였다) and job titles written onto a name (김철수부장).
+const KOREAN_PARTICLES = '(?:이|가|은|는|을|를|의|에게서|에게|에서|에|께서|께|한테서|한테|와|과|이랑|랑|하고|도|만|으로|로|부터|까지|보다|처럼|이나|나|님|씨'
+  + '|입니다|이다|였다|이었다|이고|이며|이라고|라고|부장|차장|과장|대리|사장|팀장|실장|대표)';
 const KOREAN_PARTICLE = new RegExp(`^${KOREAN_PARTICLES}{1,2}$`, 'u');
 const HANGUL_RUN = /^\p{scx=Hangul}+/u;
 /** Longer than any one or two particles: the rest of the word is read from at most this many characters. */
@@ -174,9 +176,12 @@ const PARTICLE_WINDOW = 8;
 const WORDS = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter('en', { granularity: 'word' }) : undefined;
 /** Characters of context either side of a match given to the segmenter. */
 const SEGMENT_CONTEXT = 16;
+/** What segmenting a character costs, in characters compared: about 3 µs for a window of 36, so a
+ * crafted note of Chinese or Thai text spends its budget no faster in time than one of Latin text. */
+const SEGMENT_WEIGHT = 8;
 /** Where an `@` can start a mention: at the start, or after a space, an opening bracket, a quote, or
- * the punctuation of Chinese and Japanese (，、。（「【：). */
-export const MENTION_START = /[\s([{"'“‘«\u3001-\u303f\uff01-\uff0f\uff1a-\uff1f\uff3b-\uff40\uff5b-\uff65]/;
+ * the punctuation of Chinese and Japanese (，、。（「【：), not their letters (々, ＿). */
+export const MENTION_START = /[\s([{"'“‘«\u3001-\u3004\u3008-\u3011\u3014-\u301f\uff01-\uff0f\uff1a-\uff1f\uff3b-\uff3e\uff40\uff5b-\uff65]/;
 
 /** The character (a whole code point) just before and just at `at`. */
 const charBefore = (text: string, at: number) => (at > 0 ? String.fromCodePoint(text.codePointAt(at >= 2 && /[\udc00-\udfff]/.test(text[at - 1]) ? at - 2 : at - 1) ?? 0) : '');
@@ -186,7 +191,7 @@ const charAt = (text: string, at: number) => (at < text.length ? String.fromCode
 function segmentBoundaries(text: string, from: number, to: number, budget: { work: number }): Set<number> {
   const start = Math.max(0, from - SEGMENT_CONTEXT);
   const window = text.slice(start, Math.min(text.length, to + SEGMENT_CONTEXT));
-  budget.work += window.length;
+  budget.work += window.length * SEGMENT_WEIGHT;
   const boundaries = new Set<number>();
   if (WORDS) for (const { index } of WORDS.segment(window)) boundaries.add(start + index);
   boundaries.add(start + window.length);
