@@ -248,6 +248,7 @@
   "sidebar.products": "Produkty",
   "syncStatus.screenshareHidden": "Synchronizacja wymaga uwagi. Wyłącz udostępnianie ekranu, aby zobaczyć szczegóły.",
   "screenshare.viewHidden": "Ten widok jest ukryty podczas udostępniania ekranu.",
+  "screenshare.hiddenByIdentities": "Tożsamości w tym dochodzeniu mają klasyfikację wyższą niż udostępniany poziom. Klasyfikacja tożsamości jest widoczna w jej profilu i zmienia się ją w Edycji.",
   "screenshare.browseVisible": "Przeglądaj widoczne dochodzenia",
   "screenshare.toggle": "Przełącz tryb udostępniania ekranu",
   "screenshare.mode": "Tryb udostępniania ekranu",

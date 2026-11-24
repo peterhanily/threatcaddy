@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Contact, Download, Plus, Star } from 'lucide-react';
-import type { Folder, Identity, Note, StandaloneIOC, TimelineEvent } from '../../types';
+import type { Folder, Identity, IdentityStatus, Note, StandaloneIOC, TimelineEvent } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { useScreenshare } from '../../hooks/ScreenshareContext';
 import { BUILTIN_TYPES, foundNames, identityMatches, isBuiltinType, looseText, sortedByName, type FoundName } from '../../lib/identity-model';
@@ -15,6 +15,7 @@ import { IdentityFormModal, type AddPrefill } from './IdentityFormModal';
 import { FoundNameDialog, FoundNamesPanel } from './FoundNames';
 import { OrgCharts } from './OrgCharts';
 import { IdentityExportDialog } from './IdentityExportDialog';
+import { IDENTITY_STATUSES } from '../../lib/entity-enums';
 
 type Filter = 'all' | 'contact' | 'other' | (typeof BUILTIN_TYPES)[number];
 const FILTERS: Filter[] = ['all', 'person', 'contact', 'organization', 'system', 'account', 'other'];
@@ -24,6 +25,9 @@ const initialOf = (identity: Identity) => [...looseText(identity.name)][0]?.toUp
 const stacked = () => !!window.matchMedia && !window.matchMedia('(min-width: 1024px)').matches;
 const matchesFilter = (identity: Identity, filter: Filter) => filter === 'all' || (filter === 'contact' ? !!identity.contact
   : filter === 'other' ? !isBuiltinType(identity.type) : identity.type === filter);
+
+/** A request to open the list on an identity, a search, or a status (a Dashboard tile). */
+export interface IdentitySelectRequest { id?: string; request: number; query?: string; status?: IdentityStatus }
 
 export interface IdentitiesViewProps {
   /** Identities in the selected investigation, or in every investigation (any state; trashed and archived ones are left out here). */
@@ -42,7 +46,14 @@ export interface IdentitiesViewProps {
   readOnly?: boolean;
   defaultFolderId?: string;
   /** Opens an identity, for example from search; `query` filters the list (text more than one identity holds). */
-  selectRequest?: { id: string; request: number; query?: string };
+  selectRequest?: IdentitySelectRequest;
+  /** Called once a select request is applied, so it is not applied again on a later visit. */
+  onSelectHandled?: () => void;
+  /** Adds a name to Settings › threat actors, so it is no longer offered as an identity. */
+  onTrackThreatActor?: (name: string) => void;
+  /** Classification levels offered (Settings), and the default level for export. */
+  clsLevels?: string[];
+  defaultClsLevel?: string;
   /** Opens Add, for example from the New menu; `onAddHandled` clears it so it opens once. */
   addRequest?: number;
   onAddHandled?: () => void;
@@ -62,7 +73,7 @@ export interface IdentitiesViewProps {
 
 export function IdentitiesView(props: IdentitiesViewProps) {
   const { identities, allIdentities, folders, folderId, events, iocs, notes, threatActors, readOnly = false, defaultFolderId, selectRequest, addRequest,
-    onAddHandled, onCreate, onUpdate, onTrash, onMerge, onOpenElsewhere, onOpenEvent, onOpenNote, onOpenIOC, onAddNote } = props;
+    onAddHandled, onSelectHandled, onTrackThreatActor, clsLevels, defaultClsLevel, onCreate, onUpdate, onTrash, onMerge, onOpenElsewhere, onOpenEvent, onOpenNote, onOpenIOC, onAddNote } = props;
   const labels = useIdentityLabels();
   const { t } = labels;
   const ids = useId();
@@ -70,6 +81,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const screensharing = useScreenshare().maxLevel !== null;
   const [tab, setTab] = useState<'rolodex' | 'org'>('rolodex');
   const [selectedId, setSelectedId] = useState(selectRequest?.id ?? '');
+  const [statusFilter, setStatusFilter] = useState<IdentityStatus | undefined>(selectRequest?.status);
   const [organizationId, setOrganizationId] = useState('');
   const [query, setQuery] = useState(selectRequest?.query ?? '');
   const [filter, setFilter] = useState<Filter>('all');
@@ -82,8 +94,11 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const [seenSelect, setSeenSelect] = useState(selectRequest);
   if (selectRequest !== seenSelect) {
     setSeenSelect(selectRequest);
-    if (selectRequest) { setSelectedId(selectRequest.id); setTab('rolodex'); setQuery(selectRequest.query ?? ''); setFilter('all'); }
+    if (selectRequest) {
+      setSelectedId(selectRequest.id ?? ''); setTab('rolodex'); setQuery(selectRequest.query ?? ''); setFilter('all'); setStatusFilter(selectRequest.status);
+    }
   }
+  useEffect(() => { if (selectRequest) onSelectHandled?.(); }, [selectRequest, onSelectHandled]);
   const [seenAdd, setSeenAdd] = useState<number>();
   if (addRequest !== seenAdd) {
     setSeenAdd(addRequest);
@@ -102,9 +117,14 @@ export function IdentitiesView(props: IdentitiesViewProps) {
     [readOnly, known, events, iocs, threatActors, isIgnored]);
 
   // Worked out once per change, not on every render: a staff list can hold 20,000 identities.
-  const rows = useMemo(() => live.filter(identity => matchesFilter(identity, filter) && identityMatches(identity, query, labels.typeLabel(identity.type))),
-    [live, filter, query, labels]);
-  const selected = live.find(identity => identity.id === selectedId) ?? rows[0] ?? live[0];
+  const rows = useMemo(() => live.filter(identity => matchesFilter(identity, filter) && (!statusFilter || identity.status === statusFilter)
+    && identityMatches(identity, query, labels.typeLabel(identity.type))),
+    [live, filter, statusFilter, query, labels]);
+  // A search or filter that matches nothing shows no profile, rather than another identity beside "No matches".
+  const narrowed = !!query.trim() || filter !== 'all' || !!statusFilter;
+  const selected = narrowed && !rows.length ? undefined : live.find(identity => identity.id === selectedId) ?? rows[0] ?? live[0];
+  const statusCounts = useMemo(() => new Map(IDENTITY_STATUSES.map(status => [status, live.filter(identity => identity.status === status).length])), [live]);
+  const statuses = IDENTITY_STATUSES.filter(status => status === statusFilter || (statusCounts.get(status) ?? 0) > 0);
   // Once per render, not once per row: the list's single tab stop falls back to its first row.
   const selectedInRows = useMemo(() => !!selected && rows.some(row => row.id === selected.id), [rows, selected]);
   const filterCounts = useMemo(() => new Map(FILTERS.map(option => [option, live.filter(identity => matchesFilter(identity, option)).length])), [live]);
@@ -217,6 +237,16 @@ export function IdentitiesView(props: IdentitiesViewProps) {
                       </button>
                     ))}
                   </div>
+                  {statuses.length > 0 && (
+                    <div role="group" aria-label={t('status.label')} className="flex flex-wrap gap-1">
+                      {statuses.map(status => (
+                        <button key={status} type="button" aria-pressed={statusFilter === status} onClick={() => setStatusFilter(current => (current === status ? undefined : status))}
+                          className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs', statusFilter === status ? 'border-accent bg-accent/15 text-accent' : 'border-border-subtle text-text-secondary hover:text-text-primary')}>
+                          <span aria-hidden="true" className={cn('h-2 w-2 rounded-full', STATUS_DOT[status])} />{labels.statusLabel(status)} <span className="text-text-muted">{statusCounts.get(status) ?? 0}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div ref={listRef} role="list" onKeyDown={moveInList} className="max-h-[70vh] overflow-y-auto rounded-lg border border-border-subtle bg-bg-surface p-1">
                     {rows.map((identity, index) => {
                       const heading = headings[index];
@@ -280,6 +310,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
         <IdentityFormModal
           editing={form.editing}
           prefill={form.prefill}
+          clsLevels={clsLevels}
           folders={folders}
           defaultFolderId={folderId ?? defaultFolderId}
           identities={form.editing ? live : everywhere.length ? everywhere : live}
@@ -305,7 +336,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
         />
       )}
       {exporting && (
-        <IdentityExportDialog identities={live} byId={byId} folders={folders} folderId={folderId} screensharing={screensharing} labels={labels}
+        <IdentityExportDialog identities={live} byId={byId} folders={folders} folderId={folderId} screensharing={screensharing} labels={labels} defaultClsLevel={defaultClsLevel}
           onClose={() => setExporting(false)}
           onExported={file => { setExporting(false); addToast('success', t('toast.exported', { file })); }} />
       )}
@@ -325,6 +356,13 @@ export function IdentitiesView(props: IdentitiesViewProps) {
             void run(() => onUpdate(identity.id, withOtherName(text)), t('toast.otherNameAdded', { text, name: identity.name })).catch(() => { /* Reported. */ });
             setSelectedId(identity.id);
           }}
+          onTrackActor={onTrackThreatActor && (() => {
+            focusAfter.current = 'found';
+            const text = picked.text;
+            setPicked(null);
+            onTrackThreatActor(text);
+            addToast('success', t('toast.trackedActor', { text }));
+          })}
         />
       )}
     </div>

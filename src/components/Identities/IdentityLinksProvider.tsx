@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react';
 import type { Folder, Identity } from '../../types';
-import { foundKey, guessIdentity, type FoundName } from '../../lib/identity-model';
+import { foundKey, guessFrom, guessIdentity, type FoundName } from '../../lib/identity-model';
 import { belongsTo, buildIdentityIndex, linkFor, type IdentityIndex } from '../../lib/identity-match';
 import { useIgnoredNames } from '../../hooks/useIgnoredNames';
 import { IdentityLinksContext, type IdentityLinks } from './identity-links';
@@ -21,6 +21,8 @@ interface Props {
   onCreate: (partial: Partial<Identity>) => Promise<Identity>;
   onUpdate: (id: string, change: IdentityChange) => Promise<void>;
   onOpen: (identity: Identity, query?: string) => void;
+  /** Adds a name to Settings › threat actors, so it is no longer offered as an identity. */
+  onTrackThreatActor?: (name: string) => void;
   children: ReactNode;
 }
 
@@ -29,7 +31,7 @@ function sameIndex(next: IdentityIndex, previous: IdentityIndex): boolean {
     && next.actors.size === previous.actors.size && [...next.actors].every(actor => previous.actors.has(actor));
 }
 
-export function IdentityLinksProvider({ identities, isVisible, threatActors, folders, readOnly = false, onCreate, onUpdate, onOpen, children }: Props) {
+export function IdentityLinksProvider({ identities, isVisible, threatActors, folders, readOnly = false, onCreate, onUpdate, onOpen, onTrackThreatActor, children }: Props) {
   const { isIgnored, ignore } = useIgnoredNames();
   // Rebuilt while rendering when its inputs change; investigations whose identities did not change
   // keep their index object, so their note previews are not re-rendered.
@@ -59,7 +61,7 @@ export function IdentityLinksProvider({ identities, isVisible, threatActors, fol
       const link = linkFor(index, folderId, text);
       if (link.state !== 'notYet') return;
       setPicked({ key: foundKey(folderId, text), folderId, text, sources: [source],
-        guess: guessIdentity(text, source.kind === 'asset'), looksLike: link.looksLike });
+        guess: guessIdentity(text, guessFrom(source.kind)), looksLike: link.looksLike });
     },
   }), [index, isIgnored, readOnly, onOpen]);
 
@@ -70,7 +72,7 @@ export function IdentityLinksProvider({ identities, isVisible, threatActors, fol
       {picked && (
         <Suspense fallback={null}>
           <IdentityLinkDialogs found={picked} folders={folders} identities={live} onClose={() => setPicked(null)}
-            onIgnore={() => ignore(picked.folderId, picked.text)} onCreate={onCreate} onUpdate={onUpdate} />
+            onIgnore={() => ignore(picked.folderId, picked.text)} onCreate={onCreate} onUpdate={onUpdate} onTrackActor={onTrackThreatActor} />
         </Suspense>
       )}
     </IdentityLinksContext.Provider>

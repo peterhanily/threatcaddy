@@ -132,6 +132,7 @@
   "mapping.identity-connection": "Identität: Verbindung (der Spaltenname ist die Formulierung)",
   "mapping.identity-connections": "Identität: Verbindungen (Formulierung: Name)",
   "mapping.identity-classification": "Identität: Klassifizierung",
+  "mapping.identity-tags": "Identität: Tags",
   "mapping.ignore": "Ignorieren",
   "mentionCategory.note": "Notizen",
   "mentionCategory.ioc": "IOCs",

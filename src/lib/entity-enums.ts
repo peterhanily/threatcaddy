@@ -12,7 +12,8 @@ export const IOC_TYPES: readonly IOCType[] = [
   'ipv4', 'ipv6', 'domain', 'url', 'email', 'md5', 'sha1', 'sha256', 'file-path', 'cve', 'mitre-attack', 'yara-rule', 'sigma-rule',
 ];
 /** Most serious first. */
-export const IDENTITY_STATUSES: readonly IdentityStatus[] = ['compromised', 'suspicious', 'cleared'];
+/** Most serious first (a merge keeps the more serious). Contained: was compromised, now contained. */
+export const IDENTITY_STATUSES: readonly IdentityStatus[] = ['compromised', 'contained', 'suspicious', 'cleared'];
 export const AGENT_COMPETITIVENESS: readonly NonNullable<AgentDeployment['competitiveness']>[] = ['cooperative', 'competitive', 'independent'];
 
 /** Models write 'High' or 'lateral_movement'; anything else stays unsupported. */

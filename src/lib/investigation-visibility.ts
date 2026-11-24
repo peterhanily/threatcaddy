@@ -35,6 +35,9 @@ export interface InvestigationVisibility {
   hiddenFolderIds: ReadonlySet<string>;
   isEntityVisible: (entity: InvestigationVisibilityEntity) => boolean;
   isTimelineVisible: (timeline: { id: string }) => boolean;
+  /** Investigations hidden because an identity in them is classified above the shared level (its
+   * level is set on its profile), so the hidden view can say so. */
+  hiddenByIdentities?: ReadonlySet<string>;
 }
 
 /** One function, not a new one per data change: what reads it (the identity link index) can tell
@@ -115,10 +118,14 @@ export function buildInvestigationVisibility(input: InvestigationVisibilityInput
 
   const collections = [input.notes, input.tasks, input.timelineEvents, input.whiteboards,
     input.standaloneIOCs, input.chatThreads, input.evidenceItems, input.identities];
+  const hiddenByIdentities = new Set<string>();
   for (const entities of collections) {
     for (const entity of entities) {
       if (!isRestricted(entity)) continue;
-      for (const folderId of linkedFolderIds(entity)) hiddenFolderIds.add(folderId);
+      for (const folderId of linkedFolderIds(entity)) {
+        hiddenFolderIds.add(folderId);
+        if (entities === input.identities) hiddenByIdentities.add(folderId);
+      }
     }
   }
 
@@ -132,6 +139,7 @@ export function buildInvestigationVisibility(input: InvestigationVisibilityInput
     remoteInvestigations: [],
     visibleFolderIds,
     hiddenFolderIds,
+    hiddenByIdentities,
     isEntityVisible: entity => !isRestricted(entity)
       && (!entity.timelineId || !hiddenTimelineIds.has(entity.timelineId))
       && [...linkedFolderIds(entity)].every(folderId => visibleFolderIds.has(folderId)),

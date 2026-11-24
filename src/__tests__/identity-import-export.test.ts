@@ -25,9 +25,9 @@ function reimport(csv: string, existing: Identity[], extra: Partial<Parameters<t
 describe('CSV export', () => {
   it('writes one row per identity and one column per detail, leaving private details out unless asked', () => {
     const csv = identitiesToCsv(all, { byId, folders });
-    expect(csv.startsWith('\uFEFFName,Type,Investigation,Status,Contact,Description,Organization,Other names,Email,Connections,Classification,Created,Updated\r\n')).toBe(true);
+    expect(csv.startsWith('\uFEFFName,Type,Investigation,Status,Contact,Description,Organization,Other names,Email,Tags,Connections,Classification,Created,Updated\r\n')).toBe(true);
     expect(csv).not.toContain('7700');
-    expect(csv).toContain('Dana Okafor,person,Halvorsen BEC,compromised,yes,,Halvorsen Shipping,"Okafor, Dana",dana@halvorsen.example,"works at: Halvorsen Shipping\nreports to: Lee Park"');
+    expect(csv).toContain('Dana Okafor,person,Halvorsen BEC,compromised,yes,,Halvorsen Shipping,"Okafor, Dana",dana@halvorsen.example,,"works at: Halvorsen Shipping\nreports to: Lee Park"');
     const withPrivate = identitiesToCsv(all, { byId, folders, includePrivate: true });
     expect(withPrivate).toContain(',Phone (private),');
     expect(withPrivate).toContain("'+44 7700 900123");

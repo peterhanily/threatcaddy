@@ -132,6 +132,7 @@
   "mapping.identity-connection": "身份: 关联（列名即关联短语）",
   "mapping.identity-connections": "身份: 关联列表（短语: 名称）",
   "mapping.identity-classification": "身份: 分类",
+  "mapping.identity-tags": "身份: 标签",
   "mapping.ignore": "忽略",
   "mentionCategory.note": "笔记",
   "mentionCategory.ioc": "IOC",

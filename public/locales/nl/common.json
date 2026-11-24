@@ -248,6 +248,7 @@
   "sidebar.products": "Producten",
   "syncStatus.screenshareHidden": "Synchronisatie vereist aandacht. Stop met schermdelen om de details te bekijken.",
   "screenshare.viewHidden": "Deze weergave is verborgen tijdens schermdelen.",
+  "screenshare.hiddenByIdentities": "Identiteiten in dit onderzoek zijn hoger geclassificeerd dan het gedeelde niveau. De classificatie van een identiteit staat op haar profiel en wordt gewijzigd via Bewerken.",
   "screenshare.browseVisible": "Zichtbare onderzoeken bekijken",
   "screenshare.toggle": "Schermdeelmodus in- of uitschakelen",
   "screenshare.mode": "Schermdeelmodus",

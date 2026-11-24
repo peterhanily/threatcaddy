@@ -248,6 +248,7 @@
   "sidebar.products": "Products",
   "syncStatus.screenshareHidden": "La sincronizzazione richiede attenzione. Disattiva la condivisione dello schermo per vedere i dettagli.",
   "screenshare.viewHidden": "Questa vista è nascosta durante la condivisione dello schermo.",
+  "screenshare.hiddenByIdentities": "Alcune identità di questa indagine sono classificate sopra il livello condiviso. La classificazione di un'identità è indicata nel suo profilo e si cambia in Modifica.",
   "screenshare.browseVisible": "Sfoglia le indagini visibili",
   "screenshare.toggle": "Attiva/disattiva la modalità condivisione schermo",
   "screenshare.mode": "Modalità condivisione schermo",

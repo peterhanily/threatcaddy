@@ -132,6 +132,7 @@
   "mapping.identity-connection": "الهوية: علاقة (اسم العمود هو العبارة)",
   "mapping.identity-connections": "الهوية: العلاقات (العبارة: الاسم)",
   "mapping.identity-classification": "الهوية: التصنيف",
+  "mapping.identity-tags": "الهوية: الوسوم",
   "mapping.ignore": "تجاهل",
   "mentionCategory.note": "الملاحظات",
   "mentionCategory.ioc": "IOCs",

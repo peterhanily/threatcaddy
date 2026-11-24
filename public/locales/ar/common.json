@@ -248,6 +248,7 @@
   "sidebar.products": "المنتجات",
   "syncStatus.screenshareHidden": "تحتاج المزامنة إلى مراجعة. أوقف مشاركة الشاشة لعرض التفاصيل.",
   "screenshare.viewHidden": "هذا العرض مخفي أثناء مشاركة الشاشة.",
+  "screenshare.hiddenByIdentities": "هويات في هذا التحقيق مصنّفة فوق المستوى المشارَك. يظهر تصنيف الهوية في ملفها ويُغيَّر من «تحرير».",
   "screenshare.browseVisible": "تصفّح التحقيقات المرئية",
   "screenshare.toggle": "تبديل وضع مشاركة الشاشة",
   "screenshare.mode": "وضع مشاركة الشاشة",

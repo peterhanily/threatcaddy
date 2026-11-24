@@ -4,6 +4,7 @@ import { Settings2, X, ChevronUp, ChevronDown, TrendingUp, TrendingDown } from '
 import type { Folder, Note, Task, TimelineEvent, StandaloneIOC, Identity, KPIMetricId } from '../../types';
 import { AVAILABLE_KPI_METRICS, KPI_METRIC_LABELS, DEFAULT_DASHBOARD_KPIS } from '../../types';
 import { isOverdue } from '../../lib/utils';
+import { cn } from '../../lib/utils';
 
 interface KPIWidgetsProps {
   folders: Folder[];
@@ -14,7 +15,10 @@ interface KPIWidgetsProps {
   allIdentities?: Identity[];
   selectedKPIs: KPIMetricId[];
   onUpdateKPIs: (kpis: KPIMetricId[]) => void;
+  /** Opens what a tile counts (the compromised identities, as a filtered list); tiles it covers are buttons. */
+  onOpenMetric?: (metric: KPIMetricId) => void;
 }
+const OPENABLE: ReadonlySet<KPIMetricId> = new Set(['compromised-identities']);
 
 const KPI_COLORS: Record<KPIMetricId, string> = {
   'open-investigations': '#3b82f6',
@@ -98,7 +102,7 @@ function computeKPIValue(
   }
 }
 
-export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, allIdentities = [], selectedKPIs, onUpdateKPIs }: KPIWidgetsProps) {
+export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, allIdentities = [], selectedKPIs, onUpdateKPIs, onOpenMetric }: KPIWidgetsProps) {
   const { t } = useTranslation('dashboard');
   const [showConfig, setShowConfig] = useState(false);
 
@@ -130,10 +134,13 @@ export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, al
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {kpiData.map(kpi => (
-          <div
+        {kpiData.map(kpi => {
+          const Tile = onOpenMetric && OPENABLE.has(kpi.metric) ? 'button' : 'div';
+          return (
+          <Tile
             key={kpi.metric}
-            className="bg-bg-raised rounded-lg p-3 border border-border-subtle"
+            {...(Tile === 'button' ? { type: 'button' as const, onClick: () => onOpenMetric?.(kpi.metric) } : {})}
+            className={cn('bg-bg-raised rounded-lg p-3 border border-border-subtle text-start', Tile === 'button' && 'hover:border-accent')}
             style={{ borderLeftColor: kpi.color + '60', borderLeftWidth: 3 }}
           >
             <div className="text-[10px] text-gray-500 uppercase tracking-wider">{kpi.label}</div>
@@ -144,8 +151,9 @@ export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, al
               {kpi.trend === 'up' && <TrendingUp size={14} className="text-red-400" />}
               {kpi.trend === 'down' && <TrendingDown size={14} className="text-green-400" />}
             </div>
-          </div>
-        ))}
+          </Tile>
+          );
+        })}
       </div>
 
       {showConfig && (

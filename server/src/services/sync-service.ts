@@ -172,7 +172,7 @@ function sameAsStored(tableName: string, clean: Record<string, unknown>, stored:
 /** Identity fields as clients store them; a row of another shape would be repaired by syncing
  * clients but could break a client reading it raw. Null clears an optional field. */
 const isText = (value: unknown) => typeof value === 'string';
-const IDENTITY_STATUSES = new Set(['compromised', 'suspicious', 'cleared']);
+const IDENTITY_STATUSES = new Set(['compromised', 'contained', 'suspicious', 'cleared']);
 const isTextList = (value: unknown) => Array.isArray(value) && value.every(isText);
 const isRecordWith = (value: unknown, text: readonly string[], flags: readonly string[] = []) => !!value && typeof value === 'object' && !Array.isArray(value)
   && text.every(key => isText((value as Record<string, unknown>)[key]))

@@ -4,7 +4,7 @@ import { initials, isOrganization, isPerson } from '../../lib/identity-model';
 import { cn } from '../../lib/utils';
 
 const STATUS_RING: Record<IdentityStatus, string> = {
-  compromised: 'ring-red-500', suspicious: 'ring-amber-500', cleared: 'ring-green-500',
+  compromised: 'ring-red-500', contained: 'ring-sky-500', suspicious: 'ring-amber-500', cleared: 'ring-green-500',
 };
 
 /** Initials for a person; an icon for anything else. Decorative: the name is always beside it. */

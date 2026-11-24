@@ -227,7 +227,7 @@ test('switches between one investigation and all of them, and follows "Also in a
   await expect(row(page, 'Lee Park')).toContainText('Fictional second case');
 });
 
-test('deletes an identity for good only after confirmation, removing connections to it', async ({ page }) => {
+test('deletes an identity for good only after confirmation, and the identity connected to it no longer shows that connection', async ({ page }) => {
   await seed(page, {
     folders: [folder('case', 'Fictional BEC case')],
     identities: [identity('lee', 'case', 'Lee Park'), identity('dana', 'case', 'Dana Okafor', { connections: [{ targetId: 'lee', label: 'reports to' }] })],

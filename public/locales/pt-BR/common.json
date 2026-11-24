@@ -248,6 +248,7 @@
   "sidebar.products": "Produtos",
   "syncStatus.screenshareHidden": "A sincronização precisa de atenção. Desative o compartilhamento de tela para ver os detalhes.",
   "screenshare.viewHidden": "Esta visualização fica oculta durante o compartilhamento de tela.",
+  "screenshare.hiddenByIdentities": "Há identidades nesta investigação classificadas acima do nível compartilhado. A classificação de uma identidade aparece no perfil e é alterada em Editar.",
   "screenshare.browseVisible": "Ver investigações visíveis",
   "screenshare.toggle": "Alternar modo de compartilhamento de tela",
   "screenshare.mode": "Modo de compartilhamento de tela",

@@ -3,7 +3,7 @@
  * their charts, search, masking of private details, and the names found in an
  * investigation that are not identities yet. No storage or React here.
  */
-import type { Identity, IdentityDetail, StandaloneIOC, TimelineEvent } from '../types';
+import type { Identity, IdentityConnection, IdentityDetail, StandaloneIOC, TimelineEvent } from '../types';
 
 /** Built-in types are stored as these keys and translated for display; any other word is kept as typed. */
 export const BUILTIN_TYPES = ['person', 'organization', 'system', 'account'] as const;
@@ -157,6 +157,28 @@ export function maskDetail(detail: Pick<IdentityDetail, 'label' | 'value'>, full
 }
 
 const live = (identity: Identity) => !identity.trashed;
+
+/**
+ * The other live identity in the investigation whose name or other name is `text`: a name two
+ * identities share makes every link to it ambiguous, so the form, the AI tools and import refuse it.
+ */
+export function nameTakenBy(identities: readonly Identity[], folderId: string | undefined, text: string, selfId?: string): Identity | undefined {
+  const key = sameText(text);
+  if (!key) return undefined;
+  return identities.find(other => other.id !== selfId && live(other) && other.folderId === folderId
+    && [other.name, ...other.aliases].some(taken => sameText(taken) === key));
+}
+
+/**
+ * `source`'s connections once it also holds "label → target", the one rule for every way of adding
+ * one (the profile, the graph, the AI tool): stored once, never to itself, and "works at" or "belongs
+ * to" only toward an organisation. Null when it cannot hold it.
+ */
+export function withConnection(source: Identity, target: Identity, label: string): IdentityConnection[] | null {
+  if (source.id === target.id || (MEMBERSHIP.includes(label) && !isOrganization(target))) return null;
+  return source.connections.some(edge => edge.targetId === target.id && edge.label === label)
+    ? source.connections : [...source.connections, { targetId: target.id, label }];
+}
 
 /** The organisation a person works at, or a system or account belongs to. */
 export function organizationOf(identity: Identity, byId: ReadonlyMap<string, Identity>): Identity | undefined {
@@ -364,15 +386,18 @@ const HOSTNAME = /^(?=.{2,63}$)(?:[a-z0-9-]+\.)+[a-z][a-z0-9-]*$|^(?=.{2,63}$)(?
 
 /** A first guess at what a name is; the person adding it can change it. `thing` says it was
  * listed as an asset, which names a system or an account, never a person. */
-export function guessIdentity(text: string, thing = false): FoundName['guess'] {
+export function guessIdentity(text: string, thing: boolean | 'actor' = false): FoundName['guess'] {
   const compact = text.replace(/\s+/g, '');
   if (isEmail(text)) return { type: 'account', detailLabel: 'email' };
   if (IBAN.test(compact)) return { type: 'account', detailLabel: 'iban' };
   if (SERVICE_ACCOUNT.test(text)) return { type: 'account' };
   if (IPV4.test(text) || IPV6.test(text)) return { type: 'system', detailLabel: 'ipAddress' };
   if (HOSTNAME.test(text)) return { type: 'system', detailLabel: 'hostname' };
-  return { type: thing ? 'system' : 'person' };
+  // Named as an event's Actor or an IOC's attribution: a threat actor more often than a person.
+  return { type: thing === 'actor' ? 'organization' : thing ? 'system' : 'person' };
 }
+/** What a found name is first guessed as, by where it was found. */
+export const guessFrom = (kind: FoundSource['kind']): boolean | 'actor' => (kind === 'asset' ? true : kind === 'actor' || kind === 'attribution' ? 'actor' : false);
 
 export const foundKey = (folderId: string, text: string) => JSON.stringify([folderId, sameText(text)]);
 /** How an ignored found name is stored: FNV-1a, 64-bit, as hex. Stable and fast; a short name
@@ -437,6 +462,11 @@ export function foundNames(input: {
     add(ioc.folderId, ioc.attribution, { kind: 'attribution', id: ioc.id, title: ioc.value });
     if (ioc.type === 'email') add(ioc.folderId, ioc.value, { kind: 'email', id: ioc.id, title: ioc.value });
   }
-  for (const group of groups.values()) group.guess = guessIdentity(group.text, group.sources.some(source => source.kind === 'asset'));
+  // Guessed from every place it was found: an asset names a system or account; an Actor or an
+  // attribution names a threat actor more often than a person (guessed as an organization).
+  for (const group of groups.values()) {
+    const kinds = new Set(group.sources.map(source => source.kind));
+    group.guess = guessIdentity(group.text, kinds.has('asset') ? true : kinds.has('actor') || kinds.has('attribution') ? 'actor' : false);
+  }
   return [...groups.values()].sort((a, b) => b.sources.length - a.sources.length || sameText(a.text).localeCompare(sameText(b.text)));
 }

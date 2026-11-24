@@ -132,6 +132,7 @@
   "mapping.identity-connection": "アイデンティティ: 関係（列名が関係の表現になります）",
   "mapping.identity-connections": "アイデンティティ: 関係一覧（表現: 名前）",
   "mapping.identity-classification": "アイデンティティ: 分類",
+  "mapping.identity-tags": "アイデンティティ: タグ",
   "mapping.ignore": "無視",
   "mentionCategory.note": "ノート",
   "mentionCategory.ioc": "IOC",

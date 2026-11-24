@@ -648,7 +648,7 @@ export const TOOL_DEFINITIONS = [
       properties: {
         query: { type: 'string', description: 'Text to look for (optional; empty lists every identity)' },
         type: { type: 'string', description: 'Only this type: person, organization, system, account, or another type in use (optional)' },
-        status: { type: 'string', enum: ['compromised', 'suspicious', 'cleared'], description: 'Only this status (optional)' },
+        status: { type: 'string', enum: ['compromised', 'contained', 'suspicious', 'cleared'], description: 'Only this status (optional)' },
         limit: { type: 'number', description: 'Maximum results (default 20, max 50)' },
       },
       required: [],
@@ -676,7 +676,7 @@ export const TOOL_DEFINITIONS = [
         name: { type: 'string', description: 'Name, or handle if the real name is not known' },
         type: { type: 'string', description: 'person, organization, system, account, or another word (default: guessed from the name)' },
         description: { type: 'string', description: 'Job title or short description (optional)' },
-        status: { type: 'string', enum: ['compromised', 'suspicious', 'cleared'], description: 'Status (optional)' },
+        status: { type: 'string', enum: ['compromised', 'contained', 'suspicious', 'cleared'], description: 'Status (optional); contained means it was compromised and is now contained' },
         organization: { type: 'string', description: 'Name of an organization identity in this investigation they work at or belong to (optional)' },
         otherNames: { type: 'array', items: { type: 'string' }, description: 'Other names, aliases or spellings (optional)' },
         details: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, value: { type: 'string' } }, required: ['label', 'value'] },
@@ -694,7 +694,7 @@ export const TOOL_DEFINITIONS = [
       properties: {
         id: { type: 'string', description: 'Identity ID to update' },
         description: { type: 'string', description: 'New job title or description (optional)' },
-        status: { type: 'string', enum: ['compromised', 'suspicious', 'cleared', 'none'], description: 'New status; none clears it (optional)' },
+        status: { type: 'string', enum: ['compromised', 'contained', 'suspicious', 'cleared', 'none'], description: 'New status; contained means it was compromised and is now contained; none clears it (optional)' },
         contact: { type: 'boolean', description: 'Whether this is someone the analyst works with (optional)' },
         addOtherNames: { type: 'array', items: { type: 'string' }, description: 'Other names to add (optional)' },
         addDetails: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, value: { type: 'string' } }, required: ['label', 'value'] },

@@ -248,6 +248,7 @@
   "sidebar.products": "Produkte",
   "syncStatus.screenshareHidden": "Die Synchronisierung erfordert Ihre Aufmerksamkeit. Beenden Sie die Bildschirmfreigabe, um die Details zu prüfen.",
   "screenshare.viewHidden": "Diese Ansicht ist während der Bildschirmfreigabe ausgeblendet.",
+  "screenshare.hiddenByIdentities": "Identitäten in dieser Untersuchung sind höher als die freigegebene Stufe klassifiziert. Die Klassifizierung einer Identität steht in ihrem Profil und wird unter Bearbeiten geändert.",
   "screenshare.browseVisible": "Sichtbare Untersuchungen anzeigen",
   "screenshare.toggle": "Bildschirmfreigabe-Modus umschalten",
   "screenshare.mode": "Bildschirmfreigabe-Modus",

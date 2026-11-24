@@ -248,6 +248,7 @@
   "sidebar.products": "Ürünler",
   "syncStatus.screenshareHidden": "Eşitleme için işlem gerekiyor. Ayrıntıları görmek için ekran paylaşımını kapatın.",
   "screenshare.viewHidden": "Bu görünüm ekran paylaşımı sırasında gizlenir.",
+  "screenshare.hiddenByIdentities": "Bu soruşturmadaki kimlikler paylaşılan düzeyin üstünde sınıflandırılmış. Bir kimliğin sınıflandırması profilinde gösterilir ve Düzenle'de değiştirilir.",
   "screenshare.browseVisible": "Görünür soruşturmalara göz at",
   "screenshare.toggle": "Ekran paylaşımı modunu aç/kapat",
   "screenshare.mode": "Ekran paylaşımı modu",

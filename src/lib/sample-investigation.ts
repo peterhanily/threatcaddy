@@ -1267,6 +1267,30 @@ The Data Import feature supports:
       createdAt: baseTs + 12 * DAY,
       updatedAt: baseTs + 12 * DAY,
     },
+    // A person named as an event's Actor: their profile's Activity lists it, and the chip links to it.
+    {
+      id: sampleId('event', 21),
+      timestamp: baseTs + 3 * HOUR,
+      title: 'Platform engineer approves the "Slaw Freshness" cron change',
+      description: 'The cron job later found to carry the persistence was merged with a one-line review: "looks fresh". The approver says the diff was 4,000 lines of pickling constants.',
+      eventType: 'other',
+      source: 'Git History',
+      confidence: 'high',
+      linkedIOCIds: [],
+      linkedNoteIds: [],
+      linkedTaskIds: [],
+      mitreAttackIds: [],
+      actor: 'Rai Sinn',
+      assets: ['recipe-server-01'],
+      tags: [],
+      starred: false,
+      folderId: SAMPLE_FOLDER_ID,
+      timelineId: SAMPLE_TIMELINE_ID,
+      trashed: false,
+      archived: false,
+      createdAt: baseTs + 3 * HOUR,
+      updatedAt: baseTs + 3 * HOUR,
+    },
   ];
 
   // ─── Standalone IOCs (25) ─────────────────────────────────────────
@@ -1862,6 +1886,26 @@ OpenSlaw.ai was compromised via indirect prompt injection through its customer-f
     clsLevel: 'TLP:AMBER',
     createdAt: baseTs + 11 * DAY,
     updatedAt: baseTs + 12 * DAY,
+  });
+
+  // @ mentions link to identities, and the profile's Activity lists the note.
+  notes.push({
+    id: sampleId('note', 15),
+    title: 'Interview — how the cron change was approved',
+    content: `# Interview — how the cron change was approved
+
+Spoke with @Rai Sinn about the "Slaw Freshness" cron job. The change was approved in under a minute; the diff was mostly pickling constants.
+
+@Cole Sloane confirmed review policy requires a second approver for scheduler changes. It was not enforced on the recipe pipeline.
+
+**Next:** enforce two approvers on scheduler changes (owner: @Cole Sloane).`,
+    folderId: SAMPLE_FOLDER_ID,
+    tags: ['interview'],
+    pinned: false,
+    archived: false,
+    trashed: false,
+    createdAt: baseTs + 4 * DAY,
+    updatedAt: baseTs + 4 * DAY,
   });
 
   // ─── IOC auto-enrichment (VirusTotal) on confirmed C2 indicators ────

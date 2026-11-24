@@ -248,6 +248,7 @@
   "sidebar.products": "成果物",
   "syncStatus.screenshareHidden": "同期への対応が必要です。詳細を見るには画面共有をオフにしてください。",
   "screenshare.viewHidden": "画面共有中はこのビューを非表示にしています。",
+  "screenshare.hiddenByIdentities": "この調査のアイデンティティは共有レベルより上に分類されています。アイデンティティの分類はプロフィールに表示され、編集で変更できます。",
   "screenshare.browseVisible": "表示できる調査を見る",
   "screenshare.toggle": "画面共有モードを切り替え",
   "screenshare.mode": "画面共有モード",

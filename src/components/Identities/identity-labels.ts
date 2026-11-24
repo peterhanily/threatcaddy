@@ -56,7 +56,7 @@ export const withOtherName = (text: string) => (current: Identity): Partial<Iden
   ({ aliases: current.aliases.some(alias => sameText(alias) === sameText(text)) ? current.aliases : [...current.aliases, text] });
 
 export const STATUS_DOT: Record<IdentityStatus, string> = {
-  compromised: 'bg-red-500', suspicious: 'bg-amber-500', cleared: 'bg-green-500',
+  compromised: 'bg-red-500', contained: 'bg-sky-500', suspicious: 'bg-amber-500', cleared: 'bg-green-500',
 };
 
 /** One line under a name: role and organisation for a person; type, description and organisation otherwise. */

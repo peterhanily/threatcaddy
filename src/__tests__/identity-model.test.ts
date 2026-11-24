@@ -172,7 +172,9 @@ describe('names found in an investigation', () => {
     ]);
     expect(found[0].sources.map(s => s.kind)).toEqual(['actor', 'actor', 'attribution']);
     expect(found.find(f => f.text === 'fin-db01')?.guess).toEqual({ type: 'system', detailLabel: 'hostname' });
-    expect(found.find(f => f.text === 'Lee Park')?.guess).toEqual({ type: 'person' });
+    // Found as an Actor and an attribution: guessed as an organization (a threat actor more often than a
+    // person; owner decision, F6), and changed when added if it is a person.
+    expect(found.find(f => f.text === 'Lee Park')?.guess).toEqual({ type: 'organization' });
   });
 
   it('leaves out ignored names and suggests an identity whose name differs only by accents', () => {

@@ -9,7 +9,7 @@ import { isPrivateLabel, organizationOf, sameText, sortedByName } from './identi
 import { identityMappingFor } from './identity-import';
 
 export const IDENTITY_CSV_COLUMNS = ['Name', 'Type', 'Investigation', 'Status', 'Contact', 'Description', 'Organization', 'Other names'] as const;
-const TRAILING_COLUMNS = ['Connections', 'Classification', 'Created', 'Updated'] as const;
+const TRAILING_COLUMNS = ['Tags', 'Connections', 'Classification', 'Created', 'Updated'] as const;
 /** A detail label in a column header, at most (a synced label can be far longer; labels people and
  * tools write are far shorter, so they round-trip). */
 const MAX_LABEL = 500;
@@ -21,6 +21,8 @@ const MORE_DETAILS = 'More details';
 export function identitiesToCsv(identities: readonly Identity[], options: {
   byId: ReadonlyMap<string, Identity>;
   folders: readonly Folder[];
+  /** The level of anything without one of its own or its investigation's (Settings), as the IOC CSV does. */
+  defaultClsLevel?: string;
   includePrivate?: boolean;
   /** Labels private by default in the interface language, as well as in English (for "(public)"). */
   isPrivateLabel?: (label: string) => boolean;
@@ -84,8 +86,10 @@ export function identitiesToCsv(identities: readonly Identity[], options: {
       identity.aliases.join('\n'),
       ...columns.map(values),
       ...more.map(isPrivate => overflow(identity, isPrivate)),
+      identity.tags.join('\n'),
       connections,
-      identity.clsLevel ?? '',
+      // Its own level, else its investigation's, else the default: a row never reads as unclassified by omission.
+      identity.clsLevel || options.folders.find(folder => folder.id === identity.folderId)?.clsLevel || options.defaultClsLevel || '',
       new Date(identity.createdAt).toISOString(),
       new Date(identity.updatedAt).toISOString(),
     ];

@@ -7,10 +7,11 @@ import { purgeOldTrash } from '../lib/trash-purge';
 import { deleteEntitiesWithReferences } from '../lib/entity-relations';
 import { deleteCheckpointsFor } from '../lib/checkpoints';
 import { compactHeldChangesFor } from '../lib/sync-outgoing';
-import { sameText as normalized } from '../lib/identity-model';
+import { sameText } from '../lib/identity-model';
 import { mergeIdentities as mergeIdentityRecords } from '../lib/merge-identities';
 
-const sameText = (a: string, b: string) => normalized(a) === normalized(b);
+/** Whether two names are the same name (case and spacing aside). */
+const sameName = (a: string, b: string) => sameText(a) === sameText(b);
 
 /** Manages the people, organizations, systems and accounts recorded in investigations. */
 export function useIdentities(folderId?: string) {
@@ -85,9 +86,9 @@ export function useIdentities(folderId?: string) {
       if (!existing) return undefined;
       const patched: Partial<Identity> = { ...(typeof updates === 'function' ? updates(existing) : updates), updatedAt: Date.now() };
       const name = patched.name;
-      if (name !== undefined && !sameText(name, existing.name)) {
-        const aliases = (patched.aliases ?? existing.aliases).filter(alias => !sameText(alias, name));
-        if (existing.name.trim() && !aliases.some(alias => sameText(alias, existing.name))) aliases.push(existing.name);
+      if (name !== undefined && !sameName(name, existing.name)) {
+        const aliases = (patched.aliases ?? existing.aliases).filter(alias => !sameName(alias, name));
+        if (existing.name.trim() && !aliases.some(alias => sameName(alias, existing.name))) aliases.push(existing.name);
         patched.aliases = aliases;
       }
       await db.identities.update(id, patched);

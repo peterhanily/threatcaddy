@@ -684,7 +684,7 @@ export interface EvidenceItem {
   updatedAt: number;
 }
 
-export type IdentityStatus = 'compromised' | 'suspicious' | 'cleared';
+export type IdentityStatus = 'compromised' | 'contained' | 'suspicious' | 'cleared';
 
 export interface IdentityDetail {
   id: string;

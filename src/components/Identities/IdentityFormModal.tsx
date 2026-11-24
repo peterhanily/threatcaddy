@@ -3,8 +3,9 @@ import { nanoid } from 'nanoid';
 import type { Folder, Identity } from '../../types';
 import { Modal } from '../Common/Modal';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
-import { canonicalType, isOrganization, organizationOf, sameText, sortedByName, withOrganization } from '../../lib/identity-model';
+import { canonicalType, isOrganization, organizationOf, nameTakenBy, sameText, sortedByName, withOrganization } from '../../lib/identity-model';
 import type { IdentityChange, IdentityLabels } from './identity-labels';
+import { ClsSelect } from '../Common/ClsSelect';
 
 const field = 'w-full rounded-md border border-border-subtle bg-bg-primary px-2 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none';
 const label = 'flex flex-col gap-1 text-xs text-text-secondary';
@@ -15,6 +16,8 @@ export interface AddPrefill { name?: string; type?: string; detailLabel?: string
 interface Props {
   /** Undefined to add a new identity. */
   editing?: Identity;
+  /** Classification levels offered (Settings). */
+  clsLevels?: string[];
   prefill?: AddPrefill;
   folders: Folder[];
   defaultFolderId?: string;
@@ -30,13 +33,15 @@ interface Props {
   onSaved: (identity: Identity, message?: string) => void;
 }
 
-export function IdentityFormModal({ editing, prefill, folders, defaultFolderId, identities, byId, labels, onClose, onCreate, onUpdate, onMerge, onTrash, onSaved }: Props) {
+export function IdentityFormModal({ editing, prefill, clsLevels, folders, defaultFolderId, identities, byId, labels, onClose, onCreate, onUpdate, onMerge, onTrash, onSaved }: Props) {
   const { t } = labels;
   const ids = useId();
   const [name, setName] = useState(editing?.name ?? prefill?.name ?? '');
   const [type, setType] = useState(editing ? labels.typeLabel(editing.type) : labels.typeLabel(prefill?.type ?? 'person'));
   const [folderId, setFolderId] = useState(editing?.folderId ?? prefill?.folderId ?? defaultFolderId ?? '');
   const [description, setDescription] = useState(editing?.description ?? '');
+  // A new identity takes its investigation's level; an existing one's can be seen and changed here.
+  const [clsLevel, setClsLevel] = useState(editing?.clsLevel ?? '');
   // The organisation shown when editing began: only an edge to it is ever replaced.
   const [initialOrganizationId] = useState(editing ? organizationOf(editing, byId)?.id ?? '' : '');
   const [organizationId, setOrganizationId] = useState(initialOrganizationId);
@@ -70,26 +75,30 @@ export function IdentityFormModal({ editing, prefill, folders, defaultFolderId, 
     // A name two identities share makes every link to it ambiguous (the AI tools and import refuse it too).
     const home = editing?.folderId ?? folderId;
     const renamed = !editing || sameText(name) !== sameText(editing.name);
-    if (renamed && identities.some(other => other.id !== editing?.id && !other.trashed && other.folderId === home
-      && [other.name, ...other.aliases].some(taken => sameText(taken) === sameText(name)))) { setError(t('form.errorDuplicate')); return; }
+    if (renamed && nameTakenBy(identities, home, name, editing?.id)) { setError(t('form.errorDuplicate')); return; }
+    const aliases = otherNames.split('\n').map(alias => alias.trim())
+      .filter((alias, index, all) => alias && sameText(alias) !== sameText(name) && all.findIndex(other => sameText(other) === sameText(alias)) === index);
+    // What the form changed, exactly: a change of letter case or spacing is a change ("DANA OKAFOR"
+    // to "Dana Okafor"). Matching ignores case and spacing only to find duplicates.
+    const removed = editing ? editing.aliases.filter(alias => !aliases.includes(alias.trim())) : [];
+    const added = editing ? aliases.filter(alias => !editing.aliases.some(old => old.trim() === alias)) : [];
+    // Another identity's name as an other name would make that name ambiguous everywhere.
+    const taken = added.map(alias => ({ alias, other: nameTakenBy(identities, home, alias, editing?.id) })).find(entry => entry.other);
+    if (taken?.other) { setError(t('form.errorOtherNameTaken', { name: taken.alias, other: taken.other.name })); return; }
     setBusy(true);
     try {
       if (editing) {
-        const aliases = otherNames.split('\n').map(alias => alias.trim())
-          .filter((alias, index, all) => alias && sameText(alias) !== sameText(name) && all.findIndex(other => sameText(other) === sameText(alias)) === index);
         const organizationChanged = !isOrganization({ type: resolvedType }) && organizationId !== initialOrganizationId;
         // Only what was changed in the form is applied, on top of the stored identity, so another
         // name or a description added meanwhile (sync, an agent, another tab) is not overwritten.
-        const removed = editing.aliases.filter(alias => !aliases.some(kept => sameText(kept) === sameText(alias)));
-        const added = aliases.filter(alias => !editing.aliases.some(old => sameText(old) === sameText(alias)));
         await onUpdate(editing.id, current => ({
-          name: sameText(name) === sameText(editing.name) ? current.name : name.trim(),
+          name: name.trim() === editing.name.trim() ? current.name : name.trim(),
           type: resolvedType === editing.type ? current.type : resolvedType,
           description: description.trim() === (editing.description ?? '').trim() ? current.description : description.trim() || undefined,
-          aliases: [...current.aliases.filter(alias => !removed.some(gone => sameText(gone) === sameText(alias))),
-            ...added.filter(alias => !current.aliases.some(other => sameText(other) === sameText(alias)))]
-            .filter(alias => sameText(alias) !== sameText(name)),
+          aliases: [...current.aliases.filter(alias => !removed.includes(alias)), ...added]
+            .filter((alias, index, all) => sameText(alias) !== sameText(name) && all.findIndex(other => sameText(other) === sameText(alias)) === index),
           ...(organizationChanged ? { connections: withOrganization({ ...current, type: resolvedType }, initialOrganizationId || undefined, organizationId || undefined) } : {}),
+          ...(clsLevel !== (editing.clsLevel ?? '') ? { clsLevel: clsLevel || undefined } : {}),
         }));
         onSaved({ ...editing, name: name.trim() });
       } else {
@@ -161,6 +170,11 @@ export function IdentityFormModal({ editing, prefill, folders, defaultFolderId, 
             <label className={label}>{t('form.otherNames')}
               <textarea rows={Math.min(6, Math.max(2, otherNames.split('\n').length + 1))} value={otherNames} maxLength={20000}
                 onChange={event => setOtherNames(event.target.value)} className={field} />
+            </label>
+          )}
+          {editing && (
+            <label className={label}>{t('form.classification')}
+              <ClsSelect value={clsLevel} onChange={value => setClsLevel(value ?? '')} clsLevels={clsLevels} className="self-start" />
             </label>
           )}
           {error && <p id={`${ids}-error`} role="alert" className="text-sm text-red-400">{error}</p>}

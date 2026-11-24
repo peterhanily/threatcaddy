@@ -248,6 +248,7 @@
   "sidebar.products": "产物",
   "syncStatus.screenshareHidden": "同步需要处理。请关闭屏幕共享以查看详情。",
   "screenshare.viewHidden": "屏幕共享期间此视图已隐藏。",
+  "screenshare.hiddenByIdentities": "此调查中有身份的分类高于共享级别。身份的分类显示在其资料中，可在编辑中更改。",
   "screenshare.browseVisible": "浏览可见的调查",
   "screenshare.toggle": "切换屏幕共享模式",
   "screenshare.mode": "屏幕共享模式",

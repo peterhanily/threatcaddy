@@ -26,7 +26,7 @@ export type ColumnMapping =
   | 'source' | 'mitre-technique' | 'confidence' | 'actor' | 'asset'
   | 'identity-name' | 'identity-type' | 'identity-description' | 'identity-organization' | 'identity-aliases'
   | 'identity-status' | 'identity-contact' | 'identity-detail' | 'identity-connection' | 'identity-connections'
-  | 'identity-classification'
+  | 'identity-classification' | 'identity-tags'
   | 'ignore';
 
 export interface ParseResult {
@@ -860,6 +860,7 @@ export const MAPPING_COLORS: Record<ColumnMapping, string> = {
   'identity-connection': '#0ea5e9',
   'identity-connections': '#0ea5e9',
   'identity-classification': '#0ea5e9',
+  'identity-tags': '#0ea5e9',
   'ignore': '#6b7280',         // gray
 };
 
@@ -872,7 +873,7 @@ export const ALL_MAPPINGS: ColumnMapping[] = [
   'ioc-md5', 'ioc-sha1', 'ioc-sha256', 'ioc-cve', 'ioc-file-path',
   'identity-name', 'identity-type', 'identity-description', 'identity-organization', 'identity-aliases',
   'identity-status', 'identity-contact', 'identity-detail', 'identity-connection', 'identity-connections',
-  'identity-classification',
+  'identity-classification', 'identity-tags',
   'ignore',
 ];
 

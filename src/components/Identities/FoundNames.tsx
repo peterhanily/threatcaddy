@@ -48,9 +48,11 @@ export function FoundNamesPanel({ found, folders, showInvestigation, labels, onP
 }
 
 /** What to do with a found name: add it, add it as another name of an identity, or ignore it. */
-export function FoundNameDialog({ found, folders, identities, labels, onClose, onAddNew, onAddAsOtherName, onIgnore }: {
+export function FoundNameDialog({ found, folders, identities, labels, onClose, onAddNew, onAddAsOtherName, onIgnore, onTrackActor }: {
   found: FoundName; folders: Folder[]; identities: Identity[]; labels: IdentityLabels;
   onClose: () => void; onAddNew: () => void; onAddAsOtherName: (identity: Identity) => void; onIgnore: () => void;
+  /** Offered for a name found as an Actor or an attribution: it may be a threat actor, not an identity. */
+  onTrackActor?: () => void;
 }) {
   const { t } = labels;
   const ids = useId();
@@ -95,6 +97,9 @@ export function FoundNameDialog({ found, folders, identities, labels, onClose, o
           </form>
         )}
         <div className="flex justify-end gap-2 border-t border-border-subtle pt-3">
+          {onTrackActor && found.sources.some(source => source.kind === 'actor' || source.kind === 'attribution') && (
+            <button type="button" className={button} onClick={onTrackActor}>{t('found.trackActor')}</button>
+          )}
           <button type="button" className={button} onClick={onIgnore}>{t('found.ignore')}</button>
           <button type="button" className={button} onClick={onClose}>{t('form.cancel')}</button>
         </div>

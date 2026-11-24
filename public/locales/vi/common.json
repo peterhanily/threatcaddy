@@ -248,6 +248,7 @@
   "sidebar.products": "Sản phẩm",
   "syncStatus.screenshareHidden": "Đồng bộ cần được xử lý. Tắt chia sẻ màn hình để xem chi tiết.",
   "screenshare.viewHidden": "Chế độ xem này bị ẩn khi chia sẻ màn hình.",
+  "screenshare.hiddenByIdentities": "Các danh tính trong cuộc điều tra này được phân loại cao hơn mức chia sẻ. Phân loại của danh tính hiển thị trên hồ sơ và được thay đổi trong Chỉnh sửa.",
   "screenshare.browseVisible": "Xem các cuộc điều tra hiển thị",
   "screenshare.toggle": "Bật/tắt chế độ chia sẻ màn hình",
   "screenshare.mode": "Chế độ chia sẻ màn hình",

@@ -1,6 +1,7 @@
 {
   "syncStatus.screenshareHidden": "Synchronization needs attention. Turn off screensharing to review the details.",
   "screenshare.viewHidden": "This view is hidden while screensharing.",
+  "screenshare.hiddenByIdentities": "Identities in this investigation are classified above the shared level. An identity's classification is shown on its profile and changed in Edit.",
   "screenshare.browseVisible": "Browse visible investigations",
   "screenshare.toggle": "Toggle screenshare mode",
   "screenshare.mode": "Screenshare mode",

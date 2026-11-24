@@ -76,6 +76,7 @@ export function identityMappingFor(header: string): ColumnMapping {
   if (key === 'contact') return 'identity-contact';
   if (key === 'connections') return 'identity-connections';
   if (key === 'classification') return 'identity-classification';
+  if (key === 'tags') return 'identity-tags';
   if (/^(investigation|created|updated)$/.test(key)) return 'ignore';
   // A column named like a built-in phrase ("reports to", "used by") lists who or what it connects to.
   const phrase = canonicalPhrase(header, ENGLISH_PHRASES);
@@ -156,6 +157,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   const [classificationColumn] = columns('identity-classification');
   // Worked out once per import, not once per row (a header can be long; a file can hold 100,000 rows).
   const aliasColumns = columns('identity-aliases');
+  const tagColumns = columns('identity-tags');
   const detailColumns = columns('identity-detail').map(column => ({ column, label: value(withoutSuffix(withoutSuffix(column))),
     isPrivate: options.privateColumns ? options.privateColumns.has(column) : isPrivateDetailColumn(column, options.isPrivateLabel) }));
   const connectionColumns = columns('identity-connection').map(column => ({ column, phrase: canonicalPhrase(column, ENGLISH_PHRASES) }));
@@ -174,6 +176,10 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     if (classification && !identity.clsLevel) identity.clsLevel = classification;
     const description = descriptionColumn ? value(row[descriptionColumn]) : '';
     if (description && !identity.description) identity.description = description;
+    // Tags as exported (one per line) are added to those it has; import never removes one.
+    for (const column of tagColumns) for (const tag of lines(row[column]).map(text => text.slice(0, 100))) {
+      if (!identity.tags.includes(tag)) identity.tags = [...identity.tags, tag];
+    }
     for (const column of aliasColumns) for (const alias of lines(row[column])) {
       if (sameText(alias) === sameText(identity.name) || identity.aliases.some(known => sameText(known) === sameText(alias))) continue;
       // Another identity's name as an other name would make that name ambiguous everywhere.
@@ -242,7 +248,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   for (const [id, before] of original) {
     const after = records.get(id) as Identity;
     const changes: Partial<Identity> = {};
-    for (const field of ['description', 'aliases', 'status', 'contact', 'details', 'connections', 'clsLevel'] as const) {
+    for (const field of ['description', 'aliases', 'status', 'contact', 'details', 'connections', 'clsLevel', 'tags'] as const) {
       if (JSON.stringify(after[field]) !== JSON.stringify(before[field])) Object.assign(changes, { [field]: after[field] });
     }
     if (Object.keys(changes).length) updated.push({ id, changes: options.author ? { ...changes, updatedBy: options.author } : changes });

@@ -248,6 +248,7 @@
   "sidebar.products": "उत्पाद",
   "syncStatus.screenshareHidden": "सिंक पर ध्यान देना आवश्यक है। विवरण देखने के लिए स्क्रीन शेयरिंग बंद करें।",
   "screenshare.viewHidden": "स्क्रीन शेयरिंग के दौरान यह दृश्य छिपा रहता है।",
+  "screenshare.hiddenByIdentities": "इस जाँच की पहचानें साझा स्तर से ऊपर वर्गीकृत हैं। किसी पहचान का वर्गीकरण उसकी प्रोफ़ाइल पर दिखता है और संपादन में बदला जाता है।",
   "screenshare.browseVisible": "दिखाई देने वाली जाँचें देखें",
   "screenshare.toggle": "स्क्रीन शेयर मोड चालू/बंद करें",
   "screenshare.mode": "स्क्रीन शेयर मोड",

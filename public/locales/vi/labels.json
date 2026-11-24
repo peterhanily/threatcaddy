@@ -132,6 +132,7 @@
   "mapping.identity-connection": "Danh tính: Mối liên kết (tên cột là cụm từ)",
   "mapping.identity-connections": "Danh tính: Các mối liên kết (cụm từ: tên)",
   "mapping.identity-classification": "Danh tính: Phân loại",
+  "mapping.identity-tags": "Danh tính: Thẻ",
   "mapping.ignore": "Bỏ qua",
   "mentionCategory.note": "Ghi chú",
   "mentionCategory.ioc": "IOC",

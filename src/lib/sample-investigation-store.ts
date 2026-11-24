@@ -11,6 +11,10 @@ import { cancellableRequest } from './request-cancellation';
 import { revisionKey } from './sync-state';
 import { getActiveWorkspaceId } from './workspace-profiles';
 
+/** The parody sample's adversary: a threat actor (Settings), not an identity to add. Kept here, not in the
+ * lazily loaded sample data, so the app can name it without loading the sample. */
+export const PARODY_THREAT_ACTOR = 'VINEGAR PANDA';
+
 export type { SampleInvestigationKind } from './sample-investigation-realistic';
 export const getSampleFolderId = (kind: SampleInvestigationKind) =>
   kind === 'realistic' ? 'sample-realistic-investigation' : 'sample-investigation';

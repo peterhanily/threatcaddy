@@ -1,7 +1,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import type { Identity } from '../../types';
 import { Modal } from '../Common/Modal';
-import { canonicalPhrase } from '../../lib/identity-model';
+import { canonicalPhrase, withConnection } from '../../lib/identity-model';
 import type { IdentityChange, IdentityLabels } from '../Identities/identity-labels';
 
 const field = 'w-full rounded-md border border-border-subtle bg-bg-primary px-2 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none';
@@ -22,11 +22,10 @@ export function GraphConnectDialog({ from, to, labels, onClose, onUpdate }: {
     // The other side's wording ("manages") is stored the right way round, on the other identity.
     const { label, reversed } = canonicalPhrase(phrase, labels.phraseLabels, labels.reverseLabels);
     const [source, target] = reversed ? [to, from] : [from, to];
+    // The one rule for adding a connection (the profile and the AI tool use it too).
+    if (!withConnection(source, target, label)) { setError(t('connectionForm.errorMembership')); return; }
     try {
-      await onUpdate(source.id, current => ({
-        connections: current.connections.some(edge => edge.targetId === target.id && edge.label === label)
-          ? current.connections : [...current.connections, { targetId: target.id, label }],
-      }));
+      await onUpdate(source.id, current => ({ connections: withConnection(current, target, label) ?? current.connections }));
       onClose();
     } catch (cause) {
       setError(t('toast.failed', { error: cause instanceof Error ? cause.message : String(cause) }));

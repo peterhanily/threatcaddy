@@ -132,6 +132,7 @@
   "mapping.identity-connection": "पहचान: संबंध (कॉलम का नाम वाक्यांश है)",
   "mapping.identity-connections": "पहचान: संबंध सूची (वाक्यांश: नाम)",
   "mapping.identity-classification": "पहचान: वर्गीकरण",
+  "mapping.identity-tags": "पहचान: टैग",
   "mapping.ignore": "अनदेखा करें",
   "mentionCategory.note": "नोट्स",
   "mentionCategory.ioc": "IOCs",

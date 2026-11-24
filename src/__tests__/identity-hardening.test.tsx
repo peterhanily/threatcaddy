@@ -100,11 +100,11 @@ describe('a custom type is text, never an object key', () => {
     expect(() => getNodeIcon('identity', '#0ea5e9', undefined, '__proto__')).not.toThrow();
   });
 
-  it('lets the AI create and then find an identity of such a type', async () => {
+  it('lets the AI create an identity of such a type, and find it by name', async () => {
     await seedAIWorkspace();
     const created = await run('create_identity', { name: 'Proto Person', type: '__proto__' });
     expect((await db.identities.get(created.id as string))?.type).toBe('__proto__');
-    expect(await run('search_identities', { query: 'zzz' })).toMatchObject({ count: 0 });
+    expect(await run('search_identities', { query: 'Proto Person' })).toMatchObject({ count: 1, identities: [expect.objectContaining({ id: created.id, type: '__proto__' })] });
   });
 });
 

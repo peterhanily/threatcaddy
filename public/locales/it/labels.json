@@ -132,6 +132,7 @@
   "mapping.identity-connection": "Identità: Collegamento (il nome della colonna è la frase)",
   "mapping.identity-connections": "Identità: Collegamenti (frase: nome)",
   "mapping.identity-classification": "Identità: Classificazione",
+  "mapping.identity-tags": "Identità: Tag",
   "mapping.ignore": "Ignora",
   "mentionCategory.note": "Nota",
   "mentionCategory.ioc": "IOC",

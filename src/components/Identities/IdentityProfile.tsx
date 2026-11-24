@@ -4,12 +4,13 @@ import { nanoid } from 'nanoid';
 import type { Folder, Identity, IdentityStatus, IdentityDetail } from '../../types';
 import { IDENTITY_STATUSES } from '../../lib/entity-enums';
 import {
-  CONNECTION_PHRASES, alsoElsewhere, byName, canonicalPhrase, connectionsOf, isOrganization, isPerson, maskDetail, membersOf, sameText,
+  CONNECTION_PHRASES, MEMBERSHIP_PHRASES, alsoElsewhere, byName, canonicalPhrase, connectionsOf, isOrganization, isPerson, maskDetail, membersOf, sameText, withConnection,
 } from '../../lib/identity-model';
 import { cn } from '../../lib/utils';
 import type { IdentityChange } from './identity-labels';
 import { IdentityAvatar, InvestigationPill } from './identity-ui';
 import { STATUS_DOT, identitySubtitle, type IdentityLabels } from './identity-labels';
+import { ClsBadge } from '../Common/ClsBadge';
 
 /** Items of a long list (connections, systems, the same identity elsewhere) shown before "more". */
 const LIST_LIMIT = 50;
@@ -94,26 +95,38 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
   const chartable = members !== null && members.people.length > 0;
   const targets = useMemo(() => sameInvestigation.filter(other => other.id !== identity.id).sort(byName), [identity.id, sameInvestigation]);
 
+  // One save at a time from the inline forms: a double click must not store a detail twice.
+  const [saving, setSaving] = useState(false);
+  const saveOnce = async (id: string, change: IdentityChange) => {
+    if (saving) return false;
+    setSaving(true);
+    try { return await save(id, change); } finally { setSaving(false); }
+  };
   const addDetail = async (event: FormEvent) => {
     event.preventDefault();
-    if (!detailForm) return;
+    if (!detailForm || saving) return;
     const label = detailForm.label.trim(), value = detailForm.value.trim();
     if (!label) { setDetailForm({ ...detailForm, error: t('detailForm.errorLabel') }); return; }
     if (!value) { setDetailForm({ ...detailForm, error: t('detailForm.errorValue') }); return; }
     const detail = { id: nanoid(), label, value, ...(detailForm.private ? { private: true } : {}) };
-    if (await save(identity.id, current => ({ details: [...current.details, detail] }))) closeDetail();
+    if (await saveOnce(identity.id, current => ({ details: [...current.details, detail] }))) closeDetail();
   };
+  // "Works at" and "belongs to" are offered only toward organisations.
+  const chosenPhrase = connectionForm ? canonicalPhrase(connectionForm.phrase, labels.phraseLabels, labels.reverseLabels) : undefined;
+  const connectionTargets = chosenPhrase && !chosenPhrase.reversed && MEMBERSHIP_PHRASES.includes(chosenPhrase.label) ? targets.filter(isOrganization) : targets;
   const addConnection = async (event: FormEvent) => {
     event.preventDefault();
-    if (!connectionForm) return;
+    if (!connectionForm || saving) return;
     const { label, reversed } = canonicalPhrase(connectionForm.phrase, labels.phraseLabels, labels.reverseLabels);
     if (!label) { setConnectionForm({ ...connectionForm, error: t('connectionForm.errorPhrase') }); return; }
     if (!connectionForm.to) { setConnectionForm({ ...connectionForm, error: t('connectionForm.errorTarget') }); return; }
     // "Lee manages Dana" is stored as "Dana reports to Lee", so charts and both sides read it.
-    const [owner, edge] = reversed ? [connectionForm.to, { targetId: identity.id, label }] : [identity.id, { targetId: connectionForm.to, label }];
-    // The same connection added again (from either side) is stored once.
-    if (await save(owner, current => ({ connections: current.connections.some(other => other.targetId === edge.targetId && other.label === edge.label)
-      ? current.connections : [...current.connections, edge] }))) closeConnection();
+    const other = byId.get(connectionForm.to);
+    if (!other) { setConnectionForm({ ...connectionForm, error: t('connectionForm.errorTarget') }); return; }
+    const [source, target] = reversed ? [other, identity] : [identity, other];
+    // The one rule (the graph and the AI tool use it too): once, and membership only toward an organisation.
+    if (!withConnection(source, target, label)) { setConnectionForm({ ...connectionForm, error: t('connectionForm.errorMembership') }); return; }
+    if (await saveOnce(source.id, current => ({ connections: withConnection(current, target, label) ?? current.connections }))) closeConnection();
   };
   /** Removes the edge from whichever identity holds it, matched in the stored row rather than by position. */
   const removeConnection = async (ownerId: string, edge: { targetId: string; label: string }) => {
@@ -136,7 +149,9 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
       <header className="flex flex-wrap items-start gap-3">
         <IdentityAvatar identity={identity} size="lg" />
         <div className="min-w-0 flex-1">
-          <h2 className="break-words text-lg font-semibold text-text-primary">{identity.name}</h2>
+          <h2 className="flex flex-wrap items-center gap-2 break-words text-lg font-semibold text-text-primary">{identity.name}
+            {/* Its classification decides when screensharing hides the investigation: shown, and changed in Edit. */}
+            {identity.clsLevel && <ClsBadge level={identity.clsLevel} size="sm" />}</h2>
           <p className="text-sm text-text-secondary">{identitySubtitle(identity, byId, labels)}</p>
           {identity.aliases.length > 0 && <p className="text-xs text-text-muted">{t('profile.otherNames', { names: labels.list(identity.aliases) })}</p>}
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -255,7 +270,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
               </label>
               {detailForm.error && <p role="alert" className="text-xs text-red-400">{detailForm.error}</p>}
               <div className="flex gap-2">
-                <button type="submit" className="rounded-md bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent-hover">{t('form.add')}</button>
+                <button type="submit" disabled={saving} className="rounded-md bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent-hover disabled:opacity-50">{t('form.add')}</button>
                 <button type="button" className={smallButton} onClick={closeDetail}>{t('form.cancel')}</button>
               </div>
             </form>
@@ -298,7 +313,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                   <label className="flex flex-col gap-1 text-xs text-text-secondary">{t('connectionForm.target')}
                     <select value={connectionForm.to} className={field} onChange={event => setConnectionForm({ ...connectionForm, to: event.target.value })}>
                       <option value="">{t('form.choose')}</option>
-                      {targets.map(other => <option key={other.id} value={other.id}>{other.name} · {labels.typeLabel(other.type)}</option>)}
+                      {connectionTargets.map(other => <option key={other.id} value={other.id}>{other.name} · {labels.typeLabel(other.type)}</option>)}
                     </select>
                   </label>
                   <datalist id={`${ids}-phrases`}>{Object.values(labels.phraseLabels).map(phrase => <option key={phrase} value={phrase} />)}</datalist>
@@ -306,7 +321,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
               ) : <p className="text-xs text-text-muted">{t('connectionForm.noOthers')}</p>}
               {connectionForm.error && <p role="alert" className="text-xs text-red-400">{connectionForm.error}</p>}
               <div className="flex gap-2">
-                {targets.length > 0 && <button type="submit" className="rounded-md bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent-hover">{t('form.add')}</button>}
+                {targets.length > 0 && <button type="submit" disabled={saving} className="rounded-md bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent-hover disabled:opacity-50">{t('form.add')}</button>}
                 <button type="button" className={smallButton} onClick={closeConnection}>{t('form.cancel')}</button>
               </div>
             </form>

@@ -12,7 +12,7 @@ const MAX_DEPTH = 10;
 /** Members of one team drawn before "more". */
 const TEAM_LIMIT = 50;
 
-const STATUS_TEXT = { compromised: 'text-red-400', suspicious: 'text-amber-400', cleared: 'text-green-400' } as const;
+const STATUS_TEXT = { compromised: 'text-red-400', contained: 'text-sky-400', suspicious: 'text-amber-400', cleared: 'text-green-400' } as const;
 
 export function OrgCharts({ identities, folders, showInvestigation, selectedOrganizationId, labels, onSelectOrganization, onOpen }: {
   /** Live identities in scope. */

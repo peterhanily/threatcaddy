@@ -37,6 +37,7 @@ const PlaybookPicker = lazy(() => import('./components/Playbooks/PlaybookPicker'
 const OperationNameGenerator = lazy(() => import('./components/Common/OperationNameGenerator').then(m => ({ default: m.OperationNameGenerator })));
 const EvidenceView = lazy(() => import('./components/Evidence/EvidenceView').then(m => ({ default: m.EvidenceView })));
 const IdentitiesView = lazy(() => import('./components/Identities/IdentitiesView').then(m => ({ default: m.IdentitiesView })));
+import type { IdentitySelectRequest } from './components/Identities/IdentitiesView';
 import { IdentityLinksProvider } from './components/Identities/IdentityLinksProvider';
 const ProductView = lazy(() => import('./components/Products/ProductView').then(m => ({ default: m.ProductView })));
 import { useActivityLog } from './hooks/useActivityLog';
@@ -72,7 +73,7 @@ import { prepareProductComposerNote, type ProductComposerSnapshot } from './lib/
 import { createProductComposerPersistence } from './lib/product-composer-persistence';
 import type { ProductComposerSaveInput } from './components/Products/ProductComposer';
 import { getActiveWorkspaceId } from './lib/workspace-profiles';
-import { getSampleFolderId, getSampleRemovalSummary, loadSampleInvestigation, deleteSampleInvestigation, SampleActionError, type SampleInvestigationKind } from './lib/sample-investigation-store';
+import { getSampleFolderId, getSampleRemovalSummary, loadSampleInvestigation, deleteSampleInvestigation, PARODY_THREAT_ACTOR, SampleActionError, type SampleInvestigationKind } from './lib/sample-investigation-store';
 import { isUserTimeline } from './lib/sync-capture-policy';
 import { SampleRemovalDialog, type SampleRemovalRequest } from './components/Common/SampleRemovalDialog';
 import { db } from './db';
@@ -445,7 +446,16 @@ const AppInner = memo(function AppInner({
   const { t: tInvestigations } = useTranslation('investigations');
   const { t: tCommon } = useTranslation('common');
   const [evidenceSearchSelection, setEvidenceSearchSelection] = useState<{ id: string; request: number }>();
-  const [identitySelection, setIdentitySelection] = useState<{ id: string; request: number }>();
+  const [identitySelection, setIdentitySelection] = useState<IdentitySelectRequest>();
+  // Applied once by the Identities view, then cleared, so opening it later starts afresh.
+  const clearIdentitySelection = useCallback(() => setIdentitySelection(undefined), []);
+  // A name found as an Actor or an attribution, tracked as a threat actor: no longer offered as an identity.
+  const trackThreatActorRef = useRef<(name: string) => void>(() => {});
+  const trackThreatActor = useCallback((name: string) => {
+    const actors = settings.attributionActors ?? [];
+    if (!actors.some(actor => actor.trim().toLowerCase() === name.trim().toLowerCase())) updateSettings({ attributionActors: [...actors, name.trim()] });
+  }, [settings.attributionActors, updateSettings]);
+  useLayoutEffect(() => { trackThreatActorRef.current = trackThreatActor; }, [trackThreatActor]);
   const [identityAddRequest, setIdentityAddRequest] = useState(0);
 
   // Destructure frequently-used context values
@@ -1343,6 +1353,8 @@ const AppInner = memo(function AppInner({
       setDemoKind(kind);
       setDemoName(result.folder.name);
       if (result.created) activityLog.log('data', 'import', `Loaded sample investigation "${result.folder.name}"`);
+      // The parody sample's adversary is a threat actor, not an identity to add.
+      if (kind === 'parody') trackThreatActorRef.current(PARODY_THREAT_ACTOR);
       addToast('success', tt('investigation.sampleLoaded'));
       return true;
     } catch (error) {
@@ -1684,7 +1696,7 @@ const AppInner = memo(function AppInner({
     <ScreenshareContext.Provider value={screenshareCtx}>
     <InvestigationVisibilityScope folders={folders} tags={tags}>
     <ActivityLogContext.Provider value={activityLog.log}>
-    <IdentityLinksProvider identities={linkableIdentities} isVisible={visibility.isEntityVisible} threatActors={settings.attributionActors}
+    <IdentityLinksProvider identities={linkableIdentities} isVisible={visibility.isEntityVisible} threatActors={settings.attributionActors} onTrackThreatActor={trackThreatActor}
       folders={folders} readOnly={investigationMode === 'remote'} onCreate={handleCreateIdentity} onUpdate={identitiesHook.updateIdentity}
       onOpen={openIdentity}>
       {/* Analyst mode banner on mobile */}
@@ -1781,6 +1793,7 @@ const AppInner = memo(function AppInner({
         {screenshareViewHidden && (
           <div role="status" className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-text-secondary">
             <p>{tCommon('screenshare.viewHidden')}</p>
+            {selectedFolderId && visibility.hiddenByIdentities?.has(selectedFolderId) && <p className="max-w-md text-sm text-text-muted">{tCommon('screenshare.hiddenByIdentities')}</p>}
             <button className="rounded border border-border-medium px-3 py-2 hover:bg-bg-hover" onClick={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); closeSettings(); navigateTo('investigations'); }}>{tCommon('screenshare.browseVisible')}</button>
           </div>
         )}
@@ -1883,6 +1896,12 @@ const AppInner = memo(function AppInner({
             links={settings.quickLinks ?? DEFAULT_QUICK_LINKS}
             onUpdateLinks={(links) => updateSettings({ quickLinks: links })}
             onViewChange={navigateTo}
+            onOpenMetric={metric => {
+              // The compromised identities tile opens the list filtered to that status.
+              if (metric !== 'compromised-identities') return;
+              setIdentitySelection(previous => ({ request: (previous?.request ?? 0) + 1, status: 'compromised' }));
+              navigateTo('identities');
+            }}
             folders={folders}
             allNotes={screensafeNotes}
             allTasks={screensafeTasks}
@@ -2005,6 +2024,9 @@ const AppInner = memo(function AppInner({
           />
         ) : activeView === 'identities' ? (
           <IdentitiesView
+            onTrackThreatActor={trackThreatActor}
+            clsLevels={settings.tiClsLevels}
+            defaultClsLevel={settings.tiDefaultClsLevel}
             identities={investigationIdentities}
             allIdentities={screensafeIdentities}
             folders={folders}
@@ -2016,6 +2038,7 @@ const AppInner = memo(function AppInner({
             readOnly={investigationMode === 'remote'}
             defaultFolderId={selectedFolderId}
             selectRequest={identitySelection}
+            onSelectHandled={clearIdentitySelection}
             addRequest={identityAddRequest}
             onAddHandled={clearIdentityAddRequest}
             onCreate={handleCreateIdentity}

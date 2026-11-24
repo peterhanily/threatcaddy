@@ -9,9 +9,9 @@ import { prefillFromFound, useIdentityLabels, withOtherName, type IdentityChange
 const nothing = async () => {};
 
 /** The "not yet in Identities" dialog, and the Add form it can open, for a name outside the Identities view. */
-export function IdentityLinkDialogs({ found, folders, identities, onClose, onIgnore, onCreate, onUpdate }: {
+export function IdentityLinkDialogs({ found, folders, identities, onClose, onIgnore, onCreate, onUpdate, onTrackActor }: {
   found: FoundName; folders: Folder[]; identities: Identity[];
-  onClose: () => void; onIgnore: () => void;
+  onClose: () => void; onIgnore: () => void; onTrackActor?: (name: string) => void;
   onCreate: (partial: Partial<Identity>) => Promise<Identity>;
   onUpdate: (id: string, change: IdentityChange) => Promise<void>;
 }) {
@@ -32,6 +32,7 @@ export function IdentityLinkDialogs({ found, folders, identities, onClose, onIgn
   return (
     <FoundNameDialog found={found} folders={folders} identities={identities} labels={labels} onClose={onClose}
       onIgnore={() => { onIgnore(); onClose(); addToast('info', t('toast.ignored', { text: found.text })); }}
+      onTrackActor={onTrackActor && (() => { onTrackActor(found.text); onClose(); addToast('success', t('toast.trackedActor', { text: found.text })); })}
       onAddNew={() => setPrefill(prefillFromFound(found, labels))}
       onAddAsOtherName={identity => {
         onClose();

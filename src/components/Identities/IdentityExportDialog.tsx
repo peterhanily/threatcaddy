@@ -9,8 +9,9 @@ import type { IdentityLabels } from './identity-labels';
 const button = 'rounded-md border border-border-subtle px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary';
 
 /** Exports the identities in view. Private details stay out unless asked for, and never while screensharing. */
-export function IdentityExportDialog({ identities, byId, folders, folderId, screensharing, labels, onClose, onExported }: {
+export function IdentityExportDialog({ identities, byId, folders, folderId, screensharing, labels, defaultClsLevel, onClose, onExported }: {
   identities: Identity[];
+  defaultClsLevel?: string;
   byId: ReadonlyMap<string, Identity>;
   folders: Folder[];
   /** The investigation shown, or undefined for every investigation. */
@@ -27,7 +28,7 @@ export function IdentityExportDialog({ identities, byId, folders, folderId, scre
   const exportFile = () => {
     // A name in a non-Latin script has no ASCII slug: say "investigation" rather than "all".
     const file = `threatcaddy-identities-${scope ? slugify(scope) || 'investigation' : 'all'}-${new Date().toISOString().slice(0, 10)}.csv`;
-    downloadFile(identitiesToCsv(identities, { byId, folders, includePrivate: includePrivate && !screensharing, isPrivateLabel: labels.privateByDefault }), file, 'text/csv;charset=utf-8');
+    downloadFile(identitiesToCsv(identities, { byId, folders, defaultClsLevel, includePrivate: includePrivate && !screensharing, isPrivateLabel: labels.privateByDefault }), file, 'text/csv;charset=utf-8');
     onExported(file);
   };
   return (

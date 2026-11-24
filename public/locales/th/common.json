@@ -353,6 +353,7 @@
   "sidebar.products": "ผลิตภัณฑ์",
   "syncStatus.screenshareHidden": "การซิงค์ต้องได้รับการดูแล โปรดปิดการแชร์หน้าจอเพื่อดูรายละเอียด",
   "screenshare.viewHidden": "มุมมองนี้ถูกซ่อนไว้ขณะแชร์หน้าจอ",
+  "screenshare.hiddenByIdentities": "ตัวตนในการสืบสวนนี้ถูกจำแนกสูงกว่าระดับที่แชร์ การจำแนกของตัวตนแสดงในโปรไฟล์และเปลี่ยนได้ในการแก้ไข",
   "screenshare.browseVisible": "เรียกดูการสืบสวนที่มองเห็นได้",
   "screenshare.toggle": "สลับโหมดแชร์หน้าจอ",
   "screenshare.mode": "โหมดแชร์หน้าจอ",

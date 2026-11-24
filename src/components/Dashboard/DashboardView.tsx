@@ -23,6 +23,8 @@ interface DashboardViewProps {
   links: QuickLink[];
   onUpdateLinks: (links: QuickLink[]) => void;
   onViewChange?: (view: ViewMode) => void;
+  /** Opens what a KPI tile counts. */
+  onOpenMetric?: (metric: KPIMetricId) => void;
   folders?: Folder[];
   allNotes?: Note[];
   allTasks?: Task[];
@@ -38,7 +40,7 @@ interface DashboardViewProps {
   showFirstRunGuide?: boolean;
 }
 
-export function DashboardView({ links, onUpdateLinks, onViewChange, folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, allIdentities, dashboardKPIs, onUpdateKPIs, onCreateInvestigation, onImportInvestigation, onLoadDemo, showFirstRunGuide = true }: DashboardViewProps) {
+export function DashboardView({ links, onUpdateLinks, onViewChange, onOpenMetric, folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, allIdentities, dashboardKPIs, onUpdateKPIs, onCreateInvestigation, onImportInvestigation, onLoadDemo, showFirstRunGuide = true }: DashboardViewProps) {
   const { t } = useTranslation('dashboard');
   const [formOpen, setFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<QuickLink | undefined>();
@@ -99,6 +101,7 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
           allIdentities={allIdentities}
           selectedKPIs={dashboardKPIs ?? []}
           onUpdateKPIs={onUpdateKPIs}
+          onOpenMetric={onOpenMetric}
         />
       )}
 

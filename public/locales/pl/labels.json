@@ -132,6 +132,7 @@
   "mapping.identity-connection": "Tożsamość: Powiązanie (nazwa kolumny to fraza)",
   "mapping.identity-connections": "Tożsamość: Powiązania (fraza: nazwa)",
   "mapping.identity-classification": "Tożsamość: Klasyfikacja",
+  "mapping.identity-tags": "Tożsamość: Tagi",
   "mapping.ignore": "Ignoruj",
   "mentionCategory.note": "Notatki",
   "mentionCategory.ioc": "IOC",

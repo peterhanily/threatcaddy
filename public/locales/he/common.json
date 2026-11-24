@@ -248,6 +248,7 @@
   "sidebar.products": "מוצרים",
   "syncStatus.screenshareHidden": "הסנכרון דורש טיפול. יש לכבות שיתוף מסך כדי לבדוק את הפרטים.",
   "screenshare.viewHidden": "תצוגה זו מוסתרת בזמן שיתוף מסך.",
+  "screenshare.hiddenByIdentities": "זהויות בחקירה זו מסווגות מעל הרמה המשותפת. סיווג של זהות מוצג בפרופיל שלה ומשתנה בעריכה.",
   "screenshare.browseVisible": "עיון בחקירות הגלויות",
   "screenshare.toggle": "החלפת מצב שיתוף מסך",
   "screenshare.mode": "מצב שיתוף מסך",

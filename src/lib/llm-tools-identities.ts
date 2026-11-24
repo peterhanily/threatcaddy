@@ -10,8 +10,9 @@ import i18n from '../i18n';
 import type { Identity, IdentityStatus } from '../types';
 import { IDENTITY_STATUSES } from './entity-enums';
 import {
-  CONNECTION_PHRASES, ENGLISH_PHRASE_LABELS, ENGLISH_TYPE_LABELS, MEMBERSHIP_PHRASES, PRIVATE_DETAIL_LABELS, byName, canonicalPhrase,
-  canonicalType, detailKey, guessIdentity, identityMatches, isOrganization, isPerson, isPrivateLabel, looseText, organizationOf, sameText,
+  CONNECTION_PHRASES, ENGLISH_PHRASE_LABELS, ENGLISH_TYPE_LABELS, PRIVATE_DETAIL_LABELS, byName, canonicalPhrase,
+  canonicalType, detailKey, guessIdentity, identityMatches, isOrganization, isPerson, isPrivateLabel, looseText, nameTakenBy, organizationOf, sameText,
+  withConnection,
 } from './identity-model';
 import { withCreatorTags } from './tool-creator';
 
@@ -213,7 +214,7 @@ function addOtherNames(identity: Identity, raw: unknown, rows: readonly Identity
   for (const entry of list(raw)) {
     const name = clean(entry, MAX_NAME);
     if (!name || sameText(name) === sameText(identity.name) || identity.aliases.some(alias => sameText(alias) === sameText(name))) continue;
-    if (rows.some(other => other.id !== identity.id && [other.name, ...other.aliases].some(text => sameText(text) === sameText(name)))) { skipped.push(name); continue; }
+    if (nameTakenBy(rows, identity.folderId, name, identity.id)) { skipped.push(name); continue; }
     identity.aliases.push(name);
     added++;
   }
@@ -299,11 +300,12 @@ export async function executeConnectIdentities(input: Record<string, unknown>, f
   const { label, reversed } = canonicalPhrase(phraseText, ENGLISH_PHRASE_LABELS);
   if (!Object.hasOwn(CONNECTION_PHRASES, label)) return error(`Use one of: ${Object.keys(CONNECTION_PHRASES).join(', ')} (or the other side's wording, such as "manages").`);
   const [source, target] = reversed ? [to, from] : [from, to];
-  if (MEMBERSHIP_PHRASES.includes(label) && !isOrganization(target)) return error(`"${label}" connects to an organization; "${target.name}" is not one.`);
-  if (source.connections.some(edge => edge.targetId === target.id && edge.label === label)) {
+  const connections = withConnection(source, target, label);
+  if (!connections) return error(`"${label}" connects to an organization; "${target.name}" is not one.`);
+  if (connections === source.connections) {
     return JSON.stringify({ success: true, id: source.id, unchanged: true, connection: `${source.name} ${label} ${target.name}` });
   }
-  await db.identities.update(source.id, { connections: [...source.connections, { targetId: target.id, label }], updatedAt: Date.now(),
+  await db.identities.update(source.id, { connections, updatedAt: Date.now(),
     ...(creator ? { updatedBy: creator } : {}) });
   return JSON.stringify({ success: true, id: source.id, connection: `${source.name} ${label} ${target.name}` });
 }

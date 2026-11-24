@@ -248,6 +248,7 @@
   "sidebar.products": "Produk",
   "syncStatus.screenshareHidden": "Sinkronisasi memerlukan perhatian. Matikan berbagi layar untuk melihat rinciannya.",
   "screenshare.viewHidden": "Tampilan ini disembunyikan selama berbagi layar.",
+  "screenshare.hiddenByIdentities": "Identitas dalam investigasi ini diklasifikasikan di atas tingkat yang dibagikan. Klasifikasi identitas ditampilkan di profilnya dan diubah di Edit.",
   "screenshare.browseVisible": "Telusuri investigasi yang terlihat",
   "screenshare.toggle": "Alihkan mode berbagi layar",
   "screenshare.mode": "Mode berbagi layar",

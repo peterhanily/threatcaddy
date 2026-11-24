@@ -132,6 +132,7 @@
   "mapping.identity-connection": "Субъект: Связь (название столбца — фраза)",
   "mapping.identity-connections": "Субъект: Связи (фраза: имя)",
   "mapping.identity-classification": "Субъект: Классификация",
+  "mapping.identity-tags": "Субъект: Теги",
   "mapping.ignore": "Игнорировать",
   "mentionCategory.note": "Заметки",
   "mentionCategory.ioc": "IOC",

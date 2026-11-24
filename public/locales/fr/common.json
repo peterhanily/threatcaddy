@@ -248,6 +248,7 @@
   "sidebar.products": "Produits",
   "syncStatus.screenshareHidden": "La synchronisation demande votre attention. Désactivez le partage d’écran pour consulter les détails.",
   "screenshare.viewHidden": "Cette vue est masquée pendant le partage d’écran.",
+  "screenshare.hiddenByIdentities": "Des identités de cette investigation sont classifiées au-dessus du niveau partagé. La classification d’une identité figure sur son profil et se modifie dans Modifier.",
   "screenshare.browseVisible": "Parcourir les enquêtes visibles",
   "screenshare.toggle": "Activer ou désactiver le mode partage d’écran",
   "screenshare.mode": "Mode partage d’écran",
