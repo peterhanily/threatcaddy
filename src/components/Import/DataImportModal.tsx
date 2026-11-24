@@ -27,6 +27,8 @@ import {
 // ---------------------------------------------------------------------------
 
 interface DataImportModalProps {
+  /** Settings' default classification (what an identity without a level exports as). */
+  defaultClsLevel?: string;
   open: boolean;
   onClose: () => void;
   folders: Folder[];
@@ -50,7 +52,7 @@ const PREVIEW_ROWS = 100;
 // Component
 // ---------------------------------------------------------------------------
 
-export function DataImportModal({
+export function DataImportModal({ defaultClsLevel,
   open,
   onClose,
   folders,
@@ -277,6 +279,7 @@ export function DataImportModal({
           const existing = await db.identities.where('folderId').equals(folderId).toArray();
           const { created, updated, errors } = buildIdentities(parseResult.rows, columnMappings, {
             folderId, existing, clsLevel: folders.find((f) => f.id === folderId)?.clsLevel,
+            inheritedClsLevel: folders.find((f) => f.id === folderId)?.clsLevel || defaultClsLevel,
             defaultOrganizationId: identityOrganizationId || undefined, author: getCurrentUserName(), isPrivateLabel: privateByDefault, privateColumns, now,
           });
           if (created.length) await db.identities.bulkAdd(created);
@@ -308,7 +311,7 @@ export function DataImportModal({
       setImportResult(result);
       setStep('done');
     }
-  }, [parseResult, createEvents, hasTimestamp, timelineId, timelines, columnMappings, folderId, extractIOCsFlag, hasIOCColumns, createNote, newTimelineName, onCreateTimeline,
+  }, [parseResult, defaultClsLevel, createEvents, hasTimestamp, timelineId, timelines, columnMappings, folderId, extractIOCsFlag, hasIOCColumns, createNote, newTimelineName, onCreateTimeline,
     willImportIdentities, folders, identityOrganizationId, privateByDefault, privateColumns]);
 
   // Done

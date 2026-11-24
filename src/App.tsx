@@ -119,6 +119,7 @@ const ServerOnboardingModal = lazy(() => import('./components/Settings/ServerOnb
 import { useLoggedActions } from './hooks/useLoggedActions';
 import { useServerSync } from './hooks/useServerSync';
 import { useRemoteInvestigations } from './hooks/useRemoteInvestigations';
+import { sameText } from './lib/identity-model';
 
 
 export default function App() {
@@ -450,12 +451,10 @@ const AppInner = memo(function AppInner({
   // Applied once by the Identities view, then cleared, so opening it later starts afresh.
   const clearIdentitySelection = useCallback(() => setIdentitySelection(undefined), []);
   // A name found as an Actor or an attribution, tracked as a threat actor: no longer offered as an identity.
-  const trackThreatActorRef = useRef<(name: string) => void>(() => {});
   const trackThreatActor = useCallback((name: string) => {
     const actors = settings.attributionActors ?? [];
-    if (!actors.some(actor => actor.trim().toLowerCase() === name.trim().toLowerCase())) updateSettings({ attributionActors: [...actors, name.trim()] });
+    if (!actors.some(actor => sameText(actor) === sameText(name))) updateSettings({ attributionActors: [...actors, name.trim()] });
   }, [settings.attributionActors, updateSettings]);
-  useLayoutEffect(() => { trackThreatActorRef.current = trackThreatActor; }, [trackThreatActor]);
   const [identityAddRequest, setIdentityAddRequest] = useState(0);
 
   // Destructure frequently-used context values
@@ -1327,6 +1326,10 @@ const AppInner = memo(function AppInner({
   // Each sample has a separate identity; reopening it preserves analyst edits.
   const sampleLoaded = useMemo(() => folders.some(f => f.id === getSampleFolderId('realistic')), [folders]);
   const parodyLoaded = useMemo(() => folders.some(f => f.id === getSampleFolderId('parody')), [folders]);
+  // Threat actors for identities: Settings', and the parody sample's adversary while the sample is loaded
+  // (so it is not offered as an identity to add, without changing Settings).
+  const identityThreatActors = useMemo(() => (parodyLoaded && !(settings.attributionActors ?? []).some(actor => sameText(actor) === sameText(PARODY_THREAT_ACTOR))
+    ? [...settings.attributionActors ?? [], PARODY_THREAT_ACTOR] : settings.attributionActors), [parodyLoaded, settings.attributionActors]);
   const [demoKind, setDemoKind] = useState<SampleInvestigationKind>('realistic');
   const [demoName, setDemoName] = useState<string>();
   const [sampleRemoval, setSampleRemoval] = useState<SampleRemovalRequest | null>(null);
@@ -1353,8 +1356,6 @@ const AppInner = memo(function AppInner({
       setDemoKind(kind);
       setDemoName(result.folder.name);
       if (result.created) activityLog.log('data', 'import', `Loaded sample investigation "${result.folder.name}"`);
-      // The parody sample's adversary is a threat actor, not an identity to add.
-      if (kind === 'parody') trackThreatActorRef.current(PARODY_THREAT_ACTOR);
       addToast('success', tt('investigation.sampleLoaded'));
       return true;
     } catch (error) {
@@ -1696,7 +1697,7 @@ const AppInner = memo(function AppInner({
     <ScreenshareContext.Provider value={screenshareCtx}>
     <InvestigationVisibilityScope folders={folders} tags={tags}>
     <ActivityLogContext.Provider value={activityLog.log}>
-    <IdentityLinksProvider identities={linkableIdentities} isVisible={visibility.isEntityVisible} threatActors={settings.attributionActors} onTrackThreatActor={trackThreatActor}
+    <IdentityLinksProvider identities={linkableIdentities} isVisible={visibility.isEntityVisible} threatActors={identityThreatActors} onTrackThreatActor={trackThreatActor}
       folders={folders} readOnly={investigationMode === 'remote'} onCreate={handleCreateIdentity} onUpdate={identitiesHook.updateIdentity}
       onOpen={openIdentity}>
       {/* Analyst mode banner on mobile */}
@@ -1899,6 +1900,10 @@ const AppInner = memo(function AppInner({
             onOpenMetric={metric => {
               // The compromised identities tile opens the list filtered to that status.
               if (metric !== 'compromised-identities') return;
+              // The tile counts every investigation on this device: so does the list it opens.
+              setSelectedFolderId(undefined);
+              if (investigationMode === 'remote') setInvestigationMode('local');
+              setSelectedTag(undefined); setShowTrash(false); setShowArchive(false);
               setIdentitySelection(previous => ({ request: (previous?.request ?? 0) + 1, status: 'compromised' }));
               navigateTo('identities');
             }}
@@ -2034,7 +2039,7 @@ const AppInner = memo(function AppInner({
             events={investigationTimelineEvents}
             iocs={investigationStandaloneIOCs}
             notes={investigationNotes}
-            threatActors={settings.attributionActors}
+            threatActors={identityThreatActors}
             readOnly={investigationMode === 'remote'}
             defaultFolderId={selectedFolderId}
             selectRequest={identitySelection}
@@ -2431,6 +2436,7 @@ const AppInner = memo(function AppInner({
       </Suspense>
 
       <Suspense fallback={null}><DataImportModal
+        defaultClsLevel={settings.tiDefaultClsLevel}
         open={showDataImport}
         onClose={() => setShowDataImport(false)}
         folders={folders}

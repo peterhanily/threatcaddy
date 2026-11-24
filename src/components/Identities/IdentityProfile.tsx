@@ -308,7 +308,14 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                 <div className="grid gap-2 sm:grid-cols-2">
                   <label className="flex flex-col gap-1 text-xs text-text-secondary">{t('connectionForm.phrase', { name: identity.name })}
                     <input autoFocus list={`${ids}-phrases`} value={connectionForm.phrase} maxLength={100} placeholder={t('connectionForm.phrasePlaceholder')} className={field}
-                      onChange={event => setConnectionForm({ ...connectionForm, phrase: event.target.value })} />
+                      onChange={event => {
+                        // A target no longer offered for the phrase ("works at" lists organisations) is cleared, not kept unseen.
+                        const phrase = event.target.value;
+                        const next = canonicalPhrase(phrase, labels.phraseLabels, labels.reverseLabels);
+                        const organisationsOnly = !next.reversed && MEMBERSHIP_PHRASES.includes(next.label);
+                        const kept = !organisationsOnly || targets.some(other => other.id === connectionForm.to && isOrganization(other));
+                        setConnectionForm({ ...connectionForm, phrase, ...(kept ? {} : { to: '' }) });
+                      }} />
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-text-secondary">{t('connectionForm.target')}
                     <select value={connectionForm.to} className={field} onChange={event => setConnectionForm({ ...connectionForm, to: event.target.value })}>

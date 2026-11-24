@@ -297,7 +297,7 @@ export function orgChart(organization: Identity, identities: readonly Identity[]
   // overflow the stack).
   const size = new Map<string, number>();
   const flag = new Map<string, boolean>();
-  const own = (person: Identity) => person.status === 'compromised' || person.status === 'suspicious' || !!person.contact;
+  const own = (person: Identity) => person.status === 'compromised' || person.status === 'contained' || person.status === 'suspicious' || !!person.contact;
   for (const top of people.filter(person => !manager.has(person.id))) {
     const order: Identity[] = [];
     for (const stack = [top]; stack.length;) {

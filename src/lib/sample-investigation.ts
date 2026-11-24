@@ -1900,7 +1900,7 @@ Spoke with @Rai Sinn about the "Slaw Freshness" cron job. The change was approve
 
 **Next:** enforce two approvers on scheduler changes (owner: @Cole Sloane).`,
     folderId: SAMPLE_FOLDER_ID,
-    tags: ['interview'],
+    tags: [],
     pinned: false,
     archived: false,
     trashed: false,

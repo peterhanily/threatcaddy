@@ -97,6 +97,8 @@ export interface IdentityImport {
 }
 
 export function buildIdentities(rows: readonly Record<string, string>[], mappings: ReadonlyMap<string, ColumnMapping>, options: {
+  /** The level an identity without its own exports as (its investigation's, else the default). */
+  inheritedClsLevel?: string;
   folderId: string;
   existing: readonly Identity[];
   clsLevel?: string;
@@ -173,7 +175,9 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     // A classification as exported is kept, so a round trip never lowers it; otherwise the investigation's.
     const classification = classificationColumn ? value(row[classificationColumn]).slice(0, 100) : '';
     const identity = find(name) ?? create(name, typed ? canonicalType(typed, ENGLISH_TYPES, typesInUse) : guessIdentity(name).type, classification);
-    if (classification && !identity.clsLevel) identity.clsLevel = classification;
+    // The level the export writes for an identity without its own (its investigation's, else the
+    // default) is read back as inherited, not fixed on it.
+    if (classification && !identity.clsLevel && classification !== options.inheritedClsLevel) identity.clsLevel = classification;
     const description = descriptionColumn ? value(row[descriptionColumn]) : '';
     if (description && !identity.description) identity.description = description;
     // Tags as exported (one per line) are added to those it has; import never removes one.

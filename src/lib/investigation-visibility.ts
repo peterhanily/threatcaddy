@@ -118,16 +118,20 @@ export function buildInvestigationVisibility(input: InvestigationVisibilityInput
 
   const collections = [input.notes, input.tasks, input.timelineEvents, input.whiteboards,
     input.standaloneIOCs, input.chatThreads, input.evidenceItems, input.identities];
-  const hiddenByIdentities = new Set<string>();
+  // Identities are said to be the cause only where nothing else hides the investigation (its own
+  // level, a timeline, another item): changing their level then shows it again.
+  const byIdentities = new Set<string>();
+  const byOthers = new Set(hiddenFolderIds);
   for (const entities of collections) {
     for (const entity of entities) {
       if (!isRestricted(entity)) continue;
       for (const folderId of linkedFolderIds(entity)) {
         hiddenFolderIds.add(folderId);
-        if (entities === input.identities) hiddenByIdentities.add(folderId);
+        (entities === input.identities ? byIdentities : byOthers).add(folderId);
       }
     }
   }
+  const hiddenByIdentities = new Set([...byIdentities].filter(folderId => !byOthers.has(folderId)));
 
   const visibleFolders = folders.filter(folder => !hiddenFolderIds.has(folder.id));
   const visibleFolderIds = new Set(visibleFolders.map(folder => folder.id));

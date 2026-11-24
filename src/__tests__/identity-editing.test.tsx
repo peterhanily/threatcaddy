@@ -11,9 +11,9 @@ import userEvent from '@testing-library/user-event';
 import { IdentitiesView, type IdentitiesViewProps } from '../components/Identities/IdentitiesView';
 import { KPIWidgets } from '../components/Dashboard/KPIWidgets';
 import { ToastProvider } from '../contexts/ToastContext';
-import type { Folder, Identity, StandaloneIOC, TimelineEvent } from '../types';
+import type { Folder, Identity, Note, StandaloneIOC, TimelineEvent } from '../types';
 import type { IdentityChange } from '../components/Identities/identity-labels';
-import { foundNames, nameTakenBy, withConnection } from '../lib/identity-model';
+import { foundNames, nameTakenBy, orgChart, withConnection } from '../lib/identity-model';
 import { activityOf } from '../lib/identity-match';
 import { identitiesToCsv } from '../lib/identity-export';
 import { buildIdentities } from '../lib/identity-import';
@@ -72,6 +72,17 @@ describe('the Edit form', () => {
     expect(nameTakenBy([dana, { ...lee, folderId: 'other' }], 'case', 'Lee Park', 'dana')).toBeUndefined();
   });
 
+  it('counts an archived identity\'s name as taken, as the AI tools do (FE-3)', async () => {
+    const dana = make('dana', 'Dana Okafor'), lee = make('lee', 'Lee Park', { archived: true });
+    const { user, stored } = view({ selectRequest: { id: 'dana', request: 1 }, identities: [dana] }, [dana, lee]);
+    await user.click(within(screen.getByRole('article', { name: 'Dana Okafor' })).getByRole('button', { name: 'Edit' }));
+    const dialog = screen.getByRole('dialog');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Other names (one per line)' }), 'Lee Park');
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('Lee Park');
+    expect(stored.get('dana')?.aliases).toEqual([]);
+  });
+
   it('shows and changes the classification (PROD-3)', async () => {
     const vip = make('vip', 'Chief Executive', { clsLevel: 'TLP:RED' });
     const { user, stored } = view({ selectRequest: { id: 'vip', request: 1 } }, [vip]);
@@ -121,6 +132,25 @@ describe('the list and the profile', () => {
     await user.type(within(profile).getByRole('combobox', { name: 'Dana Okafor…' }), 'works at');
     const targets = within(profile).getByRole('combobox', { name: '…whom or what' });
     expect(within(targets).getAllByRole('option').map(option => option.textContent)).toEqual(['Choose…', 'Halvorsen Shipping · Organization']);
+  });
+
+  it('clears a chosen person when the phrase then asks for an organisation (FE-7)', async () => {
+    const dana = make('dana', 'Dana Okafor'), lee = make('lee', 'Lee Park');
+    const { user, onUpdate } = view({ selectRequest: { id: 'dana', request: 1 } }, [dana, lee, org]);
+    const profile = screen.getByRole('article', { name: 'Dana Okafor' });
+    await user.click(within(profile).getByRole('button', { name: 'Add a connection' }));
+    await user.selectOptions(within(profile).getByRole('combobox', { name: '…whom or what' }), 'lee');
+    await user.type(within(profile).getByRole('combobox', { name: 'Dana Okafor…' }), 'works at');
+    expect(within(profile).getByRole('combobox', { name: '…whom or what' })).toHaveValue('');
+    await user.click(within(profile).getByRole('button', { name: 'Add' }));
+    expect(within(profile).getByRole('alert')).toHaveTextContent('Choose whom or what it connects to.');
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  it('opens the team of a contained person, as of a compromised one (PROD-2)', () => {
+    const boss = make('boss', 'Boss', { connections: [{ targetId: 'org', label: 'works at' }] });
+    const worker = make('worker', 'Worker', { status: 'contained', connections: [{ targetId: 'org', label: 'works at' }, { targetId: 'boss', label: 'reports to' }] });
+    expect(orgChart(org, [org, boss, worker]).flagged(boss)).toBe(true);
   });
 
   it('filters by status, including contained, and shows no profile when nothing matches (PROD-2)', async () => {
@@ -180,11 +210,21 @@ describe('classification in export and screensharing (PROD-3)', () => {
     expect(csv).toMatch(/Cleo,.*TLP:RED/);
   });
 
-  it('says when identities are why an investigation is hidden while screensharing', () => {
-    const visibility = buildInvestigationVisibility({ folders, remoteInvestigations: [], notes: [], tasks: [], timelineEvents: [], whiteboards: [], standaloneIOCs: [],
-      chatThreads: [], evidenceItems: [], identities: [make('vip', 'Chief Executive', { clsLevel: 'TLP:RED' })], maxLevel: 'TLP:AMBER', effectiveLevels: ['TLP:CLEAR', 'TLP:GREEN', 'TLP:AMBER', 'TLP:RED'], dataReady: true } as never);
+  it('says when identities are why an investigation is hidden while screensharing, and only then', () => {
+    const build = (extra: object) => buildInvestigationVisibility({ folders, remoteInvestigations: [], notes: [], tasks: [], timelineEvents: [], whiteboards: [], standaloneIOCs: [],
+      chatThreads: [], evidenceItems: [], identities: [make('vip', 'Chief Executive', { clsLevel: 'TLP:RED' })], maxLevel: 'TLP:AMBER',
+      effectiveLevels: ['TLP:CLEAR', 'TLP:GREEN', 'TLP:AMBER', 'TLP:RED'], dataReady: true, ...extra } as never);
+    const visibility = build({});
     expect(visibility.hiddenFolderIds.has('case')).toBe(true);
     expect(visibility.hiddenByIdentities?.has('case')).toBe(true);
+    // A RED note hides it too: changing the identity's level would not show it, so identities are not named.
+    const alsoNote = build({ notes: [{ id: 'n', folderId: 'case', title: 'x', content: '', tags: [], pinned: false, archived: false, trashed: false, createdAt: 1, updatedAt: 1, clsLevel: 'TLP:RED' }] });
+    expect(alsoNote.hiddenFolderIds.has('case')).toBe(true);
+    expect(alsoNote.hiddenByIdentities?.has('case') ?? false).toBe(false);
+    // So does the investigation's own level.
+    const ownLevel = build({ folders: [{ ...folders[0], clsLevel: 'TLP:RED' }, folders[1]] });
+    expect(ownLevel.hiddenFolderIds.has('case')).toBe(true);
+    expect(ownLevel.hiddenByIdentities?.has('case') ?? false).toBe(false);
   });
 });
 
@@ -202,11 +242,26 @@ describe('the CSV round trip and the sample (PROD-6, PROD-7)', () => {
     expect(again.updated).toEqual([expect.objectContaining({ id: 'lee', changes: expect.objectContaining({ tags: ['vip', 'finance'] }) })]);
   });
 
+  it('reads back the level an identity inherits as inherited, so an unchanged file changes nothing', () => {
+    const rows = [make('ana', 'Ana Silva'), make('cleo', 'Cleo Diaz', { clsLevel: 'TLP:RED' })];
+    const csv = identitiesToCsv(rows, { byId: new Map(rows.map(row => [row.id, row])), folders });
+    const parsed = parseInput(csv.replace(/^\uFEFF/, ''));
+    const mappings = new Map<string, ColumnMapping>(detectSchema(parsed.headers).map(detected => [detected.column, detected.mapping]));
+    const again = buildIdentities(parsed.rows, mappings, { folderId: 'case', existing: rows, clsLevel: 'TLP:AMBER', inheritedClsLevel: 'TLP:AMBER', now: 5 });
+    expect(again.updated).toEqual([]);
+    // Created elsewhere (an investigation without a level), a copy keeps the level it was exported at: never lower.
+    const fresh = buildIdentities(parsed.rows, mappings, { folderId: 'other', existing: [], now: 5 }).created;
+    expect(fresh.map(identity => [identity.name, identity.clsLevel])).toEqual([['Ana Silva', 'TLP:AMBER'], ['Cleo Diaz', 'TLP:RED']]);
+  });
+
   it('demonstrates linking: a note mentions people and an event names one as its Actor', () => {
     const sample = generateSampleInvestigation();
     const rai = sample.identities.find(identity => identity.name === 'Rai Sinn') as Identity;
     const activity = activityOf(rai, { events: sample.timelineEvents as TimelineEvent[], notes: sample.notes, iocs: sample.standaloneIOCs });
     expect(activity.events.some(event => event.actor === 'Rai Sinn')).toBe(true);
     expect(activity.notes.some(note => note.content.includes('@Rai Sinn'))).toBe(true);
+    const defined = new Set(sample.tags.map(tag => tag.name));
+    const interview = activity.notes.find(note => note.content.includes('@Rai Sinn')) as Note;
+    expect(interview.tags.filter(tag => !defined.has(tag))).toEqual([]);
   });
 });

@@ -18,6 +18,8 @@ interface Props {
   editing?: Identity;
   /** Classification levels offered (Settings). */
   clsLevels?: string[];
+  /** Every identity whose names are taken (archived ones too, as the AI tools and import count them). */
+  named?: Identity[];
   prefill?: AddPrefill;
   folders: Folder[];
   defaultFolderId?: string;
@@ -33,7 +35,7 @@ interface Props {
   onSaved: (identity: Identity, message?: string) => void;
 }
 
-export function IdentityFormModal({ editing, prefill, clsLevels, folders, defaultFolderId, identities, byId, labels, onClose, onCreate, onUpdate, onMerge, onTrash, onSaved }: Props) {
+export function IdentityFormModal({ editing, prefill, clsLevels, named, folders, defaultFolderId, identities, byId, labels, onClose, onCreate, onUpdate, onMerge, onTrash, onSaved }: Props) {
   const { t } = labels;
   const ids = useId();
   const [name, setName] = useState(editing?.name ?? prefill?.name ?? '');
@@ -75,7 +77,8 @@ export function IdentityFormModal({ editing, prefill, clsLevels, folders, defaul
     // A name two identities share makes every link to it ambiguous (the AI tools and import refuse it too).
     const home = editing?.folderId ?? folderId;
     const renamed = !editing || sameText(name) !== sameText(editing.name);
-    if (renamed && nameTakenBy(identities, home, name, editing?.id)) { setError(t('form.errorDuplicate')); return; }
+    const taking = named ?? identities;
+    if (renamed && nameTakenBy(taking, home, name, editing?.id)) { setError(t('form.errorDuplicate')); return; }
     const aliases = otherNames.split('\n').map(alias => alias.trim())
       .filter((alias, index, all) => alias && sameText(alias) !== sameText(name) && all.findIndex(other => sameText(other) === sameText(alias)) === index);
     // What the form changed, exactly: a change of letter case or spacing is a change ("DANA OKAFOR"
@@ -83,7 +86,7 @@ export function IdentityFormModal({ editing, prefill, clsLevels, folders, defaul
     const removed = editing ? editing.aliases.filter(alias => !aliases.includes(alias.trim())) : [];
     const added = editing ? aliases.filter(alias => !editing.aliases.some(old => old.trim() === alias)) : [];
     // Another identity's name as an other name would make that name ambiguous everywhere.
-    const taken = added.map(alias => ({ alias, other: nameTakenBy(identities, home, alias, editing?.id) })).find(entry => entry.other);
+    const taken = added.map(alias => ({ alias, other: nameTakenBy(taking, home, alias, editing?.id) })).find(entry => entry.other);
     if (taken?.other) { setError(t('form.errorOtherNameTaken', { name: taken.alias, other: taken.other.name })); return; }
     setBusy(true);
     try {

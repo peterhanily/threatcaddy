@@ -311,6 +311,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
           editing={form.editing}
           prefill={form.prefill}
           clsLevels={clsLevels}
+          named={allIdentities}
           folders={folders}
           defaultFolderId={folderId ?? defaultFolderId}
           identities={form.editing ? live : everywhere.length ? everywhere : live}

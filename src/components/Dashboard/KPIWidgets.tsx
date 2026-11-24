@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Settings2, X, ChevronUp, ChevronDown, TrendingUp, TrendingDown } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, StandaloneIOC, Identity, KPIMetricId } from '../../types';
 import { AVAILABLE_KPI_METRICS, KPI_METRIC_LABELS, DEFAULT_DASHBOARD_KPIS } from '../../types';
-import { isOverdue } from '../../lib/utils';
-import { cn } from '../../lib/utils';
+import { cn, isOverdue } from '../../lib/utils';
 
 interface KPIWidgetsProps {
   folders: Folder[];
@@ -143,14 +142,14 @@ export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, al
             className={cn('bg-bg-raised rounded-lg p-3 border border-border-subtle text-start', Tile === 'button' && 'hover:border-accent')}
             style={{ borderLeftColor: kpi.color + '60', borderLeftWidth: 3 }}
           >
-            <div className="text-[10px] text-gray-500 uppercase tracking-wider">{kpi.label}</div>
-            <div className="flex items-center gap-1.5 mt-1">
+            <span className="block text-[10px] text-gray-500 uppercase tracking-wider">{kpi.label}</span>
+            <span className="flex items-center gap-1.5 mt-1">
               <span className="text-2xl font-bold tabular-nums text-text-primary">
                 {kpi.value}
               </span>
               {kpi.trend === 'up' && <TrendingUp size={14} className="text-red-400" />}
               {kpi.trend === 'down' && <TrendingDown size={14} className="text-green-400" />}
-            </div>
+            </span>
           </Tile>
           );
         })}
