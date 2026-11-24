@@ -23,7 +23,7 @@ export function GraphConnectDialog({ from, to, labels, onClose, onUpdate }: {
     const { label, reversed } = canonicalPhrase(phrase, labels.phraseLabels, labels.reverseLabels);
     const [source, target] = reversed ? [to, from] : [from, to];
     // The one rule for adding a connection (the profile and the AI tool use it too).
-    if (!withConnection(source, target, label)) { setError(t('connectionForm.errorMembership')); return; }
+    if (!withConnection(source, target, label)) { setError(t('connectionForm.errorMembership', { phrase: phrase.trim(), name: target.name })); return; }
     try {
       await onUpdate(source.id, current => ({ connections: withConnection(current, target, label) ?? current.connections }));
       onClose();

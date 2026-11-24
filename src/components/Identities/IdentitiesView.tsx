@@ -49,7 +49,7 @@ export interface IdentitiesViewProps {
   selectRequest?: IdentitySelectRequest;
   /** Called once a select request is applied, so it is not applied again on a later visit. */
   onSelectHandled?: () => void;
-  /** Adds a name to Settings › threat actors, so it is no longer offered as an identity. */
+  /** Adds a name to Settings › Intel › Attribution Actors, so it is no longer offered as an identity. */
   onTrackThreatActor?: (name: string) => void;
   /** Classification levels offered (Settings), and the default level for export. */
   clsLevels?: string[];
@@ -120,9 +120,11 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const rows = useMemo(() => live.filter(identity => matchesFilter(identity, filter) && (!statusFilter || identity.status === statusFilter)
     && identityMatches(identity, query, labels.typeLabel(identity.type))),
     [live, filter, statusFilter, query, labels]);
-  // A search or filter that matches nothing shows no profile, rather than another identity beside "No matches".
+  // While a search or filter narrows the list, the profile shown is one in it: none beside "No matches",
+  // and not one the filter leaves out.
   const narrowed = !!query.trim() || filter !== 'all' || !!statusFilter;
-  const selected = narrowed && !rows.length ? undefined : live.find(identity => identity.id === selectedId) ?? rows[0] ?? live[0];
+  const selected = narrowed ? rows.find(identity => identity.id === selectedId) ?? rows[0]
+    : live.find(identity => identity.id === selectedId) ?? rows[0] ?? live[0];
   const statusCounts = useMemo(() => new Map(IDENTITY_STATUSES.map(status => [status, live.filter(identity => identity.status === status).length])), [live]);
   const statuses = IDENTITY_STATUSES.filter(status => status === statusFilter || (statusCounts.get(status) ?? 0) > 0);
   // Once per render, not once per row: the list's single tab stop falls back to its first row.

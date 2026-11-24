@@ -346,7 +346,10 @@ describe('names ignored on this device', () => {
     await waitFor(() => expect(localStorage.getItem('threatcaddy-identities-ignored-v3')).toContain('"enc"'));
     const stored = localStorage.getItem('threatcaddy-identities-ignored-v3') ?? '';
     expect(stored).not.toContain(ignoredHash(foundKey('f1', 'Jordan Reyes')));
-    expect(stored).not.toContain('f1');
+    // Only ciphertext is stored: no investigation id. (Random base64 can hold the letters "f1", so the
+    // check is on the stored shape and on the id as a JSON string, not on a substring.)
+    expect(JSON.parse(stored)).toEqual({ v: 3, enc: { __enc: 1, ct: expect.any(String), iv: expect.any(String), json: true } });
+    expect(stored).not.toContain('"f1"');
     expect(result.current.isIgnored('f1', 'Jordan Reyes')).toBe(true);
   });
 

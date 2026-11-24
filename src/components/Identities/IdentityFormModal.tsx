@@ -94,15 +94,19 @@ export function IdentityFormModal({ editing, prefill, clsLevels, named, folders,
         const organizationChanged = !isOrganization({ type: resolvedType }) && organizationId !== initialOrganizationId;
         // Only what was changed in the form is applied, on top of the stored identity, so another
         // name or a description added meanwhile (sync, an agent, another tab) is not overwritten.
-        await onUpdate(editing.id, current => ({
-          name: name.trim() === editing.name.trim() ? current.name : name.trim(),
+        await onUpdate(editing.id, current => {
+          // An old name a rename elsewhere kept as an other name stays when the form left the name alone.
+          const written = name.trim() === editing.name.trim() ? current.name : name.trim();
+          return {
+          name: written,
           type: resolvedType === editing.type ? current.type : resolvedType,
           description: description.trim() === (editing.description ?? '').trim() ? current.description : description.trim() || undefined,
           aliases: [...current.aliases.filter(alias => !removed.includes(alias)), ...added]
-            .filter((alias, index, all) => sameText(alias) !== sameText(name) && all.findIndex(other => sameText(other) === sameText(alias)) === index),
+            .filter((alias, index, all) => sameText(alias) !== sameText(written) && all.findIndex(other => sameText(other) === sameText(alias)) === index),
           ...(organizationChanged ? { connections: withOrganization({ ...current, type: resolvedType }, initialOrganizationId || undefined, organizationId || undefined) } : {}),
           ...(clsLevel !== (editing.clsLevel ?? '') ? { clsLevel: clsLevel || undefined } : {}),
-        }));
+          };
+        });
         onSaved({ ...editing, name: name.trim() });
       } else {
         const details = detailValue.trim() ? [{ id: nanoid(), label: detailLabel.trim(), value: detailValue.trim(), ...(labels.privateByDefault(detailLabel) ? { private: true } : {}) }] : [];

@@ -452,9 +452,11 @@ const AppInner = memo(function AppInner({
   const clearIdentitySelection = useCallback(() => setIdentitySelection(undefined), []);
   // A name found as an Actor or an attribution, tracked as a threat actor: no longer offered as an identity.
   const trackThreatActor = useCallback((name: string) => {
-    const actors = settings.attributionActors ?? [];
-    if (!actors.some(actor => sameText(actor) === sameText(name))) updateSettings({ attributionActors: [...actors, name.trim()] });
-  }, [settings.attributionActors, updateSettings]);
+    updateSettings(previous => {
+      const actors = previous.attributionActors ?? [];
+      return actors.some(actor => sameText(actor) === sameText(name)) ? null : { attributionActors: [...actors, name.trim()] };
+    });
+  }, [updateSettings]);
   const [identityAddRequest, setIdentityAddRequest] = useState(0);
 
   // Destructure frequently-used context values

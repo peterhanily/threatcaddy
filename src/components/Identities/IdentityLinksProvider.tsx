@@ -21,7 +21,7 @@ interface Props {
   onCreate: (partial: Partial<Identity>) => Promise<Identity>;
   onUpdate: (id: string, change: IdentityChange) => Promise<void>;
   onOpen: (identity: Identity, query?: string) => void;
-  /** Adds a name to Settings › threat actors, so it is no longer offered as an identity. */
+  /** Adds a name to Settings › Intel › Attribution Actors, so it is no longer offered as an identity. */
   onTrackThreatActor?: (name: string) => void;
   children: ReactNode;
 }

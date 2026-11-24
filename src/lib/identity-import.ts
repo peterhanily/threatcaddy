@@ -181,7 +181,8 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     const description = descriptionColumn ? value(row[descriptionColumn]) : '';
     if (description && !identity.description) identity.description = description;
     // Tags as exported (one per line) are added to those it has; import never removes one.
-    for (const column of tagColumns) for (const tag of lines(row[column]).map(text => text.slice(0, 100))) {
+    // One tag a line, as exported; a comma or semicolon also separates tags, as other tools write them.
+    for (const column of tagColumns) for (const tag of lines(row[column]).flatMap(line => line.split(/[,;]/)).map(text => value(text).slice(0, 100)).filter(Boolean)) {
       if (!identity.tags.includes(tag)) identity.tags = [...identity.tags, tag];
     }
     for (const column of aliasColumns) for (const alias of lines(row[column])) {

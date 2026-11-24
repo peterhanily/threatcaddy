@@ -104,7 +104,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
   };
   const addDetail = async (event: FormEvent) => {
     event.preventDefault();
-    if (!detailForm || saving) return;
+    if (!detailForm) return;
     const label = detailForm.label.trim(), value = detailForm.value.trim();
     if (!label) { setDetailForm({ ...detailForm, error: t('detailForm.errorLabel') }); return; }
     if (!value) { setDetailForm({ ...detailForm, error: t('detailForm.errorValue') }); return; }
@@ -116,7 +116,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
   const connectionTargets = chosenPhrase && !chosenPhrase.reversed && MEMBERSHIP_PHRASES.includes(chosenPhrase.label) ? targets.filter(isOrganization) : targets;
   const addConnection = async (event: FormEvent) => {
     event.preventDefault();
-    if (!connectionForm || saving) return;
+    if (!connectionForm) return;
     const { label, reversed } = canonicalPhrase(connectionForm.phrase, labels.phraseLabels, labels.reverseLabels);
     if (!label) { setConnectionForm({ ...connectionForm, error: t('connectionForm.errorPhrase') }); return; }
     if (!connectionForm.to) { setConnectionForm({ ...connectionForm, error: t('connectionForm.errorTarget') }); return; }
@@ -125,7 +125,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
     if (!other) { setConnectionForm({ ...connectionForm, error: t('connectionForm.errorTarget') }); return; }
     const [source, target] = reversed ? [other, identity] : [identity, other];
     // The one rule (the graph and the AI tool use it too): once, and membership only toward an organisation.
-    if (!withConnection(source, target, label)) { setConnectionForm({ ...connectionForm, error: t('connectionForm.errorMembership') }); return; }
+    if (!withConnection(source, target, label)) { setConnectionForm({ ...connectionForm, error: t('connectionForm.errorMembership', { phrase: connectionForm.phrase.trim(), name: target.name }) }); return; }
     if (await saveOnce(source.id, current => ({ connections: withConnection(current, target, label) ?? current.connections }))) closeConnection();
   };
   /** Removes the edge from whichever identity holds it, matched in the stored row rather than by position. */

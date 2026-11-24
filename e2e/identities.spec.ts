@@ -227,6 +227,28 @@ test('switches between one investigation and all of them, and follows "Also in a
   await expect(row(page, 'Lee Park')).toContainText('Fictional second case');
 });
 
+test('opens every investigation\'s compromised identities from the Dashboard tile, and a later visit starts unfiltered', async ({ page }) => {
+  await seed(page, {
+    folders: [folder('case', 'Fictional BEC case'), folder('other', 'Fictional second case')],
+    identities: [identity('ana', 'case', 'Ana Silva', { status: 'compromised' }), identity('cleo', 'case', 'Cleo Diaz'),
+      identity('ben', 'other', 'Ben Cole', { status: 'compromised' })],
+  }, { view: 'dashboard', selectedFolderId: 'case' });
+  // The tile counts every investigation, though one is selected: so does the list it opens.
+  const tile = page.getByRole('button', { name: /Compromised Identities/ });
+  await expect(tile).toContainText('2');
+  await tile.click();
+  const statuses = page.getByRole('group', { name: 'Status' });
+  await expect(statuses.getByRole('button', { name: /Compromised/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(row(page, 'Ana Silva')).toBeVisible();
+  await expect(row(page, 'Ben Cole')).toBeVisible();
+  await expect(row(page, 'Cleo Diaz')).toHaveCount(0);
+  // The request was applied once: coming back from the sidebar shows the whole list.
+  await navigateToView(page, 'Dashboard');
+  await navigateToView(page, 'Identities');
+  await expect(statuses.getByRole('button', { name: /Compromised/ })).toHaveAttribute('aria-pressed', 'false');
+  await expect(row(page, 'Cleo Diaz')).toBeVisible();
+});
+
 test('deletes an identity for good only after confirmation, and the identity connected to it no longer shows that connection', async ({ page }) => {
   await seed(page, {
     folders: [folder('case', 'Fictional BEC case')],

@@ -6,7 +6,7 @@
  *   exported; PROD-4 threat actors; PROD-6 tags round-trip; PROD-7 the sample demonstrates linking.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { IdentitiesView, type IdentitiesViewProps } from '../components/Identities/IdentitiesView';
 import { KPIWidgets } from '../components/Dashboard/KPIWidgets';
@@ -57,6 +57,18 @@ describe('the Edit form', () => {
     await user.type(otherNames, 'D. Okafor');
     await user.click(within(dialog).getByRole('button', { name: 'Save' }));
     expect(stored.get('dana')).toMatchObject({ name: 'Dana Okafor', aliases: ['D. Okafor'] });
+  });
+
+  it('keeps an old name that a rename elsewhere kept as an other name, when Edit changed something else (FE-1)', async () => {
+    const dana = make('dana', 'Dana Okafor');
+    const { user, stored } = view({ selectRequest: { id: 'dana', request: 1 } }, [dana]);
+    await user.click(within(screen.getByRole('article', { name: 'Dana Okafor' })).getByRole('button', { name: 'Edit' }));
+    const dialog = screen.getByRole('dialog');
+    // Meanwhile (another tab, sync, an agent) she is renamed; the old name is kept as an other name.
+    stored.set('dana', { ...dana, name: 'Dana Smith', aliases: ['Dana Okafor'] });
+    await user.type(within(dialog).getByRole('textbox', { name: 'Job title' }), 'Finance');
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(stored.get('dana')).toMatchObject({ name: 'Dana Smith', description: 'Finance', aliases: ['Dana Okafor'] });
   });
 
   it('refuses another identity\'s name as an other name, as the AI tools and import do (FE-3)', async () => {
@@ -115,7 +127,9 @@ describe('the list and the profile', () => {
     await user.type(within(profile).getByRole('textbox', { name: 'Value' }), 'dana@example.invalid');
     const add = within(profile).getByRole('button', { name: 'Add' });
     await user.click(add);
-    await user.click(add);
+    expect(add).toBeDisabled();
+    // Enter in a field submits the form whether or not the button is disabled.
+    fireEvent.submit(add.closest('form') as HTMLFormElement);
     expect(onUpdate).toHaveBeenCalledTimes(1);
     release();
   });
@@ -132,6 +146,19 @@ describe('the list and the profile', () => {
     await user.type(within(profile).getByRole('combobox', { name: 'Dana Okafor…' }), 'works at');
     const targets = within(profile).getByRole('combobox', { name: '…whom or what' });
     expect(within(targets).getAllByRole('option').map(option => option.textContent)).toEqual(['Choose…', 'Halvorsen Shipping · Organization']);
+  });
+
+  it('says which identity is not an organisation, in the words typed, either way round (FE-7)', async () => {
+    const dana = make('dana', 'Dana Okafor'), laptop = make('laptop', 'laptop-01', { type: 'system' });
+    const { user, onUpdate } = view({ selectRequest: { id: 'dana', request: 1 } }, [dana, laptop, org]);
+    const profile = screen.getByRole('article', { name: 'Dana Okafor' });
+    await user.click(within(profile).getByRole('button', { name: 'Add a connection' }));
+    // "Dana owns laptop-01" is stored as "laptop-01 belongs to Dana": Dana would have to be an organisation.
+    await user.type(within(profile).getByRole('combobox', { name: 'Dana Okafor…' }), 'owns');
+    await user.selectOptions(within(profile).getByRole('combobox', { name: '…whom or what' }), 'laptop');
+    await user.click(within(profile).getByRole('button', { name: 'Add' }));
+    expect(within(profile).getByRole('alert')).toHaveTextContent('“owns” needs an organization, and Dana Okafor is not one.');
+    expect(onUpdate).not.toHaveBeenCalled();
   });
 
   it('clears a chosen person when the phrase then asks for an organisation (FE-7)', async () => {
@@ -167,13 +194,26 @@ describe('the list and the profile', () => {
     expect(screen.queryByRole('article')).toBeNull();
   });
 
+  it('shows the profile of an identity in the filtered list, not of one the filter leaves out (PROD-2)', async () => {
+    const ana = make('ana', 'Ana Silva', { status: 'compromised' }), cleo = make('cleo', 'Cleo Diaz');
+    const { user } = view({ selectRequest: { id: 'cleo', request: 1 } }, [ana, cleo]);
+    expect(screen.getByRole('article', { name: 'Cleo Diaz' })).toBeInTheDocument();
+    await user.click(within(screen.getByRole('group', { name: 'Status' })).getByRole('button', { name: /Compromised/ }));
+    expect(screen.queryByRole('article', { name: 'Cleo Diaz' })).toBeNull();
+    expect(screen.getByRole('article', { name: 'Ana Silva' })).toBeInTheDocument();
+  });
+
   it('opens filtered to the compromised identities from the Dashboard tile (PROD-2)', async () => {
     const onOpenMetric = vi.fn();
     render(<KPIWidgets folders={[]} allNotes={[]} allTasks={[]} allEvents={[]} allIOCs={[]} allIdentities={[make('a', 'Ana', { status: 'compromised' })]}
       selectedKPIs={['compromised-identities']} onUpdateKPIs={vi.fn()} onOpenMetric={onOpenMetric} />);
     await userEvent.setup().click(screen.getByRole('button', { name: /Compromised identities/i }));
     expect(onOpenMetric).toHaveBeenCalledWith('compromised-identities');
-    view({ selectRequest: { request: 1, status: 'compromised' } }, [make('a', 'Ana Silva', { status: 'compromised' }), make('c', 'Cleo Diaz')]);
+    // The tile is clicked while Identities is already open: the new request still applies.
+    const rows = [make('a', 'Ana Silva', { status: 'compromised' }), make('c', 'Cleo Diaz')];
+    const { rerender, props } = view({}, rows);
+    expect(within(screen.getByRole('group', { name: 'Status' })).getByRole('button', { name: /Compromised/ })).toHaveAttribute('aria-pressed', 'false');
+    rerender(<ToastProvider><IdentitiesView {...props} selectRequest={{ request: 1, status: 'compromised' }} /></ToastProvider>);
     expect(within(screen.getByRole('group', { name: 'Status' })).getByRole('button', { name: /Compromised/ })).toHaveAttribute('aria-pressed', 'true');
   });
 });
@@ -236,6 +276,10 @@ describe('the CSV round trip and the sample (PROD-6, PROD-7)', () => {
     const mappings = new Map<string, ColumnMapping>(detectSchema(parsed.headers).map(detected => [detected.column, detected.mapping]));
     const back = buildIdentities(parsed.rows, mappings, { folderId: 'case', existing: [], now: 5 }).created[0];
     expect(back.tags).toEqual(['data-import', 'vip', 'finance']);
+    // Another tool's "Tags" column, comma or semicolon separated.
+    const other = parseInput('Name,Type,Tags\r\nAna Silva,person,"vip; finance, board"');
+    const otherMappings = new Map<string, ColumnMapping>(detectSchema(other.headers).map(detected => [detected.column, detected.mapping]));
+    expect(buildIdentities(other.rows, otherMappings, { folderId: 'case', existing: [], now: 5 }).created[0].tags).toEqual(['data-import', 'vip', 'finance', 'board']);
     expect(back.details[0]).toMatchObject({ label: 'Phone' });
     expect(back.details[0].private).toBeUndefined();
     const again = buildIdentities(parsed.rows, mappings, { folderId: 'case', existing: [{ ...lee, tags: ['vip'] }], now: 5 });

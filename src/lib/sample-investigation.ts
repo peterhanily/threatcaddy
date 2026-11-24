@@ -1270,7 +1270,7 @@ The Data Import feature supports:
     // A person named as an event's Actor: their profile's Activity lists it, and the chip links to it.
     {
       id: sampleId('event', 21),
-      timestamp: baseTs + 3 * HOUR,
+      timestamp: baseTs + 11 * HOUR,
       title: 'Platform engineer approves the "Slaw Freshness" cron change',
       description: 'The cron job later found to carry the persistence was merged with a one-line review: "looks fresh". The approver says the diff was 4,000 lines of pickling constants.',
       eventType: 'other',
