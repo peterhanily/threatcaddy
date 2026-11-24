@@ -112,4 +112,17 @@ describe('multi-row changes the server accepts', () => {
     const pulled = await pullCursorChanges('0', 'owner', { tables });
     expect(pulled.changes.filter(c => c.table === 'identities' && c.id === 'dana').map(c => c.version)).toEqual([2]);
   });
+
+  it('refuses identity rows of a shape no client stores (a client reading them raw could break), and takes what clients send', async () => {
+    const push = (data: Record<string, unknown>) => processPush([{ table: 'identities', entityId: 'shape', op: 'put', clientVersion: 0, data: person('Shape', data) }],
+      'owner', { authorize: true, rejectInvalidChanges: true });
+    for (const bad of [{ details: {} }, { details: [null] }, { aliases: 5 }, { connections: 'x' }, { tags: [1] }, { details: [{ id: 'd', label: 'Phone', value: 5 }] },
+      { connections: [{ targetId: 'lee' }] }, { name: ['x'] }, { contact: 'yes' }]) {
+      const [result] = await push(bad);
+      expect([JSON.stringify(bad), result.status]).toEqual([JSON.stringify(bad), 'rejected']);
+    }
+    const [ok] = await push({ details: [{ id: 'd', label: 'Phone', value: '+1 555 0100', private: true }], connections: [{ targetId: 'lee', label: 'reports to' }],
+      description: null, status: null, contact: null, clsLevel: null });
+    expect(ok.status).toBe('accepted');
+  });
 });

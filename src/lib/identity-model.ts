@@ -176,7 +176,14 @@ export function withOrganization(identity: Identity, previousId: string | undefi
   return [...kept, { targetId: nextId, label: isPerson(identity) ? 'works at' : 'belongs to' }];
 }
 
-export const byName = (a: Identity, b: Identity) => sameText(a.name).localeCompare(sameText(b.name)) || a.id.localeCompare(b.id);
+const nameCollator = new Intl.Collator();
+export const byName = (a: Identity, b: Identity) => nameCollator.compare(sameText(a.name), sameText(b.name)) || nameCollator.compare(a.id, b.id);
+/** In byName order, each name normalised once rather than at every comparison (a staff list can hold 20,000). */
+export function sortedByName<T extends Identity>(identities: readonly T[]): T[] {
+  return identities.map(identity => ({ identity, key: sameText(identity.name) }))
+    .sort((a, b) => nameCollator.compare(a.key, b.key) || nameCollator.compare(a.identity.id, b.identity.id))
+    .map(entry => entry.identity);
+}
 
 /** An organisation's people (contacts first) and its systems and accounts. */
 export function membersOf(organization: Identity, identities: readonly Identity[]) {
@@ -239,15 +246,18 @@ export function orgChart(organization: Identity, identities: readonly Identity[]
     const edge = person.connections.find(edge => edge.label === 'reports to' && ids.has(edge.targetId) && edge.targetId !== person.id);
     if (edge) manager.set(person.id, edge.targetId);
   }
-  // A reporting loop has no top: break it at the first person met, so everyone still appears.
+  // A reporting loop has no top: break it at the first person met, so everyone still appears. Each
+  // person is walked once (a chain of thousands, from synced or imported data, stays linear).
+  const settled = new Set<string>();
   for (const person of people) {
-    const seen = new Set<string>();
+    const path = new Set<string>();
     let current: string | undefined = person.id;
-    while (current && manager.has(current)) {
-      if (seen.has(current)) { manager.delete(current); break; }
-      seen.add(current);
+    while (current && manager.has(current) && !settled.has(current)) {
+      if (path.has(current)) { manager.delete(current); break; }
+      path.add(current);
       current = manager.get(current);
     }
+    for (const id of path) settled.add(id);
   }
   const reports = new Map<string, Identity[]>();
   for (const person of people) {
@@ -256,8 +266,27 @@ export function orgChart(organization: Identity, identities: readonly Identity[]
   }
   for (const list of reports.values()) list.sort(byName);
   const reportsOf = (person: Identity) => reports.get(person.id) ?? [];
-  const teamSize = (person: Identity): number => reportsOf(person).reduce((sum, report) => sum + 1 + teamSize(report), 0);
-  const flagged = (person: Identity): boolean => person.status === 'compromised' || person.status === 'suspicious' || !!person.contact || reportsOf(person).some(flagged);
+  // Team sizes and flags, worked out once from the bottom up without recursion (a deep chain would
+  // overflow the stack).
+  const size = new Map<string, number>();
+  const flag = new Map<string, boolean>();
+  const own = (person: Identity) => person.status === 'compromised' || person.status === 'suspicious' || !!person.contact;
+  for (const top of people.filter(person => !manager.has(person.id))) {
+    const order: Identity[] = [];
+    for (const stack = [top]; stack.length;) {
+      const person = stack.pop() as Identity;
+      order.push(person);
+      stack.push(...reportsOf(person));
+    }
+    for (let at = order.length - 1; at >= 0; at--) {
+      const person = order[at];
+      const below = reportsOf(person);
+      size.set(person.id, below.reduce((sum, report) => sum + 1 + (size.get(report.id) ?? 0), 0));
+      flag.set(person.id, own(person) || below.some(report => flag.get(report.id)));
+    }
+  }
+  const teamSize = (person: Identity): number => size.get(person.id) ?? 0;
+  const flagged = (person: Identity): boolean => flag.get(person.id) ?? own(person);
   return {
     organization,
     roots: people.filter(person => !manager.has(person.id) && reports.has(person.id)).sort(byName),
@@ -377,6 +406,7 @@ export function foundNames(input: {
     loose.set(identity.folderId, near);
   }
   const groups = new Map<string, FoundName>();
+  const sourceSets = new Map<string, Set<string>>();
   const add = (folderId: string | undefined, raw: string | undefined, source: FoundSource) => {
     const text = raw?.trim();
     if (!folderId || !text || text.length > 200) return;
@@ -385,8 +415,11 @@ export function foundNames(input: {
     const key = foundKey(folderId, text);
     if (input.isIgnored?.(folderId, text)) return;
     const group = groups.get(key);
-    if (group) { if (!group.sources.some(seen => seen.kind === source.kind && seen.id === source.id)) group.sources.push(source); return; }
+    // Each source once, by a set per name: one host on thousands of events stays linear.
+    const sourceKey = `${source.kind}:${source.id}`;
+    if (group) { const seen = sourceSets.get(key); if (seen && !seen.has(sourceKey)) { seen.add(sourceKey); group.sources.push(source); } return; }
     groups.set(key, { key, folderId, text, sources: [source], guess: guessIdentity(text), looksLike: loose.get(folderId)?.get(looseText(text)) });
+    sourceSets.set(key, new Set([sourceKey]));
   };
   for (const event of input.events) {
     if (event.trashed || event.archived) continue;

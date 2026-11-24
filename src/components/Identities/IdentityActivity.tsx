@@ -59,6 +59,7 @@ export function IdentityActivitySection({ identity, activity, labels, onOpenEven
           })}
         </ul>
       ) : <p className="text-xs text-text-muted">{t('activity.none', { name: identity.name })}</p>}
+      {activity.partial && <p className="text-xs text-text-muted">{t('activity.partial')}</p>}
       {items.length > SHOWN && (
         <button type="button" aria-expanded={all} className="self-start text-xs font-medium text-accent hover:underline" onClick={() => setAll(value => !value)}>
           {all ? t('found.fewer') : t('found.more', { count: items.length - SHOWN })}

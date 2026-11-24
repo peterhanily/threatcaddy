@@ -126,6 +126,7 @@
 
   "activity.heading": "Activiteit ({{count}})",
   "activity.none": "{{name}} wordt nog niet genoemd in de tijdlijn, notities of IOC's.",
+  "activity.partial": "Niet elke notitie is doorzocht: deze identiteit heeft te veel namen en details, of de notities zijn erg lang.",
   "activity.addNote": "Notitie over {{name}} toevoegen",
   "activity.untitled": "Zonder titel",
   "activity.kind.event": "Gebeurtenis",
@@ -205,6 +206,7 @@
   "org.empty": "Voeg personen toe aan een organisatie (Werkt bij) om het organigram te tekenen.",
   "org.showTeam": "Team tonen ({{count}})",
   "org.hideTeam": "Team verbergen ({{count}})",
+  "org.deeper": "Diepere niveaus worden hier niet getoond ({{count}}). Open een persoon om te zien wie aan die persoon rapporteert.",
   "org.noManager": "Geen leidinggevende vastgelegd: {{names}}.",
   "org.nobodyManaged": "Bij {{name}} heeft nog niemand een vastgelegde leidinggevende.",
   "org.teamAria": "Team van {{name}}",

@@ -126,6 +126,7 @@
 
   "activity.heading": "Aktivität ({{count}})",
   "activity.none": "{{name}} wird bisher weder in der Zeitleiste noch in Notizen oder IOCs genannt.",
+  "activity.partial": "Nicht jede Notiz wurde durchsucht: Diese Identität hat zu viele Namen und Details, oder die Notizen sind sehr lang.",
   "activity.addNote": "Notiz zu {{name}} hinzufügen",
   "activity.untitled": "Ohne Titel",
   "activity.kind.event": "Ereignis",
@@ -205,6 +206,7 @@
   "org.empty": "Ordnen Sie einer Organisation Personen zu (Arbeitet bei), um ihr Organigramm zu zeichnen.",
   "org.showTeam": "Team anzeigen ({{count}})",
   "org.hideTeam": "Team ausblenden ({{count}})",
+  "org.deeper": "Weitere Ebenen werden hier nicht angezeigt ({{count}}). Öffnen Sie eine Person, um zu sehen, wer an sie berichtet.",
   "org.noManager": "Kein Vorgesetzter erfasst: {{names}}.",
   "org.nobodyManaged": "Bei {{name}} ist noch für niemanden ein Vorgesetzter erfasst.",
   "org.teamAria": "Team von {{name}}",

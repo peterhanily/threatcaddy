@@ -3,7 +3,7 @@ import { Contact, Download, Plus, Star } from 'lucide-react';
 import type { Folder, Identity, Note, StandaloneIOC, TimelineEvent } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { useScreenshare } from '../../hooks/ScreenshareContext';
-import { BUILTIN_TYPES, byName, foundNames, identityMatches, isBuiltinType, looseText, type FoundName } from '../../lib/identity-model';
+import { BUILTIN_TYPES, foundNames, identityMatches, isBuiltinType, looseText, sortedByName, type FoundName } from '../../lib/identity-model';
 import { useIgnoredNames } from '../../hooks/useIgnoredNames';
 import { activityOf, noteMatchText } from '../../lib/identity-match';
 import { IdentityActivitySection } from './IdentityActivity';
@@ -93,7 +93,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   useEffect(() => { if (addRequest) onAddHandled?.(); }, [addRequest, onAddHandled]);
 
   const showInvestigation = !folderId;
-  const live = useMemo(() => identities.filter(identity => !identity.trashed && !identity.archived).sort(byName), [identities]);
+  const live = useMemo(() => sortedByName(identities.filter(identity => !identity.trashed && !identity.archived)), [identities]);
   const everywhere = useMemo(() => allIdentities.filter(identity => !identity.trashed && !identity.archived), [allIdentities]);
   const byId = useMemo(() => new Map([...allIdentities, ...identities].map(identity => [identity.id, identity])), [allIdentities, identities]);
   // Archived identities still name things, so their names are not "found" again.
@@ -105,6 +105,8 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const rows = useMemo(() => live.filter(identity => matchesFilter(identity, filter) && identityMatches(identity, query, labels.typeLabel(identity.type))),
     [live, filter, query, labels]);
   const selected = live.find(identity => identity.id === selectedId) ?? rows[0] ?? live[0];
+  // Once per render, not once per row: the list's single tab stop falls back to its first row.
+  const selectedInRows = useMemo(() => !!selected && rows.some(row => row.id === selected.id), [rows, selected]);
   const filterCounts = useMemo(() => new Map(FILTERS.map(option => [option, live.filter(identity => matchesFilter(identity, option)).length])), [live]);
   const filters = FILTERS.filter(option => option === 'all' || option === filter || (filterCounts.get(option) ?? 0) > 0);
   const headings = useMemo(() => rows.map((identity, index) => (index === 0 || initialOf(identity) !== initialOf(rows[index - 1]) ? initialOf(identity) : null)), [rows]);
@@ -222,7 +224,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
                         <div key={identity.id} role="listitem">
                           {heading && <div aria-hidden="true" className="px-2 pt-2 text-[10px] font-semibold text-text-muted">{heading}</div>}
                           <button type="button" data-identity-row={identity.id} aria-current={selected?.id === identity.id ? 'true' : undefined} onClick={() => choose(identity)}
-                            tabIndex={selected?.id === identity.id || (!rows.some(row => row.id === selected?.id) && index === 0) ? 0 : -1}
+                            tabIndex={selected?.id === identity.id || (!selectedInRows && index === 0) ? 0 : -1}
                             className={cn('flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-start hover:bg-bg-hover', selected?.id === identity.id && 'bg-accent/10')}>
                             <IdentityAvatar identity={identity} />
                             <span className="min-w-0 flex-1">

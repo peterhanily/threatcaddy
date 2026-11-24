@@ -6,6 +6,9 @@ import { cn } from '../../lib/utils';
 import { IdentityAvatar } from './identity-ui';
 import type { IdentityLabels } from './identity-labels';
 
+/** Levels of a team shown under one another; a deeper chain shows a note instead. */
+const MAX_DEPTH = 30;
+
 const STATUS_TEXT = { compromised: 'text-red-400', suspicious: 'text-amber-400', cleared: 'text-green-400' } as const;
 
 export function OrgCharts({ identities, folders, showInvestigation, selectedOrganizationId, labels, onSelectOrganization, onOpen }: {
@@ -34,9 +37,11 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
       </span>
     </button>
   );
-  const team = (person: Identity, current: OrgChart): ReactNode => {
+  const team = (person: Identity, current: OrgChart, depth = 1): ReactNode => {
     const reports = current.reportsOf(person);
     if (!reports.length) return null;
+    // A reporting chain can be thousands deep (synced or imported data): levels past this many say so.
+    if (depth > MAX_DEPTH) return <p className="mt-1 text-xs text-text-muted">{t('org.deeper', { count: current.teamSize(person) })}</p>;
     const expanded = open[person.id] ?? current.flagged(person);
     const size = current.teamSize(person);
     return (
@@ -47,7 +52,7 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
         </button>
         {expanded && (
           <ul className="mt-1 flex flex-col gap-1.5 border-s border-border-subtle ps-3">
-            {reports.map(report => <li key={report.id}>{card(report)}{team(report, current)}</li>)}
+            {reports.map(report => <li key={report.id}>{card(report)}{team(report, current, depth + 1)}</li>)}
           </ul>
         )}
       </>

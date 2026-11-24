@@ -154,6 +154,12 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   const [statusColumn] = columns('identity-status');
   const [contactColumn] = columns('identity-contact');
   const [classificationColumn] = columns('identity-classification');
+  // Worked out once per import, not once per row (a header can be long; a file can hold 100,000 rows).
+  const aliasColumns = columns('identity-aliases');
+  const detailColumns = columns('identity-detail').map(column => ({ column, label: value(withoutSuffix(withoutSuffix(column))),
+    isPrivate: options.privateColumns ? options.privateColumns.has(column) : isPrivateDetailColumn(column, options.isPrivateLabel) }));
+  const connectionColumns = columns('identity-connection');
+  const connectionsColumns = columns('identity-connections');
   const defaultOrganization = options.defaultOrganizationId ? records.get(options.defaultOrganizationId) : undefined;
 
   // First every identity, so that connections can name any of them.
@@ -168,7 +174,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     if (classification && !identity.clsLevel) identity.clsLevel = classification;
     const description = descriptionColumn ? value(row[descriptionColumn]) : '';
     if (description && !identity.description) identity.description = description;
-    for (const column of columns('identity-aliases')) for (const alias of lines(row[column])) {
+    for (const column of aliasColumns) for (const alias of lines(row[column])) {
       if (sameText(alias) === sameText(identity.name) || identity.aliases.some(known => sameText(known) === sameText(alias))) continue;
       // Another identity's name as an other name would make that name ambiguous everywhere.
       if (owners(alias).some(other => other.id !== identity.id)) {
@@ -181,9 +187,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     const status = statusColumn ? sameText(value(row[statusColumn])) : '';
     if (!identity.status && STATUSES.includes(status as IdentityStatus)) identity.status = status as IdentityStatus;
     if (contactColumn && truthy(row[contactColumn]) && !identity.contact) identity.contact = true;
-    for (const column of columns('identity-detail')) {
-      const label = value(withoutSuffix(withoutSuffix(column)));
-      const isPrivate = options.privateColumns ? options.privateColumns.has(column) : isPrivateDetailColumn(column, options.isPrivateLabel);
+    for (const { column, label, isPrivate } of detailColumns) {
       for (const detail of lines(row[column])) {
         const known = identity.details.findIndex(other => sameText(other.label) === sameText(label) && detailKey(other.value) === detailKey(detail));
         // Already held: a column imported as private makes it private (never the reverse: import only
@@ -223,8 +227,8 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
       const { label, reversed } = canonicalPhrase(phraseText, ENGLISH_PHRASES);
       if (reversed) connect(target, identity, label); else connect(identity, target, label);
     };
-    for (const column of columns('identity-connection')) for (const target of lines(row[column])) link(column, target);
-    for (const column of columns('identity-connections')) for (const line of lines(row[column])) {
+    for (const column of connectionColumns) for (const target of lines(row[column])) link(column, target);
+    for (const column of connectionsColumns) for (const line of lines(row[column])) {
       // A phrase and a name: anything far longer is not a connection, and is refused before it is split.
       if (line.length > MAX_CONNECTION_LINE) { error(`Row ${index + 2}: a connection longer than ${MAX_CONNECTION_LINE} characters was skipped.`); continue; }
       // A custom phrase or a name may itself hold ": ", so take the first split whose name is an identity.

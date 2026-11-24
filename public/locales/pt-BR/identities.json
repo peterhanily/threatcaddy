@@ -126,6 +126,7 @@
 
   "activity.heading": "Atividade ({{count}})",
   "activity.none": "Nada na linha do tempo, nas notas ou nos IOCs menciona {{name}} ainda.",
+  "activity.partial": "Nem todas as notas foram pesquisadas: esta identidade tem nomes e detalhes demais, ou as notas são muito longas.",
   "activity.addNote": "Adicionar uma nota sobre {{name}}",
   "activity.untitled": "Sem título",
   "activity.kind.event": "Evento",
@@ -206,6 +207,7 @@
   "org.empty": "Adicione pessoas a uma organização (Trabalha em) para desenhar o organograma.",
   "org.showTeam": "Mostrar equipe ({{count}})",
   "org.hideTeam": "Ocultar equipe ({{count}})",
+  "org.deeper": "Os níveis mais profundos não são mostrados aqui ({{count}}). Abra uma pessoa para ver quem se reporta a ela.",
   "org.noManager": "Nenhum gestor registrado: {{names}}.",
   "org.nobodyManaged": "Ninguém em {{name}} tem um gestor registrado ainda.",
   "org.teamAria": "Equipe de {{name}}",

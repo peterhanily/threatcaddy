@@ -42,6 +42,10 @@ export interface InvestigationVisibility {
  * The caller must supply complete local collections, not just the active view.
  * This changes presentation only; it never modifies or declassifies stored data.
  */
+/** One function, not a new one per data change: what reads it (the identity link index) can tell
+ * that nothing about visibility changed. */
+const ALWAYS_VISIBLE = () => true;
+
 export function buildInvestigationVisibility(input: InvestigationVisibilityInput): InvestigationVisibility {
   const { folders, remoteInvestigations, maxLevel, effectiveLevels } = input;
   if (!maxLevel) {
@@ -50,8 +54,8 @@ export function buildInvestigationVisibility(input: InvestigationVisibilityInput
       remoteInvestigations,
       visibleFolderIds: new Set(folders.map(folder => folder.id)),
       hiddenFolderIds: new Set(),
-      isEntityVisible: () => true,
-      isTimelineVisible: () => true,
+      isEntityVisible: ALWAYS_VISIBLE,
+      isTimelineVisible: ALWAYS_VISIBLE,
     };
   }
 

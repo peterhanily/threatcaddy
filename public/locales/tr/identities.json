@@ -126,6 +126,7 @@
 
   "activity.heading": "Etkinlik ({{count}})",
   "activity.none": "Zaman çizelgesinde, notlarda veya IOC'lerde henüz {{name}} adı geçmiyor.",
+  "activity.partial": "Her not aranmadı: bu kimliğin çok fazla adı ve ayrıntısı var ya da notlar çok uzun.",
   "activity.addNote": "{{name}} hakkında not ekle",
   "activity.untitled": "Başlıksız",
   "activity.kind.event": "Olay",
@@ -205,6 +206,7 @@
   "org.empty": "Şemasını çizmek için bir kuruluşa kişi ekleyin (Çalıştığı kurum).",
   "org.showTeam": "Ekibi göster ({{count}})",
   "org.hideTeam": "Ekibi gizle ({{count}})",
+  "org.deeper": "Daha derin düzeyler burada gösterilmiyor ({{count}}). Kime kimlerin bağlı olduğunu görmek için bir kişiyi açın.",
   "org.noManager": "Yöneticisi kayıtlı olmayanlar: {{names}}.",
   "org.nobodyManaged": "{{name}} bünyesinde henüz kimsenin yöneticisi kayıtlı değil.",
   "org.teamAria": "{{name}} ekibi",

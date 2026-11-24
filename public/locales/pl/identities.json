@@ -126,6 +126,7 @@
 
   "activity.heading": "Aktywność ({{count}})",
   "activity.none": "Nic na osi czasu, w notatkach ani w IOC nie wymienia jeszcze {{name}}.",
+  "activity.partial": "Nie przeszukano wszystkich notatek: ta tożsamość ma zbyt wiele nazw i szczegółów albo notatki są bardzo długie.",
   "activity.addNote": "Dodaj notatkę o {{name}}",
   "activity.untitled": "Bez tytułu",
   "activity.kind.event": "Zdarzenie",
@@ -207,6 +208,7 @@
   "org.empty": "Dodaj osoby do organizacji (Pracuje w), aby narysować jej schemat.",
   "org.showTeam": "Pokaż zespół ({{count}})",
   "org.hideTeam": "Ukryj zespół ({{count}})",
+  "org.deeper": "Głębsze poziomy nie są tu pokazane ({{count}}). Otwórz osobę, aby zobaczyć, kto jej podlega.",
   "org.noManager": "Brak zapisanego przełożonego: {{names}}.",
   "org.nobodyManaged": "Nikt w {{name}} nie ma jeszcze zapisanego przełożonego.",
   "org.teamAria": "Zespół: {{name}}",

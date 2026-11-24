@@ -126,6 +126,7 @@
 
   "activity.heading": "활동 ({{count}})",
   "activity.none": "아직 타임라인, 노트, IOC 어디에도 {{name}}이(가) 언급되지 않았습니다.",
+  "activity.partial": "모든 노트를 검색하지 못했습니다: 이 신원의 이름과 세부 정보가 너무 많거나 노트가 매우 깁니다.",
   "activity.addNote": "{{name}}에 대한 노트 추가",
   "activity.untitled": "제목 없음",
   "activity.kind.event": "이벤트",
@@ -205,6 +206,7 @@
   "org.empty": "조직도를 그리려면 조직에 사람을 추가하세요(근무처).",
   "org.showTeam": "팀 표시 ({{count}})",
   "org.hideTeam": "팀 숨기기 ({{count}})",
+  "org.deeper": "더 아래 단계는 여기에 표시되지 않습니다 ({{count}}). 사람을 열어 누가 그 사람에게 보고하는지 확인하세요.",
   "org.noManager": "상사가 기록되지 않음: {{names}}.",
   "org.nobodyManaged": "{{name}}에는 아직 상사가 기록된 사람이 없습니다.",
   "org.teamAria": "{{name}}의 팀",

@@ -172,7 +172,9 @@ export function getNodeIcon(
   /** For an identity: its type (person, organization, system, account, or another word). */
   identityType?: string,
 ): string {
-  const key = `${type}:${iocType ?? identityType ?? ''}:${color}`;
+  // A custom identity type is free text: every one shares the person icon, so they share one entry.
+  const known = type !== 'identity' || (identityType !== undefined && Object.hasOwn(IDENTITY_ICON_MAP, identityType));
+  const key = `${type}:${known ? iocType ?? identityType ?? '' : 'custom'}:${color}`;
   const cached = cache.get(key);
   if (cached) return cached;
 

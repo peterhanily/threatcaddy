@@ -126,6 +126,7 @@
 
   "activity.heading": "פעילות ({{count}})",
   "activity.none": "שום דבר בציר הזמן, בהערות או ב-IOCs עדיין לא מזכיר את {{name}}.",
+  "activity.partial": "לא נסרקו כל ההערות: לזהות זו יש יותר מדי שמות ופרטים, או שההערות ארוכות מאוד.",
   "activity.addNote": "הוסף הערה על {{name}}",
   "activity.untitled": "ללא כותרת",
   "activity.kind.event": "אירוע",
@@ -206,6 +207,7 @@
   "org.empty": "הוסף אנשים לארגון (עובד אצל) כדי לשרטט את התרשים שלו.",
   "org.showTeam": "הצג צוות ({{count}})",
   "org.hideTeam": "הסתר צוות ({{count}})",
+  "org.deeper": "רמות עמוקות יותר אינן מוצגות כאן ({{count}}). פתחו אדם כדי לראות מי כפוף לו.",
   "org.noManager": "לא תועד מנהל: {{names}}.",
   "org.nobodyManaged": "לאף אחד ב-{{name}} עדיין לא תועד מנהל.",
   "org.teamAria": "הצוות של {{name}}",

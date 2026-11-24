@@ -179,8 +179,10 @@ export function linkIdentityMentions(html: string, folder: FolderIndex): string 
     if (text.data.includes('@') && !text.parentElement?.closest(NO_MENTIONS)) texts.push(text);
   }
   let changed = false;
+  // One budget for the whole note: splitting it into paragraphs cannot multiply the work.
+  const budget = { work: 0 };
   for (const text of texts) {
-    const mentions = findMentions(text.data, folder);
+    const mentions = findMentions(text.data, folder, budget);
     if (!mentions.length) continue;
     changed = true;
     const parts = document.createDocumentFragment();

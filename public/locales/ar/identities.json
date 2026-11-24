@@ -126,6 +126,7 @@
 
   "activity.heading": "النشاط ({{count}})",
   "activity.none": "لا شيء في الجدول الزمني أو الملاحظات أو IOCs يذكر {{name}} بعد.",
+  "activity.partial": "لم يتم البحث في كل الملاحظات: لهذه الهوية أسماء وتفاصيل كثيرة جدًا، أو الملاحظات طويلة جدًا.",
   "activity.addNote": "إضافة ملاحظة عن {{name}}",
   "activity.untitled": "بدون عنوان",
   "activity.kind.event": "حدث",
@@ -209,6 +210,7 @@
   "org.empty": "أضف أشخاصًا إلى منظمة (يعمل لدى) لرسم مخططها التنظيمي.",
   "org.showTeam": "إظهار الفريق ({{count}})",
   "org.hideTeam": "إخفاء الفريق ({{count}})",
+  "org.deeper": "المستويات الأعمق غير معروضة هنا ({{count}}). افتح شخصًا لترى من يرفع إليه تقاريره.",
   "org.noManager": "لا يوجد مدير مسجّل: {{names}}.",
   "org.nobodyManaged": "لا أحد في {{name}} لديه مدير مسجّل بعد.",
   "org.teamAria": "فريق {{name}}",

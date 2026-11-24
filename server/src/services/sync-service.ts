@@ -137,6 +137,9 @@ function stripServerFields(data: Record<string, unknown> | undefined, tableName:
     if (tableName === 'standaloneIOCs' && key === 'type' && !(typeof value === 'string' && IOC_TYPES.has(value))) {
       throw new SyncWriteValidationError('Unsupported IOC type');
     }
+    if (tableName === 'identities' && !validIdentityField(key, value)) {
+      throw new SyncWriteValidationError(`Identity field "${key}" has an unsupported shape`);
+    }
     if (tableName === 'whiteboards' && (key === 'elements' || key === 'appState') && value !== null && value !== undefined) {
       validateWhiteboardJSON(key, value);
     }
@@ -164,6 +167,25 @@ function canonicalJson(value: unknown): string {
 function sameAsStored(tableName: string, clean: Record<string, unknown>, stored: Record<string, unknown>): boolean {
   return Object.keys(getTableColumns(getTable(tableName))).filter(key => !SERVER_MANAGED_FIELDS.has(key))
     .every(key => canonicalJson(clean[key]) === canonicalJson(stored[key]));
+}
+
+/** Identity fields as clients store them; a row of another shape would be repaired by syncing
+ * clients but could break a client reading it raw. Null clears an optional field. */
+const isText = (value: unknown) => typeof value === 'string';
+const isTextList = (value: unknown) => Array.isArray(value) && value.every(isText);
+const isRecordWith = (value: unknown, text: readonly string[], flags: readonly string[] = []) => !!value && typeof value === 'object' && !Array.isArray(value)
+  && text.every(key => isText((value as Record<string, unknown>)[key]))
+  && flags.every(key => (value as Record<string, unknown>)[key] === undefined || typeof (value as Record<string, unknown>)[key] === 'boolean');
+function validIdentityField(key: string, value: unknown): boolean {
+  switch (key) {
+    case 'name': case 'type': return isText(value);
+    case 'aliases': case 'tags': return isTextList(value);
+    case 'details': return Array.isArray(value) && value.every(detail => isRecordWith(detail, ['id', 'label', 'value'], ['private']));
+    case 'connections': return Array.isArray(value) && value.every(edge => isRecordWith(edge, ['targetId', 'label']));
+    case 'description': case 'status': case 'clsLevel': case 'folderId': return value === null || isText(value);
+    case 'contact': case 'trashed': case 'archived': return value === null || typeof value === 'boolean';
+    default: return true;
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

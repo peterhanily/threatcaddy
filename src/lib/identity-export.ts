@@ -10,6 +10,8 @@ import { identityMappingFor } from './identity-import';
 
 export const IDENTITY_CSV_COLUMNS = ['Name', 'Type', 'Investigation', 'Status', 'Contact', 'Description', 'Organization', 'Other names'] as const;
 const TRAILING_COLUMNS = ['Connections', 'Classification', 'Created', 'Updated'] as const;
+/** A detail label in a column header, at most (a synced label can be far longer). */
+const MAX_LABEL = 200;
 
 export function identitiesToCsv(identities: readonly Identity[], options: {
   byId: ReadonlyMap<string, Identity>;
@@ -25,10 +27,15 @@ export function identitiesToCsv(identities: readonly Identity[], options: {
   const shown = (identity: Identity) => identity.details.filter(detail => options.includePrivate || !detail.private);
   // One column per detail label, in the order labels first appear (labels differing only in case share
   // one). Private values get their own "(private)" column, so importing the file keeps them private.
-  const columns: Array<{ label: string; private: boolean }> = [];
+  // Found by a set, not by scanning the columns for every detail; a label is capped like a name.
+  const columnKey = (detail: { label: string; private?: boolean }) => `${detail.private ? 1 : 0}:${sameText(detail.label)}`;
+  const columns: Array<{ label: string; private: boolean; key: string }> = [];
+  const seen = new Set<string>();
   for (const identity of rows) for (const detail of shown(identity)) {
-    const isPrivate = !!detail.private;
-    if (!columns.some(column => column.private === isPrivate && sameText(column.label) === sameText(detail.label))) columns.push({ label: detail.label.trim(), private: isPrivate });
+    const key = columnKey(detail);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    columns.push({ label: detail.label.trim().slice(0, MAX_LABEL).replace(/[\uD800-\uDBFF]$/, ''), private: !!detail.private, key });
   }
   // A label that would read as a fixed field on import ("Role", "Type") is marked as a detail.
   // A public detail whose label is private by default ("Phone" made public) is marked "(public)", so
@@ -38,8 +45,9 @@ export function identitiesToCsv(identities: readonly Identity[], options: {
     : identityMappingFor(column.label) === 'identity-detail' ? column.label : `${column.label} (detail)`)), ...TRAILING_COLUMNS];
   const lines = [header.map(escapeCSVField).join(',')];
   for (const identity of rows) {
-    const values = (column: { label: string; private: boolean }) => shown(identity)
-      .filter(detail => !!detail.private === column.private && sameText(detail.label) === sameText(column.label)).map(detail => detail.value).join('\n');
+    const byColumn = new Map<string, string[]>();
+    for (const detail of shown(identity)) byColumn.set(columnKey(detail), [...byColumn.get(columnKey(detail)) ?? [], detail.value]);
+    const values = (column: { key: string }) => (byColumn.get(column.key) ?? []).join('\n');
     const connections = identity.connections.map(connection => {
       const target = exported.get(connection.targetId);
       return target ? `${connection.label}: ${target.name}` : '';

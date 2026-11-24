@@ -5,7 +5,7 @@
  * and treats a difference only in accents as a "looks like" that a person confirms.
  */
 import type { Identity, Note, StandaloneIOC, TimelineEvent } from '../types';
-import { byName, detailKey, knownTexts, looseText, sameText } from './identity-model';
+import { detailKey, knownTexts, looseText, sameText, sortedByName } from './identity-model';
 
 /** Longer text (a pasted paragraph in Actor, say) is never matched. */
 export const MAX_MATCH_LENGTH = 200;
@@ -76,11 +76,15 @@ export function buildIdentityIndex(identities: readonly Identity[], options: {
     if (group) group.push({ identity, linkable }); else groups.set(identity.folderId, [{ identity, linkable }]);
   }
   const folders = new Map<string, FolderIndex>();
-  for (const [folderId, group] of groups) {
-    group.sort((a, b) => byName(a.identity, b.identity));
-    const signature = group.map(({ identity, linkable }) => `${identity.id}:${identity.updatedAt}:${linkable ? 1 : 0}`).join('|');
+  for (const [folderId, unsorted] of groups) {
+    // Whether anything changed, in id order (cheap), before the name sort: most rebuilds follow a
+    // change elsewhere (a note saved) and keep every investigation's index.
+    const signature = [...unsorted].sort((a, b) => (a.identity.id < b.identity.id ? -1 : a.identity.id > b.identity.id ? 1 : 0))
+      .map(({ identity, linkable }) => `${identity.id}:${identity.updatedAt}:${linkable ? 1 : 0}`).join('|');
     const previous = options.previous?.folders.get(folderId);
     if (previous?.signature === signature) { folders.set(folderId, previous); continue; }
+    const order = new Map(sortedByName(unsorted.map(entry => entry.identity)).map((identity, index) => [identity.id, index]));
+    const group = [...unsorted].sort((a, b) => (order.get(a.identity.id) ?? 0) - (order.get(b.identity.id) ?? 0));
     const folder: FolderIndex = { names: new Map(), details: new Map(), loose: new Map(), known: new Set(), identities: [], signature,
       firstLetters: new Set(), longestName: 0 };
     for (const { identity, linkable } of group) {
@@ -166,12 +170,13 @@ const MAX_MENTION_WORK = 8_000_000;
  * name tries at most `MAX_MENTION_LENGTH` end positions, with no regex built from names, and the
  * text is scanned until `MAX_MENTION_WORK` characters have been compared, so a crafted note cannot stall a render.
  */
-export function findMentions(text: string, folder: FolderIndex | undefined): Mention[] {
+export function findMentions(text: string, folder: FolderIndex | undefined,
+  /** Shared by every text of one note (its paragraphs), so splitting a note cannot multiply the work. */
+  budget: { work: number } = { work: 0 }): Mention[] {
   if (!folder || folder.names.size === 0) return [];
   const longest = Math.min(folder.longestName, MAX_MENTION_LENGTH);
   const mentions: Mention[] = [];
   let from = 0;
-  let work = 0;
   for (let at = text.indexOf('@'); at !== -1; at = text.indexOf('@', from)) {
     from = at + 1;
     if (at > 0 && !MENTION_START.test(text[at - 1])) continue;
@@ -181,8 +186,8 @@ export function findMentions(text: string, folder: FolderIndex | undefined): Men
     for (let end = Math.min(region.length, longest); end > 0; end--) {
       if (end < region.length && WORD.test(region[end])) continue;
       if (/\s/.test(region[end - 1])) continue;
-      work += end;
-      if (work > MAX_MENTION_WORK) return mentions;
+      budget.work += end;
+      if (budget.work > MAX_MENTION_WORK) return mentions;
       const key = sameText(region.slice(0, end));
       // A handle stored with its "@" ("@ghost_ledger") matches as typed.
       const found = folder.names.get(key) ?? folder.names.get(`@${key}`);
@@ -196,9 +201,11 @@ export function findMentions(text: string, folder: FolderIndex | undefined): Men
   return mentions;
 }
 
-/** Whether `haystack` (already through `sameText`) contains `needle` as whole words. */
-function containsWords(haystack: string, needle: string): boolean {
+/** Whether `haystack` (already through `sameText`) contains `needle` as whole words. Each match
+ * examined spends one unit of `budget`; false once it is spent. */
+function containsWords(haystack: string, needle: string, budget: { left: number }): boolean {
   for (let at = haystack.indexOf(needle); at !== -1; at = haystack.indexOf(needle, at + 1)) {
+    if (--budget.left < 0) return false;
     const before = at > 0 ? haystack[at - 1] : '';
     const after = haystack[at + needle.length] ?? '';
     if (!(before && WORD.test(before)) && !(after && WORD.test(after))) return true;
@@ -213,7 +220,15 @@ export interface IdentityActivity {
   events: TimelineEvent[];
   notes: Note[];
   iocs: StandaloneIOC[];
+  /** Notes were not all searched for every name and detail: too many of them, or too much text. */
+  partial?: boolean;
 }
+
+/** At most this many names, other names and public details are looked for in notes, and at most this
+ * many matches examined: a crafted identity ("aaa", "aaaa"… against notes of "a") cannot stall the
+ * render that shows its profile. */
+const MAX_ACTIVITY_WORDS = 50;
+const MAX_ACTIVITY_MATCHES = 2_000_000;
 
 /**
  * Where an identity appears in its investigation: events whose Actor or Assets name it,
@@ -230,17 +245,22 @@ export function activityOf(identity: Identity, records: {
   const keys = new Set(knownTexts(identity));
   const details = new Set(identity.details.filter(detail => !detail.private).map(detail => detailKey(detail.value)));
   const names = new Set([identity.name, ...identity.aliases].map(sameText).filter(Boolean));
-  const words = [...keys].filter(text => text.length >= MIN_MENTION_LENGTH);
+  const searchable = [...keys].filter(text => text.length >= MIN_MENTION_LENGTH);
+  // The name first (knownTexts lists it first), then other names and details, up to the cap.
+  const words = searchable.slice(0, MAX_ACTIVITY_WORDS);
+  const budget = { left: MAX_ACTIVITY_MATCHES };
   const named = (text: string | undefined) => !!text && (keys.has(sameText(text)) || details.has(detailKey(text)));
+  const notes = records.notes.filter(note => {
+    if (!inFolder(note) || note.isFolder || budget.left < 0) return false;
+    const text = records.noteTexts?.get(note.id) ?? noteMatchText(note);
+    return words.some(word => containsWords(text, word, budget));
+  }).sort((a, b) => b.updatedAt - a.updatedAt);
   return {
     events: records.events.filter(event => inFolder(event) && (named(event.actor) || (event.assets ?? []).some(named)))
       .sort((a, b) => b.timestamp - a.timestamp),
-    notes: records.notes.filter(note => {
-      if (!inFolder(note) || note.isFolder) return false;
-      const text = records.noteTexts?.get(note.id) ?? noteMatchText(note);
-      return words.some(word => containsWords(text, word));
-    }).sort((a, b) => b.updatedAt - a.updatedAt),
+    notes,
     iocs: records.iocs.filter(ioc => inFolder(ioc) && (named(ioc.value) || (!!ioc.attribution && names.has(sameText(ioc.attribution)))))
       .sort((a, b) => b.updatedAt - a.updatedAt),
+    ...(searchable.length > words.length || budget.left < 0 ? { partial: true } : {}),
   };
 }

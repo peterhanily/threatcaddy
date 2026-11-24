@@ -126,6 +126,7 @@
 
   "activity.heading": "Aktivitas ({{count}})",
   "activity.none": "Belum ada apa pun di timeline, catatan, atau IOC yang menyebut {{name}}.",
+  "activity.partial": "Tidak semua catatan dicari: identitas ini memiliki terlalu banyak nama dan detail, atau catatannya sangat panjang.",
   "activity.addNote": "Tambah catatan tentang {{name}}",
   "activity.untitled": "Tanpa judul",
   "activity.kind.event": "Kejadian",
@@ -205,6 +206,7 @@
   "org.empty": "Tambahkan orang ke sebuah organisasi (Bekerja di) untuk menggambar bagannya.",
   "org.showTeam": "Tampilkan tim ({{count}})",
   "org.hideTeam": "Sembunyikan tim ({{count}})",
+  "org.deeper": "Tingkat yang lebih dalam tidak ditampilkan di sini ({{count}}). Buka seseorang untuk melihat siapa yang melapor kepadanya.",
   "org.noManager": "Tidak ada atasan yang dicatat: {{names}}.",
   "org.nobodyManaged": "Belum ada orang di {{name}} yang atasannya dicatat.",
   "org.teamAria": "Tim {{name}}",

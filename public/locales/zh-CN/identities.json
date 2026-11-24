@@ -126,6 +126,7 @@
 
   "activity.heading": "活动（{{count}}）",
   "activity.none": "时间线、笔记和 IOC 中尚未提及 {{name}}。",
+  "activity.partial": "未搜索所有笔记：此身份的名称和详细信息过多，或笔记过长。",
   "activity.addNote": "添加关于 {{name}} 的笔记",
   "activity.untitled": "未命名",
   "activity.kind.event": "事件",
@@ -205,6 +206,7 @@
   "org.empty": "将人员添加到组织（就职于）即可绘制其架构图。",
   "org.showTeam": "显示团队（{{count}}）",
   "org.hideTeam": "隐藏团队（{{count}}）",
+  "org.deeper": "此处不显示更深的层级（{{count}}）。打开某个人员可查看向其汇报的人。",
   "org.noManager": "未记录上级：{{names}}。",
   "org.nobodyManaged": "尚未为 {{name}} 中的任何人记录上级。",
   "org.teamAria": "{{name}} 的团队",

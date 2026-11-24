@@ -126,6 +126,7 @@
 
   "activity.heading": "Hoạt động ({{count}})",
   "activity.none": "Chưa có mục nào trong timeline, ghi chú hoặc IOC nhắc đến {{name}}.",
+  "activity.partial": "Chưa tìm kiếm trong mọi ghi chú: danh tính này có quá nhiều tên và chi tiết, hoặc ghi chú quá dài.",
   "activity.addNote": "Thêm ghi chú về {{name}}",
   "activity.untitled": "Chưa có tiêu đề",
   "activity.kind.event": "Sự kiện",
@@ -205,6 +206,7 @@
   "org.empty": "Thêm người vào một tổ chức (Làm việc tại) để vẽ sơ đồ của tổ chức đó.",
   "org.showTeam": "Hiển thị nhóm ({{count}})",
   "org.hideTeam": "Ẩn nhóm ({{count}})",
+  "org.deeper": "Các cấp sâu hơn không được hiển thị ở đây ({{count}}). Mở một người để xem ai báo cáo cho họ.",
   "org.noManager": "Chưa ghi nhận người quản lý: {{names}}.",
   "org.nobodyManaged": "Chưa có ai tại {{name}} có người quản lý được ghi nhận.",
   "org.teamAria": "Nhóm của {{name}}",

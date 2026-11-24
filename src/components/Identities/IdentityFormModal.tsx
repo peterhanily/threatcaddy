@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid';
 import type { Folder, Identity } from '../../types';
 import { Modal } from '../Common/Modal';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
-import { byName, canonicalType, isOrganization, organizationOf, sameText, withOrganization } from '../../lib/identity-model';
+import { byName, canonicalType, isOrganization, organizationOf, sameText, sortedByName, withOrganization } from '../../lib/identity-model';
 import type { IdentityChange, IdentityLabels } from './identity-labels';
 
 const field = 'w-full rounded-md border border-border-subtle bg-bg-primary px-2 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none';
@@ -54,7 +54,9 @@ export function IdentityFormModal({ editing, prefill, folders, defaultFolderId, 
   const resolvedType = canonicalType(type, labels.typeLabels, typesInUse);
   const person = resolvedType === 'person';
   const organizations = identities.filter(identity => isOrganization(identity) && identity.folderId === folderId && identity.id !== editing?.id).sort(byName);
-  const mergeChoices = editing ? identities.filter(identity => identity.folderId === editing.folderId && identity.id !== editing.id).sort(byName) : [];
+  // Worked out when the identities change, not on every keystroke in the form.
+  const mergeChoices = useMemo(() => (editing ? sortedByName(identities.filter(identity => identity.folderId === editing.folderId && identity.id !== editing.id)) : []),
+    [editing, identities]);
   const typeChoices = [...new Set([...Object.values(labels.typeLabels), ...typesInUse.map(labels.typeLabel)])];
 
   const submit = async (event: FormEvent) => {

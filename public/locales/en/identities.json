@@ -126,6 +126,7 @@
 
   "activity.heading": "Activity ({{count}})",
   "activity.none": "Nothing on the timeline, in notes or in IOCs names {{name}} yet.",
+  "activity.partial": "Not every note was searched: this identity has too many names and details, or the notes are very long.",
   "activity.addNote": "Add a note about {{name}}",
   "activity.untitled": "Untitled",
   "activity.kind.event": "Event",
@@ -205,6 +206,7 @@
   "org.empty": "Add people to an organization (Works at) to draw its chart.",
   "org.showTeam": "Show team ({{count}})",
   "org.hideTeam": "Hide team ({{count}})",
+  "org.deeper": "Further levels are not shown here ({{count}}). Open a person to see who reports to them.",
   "org.noManager": "No manager recorded: {{names}}.",
   "org.nobodyManaged": "Nobody at {{name}} has a manager recorded yet.",
   "org.teamAria": "{{name}}'s team",
