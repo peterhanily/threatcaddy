@@ -1,16 +1,27 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { liveQuery } from 'dexie';
 import { summarizeToolChange, type ChangeField, type ToolChange } from '../../lib/tool-change-summary';
+import { prepareIdentityLabels } from '../../lib/llm-tools-identities';
 
 /** What a proposed write changes, named by what it touches (approval cards, agent and chat). */
-export function ToolChangeSummary({ tool, input, className = '' }: { tool: string; input: Record<string, unknown>; className?: string }) {
+export function ToolChangeSummary({ tool, input, folderId, className = '' }: { tool: string; input: Record<string, unknown>; folderId?: string; className?: string }) {
   const { t } = useTranslation('common');
   const [change, setChange] = useState<ToolChange | null>(null);
   useEffect(() => {
+    // Live: a rename or edit of what the call touches shows at once. The private-label strings load
+    // first (outside the live query), as the tool loads them before it writes.
     let current = true;
-    summarizeToolChange(tool, input).then(result => { if (current) setChange(result); }).catch(() => { /* The card still shows the raw input. */ });
-    return () => { current = false; };
-  }, [tool, input]);
+    let subscription: { unsubscribe(): void } | undefined;
+    void prepareIdentityLabels().then(() => {
+      if (!current) return;
+      subscription = liveQuery(() => summarizeToolChange(tool, input, folderId)).subscribe({
+        next: result => setChange(result),
+        error: () => { /* The card still shows the raw input. */ },
+      });
+    });
+    return () => { current = false; subscription?.unsubscribe(); };
+  }, [tool, input, folderId]);
   if (!change) return null;
   const heading = change.kind === 'connects' ? t('toolChange.connects', { from: change.from, phrase: change.phrase, to: change.to })
     : change.kind === 'missing' ? t('toolChange.missing', { id: change.id }) : t(`toolChange.${change.kind}`, { name: change.name });

@@ -220,6 +220,11 @@ export function decideToolCall(reach: ToolReach, ctx: { surface: ToolSurface; po
   if (surface === 'bridge' && (reach.crossRead || reach.crossWrite || egress || reach.agentControl)) { // 4
     return deny('The agent bridge only works inside the selected investigation and cannot reach the network.');
   }
+  // Identity writes need a person: never run by the bridge or the supervisor, whatever their tool lists
+  // (agents always ask: shouldAutoApprove never allows them).
+  if (IDENTITY_WRITE_TOOLS.has(reach.name) && (surface === 'bridge' || surface === 'supervisor')) {
+    return deny('Identity changes need a person; this surface cannot ask one.');
+  }
   if (reach.harvested && (reach.write || egress || reach.agentControl || reach.crossRead)) return ask('harvested'); // 5
   if (reach.agentControl === 'ask') return surface === 'supervisor' ? deny('The supervisor cannot change agents.') : ask('agent-control'); // 6
   if (reach.crossWrite) return surface === 'agent' ? deny('Agents cannot change another investigation.') : ask('cross-write'); // 7
@@ -240,11 +245,6 @@ export function decideToolCall(reach: ToolReach, ctx: { surface: ToolSurface; po
     return surface === 'chat-yolo' ? run : ask('egress');
   }
   if (reach.write) {                                                                               // 13
-    // Identity writes need a person wherever an agent proposes them, whatever its tool list or policy.
-    if (IDENTITY_WRITE_TOOLS.has(reach.name)) {
-      if (surface === 'bridge' || surface === 'supervisor') return deny('Identity changes need a person; this surface cannot ask one.');
-      if (surface === 'agent') return ask('policy');
-    }
     if (surface === 'chat-act') return ask('write');
     if (surface === 'agent') return byPolicy(p => shouldAutoApprove(reach.name, p), 'policy');
     return run;

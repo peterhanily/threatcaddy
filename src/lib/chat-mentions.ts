@@ -196,8 +196,9 @@ export async function resolveMentions(text: string, homeFolderId: string | undef
           ...identity.details.filter(detail => !detail.private).map(detail => `${detail.label}: ${detail.value}`),
         ].filter(Boolean).join('\n');
         // Capped as a note mention is: an identity can hold thousands of details.
-        contextParts.push(`[Referenced Identity: "${identity.name.slice(0, 200)}"]\n${details.length > 4000 ? `${details.slice(0, 4000)}…` : details}`);
-        displayText = displayText.replace(m.full, `@${identity.name}`);
+        const shortName = identity.name.slice(0, 200).replace(/[\uD800-\uDBFF]$/, '');
+        contextParts.push(`[Referenced Identity: "${shortName}"]\n${details.length > 4000 ? `${details.slice(0, 4000).replace(/[\uD800-\uDBFF]$/, '')}…` : details}`);
+        displayText = displayText.replace(m.full, `@${shortName}`);
       }
     } else if (m.type === 'investigation') {
       const folder = await db.folders.get(m.id);

@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { detailWillBePrivate } from './llm-tools-identities';
+import { detailsToAdd, findIdentity, identitiesBeside, identityScope, otherNamesToAdd, prepareIdentityLabels, toolItems } from './llm-tools-identities';
 
 /**
  * What a proposed write changes, by the stored names of what it touches, for an approval card: the
@@ -12,49 +12,64 @@ export type ToolChange =
   | { kind: 'missing'; id: string; fields: ChangeField[] };
 
 const MAX = 80;
+/** Direction controls a stored name may hold would reorder the card's sentence ("X reports to Y"). */
+const BIDI_CONTROLS = /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/g;
 const text = (value: unknown) => {
-  const shown = value == null || value === '' ? '—' : String(value).replace(/\s+/g, ' ').trim();
-  return shown.length > MAX ? `${shown.slice(0, MAX)}…` : shown;
+  const shown = value == null || value === '' ? '—' : String(value).replace(BIDI_CONTROLS, '').replace(/\s+/g, ' ').trim();
+  return shown.length > MAX ? `${shown.slice(0, MAX).replace(/[\uD800-\uDBFF]$/, '')}…` : shown;
 };
 const has = (input: Record<string, unknown>, key: string) => Object.hasOwn(input, key) && input[key] !== undefined;
 const list = (value: unknown) => (Array.isArray(value) ? value : value == null || value === '' ? [] : [value]);
 /** `from → to` for each field the input names. */
-const fieldsOf = (input: Record<string, unknown>, stored: Record<string, unknown> | undefined, keys: readonly string[], map: (key: string, value: unknown) => unknown = (_, value) => value) =>
-  keys.filter(key => has(input, key)).map(key => ({ field: key, from: text(stored?.[key]), to: text(map(key, input[key])) }));
+// An empty value is not a change these tools make.
+const fieldsOf = (input: Record<string, unknown>, stored: Record<string, unknown> | undefined, keys: readonly string[]) =>
+  keys.filter(key => has(input, key) && String(input[key]).trim() !== '').map(key => ({ field: key, from: text(stored?.[key]), to: text(input[key]) }));
 const changed = (input: Record<string, unknown>, keys: readonly string[]): ChangeField[] => keys.filter(key => has(input, key)).map(field => ({ field, changed: true }));
-const detailItems = (value: unknown) => list(value).flatMap(entry => {
-  const label = (entry as { label?: unknown })?.label;
-  return typeof label === 'string' && label.trim() ? [{ text: text(label), private: detailWillBePrivate(label) }] : [];
-});
 const nameItems = (value: unknown) => list(value).flatMap(name => (typeof name === 'string' && name.trim() ? [{ text: text(name) }] : []));
 const id = (value: unknown) => String(value || '');
+const status = (value: unknown) => { const text = String(value ?? '').trim().toLowerCase(); return text === 'none' ? '' : text; };
+/** Details as the tool will store them: its item limit, and each marked private by its rule. */
+const detailItems = (value: unknown) => detailsToAdd(value).map(detail => ({ text: text(detail.label), ...(detail.private ? { private: true } : {}) }));
 
-async function identityName(idValue: unknown, name: unknown): Promise<string> {
-  const stored = id(idValue) ? await db.identities.get(id(idValue)) : undefined;
-  return text(stored?.name ?? name ?? idValue);
-}
-
-/** Null for tools this does not describe. */
-export async function summarizeToolChange(tool: string, input: Record<string, unknown>): Promise<ToolChange | null> {
+/** Null for tools this does not describe. `folderId` is the conversation's or agent's investigation. */
+export async function summarizeToolChange(tool: string, input: Record<string, unknown>, folderId?: string): Promise<ToolChange | null> {
   switch (tool) {
     case 'update_identity': {
       const stored = await db.identities.get(id(input.id));
-      if (!stored) return { kind: 'missing', id: text(input.id), fields: [] };
-      const fields: ChangeField[] = fieldsOf(input, stored as unknown as Record<string, unknown>, ['description', 'status', 'contact'],
-        (key, value) => (key === 'status' && value === 'none' ? '' : key === 'contact' ? String(!!value) : value));
-      if (has(input, 'contact')) fields[fields.findIndex(field => field.field === 'contact')].from = String(!!stored.contact);
-      if (list(input.addOtherNames).length) fields.push({ field: 'addOtherNames', items: nameItems(input.addOtherNames) });
-      if (list(input.addDetails).length) fields.push({ field: 'addDetails', items: detailItems(input.addDetails) });
+      if (!stored || stored.trashed) return { kind: 'missing', id: text(input.id), fields: [] };
+      // As executeUpdateIdentity reads each field (private labels in the interface language included).
+      await prepareIdentityLabels();
+      const fields: ChangeField[] = [];
+      if (input.description !== undefined) fields.push({ field: 'description', from: text(stored.description), to: text(input.description) });
+      if (input.status !== undefined) fields.push({ field: 'status', from: text(stored.status), to: text(status(input.status)) });
+      if (typeof input.contact === 'boolean') fields.push({ field: 'contact', from: String(!!stored.contact), to: String(input.contact) });
+      const names = otherNamesToAdd(stored, input.addOtherNames, await identitiesBeside(stored));
+      if (names.length) fields.push({ field: 'addOtherNames', items: names.map(name => ({ text: text(name) })) });
+      const details = detailItems(input.addDetails);
+      if (details.length) fields.push({ field: 'addDetails', items: details });
       return { kind: 'changes', name: text(stored.name), fields };
     }
     case 'create_identity': {
-      const fields: ChangeField[] = ['type', 'status', 'organization', 'description', 'contact'].filter(key => has(input, key)).map(key => ({ field: key, to: text(key === 'contact' ? String(!!input[key]) : input[key]) }));
-      if (list(input.otherNames).length) fields.push({ field: 'otherNames', items: nameItems(input.otherNames) });
-      if (list(input.details).length) fields.push({ field: 'details', items: detailItems(input.details) });
+      await prepareIdentityLabels();
+      const fields: ChangeField[] = ['type', 'status', 'organization', 'description'].filter(key => has(input, key) && String(input[key]).trim())
+        .map(key => ({ field: key, to: text(key === 'status' ? status(input[key]) : input[key]) }));
+      if (input.contact === true) fields.push({ field: 'contact', to: 'true' });
+      const names = nameItems(toolItems(input.otherNames));
+      if (names.length) fields.push({ field: 'otherNames', items: names });
+      const details = detailItems(input.details);
+      if (details.length) fields.push({ field: 'details', items: details });
       return { kind: 'creates', name: text(input.name), fields };
     }
-    case 'connect_identities':
-      return { kind: 'connects', from: await identityName(input.fromId, input.fromName), phrase: text(input.phrase), to: await identityName(input.toId, input.toName), fields: [] };
+    case 'connect_identities': {
+      // Both ends as executeConnectIdentities finds them: by id, or by exact name or other name.
+      const first = id(input.fromId) ? await db.identities.get(id(input.fromId)) : undefined;
+      const rows = await identityScope(first?.folderId ?? folderId);
+      const from = findIdentity(rows, { id: input.fromId, name: input.fromName });
+      const to = findIdentity(rows, { id: input.toId, name: input.toName });
+      if (typeof from === 'string') return { kind: 'missing', id: text(input.fromId || input.fromName), fields: [] };
+      if (typeof to === 'string') return { kind: 'missing', id: text(input.toId || input.toName), fields: [] };
+      return { kind: 'connects', from: text(from.name), phrase: text(input.phrase), to: text(to.name), fields: [] };
+    }
     case 'update_note': {
       const stored = await db.notes.get(id(input.id));
       if (!stored) return { kind: 'missing', id: text(input.id), fields: [] };

@@ -34,13 +34,16 @@ export function toolExecutionError(error: string): ToolExecutionResult {
 export function truncateToolResult(result: string, maxLen: number): string {
   if (result.length <= maxLen) return result;
   const note = `Showing ${maxLen.toLocaleString()} of ${result.length.toLocaleString()} characters. Use more specific queries, filters or paging to get complete data.`;
-  let json = false;
-  try { json = typeof JSON.parse(result) === 'object'; } catch { /* Text. */ }
-  if (!json) return result.substring(0, maxLen) + `\n\n[TRUNCATED: ${note}]`;
-  // JSON stays JSON: the start of the result as a string, marked truncated (escaping can lengthen it).
-  for (let kept = maxLen; kept > 0; kept = Math.floor(kept * 0.9)) {
+  // Never ending on half a character: providers can reject a lone surrogate.
+  if (!/^\s*[[{]/.test(result)) return result.substring(0, maxLen).replace(/[\uD800-\uDBFF]$/, '') + `\n\n[TRUNCATED: ${note}]`;
+  // JSON stays JSON: the start of the result as a string, marked truncated. Escaping can lengthen
+  // it, so the kept part shrinks by the overshoot (never splitting a surrogate pair).
+  let kept = maxLen;
+  for (let pass = 0; pass < 4; pass++) {
+    if (/[\uD800-\uDBFF]/.test(result.charAt(kept - 1))) kept--;
     const wrapped = JSON.stringify({ truncated: true, note, partial: result.substring(0, kept) });
     if (wrapped.length <= maxLen + 400) return wrapped;
+    kept = Math.floor(kept * maxLen / wrapped.length) - 400;
   }
   return JSON.stringify({ truncated: true, note });
 }

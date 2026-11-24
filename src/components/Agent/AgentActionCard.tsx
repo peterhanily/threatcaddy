@@ -168,7 +168,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
       )}
 
       {/* What it changes, by stored name: the target is otherwise only an id. */}
-      {isPending && <ToolChangeSummary tool={action.toolName} input={action.toolInput} className="mt-1 ps-6" />}
+      {isPending && <ToolChangeSummary tool={action.toolName} input={action.toolInput} folderId={action.investigationId} className="mt-1 ps-6" />}
 
       {/* Rationale preview: model text, not a system statement */}
       <p className="text-xs text-text-muted mt-1.5 line-clamp-2 ps-6">

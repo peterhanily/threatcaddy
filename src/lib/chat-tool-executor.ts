@@ -23,8 +23,6 @@ export interface ApprovalItem {
 
 /** Skill and agent-host results are capped before they reach the model and the saved thread. */
 const MAX_DYNAMIC_RESULT_CHARS = 50_000;
-/** As agents cap a tool result (caddy-agent.ts). */
-const MAX_BUILTIN_RESULT_CHARS = 50_000;
 /** Chat tools that find or name agent profiles by name (llm-tools.ts). */
 const PROFILE_NAME_TOOLS: ReadonlySet<string> = new Set(['deploy_agent', 'stop_agent', 'list_deployed_agents']);
 
@@ -70,7 +68,6 @@ export function createChatToolExecutor(deps: {
     const result = await deps.runCheckpointed(
       () => executeTool(toolUse, homeFolderId, undefined, { surface, allowedTools, signal, toolBinding, approval }), signal, toolUse);
     if (reach.crossRead && !result.isError) readForeignThisRequest = true;
-    // Every result is capped, built-in ones too: it is resent on each later turn of the request.
-    return { ...result, result: truncateToolResult(result.result, isDynamicTool(toolUse.name) ? MAX_DYNAMIC_RESULT_CHARS : MAX_BUILTIN_RESULT_CHARS) };
+    return isDynamicTool(toolUse.name) ? { ...result, result: truncateToolResult(result.result, MAX_DYNAMIC_RESULT_CHARS) } : result;
   };
 }

@@ -46,7 +46,7 @@ function translatedPrivateLabels(): string[] {
   return i18n.hasResourceBundle(i18n.language, 'identities') ? PRIVATE_DETAIL_LABELS.map(key => i18n.t(`detailLabel.${key}`, { ns: 'identities' })) : [];
 }
 /** Whether a detail with this label will be stored as private (the rule addDetails applies). */
-export const detailWillBePrivate = (label: unknown) => isPrivateLabel(clean(label, 100), translatedPrivateLabels());
+const detailWillBePrivate = (label: unknown) => isPrivateLabel(clean(label, 100), translatedPrivateLabels());
 const list = (value: unknown) => (Array.isArray(value) ? value : value == null || value === '' ? [] : [value]).slice(0, MAX_ITEMS);
 const error = (message: string) => JSON.stringify({ error: message });
 
@@ -67,8 +67,10 @@ const MAX_SNIPPET = 200;          // a description in a search (search_notes)
 const MAX_DESCRIPTION = 8000;     // a description in a read (read_note)
 const MAX_VALUE = 500;            // a name, label or detail value
 const SEARCH_OTHER_NAMES = 10;    // other names a search lists
-const PAGE = 50;                  // other names, details and connections per read
-const cut = (text: string | undefined, max: number) => (text && text.length > max ? `${text.slice(0, max)}…` : text);
+const PAGE = 50;                  // other names, details, connections and tags per read, at most
+const PAGE_BUDGET = 30_000;       // characters those lists may take in one read
+// Never ending on half a character: providers can reject a lone surrogate.
+const cut = (text: string | undefined, max: number) => (text && text.length > max ? `${text.slice(0, max).replace(/[\uD800-\uDBFF]$/, '')}…` : text);
 
 /** The details anyone can see; private ones are never returned. */
 const publicDetails = (identity: Identity) => identity.details.filter(detail => !detail.private)
@@ -76,7 +78,7 @@ const publicDetails = (identity: Identity) => identity.details.filter(detail => 
 
 function summary(identity: Identity, byId: ReadonlyMap<string, Identity>) {
   return {
-    id: identity.id, name: cut(identity.name, MAX_VALUE), type: identity.type, status: identity.status, contact: !!identity.contact,
+    id: identity.id, name: cut(identity.name, MAX_VALUE), type: cut(identity.type, 50), status: identity.status, contact: !!identity.contact,
     description: cut(identity.description, MAX_SNIPPET),
     otherNames: identity.aliases.slice(0, SEARCH_OTHER_NAMES).map(name => cut(name, MAX_VALUE)),
     ...(identity.aliases.length > SEARCH_OTHER_NAMES ? { otherNamesTotal: identity.aliases.length } : {}),
@@ -99,8 +101,8 @@ function find(rows: readonly Identity[], input: { id?: unknown; name?: unknown }
 
 /**
  * `brief` is for stakeholder (observer) agents: owner decision, names, types, statuses and counts
- * only. A brief search matches names and other names only, never a detail, and returns no description,
- * organisation or other names.
+ * only. A brief search matches the name only (not other names, which a stakeholder is never shown, nor a
+ * detail), and returns no description, organisation or other names.
  */
 export async function executeSearchIdentities(input: Record<string, unknown>, folderId?: string, options: { brief?: boolean } = {}): Promise<string> {
   const query = clean(input.query, MAX_NAME);
@@ -135,20 +137,30 @@ export async function executeReadIdentity(input: Record<string, unknown>, folder
     ...rows.flatMap(other => other.connections.filter(edge => edge.targetId === identity.id)
       .map(edge => ({ phrase: edge.label, direction: 'in' as const, other }))),
   ].flatMap(({ phrase, direction, other }) => (other && !other.trashed ? [{ phrase: cut(phrase, MAX_VALUE), direction, id: other.id, name: cut(other.name, MAX_VALUE) }] : []));
-  // A page of each list (an organisation's members are its incoming connections), with totals.
+  // One page of the lists (an organisation's members are its incoming connections): the same items of
+  // each, as many as fit the budget (at least one), so a read stays under the tool-result cap.
   const offset = Math.max(0, Math.floor(Number(input.offset) || 0));
-  const page = <T,>(items: T[]) => items.slice(offset, offset + PAGE);
+  const otherNames = identity.aliases.map(name => cut(name, MAX_VALUE));
   const details = publicDetails(identity);
-  const more = [identity.aliases, details, connections].some(items => items.length > offset + PAGE);
+  const tags = identity.tags.map(tag => cut(tag, MAX_SNIPPET));
+  const lists: unknown[][] = [otherNames, details, connections, tags];
+  let count = 0;
+  for (let used = 0; count < PAGE && lists.some(items => items.length > offset + count); count++) {
+    const cost = lists.reduce((sum, items) => sum + (offset + count < items.length ? JSON.stringify(items[offset + count]).length : 0), 0);
+    if (count > 0 && used + cost > PAGE_BUDGET) break;
+    used += cost;
+  }
+  const page = <T,>(items: T[]) => items.slice(offset, offset + count);
+  const more = lists.some(items => items.length > offset + count);
+  const head = summary(identity, byId);
   return JSON.stringify({
-    ...summary(identity, byId),
+    id: head.id, name: head.name, type: head.type, status: head.status, contact: head.contact, organization: head.organization, archived: head.archived,
+    // Totals and the next page first: a result cut short still says how to read on.
+    otherNamesTotal: otherNames.length, detailsTotal: details.length, connectionsTotal: connections.length, tagsTotal: tags.length,
+    ...(more ? { nextOffset: offset + count } : {}),
     description: cut(identity.description, MAX_DESCRIPTION),
-    otherNames: page(identity.aliases).map(name => cut(name, MAX_VALUE)), otherNamesTotal: identity.aliases.length,
-    details: page(details), detailsTotal: details.length,
-    connections: page(connections), connectionsTotal: connections.length,
-    ...(more ? { nextOffset: offset + PAGE } : {}),
-    tags: identity.tags, clsLevel: identity.clsLevel,
-    createdAt: identity.createdAt, updatedAt: identity.updatedAt,
+    otherNames: page(otherNames), details: page(details), connections: page(connections), tags: page(tags),
+    clsLevel: cut(identity.clsLevel, 50), createdAt: identity.createdAt, updatedAt: identity.updatedAt,
   });
 }
 
@@ -180,6 +192,21 @@ function addDetails(identity: Identity, raw: unknown): number | string {
 }
 
 /** Other names that are nobody else's name in the investigation. */
+/** For an approval card: what a call would do, resolved as the tools resolve it. */
+export const toolItems = (value: unknown) => list(value);
+export const identityScope = (folderId?: string) => scope(folderId);
+export const identitiesBeside = (stored: Identity) => besides(stored);
+export const findIdentity = (rows: readonly Identity[], input: { id?: unknown; name?: unknown }) => find(rows, input);
+/** The other names update_identity would add (not those already held, nor another identity's). */
+export function otherNamesToAdd(identity: Identity, raw: unknown, rows: readonly Identity[]): string[] {
+  const copy = { ...identity, aliases: [...identity.aliases] };
+  addOtherNames(copy, raw, rows);
+  return copy.aliases.slice(identity.aliases.length);
+}
+/** The details addDetails would take, each marked as it would store it (call prepareIdentityLabels first). */
+export const detailsToAdd = (raw: unknown) => list(raw).map(entry => ({ label: clean((entry as { label?: unknown })?.label, 100), value: clean((entry as { value?: unknown })?.value, MAX_TEXT) }))
+  .filter(entry => entry.label && entry.value).map(entry => ({ label: entry.label, private: detailWillBePrivate(entry.label) }));
+
 function addOtherNames(identity: Identity, raw: unknown, rows: readonly Identity[]): { added: number; skipped: string[] } {
   const skipped: string[] = [];
   let added = 0;

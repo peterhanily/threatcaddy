@@ -125,7 +125,7 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
         <div className="text-xs">
           <span dir="ltr" className="font-mono font-medium text-purple">{toolUse.name}</span>
         </div>
-        <ToolChangeSummary tool={toolUse.name} input={toolUse.input as Record<string, unknown>} />
+        <ToolChangeSummary tool={toolUse.name} input={toolUse.input as Record<string, unknown>} folderId={reach.homeFolderId} />
         {summary.length > 0 && (
           <ul className="space-y-0.5 text-xs text-text-primary">
             {summary.map((line, i) => <li key={i}>{line}</li>)}
