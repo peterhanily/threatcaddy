@@ -24,6 +24,8 @@ import { seedAIWorkspace } from './helpers/ai-workspace';
 import { ALL_STATIC_TOOLS } from './helpers/tool-exec';
 
 const SECRET_PHONE = '+44 7700 900123';
+/** A tool result as JSON without its timestamps, which are random digits ("1795560377700" holds "7700"). */
+const withoutTimes = (result: unknown) => JSON.stringify(result).replace(/"(createdAt|updatedAt)":\d+/g, '');
 const SECRET_HOME = '12 Fictional Lane';
 const now = Date.now();
 const make = (id: string, folderId: string, name: string, extra: Partial<Identity> = {}): Identity => ({ id, folderId, type: 'person', name, aliases: [],
@@ -70,7 +72,7 @@ describe('private details never reach a model', () => {
       { phrase: 'reports to', direction: 'out', id: 'lee', name: 'Lee Park' }]));
     const lee = await run('read_identity', { id: 'lee' });
     expect(lee.connections).toEqual([{ phrase: 'reports to', direction: 'in', id: 'dana', name: 'Dana Okafor' }]);
-    for (const text of [JSON.stringify(dana), JSON.stringify(lee)]) {
+    for (const text of [withoutTimes(dana), withoutTimes(lee)]) {
       expect(text).not.toContain('7700');
       expect(text).not.toContain(SECRET_HOME);
       expect(text).not.toContain('Bank reference');
@@ -82,7 +84,7 @@ describe('private details never reach a model', () => {
     expect(await run('search_identities', { query: 'Fictional Lane' })).toMatchObject({ count: 0 });
     const byEmail = await run('search_identities', { query: 'halvorsen.example' });
     expect((byEmail.identities as Array<{ name: string }>).map(identity => identity.name)).toEqual(['Dana Okafor']);
-    expect(JSON.stringify(byEmail)).not.toContain('7700');
+    expect(withoutTimes(byEmail)).not.toContain('7700');
   });
 
   it('stores a guessed value by its label alone, so no read or reply depends on a private value', async () => {
