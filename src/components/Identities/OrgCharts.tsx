@@ -6,8 +6,9 @@ import { cn } from '../../lib/utils';
 import { IdentityAvatar } from './identity-ui';
 import type { IdentityLabels } from './identity-labels';
 
-/** Levels of a team shown under one another; a deeper chain shows a note instead. */
-const MAX_DEPTH = 30;
+/** Levels of a team shown under one another (each indents further, so more would leave no width for
+ * the cards); a deeper chain shows a note instead. */
+const MAX_DEPTH = 10;
 /** Members of one team drawn before "more". */
 const TEAM_LIMIT = 50;
 
