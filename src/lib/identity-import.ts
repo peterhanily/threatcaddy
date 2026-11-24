@@ -102,16 +102,37 @@ export interface ImportWords {
   yes?: string;
   no?: string;
 }
-const typeOf = (typed: string, words: ImportWords | undefined, typesInUse: readonly string[]) => canonicalType(typed, words?.types ?? ENGLISH_TYPES, typesInUse);
-const statusOf = (raw: string, words: ImportWords | undefined): IdentityStatus | undefined => {
-  const key = sameText(raw);
-  return STATUSES.find(status => status === key || (!!words?.statuses?.[status] && sameText(words.statuses[status] as string) === key));
-};
-const phraseOf = (text: string, words: ImportWords | undefined) => canonicalPhrase(text, words?.phrases ?? ENGLISH_PHRASES, words?.reversePhrases);
-const isWord = (raw: string, english: readonly string[], word?: string) => {
-  const key = sameText(value(raw));
-  return english.includes(key) || (!!word && sameText(word) === key);
-};
+/** Reads types, statuses, yes, no and connection phrases in English or the interface language, for the
+ * import and its preview alike. Each distinct value is worked out once: a sheet of 100,000 rows holds few. */
+function wordReader(words: ImportWords | undefined, typesInUse: readonly string[]) {
+  const once = <T>(read: (text: string) => T) => {
+    const seen = new Map<string, T>();
+    return (text: string): T => { if (!seen.has(text)) seen.set(text, read(text)); return seen.get(text) as T; };
+  };
+  const statuses = new Map<string, IdentityStatus>();
+  for (const status of STATUSES) {
+    const label = words?.statuses?.[status];
+    if (label) statuses.set(sameText(label), status);
+  }
+  for (const status of STATUSES) statuses.set(status, status);
+  const yes = new Set([...YES, ...(words?.yes ? [sameText(words.yes)] : [])]);
+  const no = new Set([...NO, ...(words?.no ? [sameText(words.no)] : [])]);
+  return {
+    type: once(typed => canonicalType(typed, words?.types ?? ENGLISH_TYPES, typesInUse)),
+    status: once((raw): IdentityStatus | undefined => statuses.get(sameText(raw))),
+    yes: once(raw => yes.has(sameText(value(raw)))),
+    no: once(raw => no.has(sameText(value(raw)))),
+    phrase: once(text => canonicalPhrase(text, words?.phrases ?? ENGLISH_PHRASES, words?.reversePhrases)),
+  };
+}
+
+/** Where a "phrase: name" line splits: a custom phrase or a name may itself hold ": ", so at the first
+ * ": " followed by a name `isName` knows, else at the first. */
+function splitConnection(line: string, isName: (text: string) => boolean): { phrase: string; name: string } | undefined {
+  const splits = [...line.matchAll(/: /g)].map(match => match.index).filter(at => at > 0);
+  const at = splits.find(at => isName(line.slice(at + 2))) ?? splits[0];
+  return at === undefined ? undefined : { phrase: line.slice(0, at), name: line.slice(at + 2) };
+}
 
 export interface IdentityImport {
   created: Identity[];
@@ -173,8 +194,12 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     remember(name, identity.id);
     return identity;
   };
+  // The rule the profile, the graph and the AI tools follow: once, never to itself, and "works at" or
+  // "belongs to" only toward an organisation. False when refused.
   const connect = (from: Identity, to: Identity, label: string) => {
-    if (from.id !== to.id && !from.connections.some(edge => edge.targetId === to.id && edge.label === label)) from.connections.push({ targetId: to.id, label });
+    const next = withConnection(from, to, label);
+    if (next) from.connections = next;
+    return !!next;
   };
 
   const [typeColumn] = columns('identity-type');
@@ -188,7 +213,8 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   const tagColumns = columns('identity-tags');
   const detailColumns = columns('identity-detail').map(column => ({ column, label: value(withoutSuffix(withoutSuffix(column))),
     isPrivate: options.privateColumns ? options.privateColumns.has(column) : isPrivateDetailColumn(column, options.isPrivateLabel) }));
-  const connectionColumns = columns('identity-connection').map(column => ({ column, phrase: phraseOf(column, options.words) }));
+  const read = wordReader(options.words, typesInUse);
+  const connectionColumns = columns('identity-connection').map(column => ({ column, phrase: read.phrase(column) }));
   const connectionsColumns = columns('identity-connections');
   const defaultOrganization = options.defaultOrganizationId ? records.get(options.defaultOrganizationId) : undefined;
 
@@ -200,7 +226,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     const typed = typeColumn ? value(row[typeColumn]) : '';
     // A classification as exported is kept, so a round trip never lowers it; otherwise the investigation's.
     const classification = classificationColumn ? value(row[classificationColumn]).slice(0, 100) : '';
-    const identity = find(name) ?? create(name, typed ? typeOf(typed, options.words, typesInUse) : guessIdentity(name).type, classification);
+    const identity = find(name) ?? create(name, typed ? read.type(typed) : guessIdentity(name).type, classification);
     // The level the export writes for an identity without its own (its investigation's, else the
     // default) is read back as inherited, not fixed on it.
     if (classification && !identity.clsLevel && classification !== options.inheritedClsLevel) identity.clsLevel = classification;
@@ -221,9 +247,9 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
       identity.aliases.push(alias);
       remember(alias, identity.id);
     }
-    const status = statusColumn ? statusOf(value(row[statusColumn]), options.words) : undefined;
+    const status = statusColumn ? read.status(value(row[statusColumn])) : undefined;
     if (!identity.status && status) identity.status = status;
-    if (contactColumn && isWord(row[contactColumn], YES, options.words?.yes) && !identity.contact) identity.contact = true;
+    if (contactColumn && read.yes(row[contactColumn] ?? '') && !identity.contact) identity.contact = true;
     for (const { column, label, isPrivate } of detailColumns) {
       for (const detail of lines(row[column])) {
         const known = identity.details.findIndex(other => sameText(other.label) === sameText(label) && detailKey(other.value) === detailKey(detail));
@@ -253,7 +279,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   rows.forEach((row, index) => {
     const identity = find(value(row[nameColumn]));
     if (!identity) return;
-    const link = (phraseText: string, targetName: string, phrase = phraseOf(phraseText, options.words)) => {
+    const link = (phraseText: string, targetName: string, phrase = read.phrase(phraseText)) => {
       const target = find(targetName);
       if (!target) {
         error(ambiguous(targetName)
@@ -262,21 +288,14 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
         return;
       }
       const [source, other] = phrase.reversed ? [target, identity] : [identity, target];
-      // The rule the profile, the graph and the AI tools follow: "works at" and "belongs to" only toward an organisation.
-      if (!withConnection(source, other, phrase.label)) {
-        if (source.id !== other.id) error(`Row ${index + 2}: “${other.name}” is not an organization, so “${phraseText}” was skipped.`);
-        return;
-      }
-      connect(source, other, phrase.label);
+      if (!connect(source, other, phrase.label) && source.id !== other.id) error(`Row ${index + 2}: “${other.name}” is not an organization, so “${phraseText}” was skipped.`);
     };
     for (const { column, phrase } of connectionColumns) for (const target of lines(row[column])) link(column, target, phrase);
     for (const column of connectionsColumns) for (const line of lines(row[column])) {
       // A phrase and a name: anything far longer is not a connection, and is refused before it is split.
       if (line.length > MAX_CONNECTION_LINE) { error(`Row ${index + 2}: a connection longer than ${MAX_CONNECTION_LINE} characters was skipped.`); continue; }
-      // A custom phrase or a name may itself hold ": ", so take the first split whose name is an identity.
-      const splits = [...line.matchAll(/: /g)].map(match => match.index).filter(at => at > 0);
-      const at = splits.find(at => find(line.slice(at + 2))) ?? splits[0];
-      if (at !== undefined) link(line.slice(0, at), line.slice(at + 2));
+      const split = splitConnection(line, text => !!find(text));
+      if (split) link(split.phrase, split.name);
       else error(`Row ${index + 2}: “${line}” is not “phrase: name”; skipped.`);
     }
   });
@@ -300,6 +319,8 @@ export function unrecognisedIdentityValues(rows: readonly Record<string, string>
   words?: ImportWords;
   /** Types the investigation already uses: not new. */
   typesInUse?: readonly string[];
+  /** Names and other names already in the investigation, to split "phrase: name" lines as the import does. */
+  names?: readonly string[];
   limit?: number;
 } = {}): { types: string[]; statuses: string[]; contacts: string[]; phrases: string[] } {
   const limit = options.limit ?? 10;
@@ -307,21 +328,28 @@ export function unrecognisedIdentityValues(rows: readonly Record<string, string>
   const note = (kind: keyof typeof found, text: string) => { if (found[kind].size < limit && !found[kind].has(sameText(text))) found[kind].set(sameText(text), text); };
   const columns = (mapping: ColumnMapping) => [...mappings].filter(([, mapped]) => mapped === mapping).map(([column]) => column);
   const typesInUse = options.typesInUse ?? [];
+  const inUse = new Set(typesInUse.map(sameText));
+  const read = wordReader(options.words, typesInUse);
+  const [nameColumn] = columns('identity-name');
   const [typeColumn] = columns('identity-type');
   const [statusColumn] = columns('identity-status');
   const [contactColumn] = columns('identity-contact');
-  for (const column of columns('identity-connection')) if (!isConnectionPhrase(phraseOf(column, options.words).label)) note('phrases', value(column));
+  for (const column of columns('identity-connection')) if (!isConnectionPhrase(read.phrase(column).label)) note('phrases', value(column));
   const connectionsColumns = columns('identity-connections');
+  const aliasColumns = columns('identity-aliases');
+  // The names the import will know: the investigation's and the file's.
+  const names = new Set((options.names ?? []).map(sameText));
+  if (connectionsColumns.length) for (const row of rows) [nameColumn ? value(row[nameColumn]) : '', ...aliasColumns.flatMap(column => lines(row[column]))].forEach(text => names.add(sameText(text)));
   for (const row of rows) {
     const typed = typeColumn ? value(row[typeColumn]) : '';
-    if (typed && !isBuiltinType(typeOf(typed, options.words, typesInUse)) && !typesInUse.some(type => sameText(type) === sameText(typed))) note('types', typed);
+    if (typed && !isBuiltinType(read.type(typed)) && !inUse.has(sameText(typed))) note('types', typed);
     const status = statusColumn ? value(row[statusColumn]) : '';
-    if (status && !statusOf(status, options.words)) note('statuses', status);
+    if (status && !read.status(status)) note('statuses', status);
     const contact = contactColumn ? value(row[contactColumn]) : '';
-    if (contact && !isWord(contact, YES, options.words?.yes) && !isWord(contact, NO, options.words?.no)) note('contacts', contact);
+    if (contact && !read.yes(contact) && !read.no(contact)) note('contacts', contact);
     for (const column of connectionsColumns) for (const line of lines(row[column])) {
-      const at = line.indexOf(': ');
-      if (at > 0 && line.length <= MAX_CONNECTION_LINE && !isConnectionPhrase(phraseOf(line.slice(0, at), options.words).label)) note('phrases', line.slice(0, at));
+      const split = line.length <= MAX_CONNECTION_LINE ? splitConnection(line, text => names.has(sameText(text))) : undefined;
+      if (split && !isConnectionPhrase(read.phrase(split.phrase).label)) note('phrases', split.phrase);
     }
   }
   return { types: [...found.types.values()], statuses: [...found.statuses.values()], contacts: [...found.contacts.values()], phrases: [...found.phrases.values()] };

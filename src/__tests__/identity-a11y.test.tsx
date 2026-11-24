@@ -71,4 +71,20 @@ describe('the Data Import preview', () => {
       'Contact “oui”: not imported (use yes or no).',
     ]);
   });
+
+  it('counts a type as in use only on identities the import counts (not trashed ones)', async () => {
+    const user = userEvent.setup();
+    const vendor = (trashed: boolean) => make(trashed ? 'v1' : 'v2', 'Supplier', { type: 'Vendor', trashed });
+    const preview = async (identities: Identity[]) => {
+      cleanup();
+      render(<ToastProvider><DataImportModal open onClose={vi.fn()} folders={[{ ...folders[0], updatedAt: 1 } as Folder]} timelines={[]} defaultFolderId="case"
+        onCreateTimeline={vi.fn()} onImportComplete={vi.fn()} identities={identities} /></ToastProvider>);
+      await user.click(screen.getAllByRole('textbox')[0]);
+      await user.paste('Name,Type\nAna Silva,Vendor');
+      await user.click(screen.getByRole('button', { name: 'Parse & Preview' }));
+      return screen.queryByText('Type “Vendor”: new identities get it as a type of their own.');
+    };
+    expect(await preview([vendor(true)])).toBeInTheDocument();
+    expect(await preview([vendor(false)])).toBeNull();
+  });
 });

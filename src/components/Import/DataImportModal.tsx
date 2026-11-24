@@ -53,6 +53,12 @@ const PREVIEW_ROWS = 100;
 // Component
 // ---------------------------------------------------------------------------
 
+/** The types, names and other names of an investigation's identities, as the import counts them (not trashed). */
+const knownInFolder = (identities: readonly Identity[], folderId: string) => {
+  const here = identities.filter(identity => identity.folderId === folderId && !identity.trashed);
+  return { typesInUse: [...new Set(here.map(identity => identity.type))], names: here.flatMap(identity => [identity.name, ...identity.aliases]) };
+};
+
 export function DataImportModal({ defaultClsLevel,
   open,
   onClose,
@@ -204,7 +210,7 @@ export function DataImportModal({ defaultClsLevel,
   const willImportIdentities = importIdentities && hasIdentityName && !!folderId;
   // Values the import will not recognise, shown before importing (a sheet in another language, say).
   const unrecognised = useMemo(() => (willImportIdentities && parseResult
-    ? unrecognisedIdentityValues(parseResult.rows, columnMappings, { words, typesInUse: [...new Set(identities.filter(identity => identity.folderId === folderId).map(identity => identity.type))] })
+    ? unrecognisedIdentityValues(parseResult.rows, columnMappings, { words, ...knownInFolder(identities, folderId) })
     : undefined), [willImportIdentities, parseResult, columnMappings, words, identities, folderId]);
   const unrecognisedLines = unrecognised ? ([['types', 'identities.unrecognisedTypes'], ['statuses', 'identities.unrecognisedStatuses'],
     ['contacts', 'identities.unrecognisedContacts'], ['phrases', 'identities.unrecognisedPhrases']] as const)

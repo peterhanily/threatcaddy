@@ -22,12 +22,12 @@ export function IdentityAvatar({ identity, size = 'sm' }: { identity: Identity; 
   return <span aria-hidden="true" className={cn('inline-flex shrink-0 items-center justify-center rounded-lg', box, tone, ring)}><Icon size={icon} /></span>;
 }
 
-/** The investigation's name in its colour, shown when every investigation is listed. */
 /** A sentence from `isolate`d parts: each part is drawn in its own <bdi>, and the text itself gains no marks. */
 export function IsolatedText({ text }: { text: string }) {
   return <>{text.split(/[\u2068\u2069]/).map((part, index) => (index % 2 ? <bdi key={index}>{part}</bdi> : part))}</>;
 }
 
+/** The investigation's name in its colour, shown when every investigation is listed. */
 export function InvestigationPill({ folder, missingLabel }: { folder?: Folder; missingLabel: string }) {
   return (
     <span

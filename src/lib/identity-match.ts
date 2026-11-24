@@ -105,7 +105,8 @@ export function buildIdentityIndex(identities: readonly Identity[], options: {
         if (!key) continue;
         push(folder.names, key, identity);
         folder.firstLetters.add(key.replace(/^@/, '').charAt(0));
-        folder.longestName = Math.max(folder.longestName, name.length);
+        // As typed or as folded ("Strauß" is also written "STRAUSS", one character longer).
+        folder.longestName = Math.max(folder.longestName, name.length, key.length);
         const loose = looseText(name);
         if (loose && !folder.loose.has(loose)) folder.loose.set(loose, identity);
       }
@@ -162,8 +163,13 @@ const WORD = /[\p{L}\p{M}\p{N}_]/u;
 /** Scripts written without spaces between words: their word boundaries come from `Intl.Segmenter`. */
 const UNSPACED = /[\p{scx=Han}\p{scx=Hiragana}\p{scx=Katakana}\p{scx=Thai}\p{scx=Lao}\p{scx=Khmer}\p{scx=Myanmar}]/u;
 const HANGUL = /\p{scx=Hangul}/u;
-/** Korean writes a particle straight after a name (김철수가, 김철수에게, 김철수 씨): the name ends before it. */
-const KOREAN_PARTICLE = /^(?:이|가|은|는|을|를|의|에게|에|께서|께|한테|와|과|랑|이랑|하고|도|만|로|으로|에서|부터|까지|보다|처럼|이나|나|님|씨|아|야)/u;
+/** Korean writes particles straight after a name (김철수가, 김철수에게는, 김철수님이): the name ends there when
+ * the rest of the word is one or two particles, so 김민 is not found in 김민아 or 서울 in 서울도시가스. */
+const KOREAN_PARTICLES = '(?:이|가|은|는|을|를|의|에게서|에게|에서|에|께서|께|한테서|한테|와|과|이랑|랑|하고|도|만|으로|로|부터|까지|보다|처럼|이나|나|님|씨)';
+const KOREAN_PARTICLE = new RegExp(`^${KOREAN_PARTICLES}{1,2}$`, 'u');
+const HANGUL_RUN = /^\p{scx=Hangul}+/u;
+/** Longer than any one or two particles: the rest of the word is read from at most this many characters. */
+const PARTICLE_WINDOW = 8;
 /** Locale-independent: dictionary word breaks for Chinese, Japanese and Thai do not depend on the locale. */
 const WORDS = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter('en', { granularity: 'word' }) : undefined;
 /** Characters of context either side of a match given to the segmenter. */
@@ -194,10 +200,18 @@ function segmentBoundaries(text: string, from: number, to: number, budget: { wor
  */
 function wordBoundary(text: string, at: number, end: boolean, boundaries: () => Set<number>): boolean {
   const before = charBefore(text, at), after = charAt(text, at);
-  if (!before || !after || !WORD.test(before) || !WORD.test(after)) return true;
+  // The character outside the match decides first: no letter there, a boundary; a letter there next to
+  // the match's own punctuation ("support" + "@acme"), part of a longer word.
+  const outside = end ? after : before, inside = end ? before : after;
+  if (!outside || !WORD.test(outside)) return true;
+  if (!inside || !WORD.test(inside)) return false;
   const unspaced = UNSPACED.test(before) || UNSPACED.test(after);
   const hangulBefore = HANGUL.test(before), hangulAfter = HANGUL.test(after);
-  if (hangulBefore && hangulAfter) return end && KOREAN_PARTICLE.test(text.slice(at, at + 3));
+  if (hangulBefore && hangulAfter) {
+    if (!end) return false;
+    const rest = text.slice(at, at + PARTICLE_WINDOW).match(HANGUL_RUN)?.[0] ?? '';
+    return rest.length < PARTICLE_WINDOW && KOREAN_PARTICLE.test(rest);
+  }
   if (hangulBefore !== hangulAfter && !unspaced) return true;
   return unspaced && boundaries().has(at);
 }

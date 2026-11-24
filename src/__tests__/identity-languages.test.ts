@@ -31,10 +31,15 @@ describe('Activity finds names in text written without spaces (A11Y-2)', () => {
     expect(named(make('Dana'), 'Dana的报告')).toBe(true);
   });
 
-  it('in Korean, before a particle, but not inside a longer word', () => {
+  it('in Korean, before one or two particles, but not inside a longer word', () => {
     expect(named(make('김철수'), '오늘 김철수가 결제를 승인했다.')).toBe(true);
     expect(named(make('김철수'), '김철수 씨에게 물었다.')).toBe(true);
+    expect(named(make('김철수'), '김철수님이 승인했다.')).toBe(true);
+    expect(named(make('김철수'), '김철수에게는 알렸다.')).toBe(true);
     expect(named(make('김철'), '오늘 김철수가 결제를 승인했다.')).toBe(false);
+    // 아 starts 김민아 (another name), 도 starts 도시가스: neither is a particle here.
+    expect(named(make('김민'), '김민아에게 보고했다.')).toBe(false);
+    expect(named(make('서울', { type: 'organization' }), '서울도시가스에 연락했다.')).toBe(false);
   });
 
   it('two-character names in Chinese, Japanese or Korean, but still not two Latin letters', () => {
@@ -45,9 +50,13 @@ describe('Activity finds names in text written without spaces (A11Y-2)', () => {
     expect(named(make('राम'), 'राम आया')).toBe(true);
   });
 
-  it('keeps whole words in English and Hindi', () => {
+  it('keeps whole words in English and Hindi, also for a name that starts or ends with punctuation', () => {
     expect(named(make('Dana'), 'Danaher approved it.')).toBe(false);
     expect(named(make('राम'), 'रामा आया')).toBe(false);
+    const handle = make('Payments desk', { type: 'account', details: [{ id: 'h', label: 'Handle', value: '@acme' }] });
+    expect(named(handle, 'mail support@acme.com today')).toBe(false);
+    expect(named(handle, 'paid @acme twice')).toBe(true);
+    expect(named(make('Acme, Inc.'), 'Acme, Inc.x was paid')).toBe(false);
   });
 
   it('lists a note whose preview links "@王伟" in 王伟\'s Activity', () => {
@@ -66,6 +75,11 @@ describe('@ mentions in Chinese, Japanese and Korean (A11Y-2)', () => {
     expect(findMentions('（@李娜）', index).map(mention => mention.identity)).toEqual([li]);
     expect(findMentions('「@王伟」と話した', index).map(mention => mention.identity)).toEqual([wang]);
     expect(findMentions('@김철수가 승인했다', index).map(mention => mention.identity)).toEqual([kim]);
+  });
+
+  it('find a name written with ss for ß, and in upper case', () => {
+    const strauss = make('Jana Strauß');
+    expect(findMentions('@JANA STRAUSS approved', buildIdentityIndex([strauss]).folders.get('case')).map(mention => mention.identity)).toEqual([strauss]);
   });
 
   it('still need a space or punctuation before the @, so an email address is no mention', () => {
@@ -139,5 +153,10 @@ describe('Data Import in the interface language (A11Y-9)', () => {
     });
     // "Organisation" is English too; a type the investigation already uses is not new.
     expect(unrecognisedIdentityValues(rows, mappings, { typesInUse: ['personne'] }).types).toEqual([]);
+    // A phrase holding ": " splits where the import splits it: before a name it knows.
+    const withColon = [{ Nom: 'Dana Okafor', Genre: '', Statut: '', Contact: '', Liens: '' }, { Nom: 'Lee Park', Genre: '', Statut: '', Contact: '', Liens: 'Ops: Team lead: Dana Okafor' }];
+    expect(unrecognisedIdentityValues(withColon, mappings).phrases).toEqual(['Ops: Team lead']);
+    expect(buildIdentities(withColon, mappings, { folderId: 'case', existing: [], now: 1 }).created.find(identity => identity.name === 'Lee Park')?.connections)
+      .toEqual([expect.objectContaining({ label: 'Ops: Team lead' })]);
   });
 });

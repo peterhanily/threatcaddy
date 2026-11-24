@@ -59,11 +59,11 @@ export const STATUS_DOT: Record<IdentityStatus, string> = {
   compromised: 'bg-red-500', contained: 'bg-sky-500', suspicious: 'bg-amber-500', cleared: 'bg-green-500',
 };
 
-/** One line under a name: role and organisation for a person; type, description and organisation otherwise. */
 /** Marks user-supplied text inside a translated sentence (FSI…PDI), so `IsolatedText` draws it isolated and
  * a right-to-left interface does not reorder a Latin name's punctuation ("Acme, Inc." as ".Acme, Inc"). */
 export const isolate = (text: string) => `\u2068${text.replace(/[\u2066-\u2069]/g, '')}\u2069`;
 
+/** One line under a name: role and organisation for a person; type, description and organisation otherwise. */
 export function identitySubtitle(identity: Identity, byId: ReadonlyMap<string, Identity>, labels: IdentityLabels): string {
   const organizationName = organizationOf(identity, byId)?.name;
   const organization = organizationName && isolate(organizationName);

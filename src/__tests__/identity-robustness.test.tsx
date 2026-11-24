@@ -156,7 +156,8 @@ describe('PERF: the profile', () => {
     const connections = within(profile).getByRole('heading', { name: 'Connections' }).parentElement as HTMLElement;
     expect(within(connections).getAllByRole('listitem').length).toBeLessThanOrEqual(51);
     expect(within(connections).getByRole('button', { name: '70 more' })).toBeInTheDocument();
-  });
+    // A large render (about 2 s alone): it counts work, not time, so a busy test run must not time it out.
+  }, 20_000);
 });
 
 describe('SEC-4: deep reporting chains', () => {
