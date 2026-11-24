@@ -117,12 +117,18 @@ describe('multi-row changes the server accepts', () => {
     const push = (data: Record<string, unknown>) => processPush([{ table: 'identities', entityId: 'shape', op: 'put', clientVersion: 0, data: person('Shape', data) }],
       'owner', { authorize: true, rejectInvalidChanges: true });
     for (const bad of [{ details: {} }, { details: [null] }, { aliases: 5 }, { connections: 'x' }, { tags: [1] }, { details: [{ id: 'd', label: 'Phone', value: 5 }] },
-      { connections: [{ targetId: 'lee' }] }, { name: ['x'] }, { contact: 'yes' }]) {
+      { connections: [{ targetId: 'lee' }] }, { name: ['x'] }, { contact: 'yes' }, { status: 'pwned' }, { trashed: null }, { archived: null }]) {
       const [result] = await push(bad);
       expect([JSON.stringify(bad), result.status]).toEqual([JSON.stringify(bad), 'rejected']);
     }
     const [ok] = await push({ details: [{ id: 'd', label: 'Phone', value: '+1 555 0100', private: true }], connections: [{ targetId: 'lee', label: 'reports to' }],
       description: null, status: null, contact: null, clsLevel: null });
     expect(ok.status).toBe('accepted');
+    // A refused row is refused alone: the rest of its batch commits (a NOT NULL failure would roll it all back).
+    const batch = await processPush([
+      { table: 'identities', entityId: 'shape-null', op: 'put', clientVersion: 0, data: person('Null', { trashed: null }) },
+      { table: 'notes', entityId: 'n-after', op: 'put', clientVersion: 0, data: note() },
+    ], 'owner', { authorize: true, rejectInvalidChanges: true });
+    expect(batch.map(result => result.status)).toEqual(['rejected', 'accepted']);
   });
 });

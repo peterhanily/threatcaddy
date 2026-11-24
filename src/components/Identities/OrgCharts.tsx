@@ -8,6 +8,8 @@ import type { IdentityLabels } from './identity-labels';
 
 /** Levels of a team shown under one another; a deeper chain shows a note instead. */
 const MAX_DEPTH = 30;
+/** Members of one team drawn before "more". */
+const TEAM_LIMIT = 50;
 
 const STATUS_TEXT = { compromised: 'text-red-400', suspicious: 'text-amber-400', cleared: 'text-green-400' } as const;
 
@@ -19,6 +21,15 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
   const { t } = labels;
   const ids = useId();
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  // A team of thousands shows its first members until asked for all.
+  const [allTeams, setAllTeams] = useState<Record<string, boolean>>({});
+  const listed = (person: Identity, reports: Identity[]) => (allTeams[person.id] ? reports : reports.slice(0, TEAM_LIMIT));
+  const more = (person: Identity, reports: Identity[]) => reports.length > TEAM_LIMIT && (
+    <button type="button" aria-expanded={!!allTeams[person.id]} onClick={() => setAllTeams(previous => ({ ...previous, [person.id]: !previous[person.id] }))}
+      className="self-start text-xs font-medium text-accent hover:underline">
+      {allTeams[person.id] ? t('found.fewer') : t('found.more', { count: reports.length - TEAM_LIMIT })}
+    </button>
+  );
   // Worked out when the identities or the organisation change, not when a team is shown or hidden.
   const organizations = useMemo(() => chartableOrganizations(identities), [identities]);
   const organization = organizations.find(candidate => candidate.id === selectedOrganizationId) ?? organizations[0];
@@ -52,7 +63,8 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
         </button>
         {expanded && (
           <ul className="mt-1 flex flex-col gap-1.5 border-s border-border-subtle ps-3">
-            {reports.map(report => <li key={report.id}>{card(report)}{team(report, current, depth + 1)}</li>)}
+            {listed(person, reports).map(report => <li key={report.id}>{card(report)}{team(report, current, depth + 1)}</li>)}
+            {more(person, reports) && <li>{more(person, reports)}</li>}
           </ul>
         )}
       </>
@@ -78,12 +90,13 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
         <div key={root.id} className="flex flex-col gap-3">
           <div className="w-full max-w-xs">{card(root)}</div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {chart.reportsOf(root).map(report => (
+            {listed(root, chart.reportsOf(root)).map(report => (
               <section key={report.id} aria-label={t('org.teamAria', { name: report.name })} className="rounded-lg border border-border-subtle bg-bg-surface p-2">
                 {card(report)}{team(report, chart)}
               </section>
             ))}
           </div>
+          {more(root, chart.reportsOf(root))}
         </div>
       ))}
       {chart.unplaced.length > 0 && (chart.roots.length

@@ -172,6 +172,7 @@ function sameAsStored(tableName: string, clean: Record<string, unknown>, stored:
 /** Identity fields as clients store them; a row of another shape would be repaired by syncing
  * clients but could break a client reading it raw. Null clears an optional field. */
 const isText = (value: unknown) => typeof value === 'string';
+const IDENTITY_STATUSES = new Set(['compromised', 'suspicious', 'cleared']);
 const isTextList = (value: unknown) => Array.isArray(value) && value.every(isText);
 const isRecordWith = (value: unknown, text: readonly string[], flags: readonly string[] = []) => !!value && typeof value === 'object' && !Array.isArray(value)
   && text.every(key => isText((value as Record<string, unknown>)[key]))
@@ -182,8 +183,12 @@ function validIdentityField(key: string, value: unknown): boolean {
     case 'aliases': case 'tags': return isTextList(value);
     case 'details': return Array.isArray(value) && value.every(detail => isRecordWith(detail, ['id', 'label', 'value'], ['private']));
     case 'connections': return Array.isArray(value) && value.every(edge => isRecordWith(edge, ['targetId', 'label']));
-    case 'description': case 'status': case 'clsLevel': case 'folderId': return value === null || isText(value);
-    case 'contact': case 'trashed': case 'archived': return value === null || typeof value === 'boolean';
+    case 'description': case 'clsLevel': case 'folderId': return value === null || isText(value);
+    // As clients store a status; null clears it.
+    case 'status': return value === null || (isText(value) && IDENTITY_STATUSES.has(value as string));
+    case 'contact': return value === null || typeof value === 'boolean';
+    // Not null columns: null would fail the write (and the whole batch) instead of this change.
+    case 'trashed': case 'archived': return typeof value === 'boolean';
     default: return true;
   }
 }

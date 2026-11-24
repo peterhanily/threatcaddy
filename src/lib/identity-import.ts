@@ -158,7 +158,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   const aliasColumns = columns('identity-aliases');
   const detailColumns = columns('identity-detail').map(column => ({ column, label: value(withoutSuffix(withoutSuffix(column))),
     isPrivate: options.privateColumns ? options.privateColumns.has(column) : isPrivateDetailColumn(column, options.isPrivateLabel) }));
-  const connectionColumns = columns('identity-connection');
+  const connectionColumns = columns('identity-connection').map(column => ({ column, phrase: canonicalPhrase(column, ENGLISH_PHRASES) }));
   const connectionsColumns = columns('identity-connections');
   const defaultOrganization = options.defaultOrganizationId ? records.get(options.defaultOrganizationId) : undefined;
 
@@ -216,7 +216,7 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   rows.forEach((row, index) => {
     const identity = find(value(row[nameColumn]));
     if (!identity) return;
-    const link = (phraseText: string, targetName: string) => {
+    const link = (phraseText: string, targetName: string, phrase = canonicalPhrase(phraseText, ENGLISH_PHRASES)) => {
       const target = find(targetName);
       if (!target) {
         error(ambiguous(targetName)
@@ -224,10 +224,9 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
           : `Row ${index + 2}: “${targetName}” (${phraseText}) is not an identity in this investigation; that connection was skipped.`);
         return;
       }
-      const { label, reversed } = canonicalPhrase(phraseText, ENGLISH_PHRASES);
-      if (reversed) connect(target, identity, label); else connect(identity, target, label);
+      if (phrase.reversed) connect(target, identity, phrase.label); else connect(identity, target, phrase.label);
     };
-    for (const column of connectionColumns) for (const target of lines(row[column])) link(column, target);
+    for (const { column, phrase } of connectionColumns) for (const target of lines(row[column])) link(column, target, phrase);
     for (const column of connectionsColumns) for (const line of lines(row[column])) {
       // A phrase and a name: anything far longer is not a connection, and is refused before it is split.
       if (line.length > MAX_CONNECTION_LINE) { error(`Row ${index + 2}: a connection longer than ${MAX_CONNECTION_LINE} characters was skipped.`); continue; }

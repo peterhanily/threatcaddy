@@ -37,15 +37,15 @@ export interface InvestigationVisibility {
   isTimelineVisible: (timeline: { id: string }) => boolean;
 }
 
+/** One function, not a new one per data change: what reads it (the identity link index) can tell
+ * that nothing about visibility changed. */
+const ALWAYS_VISIBLE = () => true;
+
 /**
  * Build one screenshare policy for investigation metadata and its contents.
  * The caller must supply complete local collections, not just the active view.
  * This changes presentation only; it never modifies or declassifies stored data.
  */
-/** One function, not a new one per data change: what reads it (the identity link index) can tell
- * that nothing about visibility changed. */
-const ALWAYS_VISIBLE = () => true;
-
 export function buildInvestigationVisibility(input: InvestigationVisibilityInput): InvestigationVisibility {
   const { folders, remoteInvestigations, maxLevel, effectiveLevels } = input;
   if (!maxLevel) {

@@ -11,6 +11,9 @@ import type { IdentityChange } from './identity-labels';
 import { IdentityAvatar, InvestigationPill } from './identity-ui';
 import { STATUS_DOT, identitySubtitle, type IdentityLabels } from './identity-labels';
 
+/** Items of a long list (connections, systems, the same identity elsewhere) shown before "more". */
+const LIST_LIMIT = 50;
+
 const MONO_LABEL = /mail|ip|host|domain|iban|user|handle|tag|website|url/i;
 const field = 'w-full rounded-md border border-border-subtle bg-bg-primary px-2 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none';
 const smallButton = 'inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1 text-xs font-medium text-text-secondary hover:bg-bg-hover hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50';
@@ -66,6 +69,26 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
 
   const folder = folders.find(candidate => candidate.id === identity.folderId);
   const connections = useMemo(() => connectionsOf(identity, byId, sameInvestigation), [identity, byId, sameInvestigation]);
+  // Each detail's place among those with its label, worked out once per identity (not per row and render).
+  const detailPlaces = useMemo(() => {
+    const totals = new Map<string, number>();
+    const places = new Map<string, { at: number; of: number }>();
+    for (const detail of identity.details) {
+      const key = sameText(detail.label);
+      const at = (totals.get(key) ?? 0) + 1;
+      totals.set(key, at);
+      places.set(detail.id, { at, of: 0 });
+    }
+    for (const detail of identity.details) {
+      const place = places.get(detail.id);
+      if (place) place.of = totals.get(sameText(detail.label)) ?? 1;
+    }
+    return places;
+  }, [identity.details]);
+  // Long lists show their first items until asked for all.
+  const [allConnections, setAllConnections] = useState(false);
+  const [allThings, setAllThings] = useState(false);
+  const [allOthers, setAllOthers] = useState(false);
   const others = useMemo(() => alsoElsewhere(identity, everywhere), [identity, everywhere]);
   const members = useMemo(() => (isOrganization(identity) ? membersOf(identity, sameInvestigation) : null), [identity, sameInvestigation]);
   const chartable = members !== null && members.people.length > 0;
@@ -160,7 +183,8 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
           ) : <p className="text-xs text-text-muted">{t('people.none', { name: identity.name })}</p>}
           {members.people.length > 8 && <p className="text-xs text-text-muted">{t('people.more', { count: members.people.length - 8 })}</p>}
           {members.things.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5"><span className="text-xs text-text-muted">{t('people.things')}</span>{members.things.map(thing => <span key={thing.id}>{chip(thing)}</span>)}</div>
+            <div className="flex flex-wrap items-center gap-1.5"><span className="text-xs text-text-muted">{t('people.things')}</span>{(allThings ? members.things : members.things.slice(0, LIST_LIMIT)).map(thing => <span key={thing.id}>{chip(thing)}</span>)}
+              {members.things.length > LIST_LIMIT && <button type="button" className={linkButton} aria-expanded={allThings} onClick={() => setAllThings(value => !value)}>{allThings ? t('found.fewer') : t('found.more', { count: members.things.length - LIST_LIMIT })}</button>}</div>
           )}
         </section>
       )}
@@ -173,11 +197,11 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
             <p id={`${ids}-sharing`} className="text-xs text-text-muted">{t('details.hiddenWhileSharing')}</p>
           )}
           <ul className="flex flex-col gap-1.5">
-            {identity.details.map((detail, position) => {
+            {identity.details.map(detail => {
               const visible = !detail.private || (shown.has(detail.id) && !screensharing);
               // Two details with one label get distinct button names ("Remove Email 2"), never their private value.
-              const same = identity.details.filter(other => sameText(other.label) === sameText(detail.label));
-              const named = same.length > 1 ? `${detail.label} ${identity.details.slice(0, position + 1).filter(other => sameText(other.label) === sameText(detail.label)).length}` : detail.label;
+              const place = detailPlaces.get(detail.id);
+              const named = place && place.of > 1 ? `${detail.label} ${place.at}` : detail.label;
               return (
                 <li key={detail.id} className="grid grid-cols-[minmax(5rem,auto)_1fr_auto] items-start gap-2 text-sm">
                   <span className="text-xs text-text-muted">{detail.label}</span>
@@ -238,9 +262,10 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
           ) : <button ref={detailButton} type="button" className={cn(linkButton, 'self-start')} onClick={() => { setDetailForm({ label: '', value: '', private: false }); setConnectionForm(null); }}>{t('details.add')}</button>)}
           {others.length > 0 && (
             <p className="flex flex-wrap items-center gap-1.5 text-xs text-text-muted">{t('also.heading')}
-              {others.map(other => (
+              {(allOthers ? others : others.slice(0, LIST_LIMIT)).map(other => (
                 <span key={other.id} className="inline-flex items-center gap-1">{chip(other)}<InvestigationPill folder={folders.find(candidate => candidate.id === other.folderId)} missingLabel={t('list.orphan')} /></span>
               ))}
+              {others.length > LIST_LIMIT && <button type="button" className={linkButton} aria-expanded={allOthers} onClick={() => setAllOthers(value => !value)}>{allOthers ? t('found.fewer') : t('found.more', { count: others.length - LIST_LIMIT })}</button>}
             </p>
           )}
         </section>
@@ -248,7 +273,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
         <section aria-labelledby={`${ids}-connections`} className="flex min-w-0 flex-col gap-2">
           <h3 id={`${ids}-connections`} className="text-xs font-semibold uppercase tracking-wide text-text-muted">{t('connections.heading')}</h3>
           <ul className="flex flex-col gap-1.5">
-            {connections.map(connection => (
+            {(allConnections ? connections : connections.slice(0, LIST_LIMIT)).map(connection => (
               <li key={`${connection.ownerId}:${connection.index}`} className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm">
                 {connection.outgoing || Object.hasOwn(CONNECTION_PHRASES, connection.label) ? (
                   <><span className="text-text-secondary">{labels.phrase(connection.label, connection.outgoing)}</span>{chip(connection.other)}</>
@@ -260,6 +285,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
               </li>
             ))}
             {!connections.length && <li className="text-xs text-text-muted">{t('connections.none')}</li>}
+            {connections.length > LIST_LIMIT && <li><button type="button" className={linkButton} aria-expanded={allConnections} onClick={() => setAllConnections(value => !value)}>{allConnections ? t('found.fewer') : t('found.more', { count: connections.length - LIST_LIMIT })}</button></li>}
           </ul>
           {!readOnly && (connectionForm ? (
             <form onSubmit={event => void addConnection(event)} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); closeConnection(); } }} className="flex flex-col gap-2 rounded-md border border-border-subtle p-2">

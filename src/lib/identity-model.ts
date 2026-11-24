@@ -178,11 +178,12 @@ export function withOrganization(identity: Identity, previousId: string | undefi
 
 const nameCollator = new Intl.Collator();
 export const byName = (a: Identity, b: Identity) => nameCollator.compare(sameText(a.name), sameText(b.name)) || nameCollator.compare(a.id, b.id);
-/** In byName order, each name normalised once rather than at every comparison (a staff list can hold 20,000). */
-export function sortedByName<T extends Identity>(identities: readonly T[]): T[] {
-  return identities.map(identity => ({ identity, key: sameText(identity.name) }))
+/** In byName order, each name normalised once rather than at every comparison (a staff list can
+ * hold 20,000). `identityOf` sorts other items by their identity. */
+export function sortedByName<T>(items: readonly T[], identityOf: (item: T) => Identity = item => item as unknown as Identity): T[] {
+  return items.map(item => ({ item, identity: identityOf(item), key: sameText(identityOf(item).name) }))
     .sort((a, b) => nameCollator.compare(a.key, b.key) || nameCollator.compare(a.identity.id, b.identity.id))
-    .map(entry => entry.identity);
+    .map(entry => entry.item);
 }
 
 /** An organisation's people (contacts first) and its systems and accounts. */
@@ -190,8 +191,9 @@ export function membersOf(organization: Identity, identities: readonly Identity[
   const members = identities.filter(identity => live(identity) && identity.id !== organization.id && identity.folderId === organization.folderId
     && identity.connections.some(edge => edge.targetId === organization.id && MEMBERSHIP.includes(edge.label)));
   return {
-    people: members.filter(isPerson).sort((a, b) => Number(!!b.contact) - Number(!!a.contact) || byName(a, b)),
-    things: members.filter(identity => !isPerson(identity)).sort(byName),
+    // Contacts first, each group by name (the sort is stable).
+    people: sortedByName(members.filter(isPerson)).sort((a, b) => Number(!!b.contact) - Number(!!a.contact)),
+    things: sortedByName(members.filter(identity => !isPerson(identity))),
   };
 }
 
@@ -259,12 +261,15 @@ export function orgChart(organization: Identity, identities: readonly Identity[]
     }
     for (const id of path) settled.add(id);
   }
+  // Appended, never copied (a flat staff list of thousands reports to one person), then sorted by name.
   const reports = new Map<string, Identity[]>();
   for (const person of people) {
     const above = manager.get(person.id);
-    if (above) reports.set(above, [...(reports.get(above) ?? []), person]);
+    if (!above) continue;
+    const list = reports.get(above);
+    if (list) list.push(person); else reports.set(above, [person]);
   }
-  for (const list of reports.values()) list.sort(byName);
+  for (const [id, list] of reports) reports.set(id, sortedByName(list));
   const reportsOf = (person: Identity) => reports.get(person.id) ?? [];
   // Team sizes and flags, worked out once from the bottom up without recursion (a deep chain would
   // overflow the stack).
@@ -276,7 +281,8 @@ export function orgChart(organization: Identity, identities: readonly Identity[]
     for (const stack = [top]; stack.length;) {
       const person = stack.pop() as Identity;
       order.push(person);
-      stack.push(...reportsOf(person));
+      // One at a time: a team of 100,000 would exceed the arguments one call may take.
+      for (const report of reportsOf(person)) stack.push(report);
     }
     for (let at = order.length - 1; at >= 0; at--) {
       const person = order[at];
@@ -289,8 +295,8 @@ export function orgChart(organization: Identity, identities: readonly Identity[]
   const flagged = (person: Identity): boolean => flag.get(person.id) ?? own(person);
   return {
     organization,
-    roots: people.filter(person => !manager.has(person.id) && reports.has(person.id)).sort(byName),
-    unplaced: people.filter(person => !manager.has(person.id) && !reports.has(person.id)).sort(byName),
+    roots: sortedByName(people.filter(person => !manager.has(person.id) && reports.has(person.id))),
+    unplaced: sortedByName(people.filter(person => !manager.has(person.id) && !reports.has(person.id))),
     reportsOf, teamSize, flagged,
   };
 }
@@ -308,7 +314,7 @@ export function chartableOrganizations(identities: readonly Identity[]): Identit
       if (organization && organization.id !== person.id && organization.folderId === person.folderId) withPeople.add(organization.id);
     }
   }
-  return identities.filter(organization => live(organization) && isOrganization(organization) && withPeople.has(organization.id)).sort(byName);
+  return sortedByName(identities.filter(organization => live(organization) && isOrganization(organization) && withPeople.has(organization.id)));
 }
 
 /** Search over the name, other names, description, type and details that are not private. */

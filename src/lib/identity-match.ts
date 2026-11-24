@@ -83,8 +83,7 @@ export function buildIdentityIndex(identities: readonly Identity[], options: {
       .map(({ identity, linkable }) => `${identity.id}:${identity.updatedAt}:${linkable ? 1 : 0}`).join('|');
     const previous = options.previous?.folders.get(folderId);
     if (previous?.signature === signature) { folders.set(folderId, previous); continue; }
-    const order = new Map(sortedByName(unsorted.map(entry => entry.identity)).map((identity, index) => [identity.id, index]));
-    const group = [...unsorted].sort((a, b) => (order.get(a.identity.id) ?? 0) - (order.get(b.identity.id) ?? 0));
+    const group = sortedByName(unsorted, entry => entry.identity);
     const folder: FolderIndex = { names: new Map(), details: new Map(), loose: new Map(), known: new Set(), identities: [], signature,
       firstLetters: new Set(), longestName: 0 };
     for (const { identity, linkable } of group) {
@@ -202,10 +201,11 @@ export function findMentions(text: string, folder: FolderIndex | undefined,
 }
 
 /** Whether `haystack` (already through `sameText`) contains `needle` as whole words. Each match
- * examined spends one unit of `budget`; false once it is spent. */
+ * examined spends the needle's length from `budget` (what finding it compared); false once spent. */
 function containsWords(haystack: string, needle: string, budget: { left: number }): boolean {
   for (let at = haystack.indexOf(needle); at !== -1; at = haystack.indexOf(needle, at + 1)) {
-    if (--budget.left < 0) return false;
+    budget.left -= needle.length;
+    if (budget.left < 0) return false;
     const before = at > 0 ? haystack[at - 1] : '';
     const after = haystack[at + needle.length] ?? '';
     if (!(before && WORD.test(before)) && !(after && WORD.test(after))) return true;
@@ -224,11 +224,12 @@ export interface IdentityActivity {
   partial?: boolean;
 }
 
-/** At most this many names, other names and public details are looked for in notes, and at most this
- * many matches examined: a crafted identity ("aaa", "aaaa"… against notes of "a") cannot stall the
- * render that shows its profile. */
-const MAX_ACTIVITY_WORDS = 50;
-const MAX_ACTIVITY_MATCHES = 2_000_000;
+/** At most this many names, other names and public details are looked for in notes (more than the
+ * app lets a person or a tool add), each at most MAX_MATCH_LENGTH long as linking does, and at most
+ * this many characters compared at matches: a crafted identity ("aaa", "aaaa"… against notes of "a")
+ * cannot stall the render that shows its profile. */
+const MAX_ACTIVITY_WORDS = 500;
+const MAX_ACTIVITY_WORK = 50_000_000;
 
 /**
  * Where an identity appears in its investigation: events whose Actor or Assets name it,
@@ -245,16 +246,17 @@ export function activityOf(identity: Identity, records: {
   const keys = new Set(knownTexts(identity));
   const details = new Set(identity.details.filter(detail => !detail.private).map(detail => detailKey(detail.value)));
   const names = new Set([identity.name, ...identity.aliases].map(sameText).filter(Boolean));
-  const searchable = [...keys].filter(text => text.length >= MIN_MENTION_LENGTH);
+  const searchable = [...keys].filter(text => text.length >= MIN_MENTION_LENGTH && text.length <= MAX_MATCH_LENGTH);
   // The name first (knownTexts lists it first), then other names and details, up to the cap.
   const words = searchable.slice(0, MAX_ACTIVITY_WORDS);
-  const budget = { left: MAX_ACTIVITY_MATCHES };
+  const budget = { left: MAX_ACTIVITY_WORK };
   const named = (text: string | undefined) => !!text && (keys.has(sameText(text)) || details.has(detailKey(text)));
-  const notes = records.notes.filter(note => {
-    if (!inFolder(note) || note.isFolder || budget.left < 0) return false;
+  // Newest first, so a budget spent on old notes never hides recent ones.
+  const notes = records.notes.filter(note => inFolder(note) && !note.isFolder).sort((a, b) => b.updatedAt - a.updatedAt).filter(note => {
+    if (budget.left < 0) return false;
     const text = records.noteTexts?.get(note.id) ?? noteMatchText(note);
     return words.some(word => containsWords(text, word, budget));
-  }).sort((a, b) => b.updatedAt - a.updatedAt);
+  });
   return {
     events: records.events.filter(event => inFolder(event) && (named(event.actor) || (event.assets ?? []).some(named)))
       .sort((a, b) => b.timestamp - a.timestamp),

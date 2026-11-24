@@ -37,9 +37,10 @@ export function IdentityLinksProvider({ identities, isVisible, threatActors, fol
   let index = built.index;
   if (built.identities !== identities || built.isVisible !== isVisible || built.threatActors !== threatActors) {
     const next = buildIdentityIndex(identities, { isVisible, threatActors, previous: built.index });
-    // The visibility check is a new function whenever any data changes (a note saved). When no
-    // investigation's index and no threat actor changed, the same index is kept, so the chips,
-    // IOC owners, reports and graph that read it are not re-rendered.
+    // While screensharing, the visibility check is a new function whenever any data changes (a note
+    // saved); otherwise it is one constant. When no investigation's index and no threat actor
+    // changed, the same index is kept, so the chips, IOC owners, reports and graph that read it are
+    // not re-rendered.
     index = sameIndex(next, built.index) ? built.index : next;
     setBuilt({ identities, isVisible, threatActors, index });
   }
