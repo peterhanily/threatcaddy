@@ -79,7 +79,7 @@
   <div class="container">
     <a href="https://threatcaddy.com" class="back">&larr; Back to ThreatCaddy</a>
     <h1>Privacy Policy</h1>
-    <p class="subtitle">Last updated: November 22, 2026</p>
+    <p class="subtitle">Last updated: November 25, 2026</p>
 
     <p>
       ThreatCaddy is a personal open-source project. It is <strong>not affiliated with any
@@ -89,6 +89,7 @@
     <h2>Data Storage</h2>
     <ul>
       <li>Notes, tasks, timelines, CaddyAI conversations and other investigation data are stored locally in your browser using IndexedDB. Optional features described below can transmit selected content, identifiers, or requests to other services.</li>
+      <li>Identities (people, organizations, systems and accounts you record) are stored with the investigation. Details marked private are masked until you choose Show and are not shown while screensharing. Copies kept so an AI change can be undone are deleted with the identity. Names you choose to ignore are remembered on this device as hashes, encrypted when local workspace encryption is on.</li>
       <li>Extension clips are stored in <code>chrome.storage.local</code> on your device.</li>
       <li>The standalone HTML file and the default web app require no accounts and use no cookies.</li>
     </ul>
@@ -98,6 +99,7 @@
       <li>You may optionally connect to a self-hosted team server for real-time sync and collaboration. This is entirely opt-in — no data is sent until you configure a server URL and sign in.</li>
       <li>When connected, notes, tasks, timelines, IOCs, and other investigation entities are transmitted to the server you configure. A CaddyAI conversation in an investigation that is not local-only is transmitted too; conversations outside any investigation and in local-only investigations are not synced. Authentication tokens are stored in your browser.</li>
       <li>Local workspace encryption protects covered browser fields at rest; it is not end-to-end encryption for team sync. The server receives readable entity values and may retain historical records. Removing a server record does not erase offline copies or exported files.</li>
+      <li>Identities sync to a server that supports them, details marked private included. The server keeps earlier revisions in its history, records identity changes in its activity log without names, and does not give identities to its bots.</li>
       <li>The team server is open-source and self-hosted. This project does not provide a hosted team-server service; access and retention depend on the server operator you choose.</li>
     </ul>
 

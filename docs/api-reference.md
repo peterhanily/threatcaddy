@@ -478,7 +478,7 @@ Invite a member by email. **Owner only.**
 
 #### `DELETE /api/investigations/:id`
 
-Permanently delete an investigation and all its content. **Owner only.** Deletes notes, tasks, timeline events, whiteboards, IOCs, chat threads, posts, files, notifications, and memberships. The server's sync history, audit entries and database backups still hold earlier copies; the investigation ID cannot be re-created afterwards.
+Permanently delete an investigation and all its content. **Owner only.** Deletes notes, tasks, timeline events, whiteboards, IOCs, chat threads, evidence items, identities, posts, files, notifications, and memberships. The server's sync history, audit entries and database backups still hold earlier copies; the investigation ID cannot be re-created afterwards.
 
 ---
 
@@ -1239,7 +1239,7 @@ List all investigations with creator info and member counts.
 
 ##### `GET /admin/api/investigations/:id/detail`
 
-Detailed view: investigation metadata, members, and entity counts (notes, tasks, timeline events, whiteboards, IOCs, chat threads, files).
+Detailed view: investigation metadata, members, and entity counts (notes, tasks, timeline events, whiteboards, IOCs, chat threads, files, evidence items, identities).
 
 ##### `PATCH /admin/api/investigations/:id`
 

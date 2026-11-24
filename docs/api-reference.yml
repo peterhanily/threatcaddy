@@ -2343,6 +2343,10 @@ components:
               type: integer
             chats:
               type: integer
+            evidence:
+              type: integer
+            identities:
+              type: integer
         memberCount:
           type: integer
       required: [folderId, role, folder, entityCounts, memberCount]
@@ -2407,6 +2411,10 @@ components:
             whiteboards:
               type: integer
             chats:
+              type: integer
+            evidence:
+              type: integer
+            identities:
               type: integer
         members:
           type: array

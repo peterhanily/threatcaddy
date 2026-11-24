@@ -122,9 +122,9 @@ A changed history generation or a cursor ahead of the server returns `409 SYNC_C
 
 ### 4.3 Snapshot
 
-`GET /api/sync/snapshot/:folderId` returns a currently authorized investigation as a map of tables to rows, limited to the `tables` the client lists, as for pull.
+`GET /api/sync/snapshot/:folderId` returns a currently authorized investigation as a map of tables to rows, limited to the `tables` the client lists, as for pull. A snapshot is not a portable backup or permission to overwrite pending local work. Current client recovery also checks workspace identity and history generation; see [server sync recovery](../server/docs/sync-recovery.md).
 
-The server's change log keeps every revision of every synced record, and history rotation does not compact it. A field removed from a record, including a private identity detail, can therefore still reach a member who joins later, or any device that pulls from the start, through an earlier revision. Members of the investigation at the time already received it. This is not a portable backup or permission to overwrite pending local work. Current client recovery also checks workspace identity and history generation; see [server sync recovery](../server/docs/sync-recovery.md).
+The server's change log keeps every revision of every synced record, and history rotation does not compact it. A field removed from a record, including a private identity detail, can therefore still reach a member who joins later, or any device that pulls from the start, through an earlier revision. Members of the investigation at the time already received it.
 
 ### 4.4 Conflict Resolution
 
@@ -229,7 +229,7 @@ Real-time collaboration is powered by WebSocket connections between the client a
 - subscribe / unsubscribe -- Join or leave folder channels (verified against investigation_members).
 - presence-update -- Report current view and entity being edited. Server broadcasts presence to other subscribers.
 - entity-change-preview -- Optimistic relay from sender to other subscribers (verified for editor access).
-- entity-change -- Server-authoritative entity changes broadcast after sync push acceptance.
+- entity-change -- Server-authoritative entity changes broadcast after sync push acceptance. An identity change is announced without its record (`data`) or title: subscribers include clients that never receive identities, and clients pull the record instead.
 - ping / pong -- Keep-alive (25-second interval).
 - access-revoked -- Sent when a user is removed from an investigation.
 - error -- Sent on malformed messages or unauthorized actions.

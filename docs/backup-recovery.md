@@ -359,6 +359,18 @@ Backup blobs are stored on disk at `${FILE_STORAGE_PATH}/backups/<id>.enc`. The 
 
 ## 3. Database Backup (PostgreSQL)
 
+### What the Database Holds
+
+Protect the database, its dumps and its volume snapshots as you would the investigations themselves. Everything a team syncs is stored readable in PostgreSQL: local workspace encryption protects the browser's copy only. For identities this includes details marked private, such as phone numbers and home addresses:
+
+- **Current records:** in the `identities` table.
+- **History:** in every revision of a record that the sync change log (`sync_changes`) keeps. History rotation does not compact it, so a detail later removed or made private is still in earlier revisions.
+- **Deleted identities:** kept as tombstones with their details for the tombstone retention period (90 days by default).
+- **Rows removed for good:** when retention or an investigation's purge removes a row, the change log records a final copy of the whole row.
+- **Activity log:** it records identity changes by id and action, without names, and is kept for the audit log retention period (365 days by default).
+
+Both retention periods are server settings (`tombstone_retention_days`, `audit_log_retention_days`). A dump or volume snapshot holds all of the above, so keep it private and encrypt off-device copies.
+
 ### Docker Compose Setup
 
 If running the standard `docker-compose.yml`, PostgreSQL data is stored in the `pg-data` named volume. A dump alone is only the database portion of recovery. For a consistent recovery snapshot, stop the application server before capturing both the dump and managed files, retain checksums and the matching image identity, then resume it after capture. Keep dump files private and encrypt the off-device copy.
