@@ -33,6 +33,15 @@ beforeEach(async () => {
 afterEach(() => { engine.stop(); disableSync(); });
 
 describe('sync engine persistence contract', () => {
+  it('lists for live announcements only the investigations the server holds', async () => {
+    await db.folders.bulkAdd([
+      { id: 'unsent', name: 'Not uploaded yet', order: 1, createdAt: 1 },
+      { id: 'private', name: 'Local only', order: 2, createdAt: 1, localOnly: true },
+    ]);
+    await db.table('_syncMeta').bulkPut([{ key: revisionKey('folders', 'f1'), value: 3 }, { key: revisionKey('folders', 'private'), value: 2 }]);
+    expect(await engine.serverFolderIds()).toEqual(['f1']);
+  });
+
   it.each([false, true])('preserves a newer cross-tab eviction while replay is in flight (later page: %s)', async laterPage => {
     const onError = vi.fn(); engine.setErrorHandler(onError);
     await evictSyncedFolder('f1');

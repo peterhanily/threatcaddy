@@ -13,6 +13,7 @@ vi.mock('../lib/sync-engine', () => ({ syncEngine: {
   start: vi.fn(), stop: vi.fn(), setWSClient: vi.fn(), setWorkspaceIdentity: vi.fn(),
   setReadyHandler: mocks.ready, setRemoteChangeHandler: mocks.remote, setConflictHandler: mocks.conflicts,
   setErrorHandler: mocks.error, applyRemoteChange: mocks.apply, sync: mocks.sync, resolveConflicts: mocks.resolve,
+  serverFolderIds: async () => [],
 } }));
 vi.mock('../lib/ws-client', () => ({ WSClient: class {
   handlers = new Map<string, (message: Record<string, unknown>) => void>();
@@ -20,6 +21,7 @@ vi.mock('../lib/ws-client', () => ({ WSClient: class {
   disconnect = vi.fn();
   constructor() { mocks.sockets.push(this); }
   connect() {}
+  setSubscriptions() {}
   on(name: string, handler: (message: Record<string, unknown>) => void) { this.handlers.set(name, handler); }
   onStatusChange(handler: (connected: boolean) => void) { this.status = handler; }
 } }));

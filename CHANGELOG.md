@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Live team updates.** The app now subscribes to its shared investigations on the team server's WebSocket, so a teammate's change arrives within about a second instead of with the next 30-second pull. No released version sent the subscription, so the server's change announcements reached no app. The subscriptions are sent again after a reconnect, and only for investigations the server holds. Presence is unchanged.
+
 ## v2.1.0 — 2026-11-25
 
 Identities: a place to record the people, organizations, systems and accounts in an investigation, linked to the timeline, notes, IOCs, the graph, reports, Products and AI. The local database moves to version 35 (a new `identities` table; no existing table changes) and the team server adds migration `0025_identities`. A backup that contains identities can only be restored by a version that has them, and there is no downgrade.

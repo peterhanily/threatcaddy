@@ -25,9 +25,12 @@ vi.mock('../lib/ws-client', () => ({
     disconnect = mockWSDisconnect;
     on = mockWSOn;
     onStatusChange = mockWSOnStatusChange;
+    setSubscriptions = mockWSSetSubscriptions;
   },
 }));
 
+const mockWSSetSubscriptions = vi.fn();
+const mockServerFolderIds = vi.fn<() => Promise<string[]>>(async () => []);
 const mockSyncStart = vi.fn();
 const mockSyncStop = vi.fn();
 const mockSetWSClient = vi.fn();
@@ -54,6 +57,7 @@ vi.mock('../lib/sync-engine', () => ({
     sync: () => mockSync(),
     applyRemoteChange: (...args: unknown[]) => mockApplyRemoteChange(...args),
     forgetSkippedFolder: (folderId: string) => mockForgetSkippedFolder(folderId),
+    serverFolderIds: () => mockServerFolderIds(),
   },
 }));
 
@@ -160,6 +164,16 @@ describe('useServerSync', () => {
     expect(mockWSConstructorArgs[0]).toEqual(['https://server.example.com', 'test-token']);
     expect(mockWSConnect).toHaveBeenCalled();
     expect(mockWSOn).toHaveBeenCalled();
+  });
+
+  it('subscribes the socket to the investigations the server holds', async () => {
+    mockServerFolderIds.mockResolvedValue(['folder-1', 'folder-2']);
+    mockWSSetSubscriptions.mockClear();
+
+    renderHook(() => useServerSync(makeAuth(), makeReloadFns()));
+    await flushPromises();
+    await vi.waitFor(() => expect(mockWSSetSubscriptions).toHaveBeenCalledWith(['folder-1', 'folder-2']));
+    mockServerFolderIds.mockResolvedValue([]);
   });
 
   it('stops transport without disabling durable capture when auth is disconnected', async () => {

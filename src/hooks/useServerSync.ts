@@ -75,6 +75,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
     let active = true;
     const current = () => active && activeScope.current === scope;
     const { serverUrl, connected, userId } = scope;
+    let stopFolderWatch: (() => void) | null = null;
     const currentAuth = callbacks.current.auth;
     setStateScope(scope);
     setPresenceUsers([]);
@@ -155,6 +156,11 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
               callbacks.current.reloadFns.folders();
             }
           });
+          // The server announces a change only to an investigation's subscribers. Without this,
+          // a teammate's change waits for the next timed pull.
+          const folderWatch = liveQuery(() => syncEngine.serverFolderIds())
+            .subscribe({ next: ids => { if (current()) ws.setSubscriptions(ids); }, error: () => {} });
+          stopFolderWatch = () => folderWatch.unsubscribe();
           wsClientRef.current = ws;
         }
       }).catch((err) => {
@@ -172,6 +178,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
 
     return () => {
       active = false;
+      stopFolderWatch?.();
       syncEngine.stop();
       syncEngine.setWSClient(null);
       if (wsClientRef.current) {
