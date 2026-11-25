@@ -29,7 +29,7 @@ const MAX_DETAILS = 200;
 const MAX_TOTAL_DETAILS = 400;
 
 /** Plain text: control characters and runs of spaces become one space, bounded. Never HTML-parsed,
- * so "Smith <john@x.com>" and "R&D" stay as written (React escapes them when shown). */
+ * so "Smith <john@x.example>" and "R&D" stay as written (React escapes them when shown). */
 const clean = (value: unknown, max: number) => String(value ?? '').replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 /** An id exactly as the dispatcher's reach check reads it (tool-reach.ts `arg`), so both see the same row. */
 const rawId = (value: unknown) => String(value || '');

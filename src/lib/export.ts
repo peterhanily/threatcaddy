@@ -564,22 +564,35 @@ export function sanitizeEvidenceItem(raw: unknown): EvidenceItem | null {
   };
 }
 
+const IDENTITY_NAME_LIMIT = 1000;   // a name, other name, type, label or connection phrase
+const IDENTITY_TEXT_LIMIT = 20_000; // a description or a detail's value
+const IDENTITY_LIST_LIMIT = 2000;   // other names, details or connections
 export function sanitizeIdentity(raw: unknown): Identity | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   const objects = (v: unknown) => (Array.isArray(v) ? v : []).filter((x): x is Record<string, unknown> => !!x && typeof x === 'object');
-  const details: IdentityDetail[] = objects(r.details).map(d => ({
-    id: str(d.id) || nanoid(), label: str(d.label), value: str(d.value), ...(d.private === true ? { private: true } : {}),
-  }));
-  const connections: IdentityConnection[] = objects(r.connections)
-    .filter(c => typeof c.targetId === 'string' && c.targetId !== '').map(c => ({ targetId: str(c.targetId), label: str(c.label) }));
+  // Far above anything the forms, import or the AI tools store: a crafted row cannot make every
+  // reader's name matching work through megabytes of text.
+  const short = (v: unknown, fallback = '') => str(v, fallback).slice(0, IDENTITY_NAME_LIMIT);
+  const long = (v: unknown) => str(v).slice(0, IDENTITY_TEXT_LIMIT);
+  const detailIds = new Set<string>();
+  const details: IdentityDetail[] = objects(r.details).slice(0, IDENTITY_LIST_LIMIT).map((d, index) => {
+    // Two details with one id would be shown, hidden and removed together.
+    let id = str(d.id) || nanoid();
+    if (detailIds.has(id)) id = `${id}~${index}`;
+    detailIds.add(id);
+    // Private unless it plainly is not: a flag of another shape ("true", 1) must not publish the value.
+    return { id, label: short(d.label), value: long(d.value), ...(d.private == null || d.private === false ? {} : { private: true }) };
+  });
+  const connections: IdentityConnection[] = objects(r.connections).slice(0, IDENTITY_LIST_LIMIT)
+    .filter(c => typeof c.targetId === 'string' && c.targetId !== '').map(c => ({ targetId: str(c.targetId), label: short(c.label) }));
   return {
     id: str(r.id),
     folderId: r.folderId != null ? str(r.folderId) : undefined,
-    type: str(r.type, 'person'),
-    name: str(r.name),
-    description: r.description != null ? str(r.description) : undefined,
-    aliases: strArr(r.aliases),
+    type: short(r.type, 'person'),
+    name: short(r.name),
+    description: r.description != null ? long(r.description) : undefined,
+    aliases: strArr(r.aliases).slice(0, IDENTITY_LIST_LIMIT).map(alias => alias.slice(0, IDENTITY_NAME_LIMIT)),
     status: IDENTITY_STATUSES.find(value => value === r.status),
     contact: r.contact === true ? true : undefined,
     details,

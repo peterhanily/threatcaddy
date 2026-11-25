@@ -323,7 +323,7 @@ describe('the interface language', () => {
     await german();
     // As the HTTP backend would: the bundle arrives when asked for, before the write's transaction starts.
     const load = vi.spyOn(i18n, 'loadNamespaces').mockImplementation(async () => { i18n.addResourceBundle('de', 'identities', deIdentities); });
-    await run('update_identity', { id: 'lee', addDetails: [{ label: 'Telefon', value: '+49 30 1234567' }, { label: 'E-Mail-Adresse', value: 'lee@example.test' }] });
+    await run('update_identity', { id: 'lee', addDetails: [{ label: 'Telefon', value: '+49 30 23125 000' }, { label: 'E-Mail-Adresse', value: 'lee@example.test' }] });
     expect(load).toHaveBeenCalledWith('identities');
     expect((await stored('lee')).details.map(({ label, private: hidden }) => [label, !!hidden])).toEqual([['Telefon', true], ['E-Mail-Adresse', false]]);
     expect(JSON.stringify(await run('read_identity', { id: 'lee' }))).not.toContain('1234567');

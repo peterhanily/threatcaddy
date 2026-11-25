@@ -74,7 +74,7 @@ describe('Activity finds names in text written without spaces (A11Y-2)', () => {
     expect(named(make('Dana'), 'Danaher approved it.')).toBe(false);
     expect(named(make('राम'), 'रामा आया')).toBe(false);
     const handle = make('Payments desk', { type: 'account', details: [{ id: 'h', label: 'Handle', value: '@acme' }] });
-    expect(named(handle, 'mail support@acme.com today')).toBe(false);
+    expect(named(handle, 'mail support@acme.example today')).toBe(false);
     expect(named(handle, 'paid @acme twice')).toBe(true);
     expect(named(make('Acme, Inc.'), 'Acme, Inc.x was paid')).toBe(false);
   });

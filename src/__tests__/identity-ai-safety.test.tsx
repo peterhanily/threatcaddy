@@ -221,7 +221,7 @@ describe('AI-3: approval cards say what changes, by name', () => {
     const english = i18n.getResourceBundle('en', 'identities') as Record<string, string>;
     const load = vi.spyOn(i18n, 'loadNamespaces').mockImplementation(async () => { i18n.addResourceBundle('de', 'identities', { ...english, 'detailLabel.phone': 'Telefon' }); });
     try {
-      const summary = await summarizeToolChange('update_identity', { id: 'Lk2_lee', addDetails: [{ label: 'Telefon', value: '+49 30 1234567' }] }, 'S');
+      const summary = await summarizeToolChange('update_identity', { id: 'Lk2_lee', addDetails: [{ label: 'Telefon', value: '+49 30 23125 000' }] }, 'S');
       expect(load).toHaveBeenCalledWith('identities');
       expect(summary?.fields[0].items).toEqual([{ text: 'Telefon', private: true }]);
     } finally {

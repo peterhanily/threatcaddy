@@ -50,13 +50,14 @@ export function labelWords(label: string): string[] {
  * else the label says ("Date of birth (from passport)", "Passport number - source HR"). */
 const PRIVATE_WORDS = new Set([
   'birth', 'birthday', 'birthdate', 'dob', 'passport', 'ssn', 'nino', 'nhs', 'medicare', 'aadhaar', 'pps', 'dni', 'nie', 'cpf', 'bsn', 'nir', 'nss',
-  'gender', 'sex', 'ethnicity', 'religion', 'disability', 'salary', 'medical', 'biometric', 'biometrics', 'genetic', 'fingerprint', 'fingerprints',
+  'gender', 'sex', 'sexuality', 'ethnicity', 'ethnic', 'racial', 'nationality', 'citizenship', 'religion', 'disability', 'disabilities', 'disabled',
+  'salary', 'medical', 'diagnosis', 'marital', 'immigration', 'privatadresse', 'wohnadresse', 'wohnort', 'biometric', 'biometrics', 'genetic', 'fingerprint', 'fingerprints',
   'geburtsdatum', 'geburtstag', 'ausweis', 'ausweisnummer', 'steuernummer', 'sozialversicherungsnummer', 'reisepass',
   'nacimiento', 'pasaporte', 'naissance', 'passeport', 'nascita', 'passaporto', 'nascimento', 'passaporte', 'geboortedatum', 'paspoort',
 ]);
 /** Phones are private unless the label names a device or service ("Phone model", "Mobile device ID", "Cell tower"). */
 const PHONE_WORDS = new Set([
-  'phone', 'phones', 'telephone', 'tel', 'mobile', 'cell', 'cellphone', 'fax', 'sms', 'whatsapp', 'pager', 'landline',
+  'phone', 'phones', 'telephone', 'tel', 'ph', 'mobile', 'mob', 'cell', 'cellphone', 'fax', 'sms', 'whatsapp', 'pager', 'landline',
   'telefon', 'telefonnummer', 'handy', 'handynummer', 'mobil', 'mobilnummer', 'mobiltelefon', 'telefono', 'movil', 'celular', 'cellulare',
   'telefone', 'telefoon', 'telefoonnummer', 'mobiel',
 ]);
@@ -96,7 +97,7 @@ export function isPrivateLabel(label: string, translated: readonly string[] = []
   if (has('po') && has('box')) return true;
   if (has('contact') && has('number', 'no')) return true;
   if (has('email', 'mail', 'emails') && has('personal', 'private', 'home')) return true;
-  if (has('social') && has('security', 'insurance')) return true;
+  if (has('social', 'sociale') && has('security', 'insurance', 'securite')) return true;
   if (has('national', 'government') && has('insurance', 'id', 'identity', 'identification', 'number')) return true;
   if (has('ni') && has('number', 'no')) return true;
   if (has('sin') && (words.length === 1 || has('number', 'no'))) return true;
@@ -104,6 +105,9 @@ export function isPrivateLabel(label: string, translated: readonly string[] = []
   if (has('identity') && has('number')) return true;
   if (has('personal') && has('id', 'number', 'code', 'identity')) return true;
   if (has('tax') && has('id', 'number', 'code', 'file')) return true;
+  if (has('tin') && (words.length === 1 || has('number', 'no'))) return true;
+  // A payment card names its holder; a bank account is left public (it is often the indicator in a fraud case).
+  if (has('card') && has('credit', 'debit', 'payment', 'number', 'no')) return true;
   if (has('codice') && has('fiscale')) return true;
   if (has('visa') && has('number', 'no')) return true;
   if (has('driver', 'drivers', 'driving') && has('license', 'licence')) return true;
@@ -113,7 +117,10 @@ export function isPrivateLabel(label: string, translated: readonly string[] = []
   // The other special categories of personal data.
   if (has('sexual') && has('orientation', 'life')) return true;
   if (has('political') && has('opinion', 'opinions', 'affiliation', 'party', 'views')) return true;
-  if (has('trade') && has('union')) return true;
+  if (has('union') && has('trade', 'member', 'membership')) return true;
+  if (has('sick') && has('leave', 'note', 'days')) return true;
+  // "Age" and "Race" alone are a person's; "Password age" and "Race condition" are not.
+  if (words.length === 1 && has('age', 'race')) return true;
   if (has('criminal') && has('record', 'records', 'conviction', 'convictions', 'history', 'offences', 'offenses')) return true;
   if (has('religious', 'philosophical') && has('belief', 'beliefs', 'affiliation')) return true;
   const key = sameText(label);
@@ -189,10 +196,13 @@ const live = (identity: Identity) => !identity.trashed;
  * identities share makes every link to it ambiguous, so the form, the AI tools and import refuse it.
  */
 export function nameTakenBy(identities: readonly Identity[], folderId: string | undefined, text: string, selfId?: string): Identity | undefined {
-  const key = sameText(text);
+  // Invisible characters and full-width letters do not make a different name: a twin that reads the
+  // same would be approved or linked as the existing identity.
+  const twin = (name: string) => sameText(name.normalize('NFKC').replace(/\p{Cf}/gu, ''));
+  const key = twin(text);
   if (!key) return undefined;
   return identities.find(other => other.id !== selfId && live(other) && other.folderId === folderId
-    && [other.name, ...other.aliases].some(taken => sameText(taken) === key));
+    && [other.name, ...other.aliases].some(taken => twin(taken) === key));
 }
 
 /**
