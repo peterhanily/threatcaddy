@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v2.1.1 — 2026-11-25
+
 - **Live team updates.** The app now subscribes to its shared investigations on the team server's WebSocket, so a teammate's change arrives within about a second instead of with the next 30-second pull. No released version sent the subscription, so the server's change announcements reached no app. The subscriptions are sent again after a reconnect, and only for investigations the server holds. Presence is unchanged.
 
 ## v2.1.0 — 2026-11-25

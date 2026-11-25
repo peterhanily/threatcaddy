@@ -162,7 +162,7 @@ the release, so expose this route only to monitoring systems.
 ```json
 {
   "status": "ok",
-  "version": "2.1.0"
+  "version": "2.1.1"
 }
 ```
 
@@ -170,7 +170,7 @@ the release, so expose this route only to monitoring systems.
 ```json
 {
   "status": "degraded",
-  "version": "2.1.0"
+  "version": "2.1.1"
 }
 ```
 
