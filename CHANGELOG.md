@@ -2,8 +2,11 @@
 
 ## Unreleased
 
+## v2.1.2 — 2026-11-25
+
 - **Presence.** In a shared investigation the header shows who else has it open and which view they are on. The app sends the view's name only, once the server holds the subscription and every 15 seconds while the page is visible; the server keeps it in memory and forgets a person after 30 seconds. Nothing is sent for a local-only investigation, and the indicator is hidden while screensharing. No earlier version sent presence, so the indicator was always empty. The app says when you leave an investigation; a server older than this version forgets you after 30 seconds instead. Presence is kept per person, so with two devices in one investigation the others see the view reported last. A teammate still on 2.1.1 sees one list for all their shared investigations, themselves included, because that version does not tell investigations apart.
-- **Your own other devices.** A change you make reaches your other signed-in devices within about two seconds instead of with their next 30-second pull. The server gives each WebSocket connection an id at sign-in, the app names it in a push, and the server then skips only that connection. Needs this version on the server and on the device that makes the change; with an older server or client, your other devices wait for the pull as before. The receiving device waits 1.5 seconds before it syncs, so that a second tab of the same browser, which shares the outgoing queue, does not send the same rows again.
+- **Your own other devices.** A change you make reaches your other signed-in devices within about two seconds instead of with their next 30-second pull. The server gives each WebSocket connection an id at sign-in, the app names it in a push, and the server then skips only that connection. Needs 2.1.2 on the server and on the device that makes the change; with an older server or client, your other devices wait for the pull as before. The receiving device waits 1.5 seconds before it syncs, so that a second tab of the same browser, which shares the outgoing queue, does not send the same rows again.
+- **CI:** the Pages publish job names its artifact per attempt and pauses before deploying, so a re-run no longer finds two artifacts and a first run no longer misses the one just uploaded. The post-publication check waits until every published file is served with its exact bytes, and asks again, twice at most, when the host answers 5xx for a static file; the status and bytes of the answer it uses are still checked.
 
 ## v2.1.1 — 2026-11-25
 

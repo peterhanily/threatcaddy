@@ -8,7 +8,7 @@ import { chromium, expect } from '@playwright/test';
 import { throwIfFailed } from './lib/cleanup-outcome.mjs';
 import {
   CRITICAL_FILES, OFFLINE_PROBE_PATH, expectedOfflineFailure, loadVerifiedArtifact,
-  requestPolicy, sha256, validateSiteURL, validateSourceSHA, waitForRelease,
+  requestPolicy, sha256, validateSiteURL, validateSourceSHA, waitForFiles, waitForRelease,
 } from './release-contract.mjs';
 
 const usage = 'node scripts/release-smoke.mjs --url https://your-owned-site.example/ --source-sha <40hex> --artifact-dir <verified-client> [--output-dir test-results/release-smoke] [--propagation-timeout-ms 180000]';
@@ -91,7 +91,7 @@ async function reopenNote(context, url, saved) {
 }
 
 async function runStage(name, artifact, operation, { standalone = false, serviceWorkers = 'block' } = {}) {
-  const stage = { name, status: 'running', errors: [], expectedOfflineFailures: [], verifiedRequests: 0, workerDiagnostics: [] };
+  const stage = { name, status: 'running', errors: [], expectedOfflineFailures: [], verifiedRequests: 0, retriedResponses: [], workerDiagnostics: [] };
   result.stages.push(stage);
   let context;
   let tracingStarted = false;
@@ -146,7 +146,15 @@ async function runStage(name, artifact, operation, { standalone = false, service
       // network, not APIRequestContext (which is independent of setOffline).
       if (state.offline) { await route.continue(); return; }
       try {
-        const response = await route.fetch({ maxRedirects: 0, timeout: 20_000 });
+        // The host can answer 5xx for a static file for a moment after a deployment. Ask again,
+        // twice at most; the status and the bytes of the answer that is used are still checked.
+        let response = await route.fetch({ maxRedirects: 0, timeout: 20_000 });
+        for (let retry = 1; retry <= 2 && response.status() >= 500; retry++) {
+          stage.retriedResponses.push({ url: request.url(), status: response.status() });
+          await response.dispose();
+          await new Promise(resolve => setTimeout(resolve, retry * 2_000));
+          response = await route.fetch({ maxRedirects: 0, timeout: 20_000 });
+        }
         assert.equal(response.status(), 200, `Static response: ${request.url()}`);
         if (request.method() === 'GET') assert.equal(sha256(await response.body()), artifact.files.get(policy.path).hash, `Static artifact: ${policy.path}`);
         await route.fulfill({ response });
@@ -201,6 +209,13 @@ try {
       console.log(`Propagation attempt ${observation.attempt}: ${observation.files.filter(file => file.matches).length}/${CRITICAL_FILES.length} exact files`);
     },
   });
+  result.served = { files: await waitForFiles(site, artifact.files, {
+    timeoutMs: propagationTimeout,
+    onAttempt: observation => {
+      (result.servedAttempts ??= []).push(observation);
+      console.log(`Served attempt ${observation.attempt}: ${observation.total - observation.failed.length}/${observation.total} files`);
+    },
+  }) };
   result.publication = 'verified';
   browser = await chromium.launch({ headless: true });
   await runStage('hosted', artifact, async ({ page }) => {
