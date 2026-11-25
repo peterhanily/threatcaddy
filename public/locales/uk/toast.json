@@ -32,6 +32,7 @@
   },
   "import": {
     "dataImported": "Імпортовано {{events}} подій та {{iocs}} IOC",
+    "identitiesImported": "Суб'єкти: додано {{created}}, оновлено {{updated}}",
     "jsonImported": "Імпортовано {{notes}} нотаток, {{tasks}} завдань",
     "markdownImported": "Імпортовано {{count}} нотаток із Markdown",
     "importFailed": "Імпорт не вдався",

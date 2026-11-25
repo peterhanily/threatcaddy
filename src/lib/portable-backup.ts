@@ -1,7 +1,7 @@
 /** Versioned file adapters only. Canonical server/differential payloads are never rewritten here. */
 import type { QuickLink } from '../types';
 import { decryptBackup, type BackupPayload, type EncryptedBackupBlob } from './backup-crypto';
-import { BACKUP_TABLES, type BackupTable } from './backup-tables';
+import { BACKUP_TABLES, TABLES_ADDED_AFTER_PORTABLE_BACKUPS, type BackupTable } from './backup-tables';
 import { assertBackupSize, isBackupObject, validateBackupJSON, validateBackupQuickLinks, validatePortableTables } from './backup-records';
 import { portableRows, type BackupRow } from './backup-data';
 
@@ -39,10 +39,12 @@ function flat(raw: Record<string, unknown>, encrypted: boolean): DecodedPortable
     || Math.abs(raw.exportedAt) > 8_640_000_000_000_000)) invalid();
   const allowed = new Set<string>([...BACKUP_TABLES, 'version', 'format', 'exportedAt', 'quickLinks', 'redactions']);
   if (Object.keys(raw).some(name => !allowed.has(name))) invalid();
-  if (raw.format === PORTABLE_BACKUP_FORMAT && !BACKUP_TABLES.every(name => Array.isArray(raw[name]))) invalid();
+  if (raw.format === PORTABLE_BACKUP_FORMAT && !BACKUP_TABLES.every(name => Array.isArray(raw[name])
+    || (TABLES_ADDED_AFTER_PORTABLE_BACKUPS.has(name) && raw[name] === undefined))) invalid();
   // Files written while pulled rows still carried the server revision remain importable.
   const data = Object.fromEntries(BACKUP_TABLES.filter(name => Object.hasOwn(raw, name))
     .map(name => [name, Array.isArray(raw[name]) ? portableRows(name, raw[name] as BackupRow[]) : raw[name]]));
+  if (raw.format === PORTABLE_BACKUP_FORMAT) for (const name of TABLES_ADDED_AFTER_PORTABLE_BACKUPS) data[name] ??= [];
   validatePortableTables(data, { allowLegacyDefaults: raw.format !== PORTABLE_BACKUP_FORMAT });
   if (raw.quickLinks !== undefined) validateBackupQuickLinks(raw.quickLinks);
   if (raw.redactions !== undefined && (!Array.isArray(raw.redactions)

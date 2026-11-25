@@ -27,5 +27,21 @@
   "summaryNote": "Samenvattingsnotitie",
   "errorCount": "{{count}} fouten:",
   "andMore": "... en nog {{count}}",
-  "done": "Klaar"
+  "done": "Klaar",
+  "identities.create": "Identiteiten aanmaken of bijwerken",
+  "identities.noName": "(naamkolom niet toegewezen)",
+  "identities.needsInvestigation": "(kies een onderzoek)",
+  "identities.organization": "Werkt bij, voor rijen zonder organisatie",
+  "identities.noOrganization": "Niet vastgelegd",
+  "identities.privateColumn": "Privé",
+  "identities.privateColumnAria": "{{column}} importeren als privédetail",
+  "identities.privateHint": "Detailkolommen met Privé aangevinkt worden als privédetails geïmporteerd: verborgen tot je op Tonen klikt en tijdens schermdelen, nooit naar AI verzonden en weggelaten uit de CSV-export van Identiteiten (tenzij je ervoor kiest ze op te nemen), de samenvattingsnotitie van deze import en de gebeurtenissen ervan. Kolommen voor telefoonnummers, postadressen, geboortedata, paspoorten en nationale ID-nummers staan standaard aangevinkt; controleer de overige.",
+  "identities.unrecognised": "Niet herkend in het Engels of in de taal van de interface:",
+  "identities.unrecognisedTypes": "Type {{values}}: blijft zoals geschreven, als eigen type.",
+  "identities.unrecognisedStatuses": "Status {{values}}: niet geïmporteerd.",
+  "identities.unrecognisedContacts": "Contactpersoon {{values}}: niet geïmporteerd (gebruik ja of nee).",
+  "identities.unrecognisedPhrases": "Relatie {{values}}: blijft zoals geschreven, dus organigrammen gebruiken die niet.",
+  "identities.result": "Identiteiten",
+  "identities.updated_one": "{{count}} bijgewerkt",
+  "identities.updated_other": "{{count}} bijgewerkt"
 }

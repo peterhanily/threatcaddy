@@ -138,6 +138,8 @@
   "card.entity.events": "Eventos",
   "card.entity.whiteboards": "Pizarras",
   "card.entity.chats": "Chats",
+  "card.entity.evidence": "Pruebas",
+  "card.entity.identities": "Identidades",
   "card.members_many": "{{count}} miembros",
   "firstRun.title": "Del caso al informe",
   "firstRun.description": "Cree un caso, importe archivos fuente autorizados o explore un incidente ficticio de correo. No necesita configurar IA.",

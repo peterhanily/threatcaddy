@@ -126,7 +126,7 @@ export async function openNewTaskForm(page: Page) {
  */
 export async function navigateToView(
   page: Page,
-  view: 'Dashboard' | 'Investigations' | 'Notes' | 'Tasks' | 'Timeline' | 'Whiteboards' | 'IOCs' | 'Graph' | 'Activity' | 'Team Feed' | 'CaddyAI' | 'AgentCaddy',
+  view: 'Dashboard' | 'Investigations' | 'Notes' | 'Tasks' | 'Timeline' | 'Whiteboards' | 'IOCs' | 'Identities' | 'Graph' | 'Activity' | 'Team Feed' | 'CaddyAI' | 'AgentCaddy',
 ) {
   const viewsNav = page.locator('nav[aria-label="Views"]');
   await viewsNav.getByRole('button', { name: view }).click();

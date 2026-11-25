@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, X, FileText, Paperclip, ListChecks, Clock, PenTool, Save, Briefcase, ChevronDown, Shield, MessageSquare, Calendar, Pencil } from 'lucide-react';
+import { Search, X, FileText, Paperclip, ListChecks, Clock, PenTool, Save, Briefcase, ChevronDown, Shield, MessageSquare, Calendar, Pencil, Contact } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { formatDate } from '../../lib/utils';
 import { type SearchMode, type SearchQuery, type SearchResult, type SearchResultType, type UnifiedSearchResult } from '../../lib/search';
 import { SearchSession } from '../../lib/search-session';
 import { SEARCH_TYPES } from '../../lib/search-index';
 import { useSavedSearches } from '../../hooks/useSavedSearches';
-import type { Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread, Folder, EvidenceItem } from '../../types';
+import type { Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread, Folder, EvidenceItem, Identity } from '../../types';
 import { TagPills } from '../Common/TagPills';
 import SearchWorker from '../../workers/search.worker?worker';
 
@@ -27,6 +27,8 @@ interface SearchOverlayProps {
   chatThreads?: ChatThread[];
   evidenceItems?: EvidenceItem[];
   onNavigateToEvidence?: (id: string) => void;
+  identities?: Identity[];
+  onNavigateToIdentity?: (id: string) => void;
   onNavigateToIOC?: (id: string) => void;
   onNavigateToChat?: (id: string) => void;
   selectedFolderId?: string;
@@ -46,6 +48,7 @@ const TYPE_ICONS: Record<SearchResultType, typeof FileText> = {
   ioc: Shield,
   chat: MessageSquare,
   evidence: Paperclip,
+  identity: Contact,
 };
 
 const TYPE_LABEL_KEYS: Record<SearchResultType, string> = {
@@ -57,6 +60,7 @@ const TYPE_LABEL_KEYS: Record<SearchResultType, string> = {
   ioc: 'iocs',
   chat: 'chatThreads',
   evidence: 'evidence',
+  identity: 'identities',
 };
 
 export function SearchOverlay({
@@ -75,6 +79,8 @@ export function SearchOverlay({
   chatThreads,
   evidenceItems,
   onNavigateToEvidence,
+  identities,
+  onNavigateToIdentity,
   onNavigateToIOC,
   onNavigateToChat,
   selectedFolderId,
@@ -179,9 +185,9 @@ export function SearchOverlay({
   // Post lightweight query to worker when search or scope changes
   useEffect(() => {
     if (!open || !sessionRef.current) return;
-    sessionRef.current.update({ notes, tasks, clipsFolderId, timelineEvents, whiteboards, standaloneIOCs, chatThreads, evidenceItems });
+    sessionRef.current.update({ notes, tasks, clipsFolderId, timelineEvents, whiteboards, standaloneIOCs, chatThreads, evidenceItems, identities });
     sessionRef.current.search({ mode, raw: debouncedQuery, dateFilter }, searchFolderId);
-  }, [open, notes, tasks, clipsFolderId, mode, debouncedQuery, dateFilter, timelineEvents, whiteboards, standaloneIOCs, chatThreads, evidenceItems, searchFolderId]);
+  }, [open, notes, tasks, clipsFolderId, mode, debouncedQuery, dateFilter, timelineEvents, whiteboards, standaloneIOCs, chatThreads, evidenceItems, identities, searchFolderId]);
 
   const { results, error } = searchResult;
 
@@ -212,9 +218,10 @@ export function SearchOverlay({
     else if (result.type === 'ioc') onNavigateToIOC?.(result.id);
     else if (result.type === 'chat') onNavigateToChat?.(result.id);
     else if (result.type === 'evidence') onNavigateToEvidence?.(result.id);
+    else if (result.type === 'identity') onNavigateToIdentity?.(result.id);
     else onNavigateToTask(result.id);
     onClose();
-  }, [onNavigateToNote, onNavigateToTask, onNavigateToTimeline, onNavigateToWhiteboard, onNavigateToIOC, onNavigateToChat, onNavigateToEvidence, onClose]);
+  }, [onNavigateToNote, onNavigateToTask, onNavigateToTimeline, onNavigateToWhiteboard, onNavigateToIOC, onNavigateToChat, onNavigateToEvidence, onNavigateToIdentity, onClose]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     // Don't intercept keys when the folder dropdown is open

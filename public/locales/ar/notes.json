@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "ربط بملاحظة"
   },
+  "mentionMenu": {
+    "header": "الإشارة إلى هوية"
+  },
   "slashCommands": {
     "heading1": "عنوان 1",
     "heading1Desc": "عنوان كبير",

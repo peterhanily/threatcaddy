@@ -12,6 +12,19 @@ previously built image. Update the source, then run
 `docker compose build server` and
 `docker compose up -d --no-deps --force-recreate server`.
 
+2.1.0 adds one database migration, `0025_identities`: a new `identities` table
+with its indexes and sync triggers. It is additive (no existing table changes)
+and quick, and runs when the server starts. Back up the database and managed
+files first. Once it has run, a 2.0.4 server refuses to start on that database
+("Unsupported or modified migration history"), so rolling back means restoring
+the pre-upgrade backup, which loses every write made since, and then rotating
+the sync history. The server and the team's clients can be upgraded in either
+order: 2.0.4 clients keep syncing with a 2.1.0 server and never receive
+identities, and 2.1.0 clients keep identities on the device while their server
+is still 2.0.4. The database now holds identities, including details marked
+private; see [what the database holds](../docs/backup-recovery.md#what-the-database-holds)
+and the [2.1.0 upgrade notes](../docs/releases/v2.1.0.md#upgrade).
+
 2.0.4 adds no database migrations, but changes server defaults that can need
 action before you recreate the server: the supplied Compose file publishes the
 API on host loopback only, `TRUSTED_PROXY_IPS` should name the Compose

@@ -4,7 +4,8 @@ import { withEntityDraftBarrier } from './entity-drafts';
 import { hasPendingChanges, PendingChangesError } from './pending-changes';
 import { nanoid } from 'nanoid';
 import { assertSyncCaptureReady, ensureSyncCaptureCoverage } from './sync-capture-policy';
-import { queuedPuts, syncItemLabels, type SyncQueueEntry } from './sync-outgoing';
+import { compactHeldQueue, queuedPuts, serverSyncTables, syncItemLabels, type SyncQueueEntry } from './sync-outgoing';
+import { deleteCheckpointsFor } from './checkpoints';
 import i18n from '../i18n';
 
 export const uncachedFolderKey = (id: string) => JSON.stringify(['notCached', id]);
@@ -24,7 +25,7 @@ export async function rotateCacheOperation(folderId: string): Promise<string> {
  * not immediately recreate the evicted investigation. */
 export async function evictSyncedFolder(folderId: string): Promise<void> {
   await ensureSyncCaptureCoverage(db);
-  return withEntityDraftBarrier(() => db.transaction('rw', [...SYNC_TABLES, 'agentDeployments', '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
+  return withEntityDraftBarrier(() => db.transaction('rw', [...SYNC_TABLES, 'agentDeployments', 'checkpoints', '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
     await assertSyncCaptureReady(db);
     if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work before removing an offline copy.');
     if ((await db.folders.get(folderId))?.localOnly
@@ -40,6 +41,8 @@ export async function evictSyncedFolder(folderId: string): Promise<void> {
       rows.set(table, ids);
       for (const id of ids) identities.add(JSON.stringify([table, id]));
     }
+    // Held changes of rows since deleted leave nothing queued, so "delete them, then retry" works.
+    await compactHeldQueue(await serverSyncTables());
     const inFolder = (row: SyncQueueEntry) => row.folderId === folderId || row.data?.folderId === folderId || identities.has(JSON.stringify([row.table, row.entityId]));
     // Push never sends a held put, so syncing cannot clear it: its changes exist only on this device.
     const { held } = await queuedPuts(inFolder);
@@ -50,6 +53,8 @@ export async function evictSyncedFolder(folderId: string): Promise<void> {
     }
     suppressSyncInCurrentTransaction();
     for (const [table, ids] of rows) await db.table(table).bulkDelete(ids);
+    // The removed rows' copies in AI undo checkpoints go too (the server keeps the rows themselves).
+    await deleteCheckpointsFor(new Map([...rows].map(([table, ids]) => [table, new Set(ids)])));
     await rotateCacheOperation(folderId);
     await db.table('_syncMeta').put({ key: uncachedFolderKey(folderId), value: true });
     if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work before removing an offline copy.');

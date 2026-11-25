@@ -8,7 +8,7 @@ export type InvestigationTransaction = Parameters<Parameters<typeof db.transacti
 export const INVESTIGATION_CONTENT_TABLES = [
   ['notes', schema.notes], ['tasks', schema.tasks], ['timelineEvents', schema.timelineEvents],
   ['whiteboards', schema.whiteboards], ['standaloneIOCs', schema.standaloneIOCs],
-  ['chatThreads', schema.chatThreads], ['evidenceItems', schema.evidenceItems],
+  ['chatThreads', schema.chatThreads], ['evidenceItems', schema.evidenceItems], ['identities', schema.identities],
 ] as const;
 
 /** A folder tombstone hides, but does not delete, its retained children/files.

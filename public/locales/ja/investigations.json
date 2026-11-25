@@ -131,6 +131,8 @@
   "card.entity.events": "イベント",
   "card.entity.whiteboards": "ホワイトボード",
   "card.entity.chats": "チャット",
+  "card.entity.evidence": "証拠",
+  "card.entity.identities": "アイデンティティ",
   "firstRun.title": "調査からレポートまで",
   "firstRun.description": "案件を作成し、許可された資料をインポートするか、架空のメール侵害事例を試してください。AI の設定は不要です。",
   "firstRun.import": "資料をインポート",

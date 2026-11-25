@@ -131,6 +131,8 @@
   "card.entity.events": "Olaylar",
   "card.entity.whiteboards": "Beyaz tahtalar",
   "card.entity.chats": "Sohbetler",
+  "card.entity.evidence": "Kanıtlar",
+  "card.entity.identities": "Kimlikler",
   "firstRun.title": "Vakadan rapora",
   "firstRun.description": "Bir vaka oluşturun, yetkili kaynak dosyalarını içe aktarın veya kurgusal bir posta olayını inceleyin. Yapay zekâ kurulumu gerekmez.",
   "firstRun.import": "Kaynak dosyalarını içe aktar",

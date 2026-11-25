@@ -1,4 +1,5 @@
-import type { Note, Task, TimelineEvent, Settings, IOCEntry, IOCType, TimelineEventType } from '../types';
+import type { Note, Task, TimelineEvent, Settings, IOCEntry, IOCType, TimelineEventType, Identity } from '../types';
+import type { TextLink } from './identity-match';
 import { IOC_TYPE_LABELS, TIMELINE_EVENT_TYPE_LABELS, DEFAULT_RELATIONSHIP_TYPES } from '../types';
 import type { IOCRelationshipDef } from '../types';
 import { getNodeIcon } from './graph-icons';
@@ -16,7 +17,7 @@ export function parseIOCNodeId(nodeId: string): { iocType: IOCType; normalizedVa
 export interface GraphNode {
   id: string;
   label: string;
-  type: 'ioc' | 'note' | 'task' | 'timeline-event';
+  type: 'ioc' | 'note' | 'task' | 'timeline-event' | 'identity';
   color: string;
   shape: 'round-rectangle';
   icon: string;
@@ -24,6 +25,9 @@ export interface GraphNode {
   sourceEntityIds: string[];
   iocType?: IOCType;
   eventType?: TimelineEventType;
+  /** For an identity: its type as stored, and as shown ("Person", or the analyst's own word). */
+  identityType?: string;
+  subtitle?: string;
 }
 
 export interface GraphEdge {
@@ -31,8 +35,26 @@ export interface GraphEdge {
   source: string;
   target: string;
   label: string;
-  type: 'contains-ioc' | 'ioc-relationship' | 'timeline-link' | 'entity-link';
+  type: 'contains-ioc' | 'ioc-relationship' | 'timeline-link' | 'entity-link' | 'identity-connection' | 'identity-link';
 }
+
+/** Identities on the graph: their nodes, connections, and the events and IOCs that name them. */
+export interface IdentityGraphInput {
+  /** Live identities to draw (screenshare-filtered and in scope). */
+  identities: readonly Identity[];
+  linkFor: (folderId: string | undefined, text: string | undefined) => TextLink;
+  belongsTo: (folderId: string | undefined, value: string) => { identity: Identity; others: number } | undefined;
+  /** How a stored connection phrase reads (built-in phrases are translated). */
+  phrase: (label: string) => string;
+  typeLabel: (type: string) => string;
+  roles: { actor: string; asset: string; belongsTo: string };
+}
+
+/** Colour of an identity node by type; any other type is slate. */
+export const IDENTITY_NODE_COLORS: Readonly<Record<string, string>> = {
+  person: '#0ea5e9', organization: '#a855f7', system: '#10b981', account: '#f97316',
+};
+export const identityNodeColor = (type: string) => (Object.hasOwn(IDENTITY_NODE_COLORS, type) ? IDENTITY_NODE_COLORS[type] : '#64748b');
 
 export interface GraphData {
   nodes: GraphNode[];
@@ -48,6 +70,7 @@ export function buildGraphData(
   tasks: Task[],
   timelineEvents: TimelineEvent[],
   settings?: Settings,
+  identityGraph?: IdentityGraphInput,
 ): GraphData {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
@@ -323,7 +346,62 @@ export function buildGraphData(
     for (const id of task.linkedTimelineEventIds || []) addEntityLink(taskNodeId, `event:${id}`);
   }
 
+  if (identityGraph) addIdentities(identityGraph, { nodes, edges, nodeIdSet, edgeIdSet, activeNotes, activeTasks, activeEvents, iocIdToNodeId });
   return { nodes, edges };
+}
+
+/**
+ * Identity nodes and edges. Text links only when it names exactly one identity (as everywhere),
+ * so an ambiguous name draws no edge rather than a wrong one.
+ */
+function addIdentities(input: IdentityGraphInput, graph: {
+  nodes: GraphNode[]; edges: GraphEdge[]; nodeIdSet: Set<string>; edgeIdSet: Set<string>;
+  activeNotes: Note[]; activeTasks: Task[]; activeEvents: TimelineEvent[]; iocIdToNodeId: Map<string, string>;
+}) {
+  const nodeId = (identity: Identity) => `identity:${identity.id}`;
+  const live = input.identities.filter(identity => !identity.trashed && !identity.archived);
+  for (const identity of live) {
+    const color = identityNodeColor(identity.type);
+    graph.nodes.push({ id: nodeId(identity), label: identity.name.length > 40 ? identity.name.substring(0, 37) + '...' : identity.name,
+      type: 'identity', color, shape: 'round-rectangle', icon: getNodeIcon('identity', color, undefined, identity.type),
+      sourceEntityIds: [identity.id], identityType: identity.type, subtitle: input.typeLabel(identity.type) });
+    graph.nodeIdSet.add(nodeId(identity));
+  }
+  const addEdge = (edge: GraphEdge) => {
+    if (graph.edgeIdSet.has(edge.id) || !graph.nodeIdSet.has(edge.source) || !graph.nodeIdSet.has(edge.target)) return;
+    graph.edgeIdSet.add(edge.id);
+    graph.edges.push(edge);
+  };
+  for (const identity of live) {
+    for (const connection of identity.connections) {
+      const target = `identity:${connection.targetId}`;
+      addEdge({ id: `idc:${nodeId(identity)}->${target}:${connection.label}`, source: nodeId(identity), target, label: input.phrase(connection.label), type: 'identity-connection' });
+    }
+  }
+  const named = (folderId: string | undefined, text: string | undefined) => {
+    const link = input.linkFor(folderId, text);
+    return link.state === 'linked' && link.others === 0 ? link.identity : undefined;
+  };
+  for (const event of graph.activeEvents) {
+    const source = `event:${event.id}`;
+    const actor = named(event.folderId, event.actor);
+    if (actor) addEdge({ id: `idl:${source}--${nodeId(actor)}:actor`, source, target: nodeId(actor), label: input.roles.actor, type: 'identity-link' });
+    for (const asset of event.assets ?? []) {
+      const identity = named(event.folderId, asset);
+      if (identity) addEdge({ id: `idl:${source}--${nodeId(identity)}:asset`, source, target: nodeId(identity), label: input.roles.asset, type: 'identity-link' });
+    }
+  }
+  // An IOC belongs to the identity whose name or public detail is its value, in the IOC's investigation.
+  for (const entity of [...graph.activeNotes, ...graph.activeTasks, ...graph.activeEvents]) {
+    for (const ioc of entity.iocAnalysis?.iocs ?? []) {
+      if (ioc.dismissed) continue;
+      const source = graph.iocIdToNodeId.get(ioc.id);
+      const owner = input.belongsTo(entity.folderId, ioc.value);
+      if (source && owner && owner.others === 0) {
+        addEdge({ id: `idl:${source}--${nodeId(owner.identity)}:belongs`, source, target: nodeId(owner.identity), label: input.roles.belongsTo, type: 'identity-link' });
+      }
+    }
+  }
 }
 
 /**

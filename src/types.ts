@@ -212,7 +212,7 @@ export interface BackupDestination {
 }
 
 /** Top-level view/page the user can navigate to. */
-export type ViewMode = 'dashboard' | 'notes' | 'tasks' | 'timeline' | 'whiteboard' | 'evidence' | 'products' | 'activity' | 'graph' | 'ioc-stats' | 'chat' | 'caddyshack' | 'agent' | 'investigations';
+export type ViewMode = 'dashboard' | 'notes' | 'tasks' | 'timeline' | 'whiteboard' | 'evidence' | 'identities' | 'products' | 'activity' | 'graph' | 'ioc-stats' | 'chat' | 'caddyshack' | 'agent' | 'investigations';
 export type EditorMode = 'edit' | 'preview' | 'split';
 export type TaskViewMode = 'list' | 'kanban';
 
@@ -361,6 +361,7 @@ export const AVAILABLE_KPI_METRICS = [
   'notes-created-week',
   'timeline-events-week',
   'overdue-tasks',
+  'compromised-identities',
 ] as const;
 
 export type KPIMetricId = typeof AVAILABLE_KPI_METRICS[number];
@@ -673,6 +674,49 @@ export interface EvidenceItem {
   chunkCount: number;
   tags: string[];
   linkedIOCIds?: string[];
+  clsLevel?: string;
+  trashed: boolean;
+  trashedAt?: number;
+  archived: boolean;
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type IdentityStatus = 'compromised' | 'contained' | 'suspicious' | 'cleared';
+
+export interface IdentityDetail {
+  id: string;
+  label: string;
+  value: string;
+  /** Hidden until shown, never used for matching, and never sent to an AI provider. */
+  private?: boolean;
+}
+
+export interface IdentityConnection {
+  /** Another identity in the same investigation. */
+  targetId: string;
+  /** How this identity relates to the target, such as "works at" or "reports to". */
+  label: string;
+}
+
+/** A person, organization, system, account or anything else an investigation keeps track of. */
+export interface Identity {
+  id: string;
+  folderId?: string;
+  /** 'person', 'organization', 'system', 'account', or any other word the analyst types. */
+  type: string;
+  name: string;
+  description?: string;
+  /** Other names for this identity; text that matches one links to it. */
+  aliases: string[];
+  status?: IdentityStatus;
+  /** Someone the analyst works with, such as a client's security manager. */
+  contact?: boolean;
+  details: IdentityDetail[];
+  connections: IdentityConnection[];
+  tags: string[];
   clsLevel?: string;
   trashed: boolean;
   trashedAt?: number;
@@ -1070,6 +1114,7 @@ export interface ExportData {
   whiteboards?: Whiteboard[];
   standaloneIOCs?: StandaloneIOC[];
   evidenceItems?: EvidenceItem[];
+  identities?: Identity[];
   chatThreads?: ChatThread[];
   agentActions?: AgentAction[];
   agentProfiles?: AgentProfile[];
@@ -1094,7 +1139,7 @@ export const TAG_COLORS = [
 // Activity Log types
 export type ActivityCategory =
   | 'note' | 'task' | 'timeline' | 'whiteboard'
-  | 'folder' | 'tag' | 'ioc' | 'evidence' | 'sync' | 'data' | 'chat'
+  | 'folder' | 'tag' | 'ioc' | 'evidence' | 'identity' | 'sync' | 'data' | 'chat'
   | 'agent-bridge';
 
 export type ActivityAction =
@@ -1121,7 +1166,7 @@ export interface ActivityLogEntry {
 const ACTIVITY_CATEGORY_COLORS: Record<ActivityCategory, string> = {
   note: '#3b82f6', task: '#22c55e', timeline: '#f97316', whiteboard: '#a855f7',
   folder: '#eab308', tag: '#ec4899', ioc: '#ef4444', sync: '#06b6d4',
-  evidence: '#0ea5e9', data: '#6366f1', chat: '#8b5cf6', 'agent-bridge': '#14b8a6',
+  evidence: '#0ea5e9', identity: '#84cc16', data: '#6366f1', chat: '#8b5cf6', 'agent-bridge': '#14b8a6',
 };
 export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, { label: string; color: string }> = createLabelColorProxy(
   'activityCategory', ACTIVITY_CATEGORY_COLORS,
@@ -1224,6 +1269,9 @@ export interface InvestigationSummary {
     events: number;
     whiteboards: number;
     chats: number;
+    /** Sent by servers since evidence and identities sync; older servers leave them out. */
+    evidence?: number;
+    identities?: number;
   };
   memberCount: number;
 }

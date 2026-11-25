@@ -86,6 +86,7 @@ function openInvestigationDetail(invId) {
     html += '<span class="lbl">Chat Threads</span><span class="val">' + ec.chatThreads + '</span>';
     html += '<span class="lbl">Files</span><span class="val">' + ec.files + '</span>';
     html += '<span class="lbl">Evidence Items</span><span class="val">' + ec.evidenceItems + '</span>';
+    html += '<span class="lbl">Identities</span><span class="val">' + ec.identities + '</span>';
     html += '</div></div>';
 
     // Members
@@ -120,7 +121,7 @@ function openInvestigationDetail(invId) {
     html += '</div>';
 
     // Danger Zone
-    var totalEntities = ec.notes + ec.tasks + ec.timelineEvents + ec.whiteboards + ec.standaloneIOCs + ec.chatThreads + ec.files + ec.evidenceItems;
+    var totalEntities = ec.notes + ec.tasks + ec.timelineEvents + ec.whiteboards + ec.standaloneIOCs + ec.chatThreads + ec.files + ec.evidenceItems + ec.identities;
     html += '<div class="danger-zone"><h4>Danger Zone</h4>';
     html += '<p>Permanently delete this investigation, its memberships and all retained content (' + totalEntities + ' listed entities). This cannot be undone. Sync history, audit entries and database backups still hold earlier copies.</p>';
     html += '<button class="btn btn-danger btn-sm" id="openPurgeBtn">Permanently Delete Investigation</button>';
@@ -181,7 +182,7 @@ function openPurgeModal(invId, invName, ec) {
   document.getElementById('purgeEntityCounts').innerHTML =
     '<strong>This will delete:</strong><br>' +
     ec.notes + ' notes, ' + ec.tasks + ' tasks, ' + ec.timelineEvents + ' timeline events, ' +
-    ec.whiteboards + ' whiteboards, ' + ec.standaloneIOCs + ' IOCs, ' + ec.chatThreads + ' chat threads, ' + ec.files + ' files, ' + ec.evidenceItems + ' evidence items';
+    ec.whiteboards + ' whiteboards, ' + ec.standaloneIOCs + ' IOCs, ' + ec.chatThreads + ' chat threads, ' + ec.files + ' files, ' + ec.evidenceItems + ' evidence items, ' + ec.identities + ' identities';
   document.getElementById('purgeConfirmInput').value = '';
   document.getElementById('purgeConfirmInput').placeholder = invName;
   document.getElementById('confirmPurge').disabled = true;

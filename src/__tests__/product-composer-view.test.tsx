@@ -22,7 +22,7 @@ const saved = note('saved-product', 'Saved content');
 const snapshot: ProductComposerSnapshot = {
   folder: { id: 'case', name: 'Fictional case', clsLevel: 'TLP:GREEN', order: 0, createdAt: 0 },
   notes: [note('selected', 'Chosen source body'), note('unselected', 'Unselected source body')],
-  tasks: [], timelineEvents: [], iocs: [], evidence: [],
+  tasks: [], timelineEvents: [], iocs: [], evidence: [], identities: [],
 };
 const baseline: NoteTemplate = {
   id: 'baseline', name: 'Fictional baseline', content: '# Report\n\n## Findings\n\nSeed {{ placeholder }}\n\n## Conclusion\n\nSecond section.',

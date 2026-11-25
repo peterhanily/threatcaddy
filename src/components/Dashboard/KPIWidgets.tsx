@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Settings2, X, ChevronUp, ChevronDown, TrendingUp, TrendingDown } from 'lucide-react';
-import type { Folder, Note, Task, TimelineEvent, StandaloneIOC, KPIMetricId } from '../../types';
+import type { Folder, Note, Task, TimelineEvent, StandaloneIOC, Identity, KPIMetricId } from '../../types';
 import { AVAILABLE_KPI_METRICS, KPI_METRIC_LABELS, DEFAULT_DASHBOARD_KPIS } from '../../types';
-import { isOverdue } from '../../lib/utils';
+import { cn, isOverdue } from '../../lib/utils';
 
 interface KPIWidgetsProps {
   folders: Folder[];
@@ -11,9 +11,13 @@ interface KPIWidgetsProps {
   allTasks: Task[];
   allEvents: TimelineEvent[];
   allIOCs: StandaloneIOC[];
+  allIdentities?: Identity[];
   selectedKPIs: KPIMetricId[];
   onUpdateKPIs: (kpis: KPIMetricId[]) => void;
+  /** Opens what a tile counts (the compromised identities, as a filtered list); tiles it covers are buttons. */
+  onOpenMetric?: (metric: KPIMetricId) => void;
 }
+const OPENABLE: ReadonlySet<KPIMetricId> = new Set(['compromised-identities']);
 
 const KPI_COLORS: Record<KPIMetricId, string> = {
   'open-investigations': '#3b82f6',
@@ -25,6 +29,7 @@ const KPI_COLORS: Record<KPIMetricId, string> = {
   'notes-created-week': '#06b6d4',
   'timeline-events-week': '#ec4899',
   'overdue-tasks': '#f97316',
+  'compromised-identities': '#84cc16',
 };
 
 function computeKPIValue(
@@ -34,6 +39,7 @@ function computeKPIValue(
   tasks: Task[],
   events: TimelineEvent[],
   iocs: StandaloneIOC[],
+  identities: Identity[] = [],
 ): { value: string | number; trend?: 'up' | 'down' | 'neutral' } {
   const now = Date.now();
   const DAY = 86400000;
@@ -82,6 +88,10 @@ function computeKPIValue(
       const count = events.filter(e => !e.trashed && e.createdAt >= weekAgo).length;
       return { value: count };
     }
+    case 'compromised-identities': {
+      const count = identities.filter(i => !i.trashed && !i.archived && i.status === 'compromised').length;
+      return { value: count };
+    }
     case 'overdue-tasks': {
       const count = tasks.filter(t => !t.trashed && !t.completed && isOverdue(t.dueDate)).length;
       return { value: count, trend: count > 0 ? 'up' : 'neutral' };
@@ -91,20 +101,23 @@ function computeKPIValue(
   }
 }
 
-export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, selectedKPIs, onUpdateKPIs }: KPIWidgetsProps) {
+export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, allIdentities = [], selectedKPIs, onUpdateKPIs, onOpenMetric }: KPIWidgetsProps) {
   const { t } = useTranslation('dashboard');
   const [showConfig, setShowConfig] = useState(false);
 
-  const kpis = selectedKPIs.length > 0 ? selectedKPIs : DEFAULT_DASHBOARD_KPIS;
+  // Once a workspace has identities, the default tiles include how many are compromised.
+  const usesIdentities = allIdentities.some(i => !i.trashed);
+  const kpis = useMemo<KPIMetricId[]>(() => selectedKPIs.length > 0 ? selectedKPIs
+    : usesIdentities ? [...DEFAULT_DASHBOARD_KPIS, 'compromised-identities'] : DEFAULT_DASHBOARD_KPIS, [selectedKPIs, usesIdentities]);
 
   const kpiData = useMemo(() => {
     return kpis.map(metric => ({
       metric,
       label: KPI_METRIC_LABELS[metric],
       color: KPI_COLORS[metric],
-      ...computeKPIValue(metric, folders, allNotes, allTasks, allEvents, allIOCs),
+      ...computeKPIValue(metric, folders, allNotes, allTasks, allEvents, allIOCs, allIdentities),
     }));
-  }, [kpis, folders, allNotes, allTasks, allEvents, allIOCs]);
+  }, [kpis, folders, allNotes, allTasks, allEvents, allIOCs, allIdentities]);
 
   return (
     <div className="px-6 pt-4">
@@ -120,22 +133,26 @@ export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, se
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {kpiData.map(kpi => (
-          <div
+        {kpiData.map(kpi => {
+          const Tile = onOpenMetric && OPENABLE.has(kpi.metric) ? 'button' : 'div';
+          return (
+          <Tile
             key={kpi.metric}
-            className="bg-bg-raised rounded-lg p-3 border border-border-subtle"
+            {...(Tile === 'button' ? { type: 'button' as const, onClick: () => onOpenMetric?.(kpi.metric) } : {})}
+            className={cn('bg-bg-raised rounded-lg p-3 border border-border-subtle text-start', Tile === 'button' && 'hover:border-accent')}
             style={{ borderLeftColor: kpi.color + '60', borderLeftWidth: 3 }}
           >
-            <div className="text-[10px] text-gray-500 uppercase tracking-wider">{kpi.label}</div>
-            <div className="flex items-center gap-1.5 mt-1">
+            <span className="block text-[10px] text-gray-500 uppercase tracking-wider">{kpi.label}</span>
+            <span className="flex items-center gap-1.5 mt-1">
               <span className="text-2xl font-bold tabular-nums text-text-primary">
                 {kpi.value}
               </span>
               {kpi.trend === 'up' && <TrendingUp size={14} className="text-red-400" />}
               {kpi.trend === 'down' && <TrendingDown size={14} className="text-green-400" />}
-            </div>
-          </div>
-        ))}
+            </span>
+          </Tile>
+          );
+        })}
       </div>
 
       {showConfig && (

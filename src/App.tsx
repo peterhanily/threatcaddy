@@ -23,6 +23,7 @@ import { useTimelines } from './hooks/useTimelines';
 import { useWhiteboards } from './hooks/useWhiteboards';
 import { useStandaloneIOCs } from './hooks/useStandaloneIOCs';
 import { useEvidenceItems } from './hooks/useEvidenceItems';
+import { useIdentities } from './hooks/useIdentities';
 import { useEvidenceImportFence } from './hooks/useEvidenceImportFence';
 import { useChats } from './hooks/useChats';
 import { useFolders } from './hooks/useFolders';
@@ -35,6 +36,9 @@ import { useIntegrations } from './hooks/useIntegrations';
 const PlaybookPicker = lazy(() => import('./components/Playbooks/PlaybookPicker').then(m => ({ default: m.PlaybookPicker })));
 const OperationNameGenerator = lazy(() => import('./components/Common/OperationNameGenerator').then(m => ({ default: m.OperationNameGenerator })));
 const EvidenceView = lazy(() => import('./components/Evidence/EvidenceView').then(m => ({ default: m.EvidenceView })));
+const IdentitiesView = lazy(() => import('./components/Identities/IdentitiesView').then(m => ({ default: m.IdentitiesView })));
+import type { IdentitySelectRequest } from './components/Identities/IdentitiesView';
+import { IdentityLinksProvider } from './components/Identities/IdentityLinksProvider';
 const ProductView = lazy(() => import('./components/Products/ProductView').then(m => ({ default: m.ProductView })));
 import { useActivityLog } from './hooks/useActivityLog';
 import { ActivityLogContext } from './hooks/ActivityLogContext';
@@ -46,7 +50,7 @@ import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile } from './li
 import { useOpenedFiles } from './hooks/useOpenedFiles';
 import { fileNotePersistence } from './lib/file-note-persistence';
 import { useInvestigationData } from './hooks/useInvestigationData';
-import type { ConfidenceLevel, Note, NoteTemplate, StandaloneIOC, ChatThread } from './types';
+import type { ConfidenceLevel, Identity, Note, NoteTemplate, StandaloneIOC, ChatThread, TimelineEvent } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
 const DashboardView = lazy(() => import('./components/Dashboard/DashboardView').then(m => ({ default: m.DashboardView })));
 import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
@@ -69,7 +73,7 @@ import { prepareProductComposerNote, type ProductComposerSnapshot } from './lib/
 import { createProductComposerPersistence } from './lib/product-composer-persistence';
 import type { ProductComposerSaveInput } from './components/Products/ProductComposer';
 import { getActiveWorkspaceId } from './lib/workspace-profiles';
-import { getSampleFolderId, getSampleRemovalSummary, loadSampleInvestigation, deleteSampleInvestigation, SampleActionError, type SampleInvestigationKind } from './lib/sample-investigation-store';
+import { getSampleFolderId, getSampleRemovalSummary, loadSampleInvestigation, deleteSampleInvestigation, PARODY_THREAT_ACTOR, SampleActionError, type SampleInvestigationKind } from './lib/sample-investigation-store';
 import { isUserTimeline } from './lib/sync-capture-policy';
 import { SampleRemovalDialog, type SampleRemovalRequest } from './components/Common/SampleRemovalDialog';
 import { db } from './db';
@@ -115,6 +119,7 @@ const ServerOnboardingModal = lazy(() => import('./components/Settings/ServerOnb
 import { useLoggedActions } from './hooks/useLoggedActions';
 import { useServerSync } from './hooks/useServerSync';
 import { useRemoteInvestigations } from './hooks/useRemoteInvestigations';
+import { sameText } from './lib/identity-model';
 
 
 export default function App() {
@@ -141,6 +146,7 @@ function AppDataLayer() {
   const { whiteboards, loading: whiteboardsLoading, createWhiteboard, updateWhiteboard, deleteWhiteboard, trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard, emptyTrashWhiteboards, getFilteredWhiteboards, whiteboardCounts, reload: reloadWhiteboards } = useWhiteboards();
   const standaloneIOCsHook = useStandaloneIOCs();
   const evidenceItemsHook = useEvidenceItems();
+  const identitiesHook = useIdentities();
   const chatsHook = useChats();
   const { folders, loading: foldersLoading, createFolder, updateFolder, deleteFolder, deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reload: reloadFolders } = useFolders();
   const { tags, createTag, updateTag, deleteTag, reload: reloadTags } = useTags();
@@ -168,6 +174,7 @@ function AppDataLayer() {
     whiteboards: reloadWhiteboards,
     standaloneIOCs: standaloneIOCsHook.reload,
     evidenceItems: evidenceItemsHook.reload,
+    identities: identitiesHook.reload,
     chats: chatsHook.reload,
     folders: reloadFolders,
     tags: reloadTags,
@@ -180,7 +187,7 @@ function AppDataLayer() {
     try {
       const results = await Promise.allSettled([
         reloadFolders(), notes.reload(), tasks.reload(), timeline.reload(), reloadTimelines(),
-        reloadWhiteboards(), standaloneIOCsHook.reload(), evidenceItemsHook.reload(), chatsHook.reload(),
+        reloadWhiteboards(), standaloneIOCsHook.reload(), evidenceItemsHook.reload(), identitiesHook.reload(), chatsHook.reload(),
         reloadTags(), noteTemplatesHook.reload(), playbooksHook.reload(),
       ]);
       setReloadFailed(results.some(result => result.status === 'rejected'));
@@ -188,7 +195,7 @@ function AppDataLayer() {
       setPendingReloads(count => count - 1);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reloadFolders, notes.reload, tasks.reload, timeline.reload, reloadTimelines, reloadWhiteboards, standaloneIOCsHook.reload, evidenceItemsHook.reload, chatsHook.reload, reloadTags, noteTemplatesHook.reload, playbooksHook.reload]);
+  }, [reloadFolders, notes.reload, tasks.reload, timeline.reload, reloadTimelines, reloadWhiteboards, standaloneIOCsHook.reload, evidenceItemsHook.reload, identitiesHook.reload, chatsHook.reload, reloadTags, noteTemplatesHook.reload, playbooksHook.reload]);
 
   // Reload folders when agent tools modify folder state (e.g. deploy_agent enables agentEnabled)
   useEffect(() => {
@@ -199,11 +206,11 @@ function AppDataLayer() {
 
   // Reload UI when external agents write data via the agent bridge
   useEffect(() => {
-    const handler = () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); evidenceItemsHook.reload(); chatsHook.reload(); reloadTags(); };
+    const handler = () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); evidenceItemsHook.reload(); identitiesHook.reload(); chatsHook.reload(); reloadTags(); };
     window.addEventListener('threatcaddy:entities-changed', handler);
     return () => window.removeEventListener('threatcaddy:entities-changed', handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes.reload, tasks.reload, timeline.reload, standaloneIOCsHook.reload, evidenceItemsHook.reload]);
+  }, [notes.reload, tasks.reload, timeline.reload, standaloneIOCsHook.reload, evidenceItemsHook.reload, identitiesHook.reload]);
 
   const syncedFolderIds = useMemo(() => {
     const localIds = new Set(folders.map(f => f.id));
@@ -267,6 +274,7 @@ function AppDataLayer() {
             reloadWhiteboards={reloadWhiteboards}
             standaloneIOCsHook={standaloneIOCsHook}
             evidenceItemsHook={evidenceItemsHook}
+            identitiesHook={identitiesHook}
             chatsHook={chatsHook}
             folders={folders}
             foldersLoading={foldersLoading}
@@ -372,6 +380,7 @@ type AppInnerProps = {
   reloadWhiteboards: ReturnType<typeof useWhiteboards>['reload'];
   standaloneIOCsHook: ReturnType<typeof useStandaloneIOCs>;
   evidenceItemsHook: ReturnType<typeof useEvidenceItems>;
+  identitiesHook: ReturnType<typeof useIdentities>;
   chatsHook: ReturnType<typeof useChats>;
   folders: ReturnType<typeof useFolders>['folders'];
   foldersLoading: boolean;
@@ -420,7 +429,7 @@ const AppInner = memo(function AppInner({
   whiteboards, whiteboardsLoading, bulkDataLoading, bulkDataFailed, createWhiteboard, updateWhiteboard, deleteWhiteboard,
   trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard,
   emptyTrashWhiteboards, getFilteredWhiteboards, reloadWhiteboards,
-  standaloneIOCsHook, evidenceItemsHook, chatsHook,
+  standaloneIOCsHook, evidenceItemsHook, identitiesHook, chatsHook,
   folders: allFolders, foldersLoading, createFolder, updateFolder, deleteFolder,
   deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reloadFolders,
   tags: allTags, createTag, updateTag, deleteTag, reloadTags,
@@ -438,6 +447,17 @@ const AppInner = memo(function AppInner({
   const { t: tInvestigations } = useTranslation('investigations');
   const { t: tCommon } = useTranslation('common');
   const [evidenceSearchSelection, setEvidenceSearchSelection] = useState<{ id: string; request: number }>();
+  const [identitySelection, setIdentitySelection] = useState<IdentitySelectRequest>();
+  // Applied once by the Identities view, then cleared, so opening it later starts afresh.
+  const clearIdentitySelection = useCallback(() => setIdentitySelection(undefined), []);
+  // A name found as an Actor or an attribution, tracked as a threat actor: no longer offered as an identity.
+  const trackThreatActor = useCallback((name: string) => {
+    updateSettings(previous => {
+      const actors = previous.attributionActors ?? [];
+      return actors.some(actor => sameText(actor) === sameText(name)) ? null : { attributionActors: [...actors, name.trim()] };
+    });
+  }, [updateSettings]);
+  const [identityAddRequest, setIdentityAddRequest] = useState(0);
 
   // Destructure frequently-used context values
   const {
@@ -454,7 +474,7 @@ const AppInner = memo(function AppInner({
 
   const {
     selectedFolderId: underlyingFolderId, setSelectedFolderId,
-    investigationMode,
+    investigationMode, setInvestigationMode,
     selectedTag: underlyingTag, setSelectedTag,
     showTrash, setShowTrash, showArchive, setShowArchive,
     selectedIOCTypes, setSelectedIOCTypes,
@@ -496,14 +516,16 @@ const AppInner = memo(function AppInner({
   const [productDraftFolderId, setProductDraftFolderId] = useState<string>();
   const effectiveClsLevels = useMemo(() => getEffectiveClsLevels(settings.tiClsLevels), [settings.tiClsLevels]);
   const privacyDataReady = !bulkDataLoading && pendingClipImports === 0 && !foldersLoading && !notes.loading && !tasks.loading && !timeline.loading
-    && !whiteboardsLoading && !standaloneIOCsHook.loading && chatsHook.loadedSuccessfully && evidenceItemsHook.loadedSuccessfully;
+    && !whiteboardsLoading && !standaloneIOCsHook.loading && chatsHook.loadedSuccessfully && evidenceItemsHook.loadedSuccessfully
+    && identitiesHook.loadedSuccessfully;
   const visibility = useMemo(() => buildInvestigationVisibility({
     folders: allFolders, remoteInvestigations: allRemoteInvestigations,
     notes: notes.notes, tasks: tasks.tasks, timelineEvents: timeline.events, whiteboards,
     standaloneIOCs: standaloneIOCsHook.iocs, chatThreads: chatsHook.threads, evidenceItems: evidenceItemsHook.evidenceItems,
+    identities: identitiesHook.identities,
     maxLevel: screenshareMaxLevel, effectiveLevels: effectiveClsLevels, dataReady: privacyDataReady,
   }), [allFolders, allRemoteInvestigations, notes.notes, tasks.tasks, timeline.events, whiteboards,
-    standaloneIOCsHook.iocs, chatsHook.threads, evidenceItemsHook.evidenceItems, screenshareMaxLevel, effectiveClsLevels, privacyDataReady]);
+    standaloneIOCsHook.iocs, chatsHook.threads, evidenceItemsHook.evidenceItems, identitiesHook.identities, screenshareMaxLevel, effectiveClsLevels, privacyDataReady]);
   const folders = visibility.folders;
   const remoteInvestigations = visibility.remoteInvestigations;
   const selectedContextHidden = !!screenshareMaxLevel && !!underlyingFolderId
@@ -516,11 +538,11 @@ const AppInner = memo(function AppInner({
     if (!screenshareMaxLevel) return allTags;
     const visibleTags = new Set([
       ...notes.notes, ...tasks.tasks, ...timeline.events, ...whiteboards,
-      ...standaloneIOCsHook.iocs, ...chatsHook.threads, ...evidenceItemsHook.evidenceItems,
+      ...standaloneIOCsHook.iocs, ...chatsHook.threads, ...evidenceItemsHook.evidenceItems, ...identitiesHook.identities,
     ].filter(visibility.isEntityVisible).flatMap(entity => entity.tags ?? []));
     return allTags.filter(tag => visibleTags.has(tag.name));
   }, [allTags, screenshareMaxLevel, visibility, notes.notes, tasks.tasks, timeline.events, whiteboards,
-    standaloneIOCsHook.iocs, chatsHook.threads, evidenceItemsHook.evidenceItems]);
+    standaloneIOCsHook.iocs, chatsHook.threads, evidenceItemsHook.evidenceItems, identitiesHook.identities]);
   const selectedTag = !screenshareMaxLevel || tags.some(tag => tag.name === underlyingTag) ? underlyingTag : undefined;
 
   // Wrap InvestigationContext's handleOpenInvestigation to add navigation
@@ -553,6 +575,8 @@ const AppInner = memo(function AppInner({
     loggedArchiveFolder, loggedUnarchiveFolder,
     loggedCreateTag, loggedDeleteTag,
     loggedCreateChatThread,
+    loggedCreateIdentity, loggedTrashIdentity, loggedRestoreIdentity, loggedToggleArchiveIdentity,
+    loggedDeleteIdentity, loggedMergeIdentities,
     emptyAllTrash,
   } = useLoggedActions(
     activityLog.log,
@@ -563,6 +587,7 @@ const AppInner = memo(function AppInner({
     { whiteboards, createWhiteboard, deleteWhiteboard, trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard, emptyTrashWhiteboards, reload: reloadWhiteboards },
     standaloneIOCsHook,
     evidenceItemsHook,
+    identitiesHook,
     { createThread: chatsHook.createThread, reload: chatsHook.reload },
     { folders: allFolders, createFolder, deleteFolder, deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder },
     { tags: allTags, createTag, deleteTag },
@@ -889,6 +914,10 @@ const AppInner = memo(function AppInner({
     () => evidenceItemsHook.evidenceItems.filter(visibility.isEntityVisible),
     [evidenceItemsHook.evidenceItems, visibility],
   );
+  const screensafeIdentities = useMemo(
+    () => identitiesHook.identities.filter(visibility.isEntityVisible),
+    [identitiesHook.identities, visibility],
+  );
 
   // Folder-filtered + screenshare-safe (for NoteList, TaskList, TimelineView)
   // Use resolved arrays (which pick remote vs local) instead of raw filtered arrays
@@ -928,6 +957,12 @@ const AppInner = memo(function AppInner({
     () => investigationMode === 'remote' ? remoteData.evidence.filter(visibility.isEntityVisible)
       : selectedFolderId ? screensafeEvidenceItems.filter((e) => e.folderId === selectedFolderId) : screensafeEvidenceItems,
     [investigationMode, remoteData.evidence, visibility, screensafeEvidenceItems, selectedFolderId]
+  );
+  // A remote investigation's identities come from the server and are read only.
+  const investigationIdentities = useMemo(
+    () => investigationMode === 'remote' ? remoteData.identities.filter(visibility.isEntityVisible)
+      : selectedFolderId ? screensafeIdentities.filter((i) => i.folderId === selectedFolderId) : screensafeIdentities,
+    [investigationMode, remoteData.identities, visibility, screensafeIdentities, selectedFolderId]
   );
   const productNotes = useMemo(
     () => investigationNotes.filter((n) => n.tags?.includes(PRODUCT_NOTE_TAG)),
@@ -1006,9 +1041,10 @@ const AppInner = memo(function AppInner({
       timelineEvents: active(investigationTimelineEvents),
       iocs: active(investigationStandaloneIOCs),
       evidence: active(investigationEvidenceItems),
+      identities: active(investigationIdentities),
     };
   }, [privacyDataReady, noteTemplatesHook.loading, investigationMode, selectedFolder, selectedContextHidden, screenshareMaxLevel,
-    investigationNotes, investigationTasks, investigationTimelineEvents, investigationStandaloneIOCs, investigationEvidenceItems]);
+    investigationNotes, investigationTasks, investigationTimelineEvents, investigationStandaloneIOCs, investigationEvidenceItems, investigationIdentities]);
   const productsViewActive = activeView === 'products' && !showSettings && !showTrash && !showArchive;
   const productComposerActive = productsViewActive && investigationMode === 'local'
     && (!productDraftFolderId || underlyingFolderId === productDraftFolderId);
@@ -1056,8 +1092,9 @@ const AppInner = memo(function AppInner({
       events: investigationTimelineEvents.filter(e => !e.trashed && !e.archived).length,
       whiteboards: investigationWhiteboards.filter(w => !w.trashed && !w.archived).length,
       iocs: iocKeys.size,
+      identities: investigationIdentities.filter(i => !i.trashed && !i.archived).length,
     };
-  }, [selectedFolderId, investigationNotes, investigationTasks, investigationTimelineEvents, investigationWhiteboards]);
+  }, [selectedFolderId, investigationNotes, investigationTasks, investigationTimelineEvents, investigationWhiteboards, investigationIdentities]);
 
   // Screenshare context value
   const screenshareCtx = useMemo(
@@ -1102,12 +1139,12 @@ const AppInner = memo(function AppInner({
 
   // Combined trash/archive counts across all entity types
   const combinedTrashedCount = useMemo(() =>
-    [...screensafeNotes, ...screensafeTasks, ...screensafeTimelineEvents, ...screensafeWhiteboards, ...screensafeStandaloneIOCs].filter(entity => entity.trashed).length,
-    [screensafeNotes, screensafeTasks, screensafeTimelineEvents, screensafeWhiteboards, screensafeStandaloneIOCs]
+    [...screensafeNotes, ...screensafeTasks, ...screensafeTimelineEvents, ...screensafeWhiteboards, ...screensafeStandaloneIOCs, ...screensafeIdentities].filter(entity => entity.trashed).length,
+    [screensafeNotes, screensafeTasks, screensafeTimelineEvents, screensafeWhiteboards, screensafeStandaloneIOCs, screensafeIdentities]
   );
   const combinedArchivedCount = useMemo(() =>
-    [...screensafeNotes, ...screensafeTasks, ...screensafeTimelineEvents, ...screensafeWhiteboards, ...screensafeStandaloneIOCs].filter(entity => entity.archived && !entity.trashed).length,
-    [screensafeNotes, screensafeTasks, screensafeTimelineEvents, screensafeWhiteboards, screensafeStandaloneIOCs]
+    [...screensafeNotes, ...screensafeTasks, ...screensafeTimelineEvents, ...screensafeWhiteboards, ...screensafeStandaloneIOCs, ...screensafeIdentities].filter(entity => entity.archived && !entity.trashed).length,
+    [screensafeNotes, screensafeTasks, screensafeTimelineEvents, screensafeWhiteboards, screensafeStandaloneIOCs, screensafeIdentities]
   );
 
   const handleNewNote = useCallback(async () => {
@@ -1149,6 +1186,12 @@ const AppInner = memo(function AppInner({
   const handleNewIOC = useCallback(() => {
     setShowIOCForm(true);
   }, [setShowIOCForm]);
+
+  const clearIdentityAddRequest = useCallback(() => setIdentityAddRequest(0), []);
+  const handleNewIdentity = useCallback(() => {
+    setIdentityAddRequest((request) => request + 1);
+    navigateTo('identities');
+  }, [navigateTo]);
 
   const handleShareNoteLink = useCallback((note: Note) => {
     setShareLinkPayload({ v: 1, s: 'note', t: Date.now(), d: note });
@@ -1214,13 +1257,17 @@ const AppInner = memo(function AppInner({
     activityLog.log(
       'data',
       'import',
-      `Data import: ${result.timelineEventsCreated} events, ${result.iocsExtracted} IOCs`,
+      `Data import: ${result.timelineEventsCreated} events, ${result.iocsExtracted} IOCs, ${result.identitiesCreated} identities added, ${result.identitiesUpdated} updated`,
     );
     addToast('success', tt('import.dataImported', { events: result.timelineEventsCreated, iocs: result.iocsExtracted }));
+    if (result.identitiesCreated || result.identitiesUpdated) {
+      addToast('success', tt('import.identitiesImported', { created: result.identitiesCreated, updated: result.identitiesUpdated }));
+    }
     // Reload all hooks to pick up new entities
     notes.reload();
     timeline.reload();
     standaloneIOCsHook.reload();
+    identitiesHook.reload();
     reloadTimelines();
     reloadTags();
     // Navigate based on what was imported
@@ -1228,9 +1275,11 @@ const AppInner = memo(function AppInner({
       navigateTo('timeline');
     } else if (result.iocsExtracted > 0) {
       navigateTo('ioc-stats');
+    } else if (result.identitiesCreated > 0 || result.identitiesUpdated > 0) {
+      navigateTo('identities');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityLog, addToast, notes.reload, timeline.reload, standaloneIOCsHook.reload, reloadTimelines, reloadTags, navigateTo]);
+  }, [activityLog, addToast, notes.reload, timeline.reload, standaloneIOCsHook.reload, identitiesHook.reload, reloadTimelines, reloadTags, navigateTo]);
 
   const handleQuickCapture = useCallback(async (data: Partial<Note>) => {
     const folder = selectedFolderId ? folders.find((f) => f.id === selectedFolderId) : undefined;
@@ -1279,6 +1328,10 @@ const AppInner = memo(function AppInner({
   // Each sample has a separate identity; reopening it preserves analyst edits.
   const sampleLoaded = useMemo(() => folders.some(f => f.id === getSampleFolderId('realistic')), [folders]);
   const parodyLoaded = useMemo(() => folders.some(f => f.id === getSampleFolderId('parody')), [folders]);
+  // Threat actors for identities: Settings', and the parody sample's adversary while the sample is loaded
+  // (so it is not offered as an identity to add, without changing Settings).
+  const identityThreatActors = useMemo(() => (parodyLoaded && !(settings.attributionActors ?? []).some(actor => sameText(actor) === sameText(PARODY_THREAT_ACTOR))
+    ? [...settings.attributionActors ?? [], PARODY_THREAT_ACTOR] : settings.attributionActors), [parodyLoaded, settings.attributionActors]);
   const [demoKind, setDemoKind] = useState<SampleInvestigationKind>('realistic');
   const [demoName, setDemoName] = useState<string>();
   const [sampleRemoval, setSampleRemoval] = useState<SampleRemovalRequest | null>(null);
@@ -1393,6 +1446,60 @@ const AppInner = memo(function AppInner({
     navigateTo('evidence');
   }, [screensafeEvidenceItems, navigateTo, setSelectedFolderId, setSelectedTag, setShowTrash, setShowArchive]);
 
+  /** Opening an identity in one of this device's investigations shows the local copy, even from a remote investigation. */
+  const openIdentityInvestigation = useCallback((folderId?: string) => {
+    setSelectedFolderId(folderId);
+    if (folderId && investigationMode === 'remote' && folders.some((folder) => folder.id === folderId)) {
+      setInvestigationMode(syncedFolderIds.has(folderId) ? 'synced' : 'local');
+    }
+  }, [setSelectedFolderId, investigationMode, folders, setInvestigationMode, syncedFolderIds]);
+
+  /** Opens an identity in its investigation: from search, a timeline chip, a note mention, an IOC or
+   * "Also in another investigation". `query` filters the list when text names more than one identity. */
+  const openIdentity = useCallback((identity: Identity, query?: string) => {
+    openIdentityInvestigation(identity.folderId);
+    setSelectedTag(undefined); setShowTrash(false); setShowArchive(false);
+    setIdentitySelection(previous => ({ id: identity.id, request: (previous?.request ?? 0) + 1, query }));
+    navigateTo('identities');
+  }, [openIdentityInvestigation, setSelectedTag, setShowTrash, setShowArchive, navigateTo]);
+
+  const handleSearchNavigateToIdentity = useCallback((id: string) => {
+    const identity = screensafeIdentities.find(item => item.id === id && !item.trashed && !item.archived);
+    if (identity) openIdentity(identity);
+  }, [screensafeIdentities, openIdentity]);
+
+  /** Opens an item from a profile's Activity, keeping the investigation (it may be remote). */
+  const handleOpenNoteFromIdentity = useCallback((note: Note) => {
+    setSelectedTag(undefined); setShowTrash(false); setShowArchive(false);
+    setSelectedNoteId(note.id);
+    navigateTo('notes', { selectedNoteId: note.id });
+  }, [setSelectedTag, setShowTrash, setShowArchive, setSelectedNoteId, navigateTo]);
+  const [timelineEventRequest, setTimelineEventRequest] = useState<{ id: string; request: number }>();
+  const clearTimelineEventRequest = useCallback(() => setTimelineEventRequest(undefined), []);
+  const handleOpenEventFromIdentity = useCallback((event: TimelineEvent) => {
+    setSelectedTimelineId(event.timelineId);
+    setTimelineEventRequest({ id: event.id, request: Date.now() });
+    navigateTo('timeline', { selectedTimelineId: event.timelineId });
+  }, [setSelectedTimelineId, navigateTo]);
+  const [iocSearchRequest, setIocSearchRequest] = useState<{ text: string; request: number }>();
+  const clearIocSearchRequest = useCallback(() => setIocSearchRequest(undefined), []);
+  const handleOpenIOCFromIdentity = useCallback((ioc: StandaloneIOC) => {
+    setIocSearchRequest({ text: ioc.value, request: Date.now() });
+    navigateTo('ioc-stats');
+  }, [navigateTo]);
+  const linkableIdentities = investigationMode === 'remote' ? remoteData.identities : identitiesHook.identities;
+  /** Starts a note about an identity in its investigation, mentioning it so it links. */
+  const handleAddNoteAboutIdentity = useCallback(async (identity: Identity) => {
+    const folder = folders.find((f) => f.id === identity.folderId);
+    const note = await loggedCreateNote({ folderId: identity.folderId, clsLevel: folder?.clsLevel, title: identity.name, content: `${identity.name.startsWith('@') ? '' : '@'}${identity.name} ` });
+    setShowTrash(false); setShowArchive(false);
+    setSelectedNoteId(note.id);
+    navigateTo('notes', { selectedNoteId: note.id });
+  }, [folders, loggedCreateNote, setShowTrash, setShowArchive, setSelectedNoteId, navigateTo]);
+  const handleCreateIdentity = useCallback((partial: Partial<Identity>) =>
+    loggedCreateIdentity({ ...partial, clsLevel: partial.clsLevel ?? folders.find((f) => f.id === partial.folderId)?.clsLevel }),
+  [loggedCreateIdentity, folders]);
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSearchNavigateToTask = useCallback((_id: string) => {
     setSelectedFolderId(undefined);
@@ -1489,7 +1596,7 @@ const AppInner = memo(function AppInner({
   const caddyAgent = useCaddyAgent({
     folder: selectedFolder,
     settings,
-    onEntitiesChanged: () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); },
+    onEntitiesChanged: () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); identitiesHook.reload(); chatsHook.reload(); },
     onSupervisorError: message => addToast('error', message),
   });
 
@@ -1592,6 +1699,9 @@ const AppInner = memo(function AppInner({
     <ScreenshareContext.Provider value={screenshareCtx}>
     <InvestigationVisibilityScope folders={folders} tags={tags}>
     <ActivityLogContext.Provider value={activityLog.log}>
+    <IdentityLinksProvider identities={linkableIdentities} isVisible={visibility.isEntityVisible} threatActors={identityThreatActors} onTrackThreatActor={trackThreatActor}
+      folders={folders} readOnly={investigationMode === 'remote'} onCreate={handleCreateIdentity} onUpdate={identitiesHook.updateIdentity}
+      onOpen={openIdentity}>
       {/* Analyst mode banner on mobile */}
       {isMobile && forceAnalystMode && (
         <div className="bg-accent/10 border-b border-accent/20 px-3 py-2 flex items-center justify-between text-xs shrink-0">
@@ -1653,6 +1763,7 @@ const AppInner = memo(function AppInner({
             onNewTimelineEvent={handleNewTimelineEvent}
             onNewWhiteboard={handleNewWhiteboard}
             onNewIOC={handleNewIOC}
+            onNewIdentity={investigationMode === 'remote' ? undefined : handleNewIdentity}
             onOpenFile={openFilePicker}
             onImportData={() => setShowDataImport(true)}
             onToggleSidebar={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
@@ -1685,6 +1796,7 @@ const AppInner = memo(function AppInner({
         {screenshareViewHidden && (
           <div role="status" className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-text-secondary">
             <p>{tCommon('screenshare.viewHidden')}</p>
+            {selectedFolderId && visibility.hiddenByIdentities?.has(selectedFolderId) && <p className="max-w-md text-sm text-text-muted">{tCommon('screenshare.hiddenByIdentities')}</p>}
             <button className="rounded border border-border-medium px-3 py-2 hover:bg-bg-hover" onClick={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); closeSettings(); navigateTo('investigations'); }}>{tCommon('screenshare.browseVisible')}</button>
           </div>
         )}
@@ -1745,6 +1857,7 @@ const AppInner = memo(function AppInner({
             whiteboards={screensafeWhiteboards}
             standaloneIOCs={screensafeStandaloneIOCs}
             chatThreads={screensafeChatThreads}
+            identities={screensafeIdentities}
             folders={folders}
             onRestoreNote={loggedRestoreNote}
             onDeleteNotePermanently={(id) => { notes.deleteNote(id); activityLog.log('note', 'delete', 'Permanently deleted note', id); }}
@@ -1770,6 +1883,10 @@ const AppInner = memo(function AppInner({
             onDeleteThreadPermanently={chatsHook.deleteThread}
             onTrashThread={chatsHook.trashThread}
             onUnarchiveThread={chatsHook.restoreThread}
+            onRestoreIdentity={loggedRestoreIdentity}
+            onDeleteIdentityPermanently={loggedDeleteIdentity}
+            onTrashIdentity={loggedTrashIdentity}
+            onUnarchiveIdentity={loggedToggleArchiveIdentity}
             onEmptyAllTrash={async () => { if (screenshareMaxLevel) { addToast('info', 'Turn off screenshare mode before emptying all trash.'); return; } await emptyAllTrash(); addToast('success', tt('investigation.trashEmptied')); }}
           />
         ) : activeView === 'dashboard' ? (
@@ -1782,11 +1899,22 @@ const AppInner = memo(function AppInner({
             links={settings.quickLinks ?? DEFAULT_QUICK_LINKS}
             onUpdateLinks={(links) => updateSettings({ quickLinks: links })}
             onViewChange={navigateTo}
+            onOpenMetric={metric => {
+              // The compromised identities tile opens the list filtered to that status.
+              if (metric !== 'compromised-identities') return;
+              // The tile counts every investigation on this device: so does the list it opens.
+              setSelectedFolderId(undefined);
+              if (investigationMode === 'remote') setInvestigationMode('local');
+              setSelectedTag(undefined); setShowTrash(false); setShowArchive(false);
+              setIdentitySelection(previous => ({ request: (previous?.request ?? 0) + 1, status: 'compromised' }));
+              navigateTo('identities');
+            }}
             folders={folders}
             allNotes={screensafeNotes}
             allTasks={screensafeTasks}
             allEvents={screensafeTimelineEvents}
             allIOCs={screensafeStandaloneIOCs}
+            allIdentities={screensafeIdentities}
             dashboardKPIs={settings.dashboardKPIs as import('./types').KPIMetricId[] | undefined}
             onUpdateKPIs={(kpis) => updateSettings({ dashboardKPIs: kpis })}
           />
@@ -1836,6 +1964,8 @@ const AppInner = memo(function AppInner({
             investigationMembers={investigationMembers}
             iocTableColumns={settings.iocTableColumns}
             onUpdateTableColumns={(columns) => updateSettings({ iocTableColumns: columns })}
+            searchRequest={iocSearchRequest}
+            onSearchHandled={clearIocSearchRequest}
           />
         ) : activeView === 'activity' ? (
           <ActivityLogView
@@ -1867,6 +1997,8 @@ const AppInner = memo(function AppInner({
             selectedFolderId={selectedFolderId}
             openNewForm={pendingNewEvent}
             onNewFormOpened={() => setPendingNewEvent(false)}
+            openEventRequest={timelineEventRequest}
+            onOpenEventHandled={clearTimelineEventRequest}
           />
         ) : activeView === 'whiteboard' ? (
           <WhiteboardView
@@ -1896,6 +2028,35 @@ const AppInner = memo(function AppInner({
             importBlockedReason={evidenceImportFence.blockedReason}
             onDeduplicate={handleDeduplicateEvidence}
             onOpenChat={() => setActiveView('chat')}
+          />
+        ) : activeView === 'identities' ? (
+          <IdentitiesView
+            onTrackThreatActor={trackThreatActor}
+            clsLevels={settings.tiClsLevels}
+            defaultClsLevel={settings.tiDefaultClsLevel}
+            identities={investigationIdentities}
+            allIdentities={screensafeIdentities}
+            folders={folders}
+            folderId={selectedFolderId}
+            events={investigationTimelineEvents}
+            iocs={investigationStandaloneIOCs}
+            notes={investigationNotes}
+            threatActors={identityThreatActors}
+            readOnly={investigationMode === 'remote'}
+            defaultFolderId={selectedFolderId}
+            selectRequest={identitySelection}
+            onSelectHandled={clearIdentitySelection}
+            addRequest={identityAddRequest}
+            onAddHandled={clearIdentityAddRequest}
+            onCreate={handleCreateIdentity}
+            onUpdate={identitiesHook.updateIdentity}
+            onTrash={loggedTrashIdentity}
+            onMerge={loggedMergeIdentities}
+            onOpenElsewhere={openIdentity}
+            onOpenEvent={handleOpenEventFromIdentity}
+            onOpenNote={handleOpenNoteFromIdentity}
+            onOpenIOC={handleOpenIOCFromIdentity}
+            onAddNote={investigationMode === 'remote' ? undefined : handleAddNoteAboutIdentity}
           />
         ) : activeView === 'products' ? (
           null
@@ -1932,6 +2093,8 @@ const AppInner = memo(function AppInner({
             allWhiteboards={screensafeWhiteboards}
             allIOCs={screensafeStandaloneIOCs}
             allChats={screensafeChatThreads}
+            allEvidence={screensafeEvidenceItems}
+            allIdentities={screensafeIdentities}
           />
         ) : activeView === 'caddyshack' ? (
           <CaddyShackView
@@ -1959,7 +2122,7 @@ const AppInner = memo(function AppInner({
                 setSelectedNoteId(noteId);
                 setActiveView('notes');
               }}
-              onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); }}
+              onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); identitiesHook.reload(); chatsHook.reload(); }}
               onOpenSettings={(tab) => { openSettings(tab); }}
               onFolderChanged={reloadFolders}
               profiles={agentProfilesHook.profiles}
@@ -2159,6 +2322,10 @@ const AppInner = memo(function AppInner({
             scopedNotes={investigationNotes}
             scopedTasks={investigationTasks}
             scopedTimelineEvents={investigationTimelineEvents}
+            identities={screensafeIdentities}
+            scopedIdentities={investigationIdentities}
+            onOpenIdentity={openIdentity}
+            onUpdateIdentity={investigationMode === 'remote' ? undefined : identitiesHook.updateIdentity}
             onNavigateToNote={(id) => { setSelectedNoteId(id); setSelectedFolderId(undefined); setSelectedTag(undefined); setShowTrash(false); setShowArchive(false); navigateTo('notes', { selectedNoteId: id }); }}
             onNavigateToTask={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); navigateTo('tasks'); }}
             onNavigateToTimelineEvent={(id) => { const ev = timeline.events.find((e) => e.id === id); if (ev) { setSelectedTimelineId(ev.timelineId); navigateTo('timeline', { selectedTimelineId: ev.timelineId }); } else { navigateTo('timeline'); } }}
@@ -2177,12 +2344,13 @@ const AppInner = memo(function AppInner({
             onTrashThread={loggedTrashChatThread}
             onShareThread={handleShareChatThread}
             settings={settings}
-            onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); }}
+            onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); identitiesHook.reload(); chatsHook.reload(); }}
             onNavigateToEntity={(type, id) => {
               if (type === 'note') { setSelectedNoteId(id); navigateTo('notes', { selectedNoteId: id }); }
               else if (type === 'task') { navigateTo('tasks'); }
               else if (type === 'event') { const ev = timeline.events.find((e) => e.id === id); setSelectedTimelineId(ev?.timelineId); navigateTo('timeline', { selectedTimelineId: ev?.timelineId }); }
               else if (type === 'ioc') { navigateTo('graph'); }
+              else if (type === 'identity') { const identity = screensafeIdentities.find((i) => i.id === id && !i.trashed); if (identity) openIdentity(identity); }
             }}
             onOpenSettings={(tab) => { openSettings(tab); }}
           />
@@ -2270,6 +2438,7 @@ const AppInner = memo(function AppInner({
       </Suspense>
 
       <Suspense fallback={null}><DataImportModal
+        defaultClsLevel={settings.tiDefaultClsLevel}
         open={showDataImport}
         onClose={() => setShowDataImport(false)}
         folders={folders}
@@ -2277,6 +2446,7 @@ const AppInner = memo(function AppInner({
         defaultFolderId={underlyingFolderId}
         onCreateTimeline={loggedCreateTimeline}
         onImportComplete={handleDataImportComplete}
+        identities={screensafeIdentities}
       /></Suspense>
 
       {pendingImportFile && <BackupImportDialog
@@ -2348,6 +2518,8 @@ const AppInner = memo(function AppInner({
         chatThreads={screensafeChatThreads.filter((c) => !c.trashed && !c.archived)}
         evidenceItems={screensafeEvidenceItems.filter(item => !item.trashed && !item.archived)}
         onNavigateToEvidence={handleSearchNavigateToEvidence}
+        identities={screensafeIdentities.filter(identity => !identity.trashed && !identity.archived)}
+        onNavigateToIdentity={handleSearchNavigateToIdentity}
         onNavigateToIOC={handleSearchNavigateToIOC}
         onNavigateToChat={handleSearchNavigateToChat}
         selectedFolderId={selectedFolderId}
@@ -2492,6 +2664,7 @@ const AppInner = memo(function AppInner({
           serverName={serverOnboardingName}
         />
       </Suspense>
+    </IdentityLinksProvider>
     </ActivityLogContext.Provider>
     <ToastContainer />
     <DraftRecoveryNotice />

@@ -59,14 +59,15 @@ describe('Database schema', () => {
     expect(db.activityLog).toBeDefined();
     expect(db.standaloneIOCs).toBeDefined();
     expect(db.evidenceItems).toBeDefined();
+    expect(db.identities).toBeDefined();
     expect(db.chatThreads).toBeDefined();
     expect(db.integrationTemplates).toBeDefined();
     expect(db.installedIntegrations).toBeDefined();
     expect(db.integrationRuns).toBeDefined();
   });
 
-  it('is at version 34 and keeps clip receipts workspace-local', () => {
-    expect(db.verno).toBe(34);
+  it('is at version 35 and keeps clip receipts workspace-local', () => {
+    expect(db.verno).toBe(35);
     expect(db.table('_clipReceipts').schema.primKey.name).toBe('key');
   });
 });

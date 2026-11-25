@@ -1,6 +1,9 @@
 import { db } from '../db';
 import { withEntityDraftBarrier } from './entity-drafts';
 import { integrationWrite } from './integration-cancellation';
+import { deleteCheckpointsFor } from './checkpoints';
+import { forgetIgnoredNames } from './ignored-names';
+import { compactHeldChangesFor } from './sync-outgoing';
 import { markPending, clearPending } from './pending-changes';
 
 export type EntityRecord = Record<string, unknown> & { id: string };
@@ -16,6 +19,7 @@ export const ENTITY_RELATIONS: Record<string, Relation[]> = {
   timelineEvents: [folder, ...links, ...embeddedIOCs, relation('timelineId', 'timelines'), relation('linkedIOCIds', 'iocs', true)],
   standaloneIOCs: [folder, ...links, relation('linkedEvidenceIds', 'evidenceItems', true), relation('relationships.*.targetIOCId', 'iocs')],
   evidenceItems: [folder, relation('linkedIOCIds', 'iocs', true)],
+  identities: [folder, relation('connections.*.targetId', 'identities')],
   whiteboards: [folder],
   chatThreads: [folder, relation('parentThreadId', 'chatThreads')],
   folders: [relation('timelineId', 'timelines'), relation('agentThreadId', 'chatThreads'),
@@ -31,7 +35,7 @@ export const ENTITY_RELATIONS: Record<string, Relation[]> = {
 /** Agent history has no modification time and requires its thread edge; an
  * empty edge (as ask_human records use) keeps it valid for backup. */
 const HISTORY_TABLES = new Set(['agentActions', 'agentMeetings']);
-export const TAGGED_TABLES = ['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'chatThreads', 'folders'] as const;
+export const TAGGED_TABLES = ['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'identities', 'chatThreads', 'folders'] as const;
 export const FOLDER_CONTENT_TABLES = TAGGED_TABLES.filter(name => name !== 'folders');
 let lifecycleTail: Promise<void> = Promise.resolve();
 /** Mount-time purges can arrive together; serialize our draft barriers, not just DB writes. */
@@ -62,6 +66,7 @@ export function mapEntityReferences(table: string, row: EntityRecord, mapper: (t
   // A relationship is an edge, not an empty object after its target is removed.
   const prune = (value: Record<string, unknown>) => {
     if (Array.isArray(value.relationships)) value.relationships = value.relationships.filter(rel => rel && typeof rel.targetIOCId === 'string');
+    if (table === 'identities' && Array.isArray(value.connections)) value.connections = value.connections.filter(edge => edge && typeof edge.targetId === 'string');
   };
   prune(copy);
   const analysis = copy.iocAnalysis as { iocs?: Record<string, unknown>[] } | undefined;
@@ -81,7 +86,7 @@ export async function deleteEntitiesWithReferences(deletions: Record<string, str
     const pending = Symbol('entity deletion');
     markPending(pending);
     try {
-      await integrationWrite(Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), signal, async () => {
+      await integrationWrite([...Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), db.checkpoints], signal, async () => {
         assertCurrent();
         await prepare?.();
         if (onlyExpiredTrashBefore !== undefined) {
@@ -110,19 +115,27 @@ export async function deleteEntitiesWithReferences(deletions: Record<string, str
         const now = Date.now();
         for (const table of Object.keys(ENTITY_RELATIONS)) {
           const rows = await db.table<EntityRecord>(table).toArray();
+          const changedRows: EntityRecord[] = [];
           for (const row of rows) {
             let changed = false;
             const updated = mapEntityReferences(table, row, (target, id, path) => {
               if (removed.get(target)?.has(id)) { changed = true; return HISTORY_TABLES.has(table) && path === 'threadId' ? '' : undefined; }
               return id;
             });
-            if (changed) await db.table(table).put(HISTORY_TABLES.has(table) ? updated : { ...updated, updatedAt: now });
+            if (changed) changedRows.push(HISTORY_TABLES.has(table) ? updated : { ...updated, updatedAt: now });
           }
+          if (changedRows.length) await db.table(table).bulkPut(changedRows);
         }
+        // AI undo checkpoints would otherwise keep a deleted row's full copy (PRIV-1).
+        await deleteCheckpointsFor(removed);
         assertCurrent();
       });
     } finally { clearPending(pending); }
   });
+  // Changes held for a server that does not sync these rows keep no earlier copy (PRIV-2).
+  await compactHeldChangesFor(new Map(Object.entries(deletions).map(([table, ids]) => [table, new Set(ids)])));
+  // Names ignored in a deleted investigation are forgotten on this device (PRIV-4).
+  if (deletions.folders?.length) await forgetIgnoredNames(deletions.folders);
 }
 
 export async function changeTagEverywhere(id: string, replacement?: { name?: string; color?: string }): Promise<void> {
@@ -158,7 +171,9 @@ export async function setInvestigationArchived(id: string, archived: boolean): P
     for (const name of FOLDER_CONTENT_TABLES) {
       const candidates = await db.table<EntityRecord>(name).where('folderId').equals(id).filter(row => !row.trashed).toArray();
       const changed = archived ? candidates.filter(row => !row.archived)
-        : candidates.filter(row => row.archived && (!previous || rows[name]?.includes(row.id)));
+        // Identities cannot be archived one by one, so unarchiving brings them all back, including ones
+        // a 2.0.4 teammate's unarchive left archived (2.0.4 does not know the table).
+        : candidates.filter(row => row.archived && (name === 'identities' || !previous || rows[name]?.includes(row.id)));
       if (archived) rows[name] = [...new Set([...(rows[name] ?? []), ...changed.map(row => row.id)])];
       for (const row of changed) await db.table(name).update(row.id, { archived, updatedAt: now });
     }

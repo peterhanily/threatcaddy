@@ -1,4 +1,5 @@
 import { useId, useState, useRef, useEffect } from 'react';
+import { rewriteIgnoredNames } from '../../lib/ignored-names';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '../Common/Modal';
 import { Shield, Copy, Check, Loader2 } from 'lucide-react';
@@ -128,6 +129,7 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
       // Encrypt all existing records
       await encryptAllExistingData(db, setProgress);
       if (!current() || getSessionKey() !== sessionMasterKey) throw new Error('Workspace locked while enabling encryption. Unlock to finish.');
+      await rewriteIgnoredNames();
       cacheSessionKey(rawB64, getSessionDuration(), getSessionStartedAt());
 
       addToast('success', tt('encryption.enabled'));

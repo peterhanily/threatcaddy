@@ -40,6 +40,10 @@ function recoveryFixture(imageData: string): BackupRows {
     timelineEvents: [{ ...common, id: 'release-backup-event', title: 'Fictional observation', description: 'Synthetic event details.', timestamp: now, timelineId: 'release-backup-timeline', eventType: 'other', source: 'Fictional fixture', confidence: 'medium', linkedNoteIds: [noteId], linkedTaskIds: ['release-backup-task'], linkedIOCIds: ['release-backup-ioc'], mitreAttackIds: [], assets: ['fictional-host'], starred: true }],
     standaloneIOCs: [{ ...common, id: 'release-backup-ioc', type: 'domain', value: 'recovery-fixture.example', confidence: 'low', analystNotes: 'Synthetic indicator only.', linkedNoteIds: [noteId], linkedEvidenceIds: ['release-backup-evidence'] }],
     evidenceItems: [{ ...common, id: 'release-backup-evidence', title: 'Fictional raster evidence', fileName: 'synthetic-pixel.png', fileType: 'image', mimeType: 'image/png', size: imageData.length, imageData, imageDataMimeType: 'image/png', imageWidth: 1, imageHeight: 1, content: 'Synthetic image description.', extractionStatus: 'extracted', importedAt: now, chunkIndex: 0, chunkCount: 1, linkedIOCIds: ['release-backup-ioc'] }],
+    identities: [
+      { ...common, id: 'release-backup-client', type: 'organization', name: 'Fictional Recovery Client', aliases: [], details: [{ id: 'release-backup-domain', label: 'Domain', value: 'recovery-fixture.example' }], connections: [] },
+      { ...common, id: 'release-backup-contact', type: 'person', name: 'Fictional Client Contact', description: 'Synthetic security manager', aliases: ['F. Contact'], status: 'cleared', contact: true, details: [{ id: 'release-backup-phone', label: 'Phone', value: '+44 20 7946 0999', private: true }], connections: [{ targetId: 'release-backup-client', label: 'works at' }] },
+    ],
     whiteboards: [{ ...common, id: 'release-backup-whiteboard', name: 'Fictional analysis board', order: 0, elements: JSON.stringify([{ id: 'synthetic-rectangle', type: 'rectangle', x: 10, y: 20, width: 80, height: 40, angle: 0, strokeColor: '#336699', backgroundColor: 'transparent', fillStyle: 'solid', strokeWidth: 1, strokeStyle: 'solid', roughness: 0, opacity: 100, groupIds: [], frameId: null, seed: 1, version: 1, versionNonce: 1, isDeleted: false, boundElements: null, updated: now, link: null, locked: false }]), appState: JSON.stringify({ zoom: { value: 1 }, scrollX: 0, scrollY: 0 }), files: JSON.stringify({
       'fictional-raster': { id: 'fictional-raster', mimeType: 'image/png', dataURL: `data:image/png;base64,${imageData}`, created: now, lastRetrieved: now, version: 2 },
       'fictional-vector': { id: 'fictional-vector', mimeType: 'image/svg+xml', dataURL: `data:image/svg+xml;base64,${whiteboardSVG}`, created: now, lastRetrieved: now, version: 3 },
@@ -307,6 +311,29 @@ test('legacy absent tables are retained and explicit empty tables obey Replace v
   expect(network.pageErrors).toEqual([]);
 });
 
+test('a portable backup made before identities existed restores with none on Replace All and keeps them on Merge', async ({ page }) => {
+  test.setTimeout(60_000);
+  const network = await isolateNetwork(page);
+  await goToApp(page);
+  const fixture = recoveryFixture(await rasterFixture(page));
+  await seedRows(page, fixture);
+  await page.reload();
+  await expect(page.locator('[data-tour="header"]')).toBeVisible();
+  const original = await readRows(page);
+  const older = await downloadBackupJSON(page);
+  expect(older.identities).toHaveLength(2);
+  delete (older as Partial<BackupRows>).identities;
+  await loadBackup(page, backupFile(older), 'Replace All');
+  const replaced = await readRows(page);
+  expect(replaced.identities).toEqual([]);
+  assertRecovered({ ...replaced, identities: original.identities }, original);
+  await seedRows(page, { identities: fixture.identities });
+  await loadBackup(page, backupFile(older), 'Merge');
+  expect((await readRows(page)).identities.map(row => row.id).sort()).toEqual(['release-backup-client', 'release-backup-contact']);
+  expect(network.externalRequests).toEqual([]);
+  expect(network.pageErrors).toEqual([]);
+});
+
 test('populated Merge keeps newer local revisions, updates older ones, and never duplicates identities', async ({ page }) => {
   const network = await isolateNetwork(page);
   await goToApp(page);
@@ -431,6 +458,7 @@ test('encrypted-at-rest workspace restores all portable tables and still decrypt
   expect(raw.evidenceItems[0].imageData).toMatchObject({ __enc: 1 });
   expect(raw.whiteboards[0].files).toMatchObject({ __enc: 1 });
   expect(raw.installedIntegrations[0].config).toMatchObject({ __enc: 1 });
+  for (const identity of raw.identities) for (const field of ['name', 'details', 'connections']) expect(identity[field], field).toMatchObject({ __enc: 1 });
   assertRecovered(await downloadBackupJSON(page), fixture);
   // Close the cached session without changing the app's encryption metadata.
   // Only disposable fixture state exists in this browser context.

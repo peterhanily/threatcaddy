@@ -9,16 +9,102 @@ import i18n from '../i18n';
 import type { SyncChange } from './server-api';
 import { outgoingSyncData } from './sync-sanitize';
 import { MAX_SYNC_REQUEST_NODES, outgoingRefusal, syncDataNodes, type OutgoingRefusal } from './sync-push-limits';
-import { isSyncTable } from './sync-state';
+import { LEGACY_SYNC_TABLES, SYNC_TABLES, isSyncTable, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
 
 export const MAX_PUSH_BYTES = 900_000; // Leave room beneath the server's 1 MiB body limit.
 const MAX_ASSET_PUSH_BYTES = 15 * 1024 * 1024; // Dedicated 16 MiB sync route.
 const encoder = new TextEncoder();
 export const validVersion = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0;
 
-export interface SyncQueueEntry extends SyncChange { seq?: number; folderId?: string }
-/** 'oversized': too large for any upload request. */
-export type HeldReason = OutgoingRefusal | 'oversized';
+export interface SyncQueueEntry extends SyncChange {
+  seq?: number;
+  folderId?: string;
+  /** Sent only once this row's queued change is accepted (see holdSyncUntilAccepted). */
+  after?: { table: string; entityId: string };
+  /** What undoing the held change needs (a merge: the merged-away row, or connections before it). Encrypted at rest. */
+  restore?: unknown;
+}
+/** 'oversized': too large for any upload request. 'unsupported': the team server does not sync its table. */
+export type HeldReason = OutgoingRefusal | 'oversized' | 'unsupported';
+
+/** The tables the team server syncs, as its latest pull reported them. Kept durably, so
+ * restore and offline-copy removal know them while signed out. */
+export const SERVER_TABLES_KEY = 'syncServerTablesV1';
+/** A server that does not list its tables (2.0.4 and earlier) syncs the legacy set. */
+export const serverTablesOf = (listed: unknown): ReadonlySet<string> =>
+  new Set(Array.isArray(listed) && listed.every(name => typeof name === 'string') ? listed : LEGACY_SYNC_TABLES);
+export async function serverSyncTables(): Promise<ReadonlySet<string>> {
+  return serverTablesOf((await db.table('_syncMeta').get(SERVER_TABLES_KEY))?.value);
+}
+
+/**
+ * Changes to a table the team server does not sync (identities on a 2.0.4 server) stay queued on
+ * this device until it does. They are kept compact, so no earlier copy of an edited or deleted row,
+ * private details included, lingers and every sync cycle stays cheap: one entry per entity (its
+ * latest operation, keeping the first entry's clientVersion, as push would send it), and nothing at
+ * all for an entity the server never stored that was then deleted. Call inside a read-write
+ * transaction that includes _syncQueue and _syncMeta, with the workspace unlocked.
+ */
+export async function compactHeldQueue(serverTables: ReadonlySet<string>, only?: ReadonlyMap<string, ReadonlySet<string>>): Promise<void> {
+  const held = SYNC_TABLES.filter(table => !serverTables.has(table) && (!only || only.get(table)?.size));
+  if (!held.length) return;
+  const heldTables = new Set<string>(held);
+  // `only`: just these rows' entries, read by index.
+  const entries = only
+    ? (await db.table('_syncQueue').where('entityId').anyOf([...new Set(held.flatMap(table => [...only.get(table) ?? []]))]).toArray() as SyncQueueEntry[])
+      .filter(entry => heldTables.has(entry.table) && (only.get(entry.table)?.has(entry.entityId) ?? false))
+      .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0))
+    : await db.table('_syncQueue').where('table').anyOf(held).sortBy('seq') as SyncQueueEntry[];
+  const groups = new Map<string, SyncQueueEntry[]>();
+  for (const entry of entries) {
+    const key = JSON.stringify([entry.table, entry.entityId]);
+    groups.set(key, [...(groups.get(key) ?? []), entry]);
+  }
+  // What each merge waits for: a merge's copy (restore) is kept only while it can still be cancelled,
+  // so not once the kept identity is deleted here (or was never stored and is gone).
+  const targets = [...new Set(entries.flatMap(entry => entry.after && entry.restore !== undefined ? [entry.after.entityId] : []))];
+  const targetOps = new Map<string, string>();
+  if (targets.length) {
+    for (const entry of await db.table('_syncQueue').where('entityId').anyOf(targets).sortBy('seq') as SyncQueueEntry[]) {
+      targetOps.set(JSON.stringify([entry.table, entry.entityId]), entry.op);
+    }
+  }
+  for (const entries of groups.values()) {
+    const first = entries[0], last = entries[entries.length - 1];
+    const seqs = entries.map(entry => entry.seq).filter((seq): seq is number => seq !== undefined);
+    // Whether the server ever stored it matters only for a delete (one read, only then).
+    const stored = async () => (validVersion(first.clientVersion) && first.clientVersion > 0)
+      || !!(await db.table('_syncMeta').get(revisionKey(last.table, last.entityId)))?.value;
+    if (last.op === 'delete' && !await stored()) {
+      await db.table('_syncQueue').bulkDelete(seqs);
+      continue;
+    }
+    // A hold (a merge waiting for its kept identity) stays with the entry that is kept.
+    const hold = entries.find(entry => entry.after);
+    const copy = hold?.restore !== undefined && hold.after && targetOps.get(JSON.stringify([hold.after.table, hold.after.entityId])) === 'put' ? hold.restore : undefined;
+    const next: SyncQueueEntry = { ...last, clientVersion: first.clientVersion, ...(hold?.after ? { after: hold.after } : {}) };
+    delete next.restore;
+    if (copy !== undefined) next.restore = copy;
+    const unchanged = entries.length === 1 && last.clientVersion === next.clientVersion && last.after === next.after && last.restore === next.restore;
+    if (unchanged) continue;
+    await db.table('_syncQueue').bulkDelete(seqs.slice(0, -1));
+    await db.table('_syncQueue').put(next);
+  }
+}
+
+/**
+ * Compacts these rows' held changes at once, without waiting for a sync cycle (which runs only
+ * after a successful pull), so a deletion or an edit made while the server is unreachable leaves
+ * no earlier copy queued. `rows` maps table names to ids. Never fails the change it follows.
+ */
+export async function compactHeldChangesFor(rows: ReadonlyMap<string, ReadonlySet<string>>): Promise<void> {
+  try {
+    await db.transaction('rw', ['_syncQueue', '_syncMeta'], async () => {
+      suppressSyncInCurrentTransaction();
+      await compactHeldQueue(await serverSyncTables(), rows);
+    });
+  } catch { /* The change is saved; the next sync cycle compacts its entries. */ }
+}
 
 /** The server's assigneeId refers to users; an agent deployment id stays on this device. */
 function withoutAgentAssignee(table: string, data: Record<string, unknown> | undefined, agents: ReadonlySet<string>) {
@@ -31,11 +117,13 @@ function withoutAgentAssignee(table: string, data: Record<string, unknown> | und
 /** The change push sends for one entity's queued entries (in queue order), with the
  * values it batches by. `held` says why push keeps it queued on this device instead;
  * `asset` sends it alone on the dedicated asset route. */
-export function outgoingChange(entries: readonly SyncQueueEntry[], agents: ReadonlySet<string>) {
+export function outgoingChange(entries: readonly SyncQueueEntry[], agents: ReadonlySet<string>, serverTables: ReadonlySet<string>) {
   const first = entries[0], last = entries[entries.length - 1];
   const change: SyncChange = { table: last.table, entityId: last.entityId, op: last.op,
     data: withoutAgentAssignee(last.table, outgoingSyncData(last.table, last.data), agents),
     clientVersion: validVersion(first.clientVersion) ? first.clientVersion : 0 };
+  // An older team server refuses a whole upload that names a table it does not know.
+  if (!serverTables.has(change.table)) return { change, nodes: 0, size: 0, asset: false, held: 'unsupported' as const };
   // A change the server or other clients would refuse stays queued, so it cannot hold back the rest.
   const nodes = syncDataNodes(change.data);
   const refusal = change.op !== 'put' ? null : nodes > MAX_SYNC_REQUEST_NODES ? 'limits' : outgoingRefusal(change.table, change.entityId, change.data);
@@ -72,7 +160,7 @@ export async function syncItemLabels(entries: readonly SyncQueueEntry[]): Promis
 
 /** The selected entities whose latest queued operation is a put, split into puts push
  * keeps on this device (`held`) and puts it would upload (`unsent`). Call inside a
- * transaction that includes the queue, the synced tables and agentDeployments. */
+ * transaction that includes the queue, _syncMeta, the synced tables and agentDeployments. */
 export async function queuedPuts(selected: (entry: SyncQueueEntry) => boolean) {
   const groups = new Map<string, SyncQueueEntry[]>();
   for (const entry of await db.table('_syncQueue').toArray() as SyncQueueEntry[]) {
@@ -81,11 +169,12 @@ export async function queuedPuts(selected: (entry: SyncQueueEntry) => boolean) {
     groups.set(key, [...(groups.get(key) ?? []), entry]);
   }
   const agents = await agentDeploymentIds();
+  const serverTables = await serverSyncTables();
   const held: SyncQueueEntry[] = [], unsent: SyncQueueEntry[] = [];
   for (const entries of groups.values()) {
     const last = entries[entries.length - 1];
     if (last.op !== 'put' || !entries.some(selected)) continue;
-    (outgoingChange(entries, agents).held ? held : unsent).push(last);
+    (outgoingChange(entries, agents, serverTables).held ? held : unsent).push(last);
   }
   return { held, unsent };
 }

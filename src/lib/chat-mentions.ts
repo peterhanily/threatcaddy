@@ -1,8 +1,10 @@
 import { db } from '../db';
+import i18n from '../i18n';
 import { isFolderLocalOnly, isShareableFolder } from './ai-scope';
+import { isBuiltinType, looseText, organizationOf } from './identity-model';
 
 export interface MentionSuggestion {
-  type: 'note' | 'ioc' | 'investigation';
+  type: 'note' | 'ioc' | 'investigation' | 'identity';
   id: string;
   label: string;
   /** Short preview for the dropdown */
@@ -10,16 +12,18 @@ export interface MentionSuggestion {
 }
 
 import { mentionCategoryLabel } from './i18n-labels';
+import { sliceText } from './utils';
 
 /** Category options shown when user types just '@' */
 export const MENTION_CATEGORIES = [
   { type: 'note' as const, get label() { return mentionCategoryLabel('note'); }, prefix: '@note:' },
   { type: 'ioc' as const, get label() { return mentionCategoryLabel('ioc'); }, prefix: '@ioc:' },
   { type: 'investigation' as const, get label() { return mentionCategoryLabel('investigation'); }, prefix: '@investigation:' },
+  { type: 'identity' as const, get label() { return mentionCategoryLabel('identity'); }, prefix: '@identity:' },
 ];
 
 /** Every token resolveMentions reads an entity for. */
-const MENTION_TOKEN = /@(note|ioc|investigation):([^\s]+)/;
+const MENTION_TOKEN = /@(note|ioc|investigation|identity):([^\s]+)/;
 
 /** Model-written text must not carry one: a click would read the entity with no approval card. */
 export function hasMentionToken(text: string): boolean {
@@ -37,7 +41,7 @@ async function isHidden(row: { folderId?: string; trashed?: boolean }, hideLocal
  * Called as the user types after '@note:', '@ioc:', or '@investigation:'.
  */
 export async function searchMentions(
-  type: 'note' | 'ioc' | 'investigation',
+  type: 'note' | 'ioc' | 'investigation' | 'identity',
   query: string,
   folderId?: string,
   limit = 8,
@@ -81,6 +85,28 @@ export async function searchMentions(
       id: i.id,
       label: `${i.type}: ${i.value}`,
       preview: i.analystNotes?.slice(0, 60),
+    }));
+  }
+
+  if (type === 'identity') {
+    let identities;
+    if (folderId) {
+      identities = await db.identities.where('folderId').equals(folderId).and(i => !i.trashed && !i.archived).toArray();
+      identities.sort((a, b) => b.updatedAt - a.updatedAt);
+    } else {
+      identities = await db.identities.orderBy('updatedAt').reverse().filter(i => !i.trashed && !i.archived).limit(GLOBAL_RECENT_CAP).toArray();
+    }
+    // Names and other names only: private details are never searched.
+    const wanted = looseText(q);
+    if (wanted) identities = identities.filter(i => [i.name, ...i.aliases].some(name => looseText(name).includes(wanted)));
+    // The type as the Identities view names it; a custom type is shown as written.
+    await i18n.loadNamespaces('identities').catch(() => undefined);
+    const typeName = (type: string) => (isBuiltinType(type) ? i18n.t(`type.${type}`, { ns: 'identities' }) : type);
+    return identities.slice(0, limit).map(i => ({
+      type: 'identity',
+      id: i.id,
+      label: i.name,
+      preview: [typeName(i.type), i.description].filter(Boolean).join(' · ').slice(0, 60),
     }));
   }
 
@@ -138,7 +164,8 @@ export async function resolveMentions(text: string, homeFolderId: string | undef
       const note = await db.notes.get(m.id);
       if (note && !await isHidden(note, hideLocalOnly)) {
         contextParts.push(`[Referenced Note: "${note.title}"]\n${note.content.slice(0, 4000)}`);
-        displayText = displayText.replace(m.full, `@${note.title}`);
+        // A function, so "$&" or "$'" in a stored name is not read as a replacement pattern.
+        displayText = displayText.replace(m.full, () => `@${note.title}`);
       }
     } else if (m.type === 'ioc') {
       const ioc = await db.standaloneIOCs.get(m.id);
@@ -152,25 +179,47 @@ export async function resolveMentions(text: string, homeFolderId: string | undef
           ioc.iocStatus ? `Status: ${ioc.iocStatus}` : '',
         ].filter(Boolean).join('\n');
         contextParts.push(`[Referenced IOC: ${ioc.type}:${ioc.value}]\n${details}`);
-        displayText = displayText.replace(m.full, `@${ioc.type}:${ioc.value}`);
+        displayText = displayText.replace(m.full, () => `@${ioc.type}:${ioc.value}`);
+      }
+    } else if (m.type === 'identity') {
+      const identity = await db.identities.get(m.id);
+      if (identity && !await isHidden(identity, hideLocalOnly)) {
+        // What anyone can see: never a private detail (owner decision 7).
+        // The same organisation the Identities view shows: a live organisation in the same investigation.
+        const sameInvestigation = identity.folderId ? await db.identities.where('folderId').equals(identity.folderId).toArray() : [];
+        const organizationName = organizationOf(identity, new Map(sameInvestigation.map(row => [row.id, row])))?.name;
+        const details = [
+          `Name: ${identity.name}`,
+          `Type: ${identity.type}`,
+          identity.status ? `Status: ${identity.status}` : '',
+          identity.description ? `Description: ${identity.description}` : '',
+          identity.aliases.length ? `Other names: ${identity.aliases.join('; ')}` : '',
+          organizationName ? `Organization: ${organizationName}` : '',
+          ...identity.details.filter(detail => !detail.private).map(detail => `${detail.label}: ${detail.value}`),
+        ].filter(Boolean).join('\n');
+        // Capped as a note mention is: an identity can hold thousands of details.
+        const shortName = sliceText(identity.name, 200);
+        contextParts.push(`[Referenced Identity: "${shortName}"]\n${details.length > 4000 ? `${sliceText(details, 4000)}…` : details}`);
+        displayText = displayText.replace(m.full, () => `@${shortName}`);
       }
     } else if (m.type === 'investigation') {
       const folder = await db.folders.get(m.id);
       if (folder && !await isHidden({ folderId: folder.id }, hideLocalOnly)) {
-        const [noteCount, taskCount, iocCount, eventCount] = await Promise.all([
+        const [noteCount, taskCount, iocCount, eventCount, identityCount] = await Promise.all([
           db.notes.where('folderId').equals(folder.id).and(n => !n.trashed).count(),
           db.tasks.where('folderId').equals(folder.id).and(t => !t.trashed).count(),
           db.standaloneIOCs.where('folderId').equals(folder.id).and(i => !i.trashed).count(),
           db.timelineEvents.where('folderId').equals(folder.id).and(e => !e.trashed).count(),
+          db.identities.where('folderId').equals(folder.id).and(i => !i.trashed).count(),
         ]);
         const details = [
           `Name: ${folder.name}`,
           folder.description ? `Description: ${folder.description}` : '',
           `Status: ${folder.status || 'active'}`,
-          `Entities: ${noteCount} notes, ${taskCount} tasks, ${iocCount} IOCs, ${eventCount} timeline events`,
+          `Entities: ${noteCount} notes, ${taskCount} tasks, ${iocCount} IOCs, ${eventCount} timeline events, ${identityCount} identities`,
         ].filter(Boolean).join('\n');
         contextParts.push(`[Referenced Investigation: "${folder.name}"]\n${details}`);
-        displayText = displayText.replace(m.full, `@${folder.name}`);
+        displayText = displayText.replace(m.full, () => `@${folder.name}`);
       }
     }
   }

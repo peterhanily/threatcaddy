@@ -16,7 +16,7 @@ Install version 1.1.5 from the ThreatCaddy release on GitHub:
 
 Keep only one ThreatCaddy extension enabled: when two are installed, the one that loads first serves the page.
 
-The Chrome Web Store offers version 1.1.1, which is older and unsupported. It has no app pairing, and its web fetch follows redirects and accepts private addresses. ThreatCaddy 2.0.4 uses none of its features: it sends it no AI, integration or web-fetch request and imports none of its clips. Store 1.1.1 marks clips it sent "Sent" but keeps them on its Clip Review page, so copy any you still need from there before you remove it.
+The Chrome Web Store offers version 1.1.1, which is older and unsupported. It has no app pairing, and its web fetch follows redirects and accepts private addresses. ThreatCaddy 2.1.0 uses none of its features: it sends it no AI, integration or web-fetch request and imports none of its clips. Store 1.1.1 marks clips it sent "Sent" but keeps them on its Clip Review page, so copy any you still need from there before you remove it.
 
 ## Install — Firefox
 

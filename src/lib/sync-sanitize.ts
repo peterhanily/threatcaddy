@@ -14,12 +14,13 @@ import {
   sanitizeStandaloneIOC,
   sanitizeChatThread,
   sanitizeEvidenceItem,
+  sanitizeIdentity,
 } from './export';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Sanitizer = (raw: unknown) => any;
 
-const TABLE_SANITIZERS: Record<string, Sanitizer> = {
+export const TABLE_SANITIZERS: Readonly<Record<string, Sanitizer>> = {
   notes: sanitizeNote,
   tasks: sanitizeTask,
   folders: sanitizeFolder,
@@ -30,6 +31,7 @@ const TABLE_SANITIZERS: Record<string, Sanitizer> = {
   standaloneIOCs: sanitizeStandaloneIOC,
   chatThreads: sanitizeChatThread,
   evidenceItems: sanitizeEvidenceItem,
+  identities: sanitizeIdentity,
 };
 
 /** Timestamp fields the server may send as ISO strings instead of ms. */
@@ -120,8 +122,23 @@ const DEVICE_LOCAL_MESSAGE_FIELDS = ['toolCalls', 'attachments', 'agentCycleSumm
 
 const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 
-/** The data a push uploads for a row: chat message details stay on this device. */
+/**
+ * Optional fields a push clears by sending null. The server keeps every field a push
+ * leaves out, and the echo of the push would bring the old value back. Every client
+ * that syncs these tables reads null as no value.
+ */
+const CLEARABLE_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  identities: ['description', 'status', 'contact', 'clsLevel', 'trashedAt'],
+};
+
+/** The data a push uploads for a row: cleared fields as null, and chat message details stay on this device. */
 export function outgoingSyncData(tableName: string, data: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+  const clearable = CLEARABLE_FIELDS[tableName];
+  if (clearable && data) {
+    const copy = { ...data };
+    for (const field of clearable) copy[field] ??= null;
+    return copy;
+  }
   if (tableName !== 'chatThreads' || !data || !Array.isArray(data.messages)) return data;
   return {
     ...data,
@@ -136,8 +153,9 @@ export function outgoingSyncData(tableName: string, data: Record<string, unknown
 
 /**
  * Whether a pulled or conflict-accepted row keeps this device's value for a field.
- * Clients never push explicit nulls, so an absent or null server value means the
- * server has no value for it; only a concrete server value replaces local data.
+ * Clients never push explicit nulls for these fields (only CLEARABLE_FIELDS are sent as
+ * null), so an absent or null server value means the server has no value for it; only a
+ * concrete server value replaces local data.
  */
 export function keepsLocalValue(tableName: string, incoming: Record<string, unknown> | undefined, field: string): boolean {
   if (DEVICE_LOCAL_FIELDS[tableName]?.includes(field)) return true;

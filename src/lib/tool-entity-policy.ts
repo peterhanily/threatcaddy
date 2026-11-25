@@ -9,6 +9,8 @@ const effects: Record<string, readonly string[]> = {
   list_investigations: [], get_investigation_details: [], search_across_investigations: [], compare_investigations: [],
   extract_iocs: [], fetch_url: [], list_integrations: [], recall_knowledge: [], query_siem: [],
   list_agent_activity: [], list_deployed_agents: [], list_folders: [], read_soul: [], forensicate_scan: [],
+  search_identities: [], read_identity: [],
+  create_identity: ['identity'], update_identity: ['identity'], connect_identities: ['identity'],
   create_note: ['note'], update_note: ['note'], generate_report: ['note'], update_knowledge: ['note'],
   call_meeting: ['note'], notify_human: ['note'], declare_war_bridge: ['note'], ingest_alert: ['note'],
   create_note_folder: ['note', 'folder'], delete_note_folder: ['note', 'folder'], move_to_folder: ['note'],

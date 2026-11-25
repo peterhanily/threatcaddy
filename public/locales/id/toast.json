@@ -30,6 +30,7 @@
   },
   "import": {
     "dataImported": "Diimpor {{events}} kejadian dan {{iocs}} IOC",
+    "identitiesImported": "Identitas: {{created}} ditambahkan, {{updated}} diperbarui",
     "jsonImported": "Diimpor {{notes}} catatan, {{tasks}} tugas",
     "markdownImported": "Diimpor {{count}} catatan dari Markdown",
     "importFailed": "Impor gagal",

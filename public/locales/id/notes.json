@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "Tautkan ke catatan"
   },
+  "mentionMenu": {
+    "header": "Sebut identitas"
+  },
   "slashCommands": {
     "heading1": "Judul 1",
     "heading1Desc": "Judul besar",

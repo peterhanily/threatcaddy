@@ -7,7 +7,7 @@ import { classifyToolCall, decideToolCall, type ToolReach, type ToolSurface } fr
 import { consumeHumanApproval } from './human-approval';
 import { listAgentProfiles, loadAgentPolicy, resolveAgentProfile } from './agent-profile-resolver';
 import { sanitizeSoulText } from './soul-text';
-import { MAX_ACTIVE_DEPLOYMENTS_PER_INVESTIGATION } from './caddy-agent-policy';
+import { IDENTITY_WRITE_TOOLS, MAX_ACTIVE_DEPLOYMENTS_PER_INVESTIGATION } from './caddy-agent-policy';
 import { SUPERVISOR_ACTION_PROFILE } from './supervisor-tool-policy';
 import { PASSIVE_LOOKUP_TEMPLATE_IDS } from './builtin-integrations';
 import { getReadOnlyEntityError } from './tool-entity-policy';
@@ -39,6 +39,7 @@ import {
   executeListInvestigations, executeGetInvestigationDetails,
   executeSearchAcrossInvestigations, executeCompareInvestigations,
 } from './llm-tools-read';
+import { executeConnectIdentities, executeCreateIdentity, executeReadIdentity, executeSearchIdentities, executeUpdateIdentity, prepareIdentityLabels } from './llm-tools-identities';
 
 // Write tools
 import {
@@ -49,6 +50,7 @@ import {
 } from './llm-tools-write';
 import { AGENT_COMPETITIVENESS, CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES } from './entity-enums';
 import { mergeEnrichment } from './ioc-enrichment-persistence';
+import { sliceText } from './utils';
 
 // Analysis tools
 import {
@@ -99,7 +101,7 @@ Understand the IR lifecycle (NIST SP 800-61): Preparation, Detection & Analysis,
 
 ## Available Tools
 
-You have 46 tools organized into these categories:
+You have 51 tools organized into these categories:
 
 **Search & Read** (11): search_notes, search_all, read_note, read_task, read_ioc, read_timeline_event, list_tasks, list_iocs, list_timeline_events, get_investigation_summary, list_folders.
 
@@ -118,6 +120,8 @@ You have 46 tools organized into these categories:
 **Agent Management** (4): deploy_agent, stop_agent, list_deployed_agents, run_agent_cycle.
 
 **Global Investigation** (5): list_investigations, get_investigation_details, search_across_investigations, create_in_investigation, compare_investigations.
+
+**Identities** (5): search_identities, read_identity, create_identity, update_identity, connect_identities — the people, organizations, systems and accounts in the investigation. Private details are hidden from you; never ask for them or guess them.
 
 ### Tool Usage Guidelines
 - When creating or updating entities, confirm exactly what you did with clickable entity links.
@@ -140,6 +144,7 @@ When you reference entities in your response, use this format so they become cli
 - Tasks: [task:ID:Title]
 - IOCs: [ioc:TYPE:VALUE]
 - Timeline events: [event:ID:Title]
+- Identities: [identity:ID:Name]
 
 ## Response Format
 
@@ -198,14 +203,15 @@ export async function buildSystemPrompt(folder?: Folder, customPrompt?: string, 
     if (folder.papLevel) prompt += `\nPAP: ${folder.papLevel}`;
 
     // Add entity counts for context
-    const [noteCount, taskCount, iocCount, eventCount] = await Promise.all([
+    const [noteCount, taskCount, iocCount, eventCount, identityCount] = await Promise.all([
       db.notes.where('folderId').equals(folder.id).and(n => !n.trashed).count(),
       db.tasks.where('folderId').equals(folder.id).and(t => !t.trashed).count(),
       db.standaloneIOCs.where('folderId').equals(folder.id).and(i => !i.trashed).count(),
       db.timelineEvents.where('folderId').equals(folder.id).and(e => !e.trashed).count(),
+      db.identities.where('folderId').equals(folder.id).and(i => !i.trashed).count(),
     ]);
 
-    prompt += `\n\nEntity counts: ${noteCount} notes, ${taskCount} tasks, ${iocCount} IOCs, ${eventCount} timeline events`;
+    prompt += `\n\nEntity counts: ${noteCount} notes, ${taskCount} tasks, ${iocCount} IOCs, ${eventCount} timeline events, ${identityCount} identities`;
   }
 
   return prompt;
@@ -219,7 +225,8 @@ const SURFACE_AGENT_LABELS: Partial<Record<ToolSurface, string>> = { supervisor:
 
 const atomicLocalTools = new Set(['create_note', 'update_note', 'create_task', 'update_task', 'create_ioc', 'update_ioc',
   'bulk_create_iocs', 'create_timeline_event', 'update_timeline_event', 'link_entities', 'generate_report',
-  'create_in_investigation', 'create_note_folder', 'delete_note_folder', 'move_to_folder']);
+  'create_in_investigation', 'create_note_folder', 'delete_note_folder', 'move_to_folder',
+  'create_identity', 'update_identity', 'connect_identities']);
 
 /** Every caller states its surface; the dispatcher re-runs the decision table
  * for it (2.0.3 design, section 2.5) and refuses an 'ask' without a HumanApproval. */
@@ -229,7 +236,11 @@ export async function executeTool(
   agentContext: { profileId?: string; deploymentId?: string } | undefined,
   constraints: ToolExecutionConstraints,
 ): Promise<ToolExecutionResult> {
+  if (IDENTITY_WRITE_TOOLS.has(toolUse.name)) await prepareIdentityLabels();
   if (!constraints?.signal || !atomicLocalTools.has(toolUse.name)) return dispatchTool(toolUse, folderId, agentContext, constraints);
+  // A tool that refuses rolls its writes back by aborting; it is its own answer the model sees
+  // (a duplicate name, the phrases it may use…), not the abort's.
+  let refused: ToolExecutionResult | undefined;
   try {
     return await db.transaction('rw', db.tables, async () => {
       const transaction = Dexie.currentTransaction;
@@ -239,12 +250,13 @@ export async function executeTool(
         constraints.signal!.throwIfAborted();
         const result = await dispatchTool(toolUse, folderId, agentContext, constraints);
         constraints.signal!.throwIfAborted();
-        if (result.isError) { transaction?.abort(); return result; }
+        if (result.isError) { refused = result; transaction?.abort(); return result; }
         return result;
       } finally { constraints.signal!.removeEventListener('abort', abort); }
     });
   } catch (error) {
-    return toolExecutionError(constraints.signal.aborted ? 'Tool execution was cancelled; local changes rolled back.' : error instanceof Error ? error.message : 'Tool write failed.');
+    if (constraints.signal.aborted) return toolExecutionError('Tool execution was cancelled; local changes rolled back.');
+    return refused ?? toolExecutionError(error instanceof Error ? error.message : 'Tool write failed.');
   }
 }
 
@@ -402,6 +414,14 @@ async function dispatchTool(
       case 'dismiss_agent':                  result = await executeDismissAgent(inp, folderId, creator); break;
       case 'reflect_on_performance':         result = await executeReflectOnPerformance(inp, agentContext?.profileId); break;
       case 'read_soul':                      result = await executeReadSoul(inp, agentContext?.profileId, agentRole); break;
+      case 'search_identities':              result = await executeSearchIdentities(inp, folderId, { brief: agentRole === 'observer' }); break;
+      case 'read_identity':                  result = agentRole === 'observer'
+        // Stakeholder agents get names, types and statuses only (search_identities, brief), never a full read.
+        ? JSON.stringify({ error: 'Stakeholder agents see identities\' names, types and statuses only; use search_identities.' })
+        : await executeReadIdentity(inp, folderId); break;
+      case 'create_identity':                result = await executeCreateIdentity(inp, folderId, creator); break;
+      case 'update_identity':                result = await executeUpdateIdentity(inp, creator); break;
+      case 'connect_identities':             result = await executeConnectIdentities(inp, folderId, creator); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
       default: {
         // Dynamic skill tools: local:<skill> or host:<name>:<skill>
@@ -601,7 +621,8 @@ async function injectAgentFeedback(task: { title: string; assignedDeploymentId?:
       await db.chatThreads.where('id').equals(deployment.threadId).modify((thread: { contextSummary?: string }) => {
         const existing = thread.contextSummary || '';
         // Never end on half a character: providers can reject a lone surrogate.
-        const feedbackLine = `[FEEDBACK/${quality}] Task "${task.title}": ${feedback}`.replace(/\s+/g, ' ').trim().slice(0, MAX_FEEDBACK_LINE_CHARS).replace(/[\uD800-\uDBFF]$/, '');
+        const feedbackText = `[FEEDBACK/${quality}] Task "${task.title}": ${feedback}`.replace(/\s+/g, ' ').trim();
+        const feedbackLine = sliceText(feedbackText, MAX_FEEDBACK_LINE_CHARS);
         const lines = existing.split('\n').filter(Boolean);
         lines.push(feedbackLine);
         thread.contextSummary = lines.slice(-10).join('\n');

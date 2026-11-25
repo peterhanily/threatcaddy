@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { keepIgnoredNamesThroughDecryption } from '../../lib/ignored-names';
 import { useTranslation } from 'react-i18next';
 import { Shield, ShieldOff, KeyRound, Clock, AlertTriangle } from 'lucide-react';
 import { Modal } from '../Common/Modal';
@@ -87,8 +88,11 @@ export function EncryptionSettings() {
         throw new Error(t('legacy.beforeDisable'));
       }
 
-      await decryptAllExistingData(db, setDisableProgress);
-      clearEncryptionMeta();
+      // The ignored-names list is encrypted with this key too: keep it readable as plain hashes.
+      await keepIgnoredNamesThroughDecryption(async () => {
+        await decryptAllExistingData(db, setDisableProgress);
+        clearEncryptionMeta();
+      });
       setEnabled(false);
       setShowDisable(false);
       setDisablePass('');

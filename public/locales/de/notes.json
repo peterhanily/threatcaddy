@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "Mit Notiz verknüpfen"
   },
+  "mentionMenu": {
+    "header": "Identität erwähnen"
+  },
   "slashCommands": {
     "heading1": "Überschrift 1",
     "heading1Desc": "Große Überschrift",

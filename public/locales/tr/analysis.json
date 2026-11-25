@@ -252,6 +252,7 @@
   "iocList.confidenceHeader": "Güven",
   "iocList.statusHeader": "Durum",
   "iocList.attributionHeader": "Atıf",
+  "iocList.belongsToHeader": "Ait olduğu",
   "iocList.updatedHeader": "Güncellendi",
 
   "bulkImport.inputTitle": "Toplu IOC İçe Aktarma",
@@ -377,5 +378,7 @@
   "stixImport.relationshipsDetected": "{{count}} ilişki tespit edildi",
   "stixImport.relationshipsDetected_other": "{{count}} ilişki tespit edildi",
 
-  "attribution.placeholder": "örn. APT29, Lazarus Group..."
+  "attribution.placeholder": "örn. APT29, Lazarus Group...",
+  "attribution.groupActors": "Tehdit aktörleri",
+  "attribution.groupIdentities": "Kimlikler"
 }

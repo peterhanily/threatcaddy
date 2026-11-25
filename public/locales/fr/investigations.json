@@ -138,6 +138,8 @@
   "card.entity.events": "Événements",
   "card.entity.whiteboards": "Tableaux",
   "card.entity.chats": "Discussions",
+  "card.entity.evidence": "Preuves",
+  "card.entity.identities": "Identités",
   "card.members_many": "{{count}} membres",
   "firstRun.title": "Du dossier au rapport",
   "firstRun.description": "Créez un dossier, importez des fichiers sources autorisés ou explorez un incident de messagerie fictif. Aucune configuration IA nécessaire.",

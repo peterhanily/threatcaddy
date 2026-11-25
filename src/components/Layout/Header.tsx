@@ -26,6 +26,7 @@ interface HeaderProps {
   onNewTimelineEvent: () => void;
   onNewWhiteboard: () => void;
   onNewIOC?: () => void;
+  onNewIdentity?: () => void;
   onOpenFile?: () => void;
   onImportData?: () => void;
   onToggleSidebar: () => void;
@@ -48,6 +49,7 @@ export function Header({
   onNewTimelineEvent,
   onNewWhiteboard,
   onNewIOC,
+  onNewIdentity,
   onOpenFile,
   onImportData,
   onToggleSidebar,
@@ -280,6 +282,7 @@ export function Header({
           onNewTimelineEvent={onNewTimelineEvent}
           onNewWhiteboard={onNewWhiteboard}
           onNewIOC={onNewIOC}
+          onNewIdentity={onNewIdentity}
           onOpenFile={onOpenFile}
           onImportData={onImportData}
         />

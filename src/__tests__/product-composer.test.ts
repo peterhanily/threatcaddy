@@ -5,17 +5,18 @@ import {
   prepareProductComposerNote, PRODUCT_COMPOSER_LIMITS, ProductComposerValidationError,
   stageProductSection, type ProductComposerSnapshot, type ProductComposerSourceKind,
 } from '../lib/product-composer';
-import { DEFAULT_CLS_LEVELS, type EvidenceItem, type Note, type NoteTemplate, type StandaloneIOC, type Task, type TimelineEvent } from '../types';
+import { DEFAULT_CLS_LEVELS, type EvidenceItem, type Identity, type Note, type NoteTemplate, type StandaloneIOC, type Task, type TimelineEvent } from '../types';
 
 const common = { folderId: 'case', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 };
 const note = (id: string, extra: Partial<Note> = {}): Note => ({ ...common, id, title: id, content: `Full content for ${id}`, pinned: false, ...extra });
 const task = (id: string, extra: Partial<Task> = {}): Task => ({ ...common, id, title: id, completed: false, priority: 'none', status: 'todo', order: 0, ...extra });
 const event = (id: string, extra: Partial<TimelineEvent> = {}): TimelineEvent => ({ ...common, id, title: id, timestamp: 0, timelineId: 'timeline', eventType: 'other', source: 'Fictional source', confidence: 'medium', linkedIOCIds: [], linkedNoteIds: [], linkedTaskIds: [], mitreAttackIds: [], assets: [], starred: false, ...extra });
 const ioc = (id: string, extra: Partial<StandaloneIOC> = {}): StandaloneIOC => ({ ...common, id, type: 'domain', value: 'fictional.example', confidence: 'low', ...extra });
+const identity = (id: string, extra: Partial<Identity> = {}): Identity => ({ ...common, id, type: 'person', name: id, aliases: [], details: [], connections: [], ...extra });
 const evidence = (id: string, extra: Partial<EvidenceItem> = {}): EvidenceItem => ({ ...common, id, title: id, content: 'Full evidence content', fileName: 'fixture.txt', fileType: 'text', size: 0, extractionStatus: 'extracted', importedAt: 0, chunkIndex: 0, chunkCount: 1, ...extra });
 const snapshot = (extra: Partial<ProductComposerSnapshot> = {}): ProductComposerSnapshot => ({
   folder: { id: 'case', name: 'Fictional investigation', order: 0, createdAt: 0 },
-  notes: [], tasks: [], timelineEvents: [], iocs: [], evidence: [], ...extra,
+  notes: [], tasks: [], timelineEvents: [], iocs: [], evidence: [], identities: [], ...extra,
 });
 const baseline = (content: string, clsLevel?: string): NoteTemplate => ({
   id: 'baseline', name: 'Fictional baseline', category: 'Product Baseline', source: 'user', createdAt: 0, updatedAt: 0, content, clsLevel,
@@ -80,14 +81,25 @@ describe('product composer outline', () => {
 });
 
 describe('explicit source staging', () => {
-  const all = snapshot({ notes: [note('note')], tasks: [task('task')], timelineEvents: [event('event')], iocs: [ioc('ioc')], evidence: [evidence('evidence')] });
+  const all = snapshot({ notes: [note('note')], tasks: [task('task')], timelineEvents: [event('event')], iocs: [ioc('ioc')], evidence: [evidence('evidence')], identities: [identity('identity')] });
   it.each<{ kind: ProductComposerSourceKind; id: string }>([
     { kind: 'notes', id: 'note' }, { kind: 'tasks', id: 'task' }, { kind: 'timeline', id: 'event' }, { kind: 'iocs', id: 'ioc' }, { kind: 'evidence', id: 'evidence' },
+    { kind: 'identities', id: 'identity' },
   ])('stages only explicit $kind selections', ({ kind, id }) => {
     const output = stageProductSection(all, kind, [id]);
     expect(output).toContain(`| ${id} |`);
     expect(() => stageProductSection(all, kind, [])).toThrow('Select at least one');
     expect(() => stageProductSection(all, kind, ['missing'])).toThrow('no longer available');
+  });
+
+  it('stages identities without their private details, as literal cells', () => {
+    const output = stageProductSection(snapshot({ identities: [identity('dana', { name: 'Dana | Okafor', type: 'person', status: 'compromised', aliases: ['D. Okafor'],
+      details: [{ id: 'e', label: 'Email', value: 'dana@fictional.example' }, { id: 'p', label: 'Phone', value: '+44 7700 900123', private: true }] })] }), 'identities', ['dana']);
+    expect(output).toContain('Dana &#124; Okafor');
+    expect(output).toContain('compromised');
+    expect(output).toContain('Email: dana@fictional.example');
+    expect(output).not.toContain('7700');
+    expect(output).not.toContain('Phone');
   });
 
   it('rejects other-folder, archived, trashed and stale IDs without substituting other sources', () => {
@@ -127,9 +139,18 @@ describe('classification and save boundary', () => {
   it.each([
     { notes: [note('n', { clsLevel: 'TLP:RED' })] }, { tasks: [task('t', { clsLevel: 'TLP:RED' })] },
     { timelineEvents: [event('e', { clsLevel: 'TLP:RED' })] }, { iocs: [ioc('i', { clsLevel: 'TLP:RED' })] },
-    { evidence: [evidence('e', { clsLevel: 'TLP:RED' })] },
+    { evidence: [evidence('e', { clsLevel: 'TLP:RED' })] }, { identities: [identity('i', { clsLevel: 'TLP:RED' })] },
   ])('inherits every supported source classification', sources => {
     expect(deriveProductComposerClassification(snapshot(sources))).toBe('TLP:RED');
+  });
+
+  it('gives identities their own budget, so an imported staff list does not stop products working', () => {
+    const many = Array.from({ length: 5000 }, (_, i) => identity(`i${i}`));
+    const notes = Array.from({ length: 1999 }, (_, i) => note(`n${i}`));
+    expect(() => deriveProductComposerClassification(snapshot({ notes, identities: many }))).not.toThrow();
+    expect(deriveProductComposerClassification(snapshot({ identities: [...many, identity('red', { clsLevel: 'TLP:RED' })] }))).toBe('TLP:RED');
+    expect(() => deriveProductComposerClassification(snapshot({ identities: Array.from({ length: PRODUCT_COMPOSER_LIMITS.identityItems + 1 }, (_, i) => identity(`x${i}`)) })))
+      .toThrow('at most 20000 identities');
   });
 
   it('combines folder, baseline and embedded IOC markings using the configured hierarchy', () => {

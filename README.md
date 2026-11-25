@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/peterhanily/threatcaddy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/version-2.0.4-green.svg" alt="Version 2.0.4" />
+  <img src="https://img.shields.io/badge/version-2.1.0-green.svg" alt="Version 2.1.0" />
   <img src="https://img.shields.io/badge/TypeScript-6%20%2F%207-blue.svg?logo=typescript&logoColor=white" alt="TypeScript 6 (client) / 7 (server)" />
   <img src="https://img.shields.io/badge/React-19-61dafb.svg?logo=react&logoColor=white" alt="React 19" />
   <img src="https://img.shields.io/badge/Vite-7-646cff.svg?logo=vite&logoColor=white" alt="Vite 7" />
@@ -42,7 +42,7 @@ Most investigation tools lock your data in a cloud you don't control, cost per s
 
 **Try it now:** [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loads a sample investigation with a guided walkthrough.
 
-**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, `release-manifest.json` (with the source revision) and `SHA256SUMS`. Client and server 2.0.4 fix what a security review found in the hosted site, the standalone file, the browser extension and the team server image, on top of the AI prompt-injection hardening of 2.0.3. The extension has its own version, currently 1.1.5; ThreatCaddy uses only 1.1.3 or later. Read the [2.0.4 upgrade and channel notes](docs/releases/v2.0.4.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
+**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, `release-manifest.json` (with the source revision) and `SHA256SUMS`. Client and server 2.1.0 add [Identities](#identities): the people, organizations, systems and accounts in an investigation; the team server adds one database migration, and there is no downgrade. The extension has its own version, currently 1.1.5; ThreatCaddy uses only 1.1.3 or later. Read the [2.1.0 upgrade and channel notes](docs/releases/v2.1.0.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
 
 **Self-host the client:**
 
@@ -96,7 +96,7 @@ Set `POSTGRES_PASSWORD`, a stable `BOT_MASTER_KEY`, the Ed25519 `JWT_PRIVATE_KEY
 Human-driven conversational AI assistant with a deep toolset for threat investigation.
 
 - **Multi-provider** — Anthropic, OpenAI, Google Gemini, Mistral and local endpoints such as Ollama, LM Studio and vLLM. Select an available model and configure credentials in Settings; provider availability and model names can change.
-- **58 tools** — 46 core tools to search, read, create, and update all entities; 7 delegation tools for Lead Analyst coordination; 5 executive tools for CISO/Chief of Staff. Covers IOC extraction, URL fetching, report generation, and cross-investigation analysis
+- **63 tools** — 51 core tools to search, read, create, and update all entities, including identities; 7 delegation tools for Lead Analyst coordination; 5 executive tools for CISO/Chief of Staff. Covers IOC extraction, URL fetching, report generation, and cross-investigation analysis
 - **Slash commands** — `/fetch`, `/search`, `/note`, `/task`, `/iocs`, `/summary`, `/timeline`, `/report`, `/triage`, `/graph`, `/link`
 - **Customizable system prompt** — Editable in Settings with CTI/IR tradecraft baked into the default (MITRE ATT&CK, Diamond Model, Kill Chain, Pyramid of Pain, estimative language, TLP/PAP)
 - **Persistent threads** with auto-generated titles; stays active in the background when switching tabs
@@ -162,11 +162,20 @@ REST endpoints that expose skills through `GET /skills` and `POST /execute` (see
 - **IOC extraction** — Auto-extract IPv4, IPv6, domains, URLs, emails, hashes (MD5/SHA-1/SHA-256), CVEs, MITRE ATT&CK IDs, YARA rules, Sigma rules, and file paths
 - **Standalone IOCs** — Manage IOCs with type, confidence, subtypes, analyst notes, attribution, and classification
 - **IOC relationships** — Many-to-many links with typed, directional relationships (e.g. domain "resolves-to" IP, hash "exploits" CVE)
-- **Entity graph** — Interactive force-directed graph of IOCs, notes, tasks, and timeline events with drag-to-link, filtering, and multiple layouts
+- **Entity graph** — Interactive force-directed graph of IOCs, notes, tasks, timeline events and identities with drag-to-link, filtering, and multiple layouts, including a Focus layout centred on one node
 - **IOC dashboard** — Aggregate stats: type/confidence distribution, top actors, timeline, frequency tables
 - **TLP/PAP classification** — Traffic Light Protocol and Permissible Actions Protocol levels on entities and investigations
 - **Export** — JSON, CSV (grouped or flat), STIX 2.1 bundles; push to OCI object storage
 - **Evidence import** — PDF, Word, RTF, Excel, CSV, JSON, XML, logs, text and screenshots: up to 20 files and 50 MiB per import, 25 MiB per file. Parsing runs in a cancellable worker; very large documents import partially with a warning, unreadable or encrypted Office files import as metadata only, and decompression is bounded: oversized parts are cut, while archives with too many entries, too much compressed data or sizes that do not match their contents reject the batch without saving anything
+
+### Identities
+
+- **People, organizations, systems and accounts** — An Identities view for one investigation or all of them: an A–Z list with search and type, contact and status filters, a profile with details, a status (compromised, contained, suspicious, cleared), a classification and connections that read correctly from both sides ("reports to" and "manages"), plus org charts. Merge and delete ask first, and trashed identities can be restored from Trash
+- **Private details** — Details labelled as phone numbers, street addresses, birth dates, passport or national ID numbers and similar start out private. The rule reads common spreadsheet headers in English and the main European languages (`MobilePhone`, `StreetAddress`, `Telefonnummer`), while mailbox, network and attacker addresses (email, IP, C2) stay public. The Data Import preview has a Private choice for each column, and any detail can be made private or public later. Private details are masked until you choose Show, never shown while screensharing, left out of the Identities CSV export unless you tick them, and never sent to AI. They are encrypted at rest when local encryption is on. Backups and investigation exports are full copies and include them, and they sync with the investigation like other content; the team server keeps earlier revisions (see [backup and recovery](docs/backup-recovery.md))
+- **Linked across the investigation** — A timeline event's Actor and Assets, `@Name` mentions in notes, and IOCs whose value is an identity's detail link to its profile. A name not yet in Identities can be added, linked to an existing identity as another name, or ignored on this device. Each profile lists the events, notes and IOCs that name it, also in Chinese, Japanese, Korean and Thai text. "Not yet in Identities" offers the names on the timeline (Actor and Assets), in IOC attribution and in email IOCs that match no identity; a name found as an Actor or an attribution can be tracked as a threat actor instead
+- **Import, export, graph and reports** — Import from CSV or JSON in Data Import (a name already in the investigation is filled in, never duplicated; types, statuses and connections are read in English or the interface language); CSV export that is safe to open in a spreadsheet; identity nodes and connections in the entity graph; grouping by identity in the MITRE report and heatmap; an "Affected people and systems" source in Products; global search; and a Dashboard "Compromised identities" tile
+- **AI** — CaddyAI and agents can search, read, create and update identities and connect them, and you can mention one in chat with `@identity:`. Private details never reach a model. An agent's identity change always waits for your approval and is never included in "Approve all"; the Legal Counsel, Compliance Officer and Communications Lead agents see only names, types and statuses
+- **Compatibility** — Identities sync only with a team server that supports them: an older server leaves them on the device and the sync status says so, and older ThreatCaddy clients on a new server carry on without them. A backup that contains identities, and any encrypted backup made by this version, can only be restored by a version that has them
 
 ### Timeline & Whiteboard
 

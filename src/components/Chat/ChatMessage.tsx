@@ -1,5 +1,5 @@
 import { useState, useMemo, memo } from 'react';
-import { ChevronRight, FileText, ListChecks, Shield, Clock, GitBranch, RotateCcw, RefreshCw } from 'lucide-react';
+import { ChevronRight, FileText, ListChecks, Shield, Clock, GitBranch, RotateCcw, RefreshCw, Contact } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 import { renderMarkdown, sanitizeHtml } from '../../lib/markdown';
@@ -131,10 +131,10 @@ function escapeHtml(str: string): string {
 function processEntityLinks(html: string, onEntityClick?: (type: string, id: string) => void): string {
   if (!onEntityClick) return html;
   // Replace [type:id:label] with styled spans
-  return html.replace(/\[(note|task|ioc|event):([^\]]+)\]/g, (_match, type: string, rest: string) => {
+  return html.replace(/\[(note|task|ioc|event|identity):([^\]]+)\]/g, (_match, type: string, rest: string) => {
     const parts = rest.split(':');
     let id: string, label: string;
-    const iconMap: Record<string, string> = { note: '📄', task: '☑️', ioc: '🛡️', event: '🕐' };
+    const iconMap: Record<string, string> = { note: '📄', task: '☑️', ioc: '🛡️', event: '🕐', identity: '👤' };
     if (type === 'ioc') {
       id = `${parts[0]}:${parts.slice(1).join(':')}`;
       label = parts.slice(1).join(':');
@@ -180,6 +180,8 @@ function SourcesFooter({ toolCalls, onEntityClick, sourcesLabel }: { toolCalls: 
         if (result.tasks?.results) entities.push(...result.tasks.results.map((t: { id: string; title: string }) => ({ type: 'task', id: t.id, label: t.title })));
         if (result.events?.results) entities.push(...result.events.results.map((e: { id: string; title: string }) => ({ type: 'event', id: e.id, label: e.title })));
         if (result.iocs?.results) entities.push(...result.iocs.results.map((i: { id: string; type: string; value: string }) => ({ type: 'ioc', id: i.id, label: `${i.type}: ${i.value}` })));
+        if (Array.isArray(result.identities)) entities.push(...result.identities.map((i: { id: string; name: string }) => ({ type: 'identity', id: i.id, label: i.name })));
+        if (result.id && result.name && tc.name === 'read_identity') entities.push({ type: 'identity', id: result.id, label: result.name });
         // Single entity reads
         if (result.id && result.title && tc.name === 'read_note') entities.push({ type: 'note', id: result.id, label: result.title });
 
@@ -198,8 +200,8 @@ function SourcesFooter({ toolCalls, onEntityClick, sourcesLabel }: { toolCalls: 
 
   if (sources.length === 0) return null;
 
-  const IconMap: Record<string, typeof FileText> = { note: FileText, task: ListChecks, ioc: Shield, event: Clock };
-  const colorMap: Record<string, string> = { note: 'text-blue-400', task: 'text-green-400', ioc: 'text-amber-400', event: 'text-purple-400' };
+  const IconMap: Record<string, typeof FileText> = { note: FileText, task: ListChecks, ioc: Shield, event: Clock, identity: Contact };
+  const colorMap: Record<string, string> = { note: 'text-blue-400', task: 'text-green-400', ioc: 'text-amber-400', event: 'text-purple-400', identity: 'text-sky-400' };
 
   return (
     <div className="mt-2 pt-2 border-t border-border-subtle">
@@ -268,7 +270,8 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({ role, content
   }, [content, isUser]);
 
   const hasReadTools = toolCalls?.some(tc =>
-    !tc.isError && ['search_notes', 'search_all', 'read_note', 'list_tasks', 'list_iocs', 'list_timeline_events', 'analyze_graph'].includes(tc.name)
+    !tc.isError && ['search_notes', 'search_all', 'read_note', 'list_tasks', 'list_iocs', 'list_timeline_events', 'analyze_graph',
+      'search_identities', 'read_identity'].includes(tc.name)
   );
 
   // Parse meeting speaker from **icon Name:** prefix

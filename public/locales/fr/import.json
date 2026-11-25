@@ -27,5 +27,22 @@
   "summaryNote": "Note de synthèse",
   "errorCount": "{{count}} erreur(s) :",
   "andMore": "... et {{count}} de plus",
-  "done": "Terminé"
+  "done": "Terminé",
+  "identities.create": "Créer ou mettre à jour les identités",
+  "identities.noName": "(aucune colonne de nom mappée)",
+  "identities.needsInvestigation": "(choisissez une enquête)",
+  "identities.organization": "Travaille chez, pour les lignes sans organisation",
+  "identities.noOrganization": "Non renseigné",
+  "identities.privateColumn": "Privé",
+  "identities.privateColumnAria": "Importer {{column}} comme détail privé",
+  "identities.privateHint": "Les colonnes de détail cochées Privé sont importées comme détails privés : masqués jusqu'à ce que vous cliquiez sur Afficher et pendant le partage d'écran, jamais envoyés à l'IA, et exclus de l'export CSV des Identités (sauf si vous choisissez de les inclure), de la note de synthèse de cette importation et de ses événements. Les colonnes de numéros de téléphone, d'adresses postales, de dates de naissance, de passeports et de numéros d'identité nationaux sont cochées au départ ; vérifiez les autres.",
+  "identities.unrecognised": "Non reconnu en anglais ni dans la langue de l’interface :",
+  "identities.unrecognisedTypes": "Type {{values}} : conservé tel quel, comme type personnalisé.",
+  "identities.unrecognisedStatuses": "Statut {{values}} : non importé.",
+  "identities.unrecognisedContacts": "Contact {{values}} : non importé (utilisez oui ou non).",
+  "identities.unrecognisedPhrases": "Relation {{values}} : conservée telle quelle, donc les organigrammes ne l’utilisent pas.",
+  "identities.result": "Identités",
+  "identities.updated_one": "{{count}} mise à jour",
+  "identities.updated_many": "{{count}} mises à jour",
+  "identities.updated_other": "{{count}} mises à jour"
 }

@@ -1,5 +1,5 @@
 import { marked } from 'marked';
-import type { EvidenceItem, Folder, Note, NoteTemplate, StandaloneIOC, Task, TimelineEvent } from '../types';
+import type { EvidenceItem, Folder, Identity, Note, NoteTemplate, StandaloneIOC, Task, TimelineEvent } from '../types';
 import { DEFAULT_CLS_LEVELS } from '../types';
 
 export const PRODUCT_COMPOSER_LIMITS = {
@@ -8,6 +8,8 @@ export const PRODUCT_COMPOSER_LIMITS = {
   documentCharacters: 500_000,
   sourceCharacters: 1_000_000,
   sourceItems: 2_000,
+  /** Identities have their own budget: an imported staff list must not stop products working. */
+  identityItems: 20_000,
   sections: 80,
   titleCharacters: 500,
 } as const;
@@ -33,6 +35,8 @@ export interface ProductComposerSnapshot {
   timelineEvents: readonly TimelineEvent[];
   iocs: readonly StandaloneIOC[];
   evidence: readonly EvidenceItem[];
+  /** Staged without private details; their classification counts like any other source's. */
+  identities: readonly Identity[];
 }
 export interface ProductComposerSection {
   id: string;
@@ -48,7 +52,7 @@ export interface ProductComposerDraft {
   hasTemplatePlaceholders: boolean;
   generatedAt: string;
 }
-export type ProductComposerSourceKind = 'notes' | 'tasks' | 'timeline' | 'iocs' | 'evidence';
+export type ProductComposerSourceKind = 'notes' | 'tasks' | 'timeline' | 'iocs' | 'evidence' | 'identities';
 
 function limit(value: string, maximum: number, label: string): void {
   if (value.length > maximum) throw new ProductComposerValidationError('limit', `${label} exceeds the ${maximum.toLocaleString('en-US')}-character limit. Reduce it before continuing; no content has been truncated.`, 'fieldLimit', { field: label, maximum });
@@ -68,6 +72,9 @@ function scopedSnapshot(snapshot: ProductComposerSnapshot): ProductComposerSnaps
   if (collections.reduce((total, rows) => total + rows.length, 0) > PRODUCT_COMPOSER_LIMITS.sourceItems) {
     throw new ProductComposerValidationError('limit', `The composer supports at most ${PRODUCT_COMPOSER_LIMITS.sourceItems} source items. Narrow the supplied investigation snapshot.`, 'sourceCount', { maximum: PRODUCT_COMPOSER_LIMITS.sourceItems });
   }
+  if (snapshot.identities.length > PRODUCT_COMPOSER_LIMITS.identityItems) {
+    throw new ProductComposerValidationError('limit', `The composer supports at most ${PRODUCT_COMPOSER_LIMITS.identityItems} identities. Narrow the supplied investigation snapshot.`, 'sourceCount', { maximum: PRODUCT_COMPOSER_LIMITS.identityItems });
+  }
   if (!snapshot.folder.id) throw new ProductComposerValidationError('structure', 'Choose an investigation before composing a product.', 'chooseInvestigation');
   return {
     folder: snapshot.folder,
@@ -76,6 +83,7 @@ function scopedSnapshot(snapshot: ProductComposerSnapshot): ProductComposerSnaps
     timelineEvents: activeInFolder(snapshot.timelineEvents, snapshot.folder.id),
     iocs: activeInFolder(snapshot.iocs, snapshot.folder.id),
     evidence: activeInFolder(snapshot.evidence, snapshot.folder.id),
+    identities: activeInFolder(snapshot.identities, snapshot.folder.id),
   };
 }
 
@@ -86,7 +94,7 @@ export function deriveProductComposerClassification(
   effectiveLevels: readonly string[] = DEFAULT_CLS_LEVELS,
 ): string | undefined {
   const source = scopedSnapshot(snapshot);
-  const entities = [...source.notes, ...source.tasks, ...source.timelineEvents, ...source.iocs, ...source.evidence];
+  const entities = [...source.notes, ...source.tasks, ...source.timelineEvents, ...source.iocs, ...source.evidence, ...source.identities];
   const labels = new Set<string>();
   const includeLevel = (level: string | undefined) => {
     if (!level) return;
@@ -96,7 +104,8 @@ export function deriveProductComposerClassification(
   includeLevel(source.folder.clsLevel);
   includeLevel(baseline?.clsLevel);
   for (const entity of entities) includeLevel(entity.clsLevel);
-  let sourceCount = entities.length;
+  // Identities have their own budget (checked above); the shared one counts the other sources and their indicators.
+  let sourceCount = entities.length - source.identities.length;
   for (const entity of [...source.notes, ...source.tasks, ...source.timelineEvents]) {
     for (const ioc of entity.iocAnalysis?.iocs ?? []) {
       if (++sourceCount > PRODUCT_COMPOSER_LIMITS.sourceItems) throw new ProductComposerValidationError('limit', 'The classification snapshot exceeds the 2,000-source limit including embedded indicators. Narrow the source snapshot.', 'classificationCount');
@@ -180,7 +189,7 @@ function dateText(timestamp: number): string {
 /** Stage only explicitly chosen, still-visible source IDs; never query storage. */
 export function stageProductSection(snapshot: ProductComposerSnapshot, kind: ProductComposerSourceKind, ids: string[]): string {
   const source = scopedSnapshot(snapshot);
-  if (!['notes', 'tasks', 'timeline', 'iocs', 'evidence'].includes(kind)) throw new ProductComposerValidationError('selection', 'Choose a supported source type.', 'sourceType');
+  if (!['notes', 'tasks', 'timeline', 'iocs', 'evidence', 'identities'].includes(kind)) throw new ProductComposerValidationError('selection', 'Choose a supported source type.', 'sourceType');
   if (ids.length === 0) throw new ProductComposerValidationError('selection', 'Select at least one source item to stage.', 'selectSource');
   if (ids.length > PRODUCT_COMPOSER_LIMITS.sourceItems) throw new ProductComposerValidationError('limit', 'Too many source selections.', 'selectionCount');
   const available = kind === 'timeline' ? source.timelineEvents : source[kind];
@@ -211,6 +220,12 @@ export function stageProductSection(snapshot: ProductComposerSnapshot, kind: Pro
     case 'evidence':
       headers = ['ID', 'Title', 'File', 'Type', 'Extraction status', 'Content', 'Classification'];
       rows = (selected as EvidenceItem[]).map(item => [item.id, item.title, item.fileName, item.fileType, item.extractionStatus, item.content, item.clsLevel]);
+      break;
+    case 'identities':
+      // Private details are never staged; only the details anyone can see in the investigation.
+      headers = ['ID', 'Name', 'Type', 'Status', 'Description', 'Other names', 'Details', 'Classification'];
+      rows = (selected as Identity[]).map(identity => [identity.id, identity.name, identity.type, identity.status, identity.description,
+        identity.aliases.join('; '), identity.details.filter(detail => !detail.private).map(detail => `${detail.label}: ${detail.value}`).join('; '), identity.clsLevel]);
       break;
   }
   const size = rows.reduce((total, row) => total + row.reduce<number>((count, value) => count + String(value ?? '').length, 0), 0);

@@ -252,6 +252,7 @@
   "iocList.confidenceHeader": "विश्वसनीयता",
   "iocList.statusHeader": "स्थिति",
   "iocList.attributionHeader": "एट्रिब्यूशन",
+  "iocList.belongsToHeader": "स्वामी",
   "iocList.updatedHeader": "अपडेट",
 
   "bulkImport.inputTitle": "IOCs बल्क आयात करें",
@@ -377,5 +378,7 @@
   "stixImport.relationshipsDetected": "{{count}} संबंध पहचाना गया",
   "stixImport.relationshipsDetected_other": "{{count}} संबंध पहचाने गए",
 
-  "attribution.placeholder": "जैसे APT29, Lazarus Group..."
+  "attribution.placeholder": "जैसे APT29, Lazarus Group...",
+  "attribution.groupActors": "थ्रेट एक्टर",
+  "attribution.groupIdentities": "पहचान"
 }

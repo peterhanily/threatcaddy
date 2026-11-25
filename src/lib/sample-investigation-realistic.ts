@@ -1,4 +1,4 @@
-import type { EvidenceItem, Note, StandaloneIOC, Task, TimelineEvent } from '../types';
+import type { EvidenceItem, Identity, Note, StandaloneIOC, Task, TimelineEvent } from '../types';
 import type { generateSampleInvestigation } from './sample-investigation';
 
 export type SampleInvestigationKind = 'realistic' | 'parody';
@@ -155,12 +155,21 @@ Replace this draft with your reviewed assessment. Download this note as Markdown
     importedAt: base + 40 * minute, chunkIndex: 1, chunkCount: 1,
     linkedIOCIds: i === 0 ? [id('ioc', 1), id('ioc', 3)] : [id('ioc', 2)],
   }));
+  const identities: Identity[] = [
+    { ...common, id: id('identity', 1), type: 'person', name: 'Exercise mailbox owner', description: 'Mailbox user', status: 'compromised', aliases: [],
+      details: [{ id: id('identity-detail', 1), label: 'Email', value: 'analyst@example.test' }],
+      connections: [{ targetId: id('identity', 3), label: 'forwarded mail to' }, { targetId: id('identity', 2), label: 'uses' }] },
+    { ...common, id: id('identity', 2), type: 'system', name: 'Training workstation', description: 'Known baseline', status: 'cleared', aliases: [],
+      details: [{ id: id('identity-detail', 2), label: 'IP address', value: '192.0.2.10' }], connections: [] },
+    { ...common, id: id('identity', 3), type: 'account', name: 'archive@review-mail.example', description: 'External forwarding destination', status: 'suspicious', aliases: [],
+      details: [{ id: id('identity-detail', 3), label: 'Email', value: 'archive@review-mail.example' }], connections: [] },
+  ];
   return {
     folder: { id: folderId, name: 'Mailbox Compromise — Synthetic Exercise',
       description: 'Fictional mailbox incident: review evidence, compare a timeline, track containment and export a qualified report. Reserved identifiers only; no external services or active agents.',
       order: 998, status: 'active', localOnly: true, timelineId, createdAt: base, updatedAt: base + 180 * minute,
       clsLevel: 'TLP:CLEAR', tags: ['synthetic-training'] },
-    notes, tasks, timelineEvents, standaloneIOCs, evidenceItems,
+    notes, tasks, timelineEvents, standaloneIOCs, evidenceItems, identities,
     // Sort after user timelines so it never becomes the default for real events.
     timeline: { id: timelineId, name: 'Mailbox Exercise — UTC', order: 998, createdAt: base, updatedAt: base },
     whiteboard: { ...common, id: id('whiteboard', 1), name: 'Mailbox Exercise — Analysis Workspace', order: 0, elements: '[]' },

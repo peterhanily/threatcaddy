@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Trash2, Archive, RotateCcw, ChevronDown, ChevronRight,
-  FileText, ListChecks, Clock, PenTool, Search, MessageSquare,
+  FileText, ListChecks, Clock, PenTool, Search, MessageSquare, Contact,
 } from 'lucide-react';
-import type { Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread, Folder } from '../../types';
+import type { Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread, Folder, Identity } from '../../types';
 import { IOC_TYPE_LABELS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
+import { isBuiltinType } from '../../lib/identity-model';
 import { formatDate, cn } from '../../lib/utils';
 
 interface TrashArchiveViewProps {
@@ -17,6 +18,7 @@ interface TrashArchiveViewProps {
   whiteboards: Whiteboard[];
   standaloneIOCs: StandaloneIOC[];
   chatThreads: ChatThread[];
+  identities?: Identity[];
   folders: Folder[];
   // Note actions
   onRestoreNote: (id: string) => void;
@@ -48,6 +50,11 @@ interface TrashArchiveViewProps {
   onDeleteThreadPermanently: (id: string) => void;
   onTrashThread: (id: string) => void;
   onUnarchiveThread: (id: string) => void;
+  // Identity actions
+  onRestoreIdentity?: (id: string) => void;
+  onDeleteIdentityPermanently?: (id: string) => void;
+  onTrashIdentity?: (id: string) => void;
+  onUnarchiveIdentity?: (id: string) => void;
   // Empty all trash
   onEmptyAllTrash: () => void;
 }
@@ -139,6 +146,7 @@ export function TrashArchiveView({
   whiteboards,
   standaloneIOCs,
   chatThreads,
+  identities = [],
   folders,
   onRestoreNote,
   onDeleteNotePermanently,
@@ -164,10 +172,17 @@ export function TrashArchiveView({
   onDeleteThreadPermanently,
   onTrashThread,
   onUnarchiveThread,
+  onRestoreIdentity = () => {},
+  onDeleteIdentityPermanently = () => {},
+  onTrashIdentity = () => {},
+  onUnarchiveIdentity = () => {},
   onEmptyAllTrash,
 }: TrashArchiveViewProps) {
   const { t } = useTranslation('trash');
+  const { t: tIdentities } = useTranslation('identities');
   const [showEmptyConfirm, setShowEmptyConfirm] = useState(false);
+  // Deleting an identity for good also removes other identities' connections to it, so it is confirmed.
+  const [identityToDelete, setIdentityToDelete] = useState<Identity | null>(null);
 
   const isTrash = mode === 'trash';
 
@@ -177,6 +192,7 @@ export function TrashArchiveView({
   const trashedWhiteboards = whiteboards.filter((w) => w.trashed);
   const trashedIOCs = standaloneIOCs.filter((i) => i.trashed);
   const trashedThreads = chatThreads.filter((c) => c.trashed && !c.isFolder);
+  const trashedIdentities = identities.filter((i) => i.trashed);
 
   const archivedNotes = notes.filter((n) => n.archived && !n.trashed);
   const archivedTasks = tasks.filter((t) => t.archived && !t.trashed);
@@ -184,12 +200,13 @@ export function TrashArchiveView({
   const archivedWhiteboards = whiteboards.filter((w) => w.archived && !w.trashed);
   const archivedIOCs = standaloneIOCs.filter((i) => i.archived && !i.trashed);
   const archivedThreads = chatThreads.filter((c) => (c.archived && !c.trashed) && !c.isFolder);
+  const archivedIdentities = identities.filter((i) => i.archived && !i.trashed);
 
   const items = isTrash
-    ? { notes: trashedNotes, tasks: trashedTasks, events: trashedEvents, whiteboards: trashedWhiteboards, iocs: trashedIOCs, threads: trashedThreads }
-    : { notes: archivedNotes, tasks: archivedTasks, events: archivedEvents, whiteboards: archivedWhiteboards, iocs: archivedIOCs, threads: archivedThreads };
+    ? { notes: trashedNotes, tasks: trashedTasks, events: trashedEvents, whiteboards: trashedWhiteboards, iocs: trashedIOCs, threads: trashedThreads, identities: trashedIdentities }
+    : { notes: archivedNotes, tasks: archivedTasks, events: archivedEvents, whiteboards: archivedWhiteboards, iocs: archivedIOCs, threads: archivedThreads, identities: archivedIdentities };
 
-  const totalCount = items.notes.length + items.tasks.length + items.events.length + items.whiteboards.length + items.iocs.length + items.threads.length;
+  const totalCount = items.notes.length + items.tasks.length + items.events.length + items.whiteboards.length + items.iocs.length + items.threads.length + items.identities.length;
 
   const folderMap = new Map(folders.map((f) => [f.id, f.name]));
   const getFolderName = (folderId?: string) => folderId ? folderMap.get(folderId) : undefined;
@@ -369,10 +386,37 @@ export function TrashArchiveView({
                 );
               })}
             </EntitySection>
+
+            <EntitySection icon={<Contact size={14} />} label={tIdentities('header.title')} count={items.identities.length}>
+              {items.identities.map((identity) => {
+                const actions = makeActions(identity.id, onRestoreIdentity, () => setIdentityToDelete(identity), onUnarchiveIdentity, onTrashIdentity);
+                const typeLabel = isBuiltinType(identity.type) ? tIdentities(`type.${identity.type}`) : identity.type;
+                return (
+                  <ItemRow
+                    key={identity.id}
+                    icon={<Contact size={14} />}
+                    title={`${identity.name} (${typeLabel})`}
+                    folderName={getFolderName(identity.folderId)}
+                    timestamp={isTrash ? identity.trashedAt : identity.updatedAt}
+                    primaryAction={actions.primary}
+                    secondaryAction={actions.secondary}
+                  />
+                );
+              })}
+            </EntitySection>
           </>
         )}
       </div>
 
+      <ConfirmDialog
+        open={identityToDelete !== null}
+        onClose={() => setIdentityToDelete(null)}
+        onConfirm={() => { if (identityToDelete) onDeleteIdentityPermanently(identityToDelete.id); setIdentityToDelete(null); }}
+        title={tIdentities('permanentDelete.title', { name: identityToDelete?.name ?? '' })}
+        message={tIdentities('permanentDelete.message')}
+        confirmLabel={tIdentities('permanentDelete.confirm')}
+        danger
+      />
       <ConfirmDialog
         open={showEmptyConfirm}
         onClose={() => setShowEmptyConfirm(false)}

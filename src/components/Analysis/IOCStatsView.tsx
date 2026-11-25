@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, forwardRef } from 'react';
-import { ChevronDown, ChevronRight, Search, BarChart3, List, Plus, ListPlus, Clipboard, X, ChevronUp, Pencil, Trash2, Archive, RotateCcw, ExternalLink, Columns, GitMerge, Tag as TagIcon, Download } from 'lucide-react';
-import type { Note, Task, TimelineEvent, StandaloneIOC, Settings, IOCEntry, IOCType, ConfidenceLevel, Folder, Tag, InvestigationMember } from '../../types';
+import { ChevronDown, ChevronRight, Search, BarChart3, List, Plus, ListPlus, Clipboard, X, ChevronUp, Pencil, Trash2, Archive, RotateCcw, ExternalLink, Columns, GitMerge, Tag as TagIcon, Download, Contact } from 'lucide-react';
+import type { Note, Task, TimelineEvent, StandaloneIOC, Settings, IOCEntry, IOCType, ConfidenceLevel, Folder, Tag, InvestigationMember, Identity } from '../../types';
+import { useIdentityLinks } from '../Identities/identity-links';
+import { reportGroup } from '../../lib/identity-match';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, ALL_IOC_TABLE_COLUMNS, DEFAULT_IOC_TABLE_COLUMNS, IOC_STATUS_VALUES, IOC_STATUS_LABELS, IOC_STATUS_COLORS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { StandaloneIOCForm } from './StandaloneIOCForm';
@@ -73,6 +75,9 @@ interface IOCStatsViewProps {
   investigationMembers?: InvestigationMember[];
   iocTableColumns?: string[];
   onUpdateTableColumns?: (columns: string[]) => void;
+  /** Shows All IOCs filtered to a value, for example from an identity's Activity; `onSearchHandled` clears it. */
+  searchRequest?: { text: string; request: number };
+  onSearchHandled?: () => void;
 }
 
 interface UniqueIOC {
@@ -80,6 +85,8 @@ interface UniqueIOC {
   value: string;
   confidence: ConfidenceLevel;
   attribution?: string;
+  /** The investigation the attribution came from, to match it to an identity there. */
+  attributionFolderId?: string;
   firstSeen: number;
   entityCount: number;
   sourceTypes: Set<'note' | 'task' | 'event' | 'standalone'>;
@@ -94,6 +101,8 @@ interface UnifiedIOCRow {
   source: string;
   sourceType: 'note' | 'task' | 'event' | 'standalone';
   sourceId: string;
+  /** The investigation of the IOC or the record it was found in, for "Belongs to". */
+  folderId?: string;
   iocStatus?: string;
   attribution?: string;
   standaloneIOC?: StandaloneIOC;
@@ -113,11 +122,14 @@ export function IOCStatsView({
   onCreateIOC, onUpdateIOC, onDeleteIOC,
   onTrashIOC, onRestoreIOC, onToggleArchiveIOC,
   onOpenSettings, onNavigateToSource, investigationMembers,
-  iocTableColumns, onUpdateTableColumns,
+  iocTableColumns, onUpdateTableColumns, searchRequest, onSearchHandled,
 }: IOCStatsViewProps) {
   const [actorsExpanded, setActorsExpanded] = useState(false);
   const [scopeMode, setScopeMode] = useState<'investigation' | 'global'>('investigation');
   const [activeTab, setActiveTab] = useState<TabId>('all-iocs');
+  const [seenSearchRequest, setSeenSearchRequest] = useState(searchRequest?.request);
+  if (searchRequest && searchRequest.request !== seenSearchRequest) { setSeenSearchRequest(searchRequest.request); setActiveTab('all-iocs'); }
+  useEffect(() => { if (searchRequest) onSearchHandled?.(); }, [searchRequest, onSearchHandled]);
   const [showHeaderForm, setShowHeaderForm] = useState(false);
   const [showHeaderBulkImport, setShowHeaderBulkImport] = useState(false);
   const [showHeaderSTIX, setShowHeaderSTIX] = useState(false);
@@ -139,7 +151,7 @@ export function IOCStatsView({
     const iocMap = new Map<string, UniqueIOC>();
     const entityIds = new Set<string>();
 
-    const processIOCs = (iocs: IOCEntry[], entityId: string, sourceType: 'note' | 'task' | 'event' | 'standalone') => {
+    const processIOCs = (iocs: IOCEntry[], entityId: string, sourceType: 'note' | 'task' | 'event' | 'standalone', folderId?: string) => {
       let hasActiveIOC = false;
       for (const ioc of iocs) {
         if (ioc.dismissed) continue;
@@ -150,7 +162,7 @@ export function IOCStatsView({
           existing.entityCount++;
           existing.sourceTypes.add(sourceType);
           if (ioc.firstSeen < existing.firstSeen) existing.firstSeen = ioc.firstSeen;
-          if (ioc.attribution && !existing.attribution) existing.attribution = ioc.attribution;
+          if (ioc.attribution && !existing.attribution) { existing.attribution = ioc.attribution; existing.attributionFolderId = folderId; }
           const levels: ConfidenceLevel[] = ['low', 'medium', 'high', 'confirmed'];
           if (levels.indexOf(ioc.confidence) > levels.indexOf(existing.confidence)) {
             existing.confidence = ioc.confidence;
@@ -161,6 +173,7 @@ export function IOCStatsView({
             value: ioc.value,
             confidence: ioc.confidence,
             attribution: ioc.attribution,
+            attributionFolderId: ioc.attribution ? folderId : undefined,
             firstSeen: ioc.firstSeen,
             entityCount: 1,
             sourceTypes: new Set([sourceType]),
@@ -172,13 +185,13 @@ export function IOCStatsView({
 
     for (const note of effectiveNotes) {
       if (note.trashed) continue;
-      if (note.iocAnalysis?.iocs) processIOCs(note.iocAnalysis.iocs, note.id, 'note');
+      if (note.iocAnalysis?.iocs) processIOCs(note.iocAnalysis.iocs, note.id, 'note', note.folderId);
     }
     for (const task of effectiveTasks) {
-      if (task.iocAnalysis?.iocs) processIOCs(task.iocAnalysis.iocs, task.id, 'task');
+      if (task.iocAnalysis?.iocs) processIOCs(task.iocAnalysis.iocs, task.id, 'task', task.folderId);
     }
     for (const event of effectiveEvents) {
-      if (event.iocAnalysis?.iocs) processIOCs(event.iocAnalysis.iocs, event.id, 'event');
+      if (event.iocAnalysis?.iocs) processIOCs(event.iocAnalysis.iocs, event.id, 'event', event.folderId);
     }
     for (const si of effectiveStandaloneIOCs) {
       if (si.trashed) continue;
@@ -187,7 +200,7 @@ export function IOCStatsView({
         confidence: si.confidence, attribution: si.attribution,
         firstSeen: si.createdAt, dismissed: false,
       };
-      processIOCs([syntheticEntry], si.id, 'standalone');
+      processIOCs([syntheticEntry], si.id, 'standalone', si.folderId);
     }
 
     return { uniqueIOCs: Array.from(iocMap.values()), entitiesWithIOCs: entityIds.size };
@@ -208,22 +221,25 @@ export function IOCStatsView({
     return counts;
   }, [uniqueIOCs]);
 
+  // Attributions are grouped by the identity they name, when they name exactly one.
+  const identityLinks = useIdentityLinks();
   const topActors = useMemo(() => {
-    const actorMap = new Map<string, { count: number; types: Map<IOCType, number> }>();
+    const actorMap = new Map<string, { name: string; identity?: Identity; count: number; types: Map<IOCType, number> }>();
     for (const ioc of uniqueIOCs) {
       if (!ioc.attribution) continue;
-      let entry = actorMap.get(ioc.attribution);
-      if (!entry) { entry = { count: 0, types: new Map() }; actorMap.set(ioc.attribution, entry); }
+      const group = reportGroup(identityLinks?.linkFor(ioc.attributionFolderId, ioc.attribution), ioc.attribution);
+      let entry = actorMap.get(group.key);
+      if (!entry) { entry = { name: group.label, identity: group.identity, count: 0, types: new Map() }; actorMap.set(group.key, entry); }
       entry.count++;
       entry.types.set(ioc.type, (entry.types.get(ioc.type) || 0) + 1);
     }
     return Array.from(actorMap.entries())
-      .map(([name, data]) => ({
-        name, count: data.count,
+      .map(([key, data]) => ({
+        key, name: data.name, identity: data.identity, count: data.count,
         topTypes: Array.from(data.types.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t]) => t),
       }))
       .sort((a, b) => b.count - a.count);
-  }, [uniqueIOCs]);
+  }, [uniqueIOCs, identityLinks]);
 
   const overTime = useMemo(() => {
     if (uniqueIOCs.length === 0) return [];
@@ -282,7 +298,7 @@ export function IOCStatsView({
           id: `note-${note.id}-${ioc.id}`,
           value: ioc.value, type: ioc.type, confidence: ioc.confidence,
           source: `Note: ${note.title || 'Untitled'}`,
-          sourceType: 'note', sourceId: note.id,
+          sourceType: 'note', sourceId: note.id, folderId: note.folderId,
           iocStatus: ioc.iocStatus, attribution: ioc.attribution,
           updatedAt: note.updatedAt,
         });
@@ -298,7 +314,7 @@ export function IOCStatsView({
           id: `task-${task.id}-${ioc.id}`,
           value: ioc.value, type: ioc.type, confidence: ioc.confidence,
           source: `Task: ${task.title || 'Untitled'}`,
-          sourceType: 'task', sourceId: task.id,
+          sourceType: 'task', sourceId: task.id, folderId: task.folderId,
           iocStatus: ioc.iocStatus, attribution: ioc.attribution,
           updatedAt: task.updatedAt,
         });
@@ -314,7 +330,7 @@ export function IOCStatsView({
           id: `event-${event.id}-${ioc.id}`,
           value: ioc.value, type: ioc.type, confidence: ioc.confidence,
           source: `Event: ${event.title || 'Untitled'}`,
-          sourceType: 'event', sourceId: event.id,
+          sourceType: 'event', sourceId: event.id, folderId: event.folderId,
           iocStatus: ioc.iocStatus, attribution: ioc.attribution,
           updatedAt: event.updatedAt,
         });
@@ -328,7 +344,7 @@ export function IOCStatsView({
         id: `standalone-${si.id}`,
         value: si.value, type: si.type, confidence: si.confidence,
         source: 'Standalone',
-        sourceType: 'standalone', sourceId: si.id,
+        sourceType: 'standalone', sourceId: si.id, folderId: si.folderId,
         iocStatus: si.iocStatus, attribution: si.attribution,
         standaloneIOC: si,
         updatedAt: si.updatedAt,
@@ -510,8 +526,14 @@ export function IOCStatsView({
                   </thead>
                   <tbody>
                     {displayedActors.map((actor) => (
-                      <tr key={actor.name} className="border-b border-gray-800/50">
-                        <td className="py-1.5 pe-4 text-purple-400 font-medium">{actor.name}</td>
+                      <tr key={actor.key} className="border-b border-gray-800/50">
+                        <td className="py-1.5 pe-4 text-purple-400 font-medium">
+                          {actor.identity && identityLinks ? (
+                            <button type="button" onClick={() => identityLinks.open(actor.identity as Identity)} className="inline-flex items-center gap-1 hover:underline">
+                              <Contact size={11} aria-hidden="true" />{actor.name}
+                            </button>
+                          ) : actor.name}
+                        </td>
                         <td className="py-1.5 px-2 text-end text-gray-300 tabular-nums">{actor.count}</td>
                         <td className="py-1.5 ps-4">
                           <div className="flex gap-1">
@@ -616,6 +638,7 @@ export function IOCStatsView({
           investigationMembers={investigationMembers}
           iocTableColumns={iocTableColumns}
           onUpdateTableColumns={onUpdateTableColumns}
+          searchRequest={searchRequest}
         />
       )}
       {headerModals}
@@ -742,7 +765,7 @@ function AllIOCsTab({
   onTrashIOC, onRestoreIOC, onToggleArchiveIOC,
   defaultFolderId, currentFolderId, currentFolderName, resultScope,
   onOpenSettings, onNavigateToSource, investigationMembers,
-  iocTableColumns, onUpdateTableColumns,
+  iocTableColumns, onUpdateTableColumns, searchRequest,
 }: {
   rows: UnifiedIOCRow[];
   folders: Folder[];
@@ -763,11 +786,21 @@ function AllIOCsTab({
   investigationMembers?: InvestigationMember[];
   iocTableColumns?: string[];
   onUpdateTableColumns?: (columns: string[]) => void;
+  searchRequest?: { text: string; request: number };
 }) {
   const { getInstallationsForIOCType, addRun } = useIntegrations();
   const { resultRun, showResult, closeResult } = useIntegrationResult(currentFolderId, resultScope);
   const { addToast } = useToast();
   const { t: tt } = useTranslation('toast');
+  const { t: ta } = useTranslation('analysis');
+  const { t: tc } = useTranslation('common');
+  // The identity each IOC belongs to: one whose name or public detail is its value, in the same investigation.
+  const identityLinks = useIdentityLinks();
+  const owners = useMemo(() => {
+    const found = new Map<string, { identity: Identity; others: number }>();
+    if (identityLinks) for (const row of rows) { const owner = identityLinks.belongsTo(row.folderId, row.value); if (owner) found.set(row.id, owner); }
+    return found;
+  }, [identityLinks, rows]);
 
   const [showForm, setShowForm] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
@@ -784,8 +817,14 @@ function AllIOCsTab({
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [confidenceFilter, setConfidenceFilter] = useState<ConfidenceLevel | null>(null);
   const [typeFilter, setTypeFilter] = useState<IOCType[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchText, setSearchText] = useState(searchRequest?.text ?? '');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchRequest?.text ?? '');
+  const [seenSearchRequest, setSeenSearchRequest] = useState(searchRequest?.request);
+  if (searchRequest && searchRequest.request !== seenSearchRequest) {
+    setSeenSearchRequest(searchRequest.request);
+    setSearchText(searchRequest.text);
+    setDebouncedSearch(searchRequest.text);
+  }
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(searchText), 150);
     return () => clearTimeout(id);
@@ -1481,6 +1520,7 @@ function AllIOCsTab({
                   {isColVisible('source') && <SortHeader field="source" label="Source" className="text-start text-gray-500 font-medium py-2 px-2" />}
                   {isColVisible('iocStatus') && <SortHeader field="iocStatus" label="Status" className="text-start text-gray-500 font-medium py-2 px-2" />}
                   {isColVisible('attribution') && <SortHeader field="attribution" label="Attribution" className="text-start text-gray-500 font-medium py-2 px-2" />}
+                  {owners.size > 0 && <th className="text-start text-gray-500 font-medium py-2 px-2">{ta('iocList.belongsToHeader')}</th>}
                   {isColVisible('clsLevel') && <th className="text-start text-gray-500 font-medium py-2 px-2" title="Classification">CLS</th>}
                   {isColVisible('updatedAt') && <th className="text-start text-gray-500 font-medium py-2 px-2">Updated</th>}
                   {isColVisible('analystNotes') && <th className="text-start text-gray-500 font-medium py-2 px-2">Notes</th>}
@@ -1547,6 +1587,25 @@ function AllIOCsTab({
                     )}
                     {isColVisible('attribution') && (
                       <td className="py-2 px-2 text-gray-400 max-w-[120px] truncate">{row.attribution || '--'}</td>
+                    )}
+                    {owners.size > 0 && (
+                      <td className="py-2 px-2">
+                        {(() => {
+                          const owner = owners.get(row.id);
+                          if (!owner || !identityLinks) return <span className="text-gray-600">--</span>;
+                          // A value more than one identity holds opens the list filtered to it, so a person chooses.
+                          const ambiguous = owner.others > 0;
+                          const role = ta('iocList.belongsToHeader');
+                          return (
+                            <button type="button" onClick={() => identityLinks.open(owner.identity, ambiguous ? row.value : undefined)} title={role}
+                              aria-label={ambiguous ? tc('identityChip.ambiguous', { text: owner.identity.name, role }) : tc('identityChip.open', { text: row.value, role, name: owner.identity.name })}
+                              className="inline-flex max-w-[160px] items-center gap-1 text-xs text-accent-blue hover:underline">
+                              <Contact size={10} aria-hidden="true" className="shrink-0" /><span className="truncate">{owner.identity.name}</span>
+                              {ambiguous && <span className="shrink-0 text-text-muted">+{owner.others}</span>}
+                            </button>
+                          );
+                        })()}
+                      </td>
                     )}
                     {isColVisible('clsLevel') && (
                       <td className="py-2 px-2">

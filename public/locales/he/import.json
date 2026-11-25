@@ -27,5 +27,22 @@
   "summaryNote": "הערת סיכום",
   "errorCount": "{{count}} שגיאות:",
   "andMore": "... ו-{{count}} נוספים",
-  "done": "סיום"
+  "done": "סיום",
+  "identities.create": "צור או עדכן זהויות",
+  "identities.noName": "(ללא עמודת שם ממופה)",
+  "identities.needsInvestigation": "(בחר חקירה)",
+  "identities.organization": "עובד אצל, עבור שורות שאין בהן ארגון",
+  "identities.noOrganization": "לא תועד",
+  "identities.privateColumn": "פרטי",
+  "identities.privateColumnAria": "ייבא את {{column}} כפרט פרטי",
+  "identities.privateHint": "עמודות פרטים שסומן בהן פרטי מיובאות כפרטים פרטיים: הם מוסתרים עד שלוחצים על הצג ובזמן שיתוף מסך, לעולם אינם נשלחים ל-AI, ואינם נכללים בייצוא ה-CSV של זהויות (אלא אם בוחרים לכלול אותם), בהערת הסיכום של ייבוא זה ובאירועים שלו. עמודות של מספרי טלפון, כתובות רחוב, תאריכי לידה, דרכונים ומספרי זהות לאומיים מסומנות מלכתחילה; יש לבדוק את שאר העמודות.",
+  "identities.unrecognised": "לא זוהה באנגלית או בשפת הממשק:",
+  "identities.unrecognisedTypes": "סוג {{values}}: נשמר כפי שנכתב, כסוג מותאם אישית.",
+  "identities.unrecognisedStatuses": "סטטוס {{values}}: לא מיובא.",
+  "identities.unrecognisedContacts": "איש קשר {{values}}: לא מיובא (השתמש בכן או לא).",
+  "identities.unrecognisedPhrases": "קשר {{values}}: נשמר כפי שנכתב, ולכן תרשימי הארגון לא משתמשים בו.",
+  "identities.result": "זהויות",
+  "identities.updated_one": "{{count}} עודכנה",
+  "identities.updated_two": "{{count}} עודכנו",
+  "identities.updated_other": "{{count}} עודכנו"
 }

@@ -30,6 +30,7 @@
   },
   "import": {
     "dataImported": "นำเข้า {{events}} เหตุการณ์และ {{iocs}} IOC แล้ว",
+    "identitiesImported": "ตัวตน: เพิ่ม {{created}} รายการ อัปเดต {{updated}} รายการ",
     "jsonImported": "นำเข้า {{notes}} บันทึก, {{tasks}} งานแล้ว",
     "markdownImported": "นำเข้า {{count}} บันทึกจาก Markdown แล้ว",
     "importFailed": "การนำเข้าล้มเหลว",

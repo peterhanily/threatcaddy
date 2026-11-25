@@ -171,13 +171,14 @@ async function buildAgentSystemPrompt(folder: Folder, _settings: Settings, offer
     if (folder.status) context += ` | Status: ${folder.status}`;
 
     // Quick entity counts
-    const [noteCount, taskCount, iocCount, eventCount] = await Promise.all([
+    const [noteCount, taskCount, iocCount, eventCount, identityCount] = await Promise.all([
       db.notes.where('folderId').equals(folder.id).and(n => !n.trashed).count(),
       db.tasks.where('folderId').equals(folder.id).and(t => !t.trashed).count(),
       db.standaloneIOCs.where('folderId').equals(folder.id).and(i => !i.trashed).count(),
       db.timelineEvents.where('folderId').equals(folder.id).and(e => !e.trashed).count(),
+      db.identities.where('folderId').equals(folder.id).and(i => !i.trashed).count(),
     ]);
-    context += `\nEntities: ${noteCount} notes, ${taskCount} tasks, ${iocCount} IOCs, ${eventCount} timeline events`;
+    context += `\nEntities: ${noteCount} notes, ${taskCount} tasks, ${iocCount} IOCs, ${eventCount} timeline events, ${identityCount} identities`;
   }
 
   const policy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
@@ -468,6 +469,8 @@ export function buildAgentToolset(opts: {
     const explicitlyAllowed = profileAllow ?? new Set<string>();
     combined = combined.filter(t => {
       const cls = getActionClass(t.name);
+      // An identity's full read (details, connections) is never a stakeholder's, whatever its tool list.
+      if (t.name === 'read_identity') return false;
       return cls === 'read' || (cls === 'create' && explicitlyAllowed.has(t.name));
     });
   }

@@ -153,6 +153,9 @@ describe('restoring a backup in a team-bound workspace', () => {
     ['an evidence preview type the server refuses', 'evidenceItems', shot, 'Beacon screenshot'],
     ['a field over the server value limits', 'notes', { ...note('big', 'Pasted log'), content: 'x'.repeat(500_001) }, 'Pasted log'],
     ['a change too large for any upload request', 'notes', { ...note('wide', 'Wide log'), content: 'é'.repeat(460_000) }, 'Wide log'],
+    // No pull has reported the server's tables, so it is taken to be one from before identities.
+    ['a table the team server does not sync yet', 'identities', { id: 'dana', folderId: 'f1', type: 'person', name: 'Dana Okafor', aliases: [], details: [],
+      connections: [], tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 }, 'Dana Okafor'],
   ] as const)('names an item sync holds back (%s) and gives a remedy that clears the block', async (_label, table, row, title) => {
     await boundWorkspace();
     const backup = await exportJSON();

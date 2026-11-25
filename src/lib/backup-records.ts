@@ -1,7 +1,7 @@
 /** Non-mutating validation for portable records. Never truncate a successful backup. */
 import { BACKUP_TABLES, type BackupTable } from './backup-tables';
 import { validateBackupMedia, validateBackupURL } from './backup-media-validation';
-import { IOC_TYPES } from './entity-enums';
+import { IDENTITY_STATUSES, IOC_TYPES } from './entity-enums';
 
 export const MAX_BACKUP_BYTES = 50 * 1024 * 1024;
 export const MAX_BACKUP_ITEMS = 100_000;
@@ -189,6 +189,8 @@ const RECORDS: Record<BackupTable, Shape> = {
   evidenceItems: { ...common, ...fields('title fileName mimeType imageAspectRatio imageData imageDataMimeType imageAnalysis imageOcrText content extractionWarning',
     'size imageWidth imageHeight imagePixelCount chunkIndex chunkCount', '', 'linkedIOCIds', 'lastModified importedAt'),
     fileType: oneOf('pdf', 'docx', 'doc', 'rtf', 'xlsx', 'xls', 'image', 'text', 'spreadsheet', 'unknown'), extractionStatus: oneOf('extracted', 'partial', 'metadata-only') },
+  identities: { ...common, ...fields('type name description', '', 'contact', 'aliases'), status: oneOf(...IDENTITY_STATUSES),
+    details: array(object(fields('id label value', '', 'private'), 'id label value')), connections: array(object(fields('targetId label'), 'targetId label')) },
   chatThreads: { ...common, ...fields('title model contextSummary parentThreadId', '', 'isFolder'), messages: array(message),
     provider: oneOf('anthropic', 'openai', 'gemini', 'mistral', 'local'), mode: oneOf('plan', 'act'), source: oneOf('user', 'agent', 'agent-meeting', 'caddyshack') },
   noteTemplates: { ...fields('id name description icon content category clsLevel createdBy updatedBy', '', '', 'tags', 'createdAt updatedAt'), source, productBaseline: baseline },
@@ -227,6 +229,7 @@ const REQUIRED: Record<BackupTable, string> = {
   whiteboards: 'id name elements tags trashed archived order createdAt updatedAt',
   standaloneIOCs: 'id type value confidence tags trashed archived createdAt updatedAt',
   evidenceItems: 'id title fileName fileType size content extractionStatus importedAt chunkIndex chunkCount tags trashed archived createdAt updatedAt',
+  identities: 'id type name aliases details connections tags trashed archived createdAt updatedAt',
   chatThreads: 'id title messages model provider tags trashed archived createdAt updatedAt',
   noteTemplates: 'id name content category source createdAt updatedAt',
   playbookTemplates: 'id name investigationType steps source createdAt updatedAt',

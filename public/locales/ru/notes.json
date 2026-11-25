@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "Ссылка на заметку"
   },
+  "mentionMenu": {
+    "header": "Упомянуть субъект"
+  },
   "slashCommands": {
     "heading1": "Заголовок 1",
     "heading1Desc": "Большой заголовок",

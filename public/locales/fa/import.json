@@ -27,5 +27,21 @@
   "summaryNote": "یادداشت خلاصه",
   "errorCount": "{{count}} خطا:",
   "andMore": "... و {{count}} مورد دیگر",
-  "done": "پایان"
+  "done": "پایان",
+  "identities.create": "ایجاد یا به‌روزرسانی هویت‌ها",
+  "identities.noName": "(بدون ستون نام نگاشت شده)",
+  "identities.needsInvestigation": "(یک تحقیق انتخاب کنید)",
+  "identities.organization": "شاغل در، برای سطرهایی که سازمانی ندارند",
+  "identities.noOrganization": "ثبت نشده",
+  "identities.privateColumn": "خصوصی",
+  "identities.privateColumnAria": "ورود {{column}} به‌عنوان مشخصه خصوصی",
+  "identities.privateHint": "ستون‌های مشخصه‌ای که «خصوصی» آن‌ها تیک خورده است، به‌صورت مشخصات خصوصی وارد می‌شوند: تا وقتی روی «نمایش» کلیک نکنید و نیز هنگام اشتراک‌گذاری صفحه پنهان می‌مانند، هرگز برای هوش مصنوعی فرستاده نمی‌شوند و در صدور CSV هویت‌ها (مگر آنکه گنجاندنشان را انتخاب کنید)، یادداشت خلاصه این ورود و رویدادهای آن نمی‌آیند. ستون‌های شماره تلفن، نشانی پستی، تاریخ تولد، گذرنامه و شماره شناسایی ملی از ابتدا تیک خورده‌اند؛ بقیه را خودتان بررسی کنید.",
+  "identities.unrecognised": "به انگلیسی یا زبان رابط شناخته نشد:",
+  "identities.unrecognisedTypes": "نوع {{values}}: همان‌طور که نوشته شده، به‌عنوان نوع سفارشی نگه داشته می‌شود.",
+  "identities.unrecognisedStatuses": "وضعیت {{values}}: وارد نمی‌شود.",
+  "identities.unrecognisedContacts": "مخاطب {{values}}: وارد نمی‌شود (از بله یا خیر استفاده کنید).",
+  "identities.unrecognisedPhrases": "ارتباط {{values}}: همان‌طور که نوشته شده نگه داشته می‌شود، پس نمودارهای سازمانی از آن استفاده نمی‌کنند.",
+  "identities.result": "هویت‌ها",
+  "identities.updated_one": "{{count}} به‌روزرسانی شد",
+  "identities.updated_other": "{{count}} به‌روزرسانی شد"
 }

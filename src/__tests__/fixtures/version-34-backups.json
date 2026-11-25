@@ -1,0 +1,201 @@
+{
+  "_comment": "Synthetic backups written by ThreatCaddy at Dexie version 34 (commit 4798b968, before identities) with buildFullBackupPayload, buildDifferentialPayload and exportJSON. Do not regenerate with a newer build.",
+  "verno": 34,
+  "full": {
+    "version": 1,
+    "type": "full",
+    "scope": "all",
+    "createdAt": 1795257532510,
+    "data": {
+      "notes": [
+        {
+          "id": "n1",
+          "folderId": "case",
+          "title": "n1",
+          "content": "synthetic",
+          "tags": [],
+          "pinned": false,
+          "archived": false,
+          "trashed": false,
+          "createdAt": 1,
+          "updatedAt": 1
+        }
+      ],
+      "tasks": [],
+      "folders": [
+        {
+          "id": "case",
+          "name": "Synthetic",
+          "order": 0,
+          "createdAt": 1,
+          "updatedAt": 1
+        }
+      ],
+      "tags": [],
+      "timelineEvents": [],
+      "timelines": [],
+      "whiteboards": [],
+      "standaloneIOCs": [],
+      "evidenceItems": [],
+      "chatThreads": [],
+      "agentActions": [],
+      "agentProfiles": [],
+      "agentDeployments": [],
+      "agentMeetings": [],
+      "noteTemplates": [],
+      "playbookTemplates": [],
+      "integrationTemplates": [],
+      "installedIntegrations": [],
+      "customSlashCommands": []
+    }
+  },
+  "fullInv": {
+    "version": 1,
+    "type": "full",
+    "scope": "investigation",
+    "scopeId": "case",
+    "createdAt": 1795257532511,
+    "data": {
+      "folders": [
+        {
+          "id": "case",
+          "name": "Synthetic",
+          "order": 0,
+          "createdAt": 1,
+          "updatedAt": 1
+        }
+      ],
+      "notes": [
+        {
+          "id": "n1",
+          "folderId": "case",
+          "title": "n1",
+          "content": "synthetic",
+          "tags": [],
+          "pinned": false,
+          "archived": false,
+          "trashed": false,
+          "createdAt": 1,
+          "updatedAt": 1
+        }
+      ],
+      "tasks": [],
+      "timelineEvents": [],
+      "whiteboards": [],
+      "standaloneIOCs": [],
+      "evidenceItems": [],
+      "chatThreads": [],
+      "agentActions": [],
+      "agentDeployments": [],
+      "agentMeetings": [],
+      "tags": [],
+      "timelines": []
+    }
+  },
+  "diff": {
+    "version": 2,
+    "type": "differential",
+    "scope": "all",
+    "parentBackupId": "parent-all",
+    "createdAt": 1795257532512,
+    "lastBackupAt": 1795257532510,
+    "baseFingerprint": "78a564b7545532c0aa3b47e29378cba6698b8d54b99af2fa311011a457b41272",
+    "baseStateFingerprint": "c2995593c6641ff869a209ce1293bd3bc9afd8cbd22f626cadbccc351bcad436",
+    "resultFingerprint": "4262b7633c55b1a91255d00592dfa138488746899e99f758eaac94ea474bd384",
+    "data": {
+      "notes": [
+        {
+          "id": "n1",
+          "folderId": "case",
+          "title": "n1",
+          "content": "changed",
+          "tags": [],
+          "pinned": false,
+          "archived": false,
+          "trashed": false,
+          "createdAt": 1,
+          "updatedAt": 2
+        },
+        {
+          "id": "n2",
+          "folderId": "case",
+          "title": "n2",
+          "content": "synthetic",
+          "tags": [],
+          "pinned": false,
+          "archived": false,
+          "trashed": false,
+          "createdAt": 1,
+          "updatedAt": 3
+        }
+      ]
+    }
+  },
+  "diffInv": {
+    "version": 2,
+    "type": "differential",
+    "scope": "investigation",
+    "scopeId": "case",
+    "parentBackupId": "parent-inv",
+    "createdAt": 1795257532514,
+    "lastBackupAt": 1795257532511,
+    "baseFingerprint": "a38e4f96853f8d845f973bd2cb631026ae26f45eed2b819c55ab252ccfb4c476",
+    "baseStateFingerprint": "dbd6dd2ae35b622a6edbe39bf0d4a25e6d71e493141ad4d7751c194081ccf23c",
+    "resultFingerprint": "4f342e3cebcdeb7566544852ccaa5ab613e74b3be55231da05573afb54929b99",
+    "data": {
+      "notes": [
+        {
+          "id": "n1",
+          "folderId": "case",
+          "title": "n1",
+          "content": "changed",
+          "tags": [],
+          "pinned": false,
+          "archived": false,
+          "trashed": false,
+          "createdAt": 1,
+          "updatedAt": 2
+        },
+        {
+          "id": "n2",
+          "folderId": "case",
+          "title": "n2",
+          "content": "synthetic",
+          "tags": [],
+          "pinned": false,
+          "archived": false,
+          "trashed": false,
+          "createdAt": 1,
+          "updatedAt": 3
+        }
+      ]
+    }
+  },
+  "expectedNotes": [
+    {
+      "id": "n1",
+      "folderId": "case",
+      "title": "n1",
+      "content": "changed",
+      "tags": [],
+      "pinned": false,
+      "archived": false,
+      "trashed": false,
+      "createdAt": 1,
+      "updatedAt": 2
+    },
+    {
+      "id": "n2",
+      "folderId": "case",
+      "title": "n2",
+      "content": "synthetic",
+      "tags": [],
+      "pinned": false,
+      "archived": false,
+      "trashed": false,
+      "createdAt": 1,
+      "updatedAt": 3
+    }
+  ],
+  "portable": "{\n  \"format\": \"threatcaddy-backup\",\n  \"version\": 1,\n  \"exportedAt\": 1795257532514,\n  \"notes\": [\n    {\n      \"id\": \"n1\",\n      \"folderId\": \"case\",\n      \"title\": \"n1\",\n      \"content\": \"changed\",\n      \"tags\": [],\n      \"pinned\": false,\n      \"archived\": false,\n      \"trashed\": false,\n      \"createdAt\": 1,\n      \"updatedAt\": 2\n    },\n    {\n      \"id\": \"n2\",\n      \"folderId\": \"case\",\n      \"title\": \"n2\",\n      \"content\": \"synthetic\",\n      \"tags\": [],\n      \"pinned\": false,\n      \"archived\": false,\n      \"trashed\": false,\n      \"createdAt\": 1,\n      \"updatedAt\": 3\n    }\n  ],\n  \"tasks\": [],\n  \"folders\": [\n    {\n      \"id\": \"case\",\n      \"name\": \"Synthetic\",\n      \"order\": 0,\n      \"createdAt\": 1,\n      \"updatedAt\": 1\n    }\n  ],\n  \"tags\": [],\n  \"timelineEvents\": [],\n  \"timelines\": [],\n  \"whiteboards\": [],\n  \"standaloneIOCs\": [],\n  \"evidenceItems\": [],\n  \"chatThreads\": [],\n  \"agentActions\": [],\n  \"agentProfiles\": [],\n  \"agentDeployments\": [],\n  \"agentMeetings\": [],\n  \"noteTemplates\": [],\n  \"playbookTemplates\": [],\n  \"integrationTemplates\": [],\n  \"installedIntegrations\": [],\n  \"customSlashCommands\": [],\n  \"redactions\": []\n}"
+}

@@ -26,6 +26,21 @@ describe('transactional AI undo', () => {
     expect(await restoreCheckpoint(context.id)).toBe(false);
   });
 
+  it('undoing a created identity also removes the connections made to it', async () => {
+    await db.identities.clear();
+    await db.folders.put({ id: 'case', name: 'Case', order: 0, createdAt: 1, updatedAt: 1 } as never);
+    await db.identities.add({ id: 'lee', folderId: 'case', type: 'person', name: 'Lee Park', aliases: [], details: [], connections: [], tags: [],
+      trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+    const created = await executeCheckpointedTool(context, tool('create_identity', { name: 'Ana Silva' }), () => execTool(tool('create_identity', { name: 'Ana Silva' }), 'case'));
+    expect(created.isError).toBe(false);
+    const ana = JSON.parse(created.result).id as string;
+    expect((await execTool(tool('connect_identities', { fromName: 'Lee Park', phrase: 'reports to', toName: 'Ana Silva' }), 'case')).isError).toBe(false);
+    expect((await db.identities.get('lee'))?.connections).toEqual([{ targetId: ana, label: 'reports to' }]);
+    expect(await restoreCheckpoint(context.id)).toBe(true);
+    expect(await db.identities.get(ana)).toBeUndefined();
+    expect((await db.identities.get('lee'))?.connections).toEqual([]);
+  });
+
   it('tracks bulk-created IOC IDs from the actual result and removes them on undo', async () => {
     expect((await run(tool('bulk_create_iocs', { iocs: [{ type: 'domain', value: 'example.com' }, { type: 'ipv4', value: '192.0.2.1' }] }))).isError).toBe(false);
     expect(await db.standaloneIOCs.count()).toBe(2);

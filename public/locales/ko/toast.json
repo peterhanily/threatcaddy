@@ -30,6 +30,7 @@
   },
   "import": {
     "dataImported": "{{events}}개 이벤트와 {{iocs}}개 IOC를 가져왔습니다",
+    "identitiesImported": "신원: {{created}}개 추가, {{updated}}개 업데이트",
     "jsonImported": "{{notes}}개 노트, {{tasks}}개 태스크를 가져왔습니다",
     "markdownImported": "Markdown에서 {{count}}개 노트를 가져왔습니다",
     "importFailed": "가져오기 실패",

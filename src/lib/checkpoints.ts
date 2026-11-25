@@ -9,6 +9,8 @@ const tables: Record<string, string> = {
   create_task: 'tasks', update_task: 'tasks', create_ioc: 'standaloneIOCs',
   update_ioc: 'standaloneIOCs', bulk_create_iocs: 'standaloneIOCs',
   create_timeline_event: 'timelineEvents', update_timeline_event: 'timelineEvents',
+  // connect_identities changes whichever identity holds the edge, so like link_entities it is not undoable.
+  create_identity: 'identities', update_identity: 'identities',
 };
 const entityTables = new Set(Object.values(tables));
 function canonical(value: unknown): string {
@@ -94,10 +96,40 @@ export async function restoreCheckpoint(checkpointId: string): Promise<boolean> 
     for (const entity of checkpoint.snapshot) {
       if (entity.data === null) await db.table(entity.table).delete(entity.entityId);
       else await db.table(entity.table).put(entity.data);
+      // An undone identity takes with it the connections made to it (connect_identities is not undoable on its own).
+      if (entity.table === 'identities' && entity.data === null) {
+        const pointing = await db.identities.filter(row => row.connections.some(edge => edge.targetId === entity.entityId)).toArray();
+        for (const row of pointing) {
+          await db.identities.update(row.id, { connections: row.connections.filter(edge => edge.targetId !== entity.entityId), updatedAt: Date.now() });
+        }
+      }
     }
-    await db.checkpoints.update(checkpointId, { restored: true });
+    // Kept as a marker (a later write in the same turn is refused), without the rows it held:
+    // an undone create_identity must not leave the person's details here (PRIV-1).
+    await db.checkpoints.update(checkpointId, { restored: true, snapshot: [] });
     return true;
   });
+}
+
+/**
+ * Deletes the AI undo checkpoints that hold a copy of any removed row (an undo of it could no
+ * longer apply) or belong to a removed chat thread, so a deleted identity's details, private
+ * ones included, do not outlive it here. `removed` maps table names to removed ids. Call inside a
+ * transaction that includes db.checkpoints.
+ */
+export async function deleteCheckpointsFor(removed: ReadonlyMap<string, ReadonlySet<string>>): Promise<void> {
+  const threads = [...removed.get('chatThreads') ?? []];
+  const rows = [...removed].filter(([table, ids]) => entityTables.has(table) && ids.size);
+  const doomed = new Set<string>();
+  // A thread's checkpoints by index; snapshots are read (and decrypted) only when a row they could
+  // hold was removed, not for every deletion (whiteboards, evidence…).
+  if (threads.length) for (const id of await db.checkpoints.where('threadId').anyOf(threads).primaryKeys()) doomed.add(String(id));
+  if (rows.length && await db.checkpoints.count()) {
+    for (const checkpoint of await db.checkpoints.toArray()) {
+      if (checkpoint.snapshot.some(entity => removed.get(entity.table)?.has(entity.entityId) ?? false)) doomed.add(checkpoint.id);
+    }
+  }
+  if (doomed.size) await db.checkpoints.bulkDelete([...doomed]);
 }
 
 export async function getCheckpointsForThread(threadId: string): Promise<Checkpoint[]> {

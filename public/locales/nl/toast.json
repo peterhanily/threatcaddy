@@ -30,6 +30,7 @@
   },
   "import": {
     "dataImported": "{{events}} gebeurtenissen en {{iocs}} IOC's geïmporteerd",
+    "identitiesImported": "Identiteiten: {{created}} toegevoegd, {{updated}} bijgewerkt",
     "jsonImported": "{{notes}} notities, {{tasks}} taken geïmporteerd",
     "markdownImported": "{{count}} notities geïmporteerd uit Markdown",
     "importFailed": "Importeren mislukt",

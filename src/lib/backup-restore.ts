@@ -2,7 +2,7 @@
 import Dexie, { type Table } from 'dexie';
 import { db } from '../db';
 import { backupFingerprint, backupStateFingerprint, canonicalBackupJSON, type BackupPayload } from './backup-crypto';
-import { requireDifferentialBase, selectBackupData } from './backup-data';
+import { INVESTIGATION_TABLES, requireDifferentialBase, selectBackupData, SHARED_TABLES } from './backup-data';
 import { BACKUP_TABLES, investigationOf, isBackupTable, parseEntityScope, type BackupTable } from './backup-tables';
 import { flushEntityDrafts, withEntityDraftBarrier } from './entity-drafts';
 import { mapEntityReferences } from './entity-relations';
@@ -11,6 +11,8 @@ import { isSyncTable, suppressSyncInCurrentTransaction } from './sync-state';
 import { isSyncWorkspaceIdentity, markRestoredSyncHistory, SYNC_WORKSPACE_KEY } from './sync-capture-policy';
 import { queuedPuts, syncItemLabels } from './sync-outgoing';
 import i18n from '../i18n';
+import { deleteCheckpointsFor } from './checkpoints';
+import { forgetIgnoredNames } from './ignored-names';
 
 type Row = Record<string, unknown> & { id: string };
 type Mode = 'replace' | 'merge';
@@ -35,11 +37,12 @@ interface Plan { preview: RestorePreview; operations: Operation[]; basis: string
 const previewSnapshots = new WeakMap<RestorePreview, string>();
 
 function table(name: BackupTable): Table<Row, string> { return db.table(name); }
-const sharedTables = new Set<BackupTable>(['tags', 'timelines']);
-const scopedTables = new Set<BackupTable>([
-  'folders', 'notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs',
-  'evidenceItems', 'chatThreads', 'agentActions', 'agentDeployments', 'agentMeetings',
-]);
+const scopedTables: ReadonlySet<BackupTable> = new Set(INVESTIGATION_TABLES);
+
+/** A chain whose full parent predates a table is verified on the tables it covers. */
+function coveredBy(parent: BackupPayload | undefined, data: BackupPayload['data']): BackupPayload['data'] {
+  return parent ? Object.fromEntries(Object.entries(data).filter(([name]) => Object.hasOwn(parent.data, name))) : data;
+}
 
 function isRow(item: unknown): item is Row {
   if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
@@ -72,7 +75,7 @@ function validate(payload: BackupPayload, mode: Mode): Map<BackupTable, Row[]> {
     if (!isBackupTable(name)) throw new Error(`Unsupported backup table: ${name}.`);
     if (!Array.isArray(value)) throw new Error(`Backup table ${name} must be an array; omit absent tables explicitly.`);
     if (entity && entity.table !== name) throw new Error(`Table ${name} is outside the entity backup scope.`);
-    if (payload.scope === 'investigation' && !scopedTables.has(name) && !sharedTables.has(name)) {
+    if (payload.scope === 'investigation' && !scopedTables.has(name) && !SHARED_TABLES.has(name)) {
       throw new Error(`Table ${name} is not part of an investigation backup.`);
     }
     const ids = new Set<string>();
@@ -157,11 +160,14 @@ async function prepare(payload: BackupPayload, mode: Mode, parent?: BackupPayloa
   if (payload.type === 'differential') {
     if (!parent) throw new Error('Supply the matching full parent backup before applying a differential.');
     validate(parent, 'replace');
-    requireDifferentialBase(parent, payload.scope, payload.scopeId);
+    requireDifferentialBase(parent, payload.scope, payload.scopeId, true);
+    for (const name of new Set([...Object.keys(payload.data), ...Object.keys(payload.deletedIds ?? {})])) {
+      if (!Object.hasOwn(parent.data, name)) throw new Error(`The differential changes ${name}, which its full parent does not contain.`);
+    }
     // Keep IndexedDB alive while Web Crypto verifies the consistent transaction snapshot.
     const [parentHash, parentState, currentState] = await Dexie.waitFor(Promise.all([
       backupFingerprint(parent), backupStateFingerprint(parent),
-      backupStateFingerprint({ ...payload, data: selectBackupData(before, payload.scope, payload.scopeId, true) }),
+      backupStateFingerprint({ ...payload, data: coveredBy(parent, selectBackupData(before, payload.scope, payload.scopeId, true)) }),
     ]));
     if (parentHash !== payload.baseFingerprint || parentState !== payload.baseStateFingerprint
       || parent.createdAt !== payload.lastBackupAt) throw new Error('This is not the matching full parent backup for the differential.');
@@ -174,7 +180,7 @@ async function prepare(payload: BackupPayload, mode: Mode, parent?: BackupPayloa
     const tombstones = payload.deletedIds?.[name] ?? [];
     if (rows === undefined && tombstones.length === 0) continue;
     const existing = new Map((before.get(name) ?? []).map(row => [row.id, row]));
-    const shared = payload.scope === 'investigation' && sharedTables.has(name);
+    const shared = payload.scope === 'investigation' && SHARED_TABLES.has(name);
     const puts: Row[] = [];
     const incomingIds = new Set(rows?.map(row => row.id));
     let added = 0;
@@ -214,6 +220,18 @@ async function prepare(payload: BackupPayload, mode: Mode, parent?: BackupPayloa
     preview.tables.push(name);
     preview.changes.push({ table: name, added, updated, deleted: deletes.size });
   }
+  // A backup from before identities omits them, so Replace leaves identities as they are. An
+  // investigation it removes takes its identities with it, as it takes its notes and tasks.
+  if (mode === 'replace' && incoming.get('identities') === undefined && !payload.deletedIds?.identities?.length) {
+    const removedFolders = new Set(operations.find(op => op.table === 'folders')?.deletes ?? []);
+    const orphaned = (before.get('identities') ?? []).filter(row => typeof row.folderId === 'string' && removedFolders.has(row.folderId)).map(row => row.id);
+    if (orphaned.length) {
+      operations.push({ table: 'identities', puts: [], deletes: orphaned });
+      preview.deleted += orphaned.length;
+      preview.tables.push('identities');
+      preview.changes.push({ table: 'identities', added: 0, updated: 0, deleted: orphaned.length });
+    }
+  }
   protectRetainedReferences(before, operations);
   if (payload.type === 'differential') {
     const after = new Map([...before].map(([name, rows]) => [name, new Map(rows.map(row => [row.id, row]))]));
@@ -225,7 +243,7 @@ async function prepare(payload: BackupPayload, mode: Mode, parent?: BackupPayloa
     }
     const projected = new Map([...after].map(([name, rows]) => [name, [...rows.values()]]));
     const resultHash = await Dexie.waitFor(backupStateFingerprint({ ...payload,
-      data: selectBackupData(projected, payload.scope, payload.scopeId, true),
+      data: coveredBy(parent, selectBackupData(projected, payload.scope, payload.scopeId, true)),
     }));
     if (resultHash !== payload.resultFingerprint) throw new Error('Differential backup does not reproduce its verified result; nothing was restored.');
   }
@@ -262,8 +280,10 @@ async function restore(payload: BackupPayload, mode: Mode, expected?: RestorePre
   const snapshot = structuredClone(payload);
   const base = parent && structuredClone(parent);
   try {
-    return await withEntityDraftBarrier(() => db.transaction('rw', [...BACKUP_TABLES, '_syncMeta', '_syncQueue', '_localMigrations'].map(name => db.table(name)), async () => {
+    let removed = new Map<string, ReadonlySet<string>>();
+    const result = await withEntityDraftBarrier(() => db.transaction('rw', [...BACKUP_TABLES, '_syncMeta', '_syncQueue', '_localMigrations'].map(name => db.table(name)), async () => {
       const plan = await prepare(snapshot, mode, base);
+      removed = new Map(plan.operations.filter(operation => operation.deletes.length).map(operation => [operation.table, new Set(operation.deletes)]));
       if (expected && previewSnapshots.get(expected) !== plan.basis) throw new Error('Data changed after the restore preview. Review a fresh preview before restoring.');
       // A restore is local history, not a team edit. In a bound workspace it must
       // never reach the outbox as deletes or rollbacks at current revisions: sync
@@ -291,6 +311,14 @@ async function restore(payload: BackupPayload, mode: Mode, expected?: RestorePre
       }
       return { added: plan.preview.added, updated: plan.preview.updated, deleted: plan.preview.deleted, tables: plan.preview.tables };
     }));
+    // Rows the restore removed take their AI undo copies and their investigations' ignored names with
+    // them, as deleting them does (checkpoints are not part of a backup, so after it commits).
+    if (removed.size) {
+      await deleteCheckpointsFor(removed);
+      const folders = removed.get('folders');
+      if (folders?.size) await forgetIgnoredNames([...folders]);
+    }
+    return result;
   } catch (error) {
     if ((error instanceof DOMException && error.name === 'QuotaExceededError') || /QuotaExceeded|storage quota/.test(String(error))) {
       throw new Error('Storage quota exceeded. Free up space and retry; this restore was rolled back.');

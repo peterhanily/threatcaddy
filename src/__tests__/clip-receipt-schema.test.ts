@@ -10,14 +10,14 @@ describe('workspace-local receipt schema upgrade', () => {
   it('upgrades v33 without inspecting or rewriting encrypted content', async () => {
     db.close(); await Dexie.delete(db.name);
     const historical = new Dexie(db.name);
-    historical.version(33).stores(Object.fromEntries(db.tables.filter(table => table.name !== '_clipReceipts').map(table => [table.name,
+    historical.version(33).stores(Object.fromEntries(db.tables.filter(table => !['_clipReceipts', 'identities'].includes(table.name)).map(table => [table.name,
       [table.schema.primKey.src, ...table.schema.indexes.map(index => index.src)].join(', ')])));
     const envelope = { __enc: 1, iv: 'preserved-fixture-iv', ct: 'preserved-fixture-ciphertext' };
     await historical.table('notes').add({ id: 'encrypted-fixture', title: envelope, content: envelope, createdAt: 1 });
     await historical.table('_syncMeta').add({ key: 'ownership-fixture', value: 'preserve' });
     historical.close();
     await db.open();
-    expect(db.verno).toBe(34);
+    expect(db.verno).toBe(35);
     expect((await db.notes.get('encrypted-fixture'))?.content).toEqual(envelope);
     expect(await db.table('_syncMeta').get('ownership-fixture')).toEqual({ key: 'ownership-fixture', value: 'preserve' });
     expect(await db.table('_clipReceipts').count()).toBe(0);

@@ -25,10 +25,27 @@ const TABLE_MAP: Record<string, PgTable<any>> = {
   standaloneIOCs: schema.standaloneIOCs,
   chatThreads: schema.chatThreads,
   evidenceItems: schema.evidenceItems,
+  identities: schema.identities,
 };
 
 // These two catalogs are intentionally shared server-wide. Every other sync table is investigation-scoped.
 const GLOBAL_SYNC_TABLES = new Set(['tags', 'timelines']);
+
+/** Every table this server syncs, as pulls report it to clients. */
+export const SYNC_TABLE_NAMES: readonly string[] = Object.keys(TABLE_MAP);
+/** The tables clients synced before they listed the ones they read (2.0.4 and earlier).
+ * Those clients stop a whole pull at an unknown table, so a client that lists none gets
+ * only these. Frozen: never add a table here. */
+export const LEGACY_SYNC_TABLES: readonly string[] = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'evidenceItems'];
+/** Bots neither read nor write these in this version: identity records carry private details. */
+const BOT_HIDDEN_TABLES = new Set(['identities']);
+
+/** The tables a client says it reads that this server syncs. Unknown names are ignored. */
+export function clientSyncTables(listed: string | undefined): readonly string[] {
+  if (listed === undefined) return LEGACY_SYNC_TABLES;
+  const names = new Set(listed.split(',', 64));
+  return SYNC_TABLE_NAMES.filter(name => names.has(name));
+}
 
 // Fields managed exclusively by the server — never accept from client
 const SERVER_MANAGED_FIELDS = new Set([
@@ -120,6 +137,9 @@ function stripServerFields(data: Record<string, unknown> | undefined, tableName:
     if (tableName === 'standaloneIOCs' && key === 'type' && !(typeof value === 'string' && IOC_TYPES.has(value))) {
       throw new SyncWriteValidationError('Unsupported IOC type');
     }
+    if (tableName === 'identities' && !validIdentityField(key, value)) {
+      throw new SyncWriteValidationError(`Identity field "${key}" has an unsupported shape`);
+    }
     if (tableName === 'whiteboards' && (key === 'elements' || key === 'appState') && value !== null && value !== undefined) {
       validateWhiteboardJSON(key, value);
     }
@@ -131,6 +151,46 @@ function stripServerFields(data: Record<string, unknown> | undefined, tableName:
     } else clean[key] = value;
   }
   return clean;
+}
+
+/** JSON with object keys sorted, so jsonb values (stored with their own key order) compare by content. */
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value instanceof Date ? value.getTime() : value ?? null);
+}
+
+/** Whether the stored row is exactly the row this put describes: every column the client owns, a
+ * field it left out counting as empty. So the client may take the stored revision as its own. */
+function sameAsStored(tableName: string, clean: Record<string, unknown>, stored: Record<string, unknown>): boolean {
+  return Object.keys(getTableColumns(getTable(tableName))).filter(key => !SERVER_MANAGED_FIELDS.has(key))
+    .every(key => canonicalJson(clean[key]) === canonicalJson(stored[key]));
+}
+
+/** Identity fields as clients store them; a row of another shape would be repaired by syncing
+ * clients but could break a client reading it raw. Null clears an optional field. */
+const isText = (value: unknown) => typeof value === 'string';
+const IDENTITY_STATUSES = new Set(['compromised', 'contained', 'suspicious', 'cleared']);
+const isTextList = (value: unknown) => Array.isArray(value) && value.every(isText);
+const isRecordWith = (value: unknown, text: readonly string[], flags: readonly string[] = []) => !!value && typeof value === 'object' && !Array.isArray(value)
+  && text.every(key => isText((value as Record<string, unknown>)[key]))
+  && flags.every(key => (value as Record<string, unknown>)[key] === undefined || typeof (value as Record<string, unknown>)[key] === 'boolean');
+function validIdentityField(key: string, value: unknown): boolean {
+  switch (key) {
+    case 'name': case 'type': return isText(value);
+    case 'aliases': case 'tags': return isTextList(value);
+    case 'details': return Array.isArray(value) && value.every(detail => isRecordWith(detail, ['id', 'label', 'value'], ['private']));
+    case 'connections': return Array.isArray(value) && value.every(edge => isRecordWith(edge, ['targetId', 'label']));
+    case 'description': case 'clsLevel': case 'folderId': return value === null || isText(value);
+    // As clients store a status; null clears it.
+    case 'status': return value === null || (isText(value) && IDENTITY_STATUSES.has(value as string));
+    case 'contact': return value === null || typeof value === 'boolean';
+    // Not null columns: null would fail the write (and the whole batch) instead of this change.
+    case 'trashed': case 'archived': return typeof value === 'boolean';
+    default: return true;
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -250,6 +310,8 @@ export async function processPush(
       for (const member of memberships) if (member.role === 'owner' || member.role === 'editor') editorFolders.add(member.folderId);
     }
     const result: SyncResult[] = new Array(changes.length);
+    // Investigations this batch deletes (folders are processed first): their items' deletes complete it.
+    const deletedInBatch = new Set<string>();
     // Creating a folder first makes its ownership available to children in the
     // same batch regardless of their original ordering.
     const ordered = changes.map((change, index) => ({ change, index }))
@@ -304,13 +366,17 @@ export async function processPush(
       }
       // A retained child never bypasses its deleted/missing parent's boundary,
       // including moves out of that parent into another accessible folder.
+      // The one exception completes a deletion: deleting an item of an investigation that is itself
+      // deleted (earlier in this batch, or before). Its delete was already published to every member.
+      let inDeletedFolder = false;
       if ((options.authorize || options.authorizeMutation) && change.table !== 'folders' && !GLOBAL_SYNC_TABLES.has(change.table)) {
         const scopes = new Set([sourceFolder, op === 'put' ? destinationFolder : undefined].filter((id): id is string => typeof id === 'string'));
         let live = true;
         for (const folderId of scopes) {
-          const [folder] = await tx.select({ id: schema.folders.id }).from(schema.folders)
-            .where(and(eq(schema.folders.id, folderId), isNull(schema.folders.deletedAt))).limit(1);
-          if (!folder) { live = false; break; }
+          const [folder] = await tx.select({ id: schema.folders.id, deletedAt: schema.folders.deletedAt }).from(schema.folders)
+            .where(eq(schema.folders.id, folderId)).limit(1);
+          if (folder?.deletedAt && op === 'delete' && folderId === sourceFolder) { inDeletedFolder = true; continue; }
+          if (!folder || folder.deletedAt) { live = false; break; }
         }
         if (!live) { result[index] = { table: change.table, entityId, status: 'rejected' }; continue; }
       }
@@ -339,8 +405,21 @@ export async function processPush(
       // writer lock. The HTTP route never passes trustedInternal.
       const baseline = change.clientVersion ?? (options.trustedInternal ? serverVersion : undefined);
       if ((current && baseline !== serverVersion) || (!current && baseline !== undefined && baseline !== 0 && op === 'put')) {
-        result[index] = { table: change.table, entityId, status: 'conflict', serverVersion, serverData: current };
-        continue;
+        // Nothing to resolve when the change would leave the row as it is: deleting a row that is
+        // already deleted, or a put equal to the stored row (two devices made the same change, such
+        // as the same 30-day purge). Accepted without a write, an event or a new revision.
+        if (current && (op === 'delete' ? !!current.deletedAt : !current.deletedAt && sameAsStored(change.table, cleanData, current))) {
+          if (change.table === 'folders' && op === 'delete') deletedInBatch.add(entityId);
+          result[index] = { table: change.table, entityId, status: 'accepted', serverVersion, unchanged: true };
+          continue;
+        }
+        // Deleting an item of an investigation this batch deletes completes that deletion whatever its
+        // revision. For one deleted earlier, a stale delete is a conflict like any other: the
+        // investigation can still be restored, with the teammate's newer item.
+        if (!(inDeletedFolder && sourceFolder && deletedInBatch.has(sourceFolder))) {
+          result[index] = { table: change.table, entityId, status: 'conflict', serverVersion, serverData: current };
+          continue;
+        }
       }
       if (change.table === 'evidenceItems' && op === 'put') {
         try { validateEvidencePreview(cleanData, current); } catch (error) { rejectInvalid(error); continue; }
@@ -366,11 +445,14 @@ export async function processPush(
           await publishInvestigationVisibility(tx, entityId, op === 'delete');
         }
       }
+      if (change.table === 'folders' && op === 'delete') deletedInBatch.add(entityId);
       result[index] = { table: change.table, entityId, status: 'accepted', serverVersion: record.version as number, serverRecord: record,
         ...(sourceFolder && sourceFolder !== destinationFolder ? { previousFolderId: sourceFolder } : {}) };
       const eventFolder = (record.folderId as string | undefined) ?? (change.table === 'folders' ? entityId : undefined);
-      events.push(op === 'put' ? [op, change.table, entityId, eventFolder, userId, !current, record]
-        : [op, change.table, entityId, eventFolder, userId, false]);
+      if (!BOT_HIDDEN_TABLES.has(change.table)) {
+        events.push(op === 'put' ? [op, change.table, entityId, eventFolder, userId, !current, record]
+          : [op, change.table, entityId, eventFolder, userId, false]);
+      }
     }
     await options.beforeCommit?.();
     return result;
@@ -402,8 +484,8 @@ function logRecord(tableName: string, stored: Record<string, unknown>, metadataO
 export async function pullCursorChanges(
   cursor: string,
   userId: string,
-  opts: { folderId?: string; metadataOnly?: boolean; limit?: number; generation?: string } = {},
-): Promise<{ changes: Record<string, unknown>[]; cursor: string; generation: string; hasMore: boolean; serverTimestamp: string }> {
+  opts: { folderId?: string; metadataOnly?: boolean; limit?: number; generation?: string; tables?: readonly string[] } = {},
+): Promise<{ changes: Record<string, unknown>[]; cursor: string; generation: string; hasMore: boolean; serverTimestamp: string; tables: readonly string[] }> {
   if (!/^(0|[1-9][0-9]{0,18})$/.test(cursor) || BigInt(cursor) > 9223372036854775807n) throw new SyncReadError('Invalid sync cursor', 400);
   const limit = Math.min(Math.max(Math.trunc(opts.limit ?? 200), 1), 1000);
   return db.transaction(async tx => {
@@ -423,7 +505,8 @@ export async function pullCursorChanges(
     const scopes = [inArray(schema.syncChanges.tableName, [...GLOBAL_SYNC_TABLES])];
     if (folderIds.length) scopes.push(inArray(schema.syncChanges.folderId, folderIds), inArray(schema.syncChanges.previousFolderId, folderIds));
     const predicate = and(
-      gt(schema.syncChanges.cursor, BigInt(cursor)), lte(schema.syncChanges.cursor, clock.cursor), or(...scopes),
+      gt(schema.syncChanges.cursor, BigInt(cursor)), lte(schema.syncChanges.cursor, clock.cursor),
+      inArray(schema.syncChanges.tableName, [...(opts.tables ?? LEGACY_SYNC_TABLES)]), or(...scopes),
     );
     // The byte window is evaluated inside PostgreSQL, so large inline images
     // cannot multiply an ordinary page into hundreds of megabytes in Node.
@@ -453,7 +536,7 @@ export async function pullCursorChanges(
         latest.set(key, { table: row.tableName, op: 'put', ...logRecord(row.tableName, row.record as Record<string, unknown>, opts.metadataOnly ?? false) });
       }
     }
-    return { changes: [...latest.values()], cursor: (hasMore ? page[page.length - 1].cursor : clock.cursor).toString(), generation: clock.generation, hasMore, serverTimestamp: new Date().toISOString() };
+    return { changes: [...latest.values()], cursor: (hasMore ? page[page.length - 1].cursor : clock.cursor).toString(), generation: clock.generation, hasMore, serverTimestamp: new Date().toISOString(), tables: SYNC_TABLE_NAMES };
   }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
 }
 
@@ -462,7 +545,7 @@ export async function pullCursorChanges(
 export async function pullChanges(
   _since: string,
   folderIds?: string[],
-  opts?: { metadataOnly?: boolean },
+  opts?: { metadataOnly?: boolean; tables?: readonly string[] },
 ): Promise<{ changes: Record<string, unknown>[]; serverTimestamp: string }> {
   return db.transaction(async tx => {
   const changes: Record<string, unknown>[] = [];
@@ -473,7 +556,9 @@ export async function pullChanges(
   // Build all queries up front, then execute in parallel
   const queries: { tableName: string; promise: Promise<unknown[]> }[] = [];
 
+  const readable = opts?.tables ?? LEGACY_SYNC_TABLES;
   for (const [tableName, table] of Object.entries(TABLE_MAP)) {
+    if (!readable.includes(tableName)) continue;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const t = table as any;
 
@@ -529,7 +614,7 @@ export async function pullChanges(
   }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
 }
 
-export async function getSnapshot(folderId: string): Promise<Record<string, unknown[]>> {
+export async function getSnapshot(folderId: string, tables: readonly string[] = LEGACY_SYNC_TABLES): Promise<Record<string, unknown[]>> {
   return db.transaction(async tx => {
   const snapshot: Record<string, unknown[]> = {};
   const [folder] = await tx.select().from(schema.folders)
@@ -542,7 +627,7 @@ export async function getSnapshot(folderId: string): Promise<Record<string, unkn
   for (const [tableName, table] of Object.entries(TABLE_MAP)) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const t = table as any;
-    if (t.folderId) {
+    if (t.folderId && tables.includes(tableName)) {
       queries.push({
         tableName,
         promise: tx.select().from(table).where(and(eq(t.folderId, folderId), isNull(t.deletedAt))),
@@ -575,10 +660,12 @@ export interface EntityCounts {
   whiteboards: number;
   chats: number;
   evidence: number;
+  identities: number;
 }
 
 const ENTITY_COUNT_TABLES = [
   { key: 'evidence' as const, table: schema.evidenceItems, folderId: schema.evidenceItems.folderId, deletedAt: schema.evidenceItems.deletedAt },
+  { key: 'identities' as const, table: schema.identities, folderId: schema.identities.folderId, deletedAt: schema.identities.deletedAt },
   { key: 'notes' as const, table: schema.notes, folderId: schema.notes.folderId, deletedAt: schema.notes.deletedAt },
   { key: 'tasks' as const, table: schema.tasks, folderId: schema.tasks.folderId, deletedAt: schema.tasks.deletedAt },
   { key: 'iocs' as const, table: schema.standaloneIOCs, folderId: schema.standaloneIOCs.folderId, deletedAt: schema.standaloneIOCs.deletedAt },
@@ -601,7 +688,7 @@ export async function getEntityCounts(folderId: string): Promise<EntityCounts> {
     )
   );
 
-  const counts: EntityCounts = { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0, evidence: 0 };
+  const counts: EntityCounts = { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0, evidence: 0, identities: 0 };
   for (let i = 0; i < ENTITY_COUNT_TABLES.length; i++) {
     counts[ENTITY_COUNT_TABLES[i].key] = results[i][0]?.count ?? 0;
   }
@@ -618,7 +705,7 @@ export async function getEntityCountsBatch(folderIds: string[]): Promise<Map<str
 
   // Initialize all folders with zero counts
   for (const folderId of folderIds) {
-    result.set(folderId, { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0, evidence: 0 });
+    result.set(folderId, { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0, evidence: 0, identities: 0 });
   }
 
   // Run one GROUP BY query per entity table in parallel

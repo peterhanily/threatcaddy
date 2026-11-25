@@ -1,6 +1,7 @@
 import { Marked } from 'marked';
 import hljs from 'highlight.js/lib/core';
 import DOMPurify from 'dompurify';
+import { findMentions, type FolderIndex } from './identity-match';
 
 // Load highlight.js CSS on first use (removed from index.css to avoid blocking initial render)
 let hljsCssLoaded = false;
@@ -100,7 +101,7 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
 // Validate data-entity-id and data-note-id values to safe ID format (nanoid: alphanumeric + _-)
 const SAFE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 DOMPurify.addHook('afterSanitizeAttributes', (node) => {
-  for (const attr of ['data-entity-id', 'data-note-id'] as const) {
+  for (const attr of ['data-entity-id', 'data-note-id', 'data-identity-id'] as const) {
     const val = node.getAttribute(attr);
     if (val !== null && !SAFE_ID_RE.test(val)) {
       node.removeAttribute(attr);
@@ -158,12 +159,57 @@ export function preprocessWikiLinks(content: string, notes: WikiLinkTarget[]): s
   }).join('');
 }
 
+/** Text inside these is never turned into identity links. */
+const NO_MENTIONS = 'a, code, pre, kbd, samp, script, style, textarea';
+
+/**
+ * Turns `@Name` mentions of an investigation's identities into links in already sanitised HTML.
+ * It works on text nodes, so code (fenced, indented or inline), existing links and attributes are
+ * never touched, and it builds the links with DOM calls rather than strings. `renderMarkdown`
+ * sanitises the result again, so DOMPurify stays the last step.
+ */
+export function linkIdentityMentions(html: string, folder: FolderIndex): string {
+  if (!html.includes('@')) return html;
+  const template = document.createElement('template');
+  template.innerHTML = html;
+  const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_TEXT);
+  const texts: Text[] = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const text = node as Text;
+    if (text.data.includes('@') && !text.parentElement?.closest(NO_MENTIONS)) texts.push(text);
+  }
+  let changed = false;
+  // One budget for the whole note: splitting it into paragraphs cannot multiply the work.
+  const budget = { work: 0 };
+  for (const text of texts) {
+    const mentions = findMentions(text.data, folder, budget);
+    if (!mentions.length) continue;
+    changed = true;
+    const parts = document.createDocumentFragment();
+    let last = 0;
+    for (const mention of mentions) {
+      parts.append(text.data.slice(last, mention.start));
+      const link = document.createElement('a');
+      link.setAttribute('href', '#');
+      link.className = 'tclink';
+      link.dataset.identityLink = 'true';
+      link.dataset.identityId = mention.identity.id;
+      link.textContent = text.data.slice(mention.start, mention.end);
+      parts.append(link);
+      last = mention.end;
+    }
+    parts.append(text.data.slice(last));
+    text.replaceWith(parts);
+  }
+  return changed ? template.innerHTML : html;
+}
+
 /** Shared DOMPurify config — single source of truth for all sanitization. */
 const SANITIZE_CONFIG = {
   RETURN_DOM_FRAGMENT: false,
   RETURN_DOM: false,
   ADD_TAGS: ['input'],
-  ADD_ATTR: ['type', 'checked', 'disabled', 'class', 'data-note-link', 'data-note-id', 'data-entity-type', 'data-entity-id'],
+  ADD_ATTR: ['type', 'checked', 'disabled', 'class', 'data-note-link', 'data-note-id', 'data-entity-type', 'data-entity-id', 'data-identity-link', 'data-identity-id'],
   FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'base', 'meta', 'link', 'style'],
   FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onsubmit'],
 };
@@ -182,10 +228,17 @@ export function sanitizeHtml(html: string, options?: { disableMedia?: boolean })
   return DOMPurify.sanitize(html, options?.disableMedia ? NO_MEDIA_SANITIZE_CONFIG : SANITIZE_CONFIG) as string;
 }
 
-export function renderMarkdown(content: string, wikiLinkTargets?: WikiLinkTarget[], options?: { disableMedia?: boolean }): string {
+export function renderMarkdown(content: string, wikiLinkTargets?: WikiLinkTarget[], options?: {
+  disableMedia?: boolean;
+  /** The note's investigation, so `@Name` mentions of its identities become links. */
+  identities?: FolderIndex;
+}): string {
   // Load highlight.js CSS on first use (lazy-loaded to avoid blocking initial render)
   ensureHljsCss();
   const processed = wikiLinkTargets ? preprocessWikiLinks(content, wikiLinkTargets) : content;
   const raw = marked.parse(processed) as string;
-  return sanitizeHtml(raw, options);
+  const html = sanitizeHtml(raw, options);
+  if (!options?.identities) return html;
+  const linked = linkIdentityMentions(html, options.identities);
+  return linked === html ? html : sanitizeHtml(linked, options);
 }

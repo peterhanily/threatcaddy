@@ -30,6 +30,7 @@
   },
   "import": {
     "dataImported": "{{events}} 件のイベントと {{iocs}} 件のIOCをインポートしました",
+    "identitiesImported": "アイデンティティ: {{created}} 件を追加、{{updated}} 件を更新",
     "jsonImported": "{{notes}} 件のノート、{{tasks}} 件のタスクをインポートしました",
     "markdownImported": "Markdownから {{count}} 件のノートをインポートしました",
     "importFailed": "インポートに失敗しました",

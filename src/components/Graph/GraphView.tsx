@@ -1,21 +1,28 @@
 import React, { Suspense, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2, Search, Network, Maximize2, ChevronDown, ChevronRight, HelpCircle, X as XIcon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import type { Note, Task, TimelineEvent, Settings, IOCType } from '../../types';
+import type { Note, Task, TimelineEvent, Settings, IOCType, Identity } from '../../types';
 import { IOC_TYPE_LABELS } from '../../types';
-import { buildGraphData } from '../../lib/graph-data';
+import { buildGraphData, identityNodeColor } from '../../lib/graph-data';
 import type { GraphNode, GraphEdge } from '../../lib/graph-data';
 import { GraphDetailPanel } from './GraphDetailPanel';
 import { GraphIOCEditDialog } from './GraphIOCEditDialog';
 import { GraphLinkDialog } from './GraphLinkDialog';
 import type { LayoutName } from './GraphCanvas';
-import { getLegendEntries } from '../../lib/graph-icons';
+import { getLegendEntries, getNodeIcon, type LegendEntry } from '../../lib/graph-icons';
+import { BUILTIN_TYPES } from '../../lib/identity-model';
+import { useIdentityLinks } from '../Identities/identity-links';
+import { useIdentityLabels, type IdentityChange } from '../Identities/identity-labels';
+import { GraphConnectDialog } from './GraphConnectDialog';
 import { useNavigation } from '../../contexts/NavigationContext';
 import { useInvestigation } from '../../contexts/InvestigationContext';
+import { useToast } from '../../contexts/ToastContext';
 
 const GraphCanvas = React.lazy(() => import('./GraphCanvas'));
 
 const ALL_IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as IOCType[];
+/** Above this many identities, their nodes start hidden (the force-directed layout slows down). */
+const IDENTITY_NODES_SHOWN_BY_DEFAULT = 300;
 
 interface GraphViewProps {
   notes: Note[];
@@ -31,10 +38,16 @@ interface GraphViewProps {
   scopedNotes?: Note[];
   scopedTasks?: Task[];
   scopedTimelineEvents?: TimelineEvent[];
+  /** Identities to draw: every one on this device, and the selected investigation's. */
+  identities?: Identity[];
+  scopedIdentities?: Identity[];
+  onOpenIdentity?: (identity: Identity) => void;
+  /** Absent when read-only: Alt+drag between identities is then not offered. */
+  onUpdateIdentity?: (id: string, change: IdentityChange) => Promise<void>;
   visible?: boolean;
 }
 
-type NodeTypeFilter = 'ioc' | 'note' | 'task' | 'timeline-event';
+type NodeTypeFilter = 'ioc' | 'note' | 'task' | 'timeline-event' | 'identity';
 type EdgeTypeFilter = GraphEdge['type'];
 
 const ALL_EDGE_TYPES: { key: EdgeTypeFilter; labelKey: string; color: string }[] = [
@@ -42,10 +55,16 @@ const ALL_EDGE_TYPES: { key: EdgeTypeFilter; labelKey: string; color: string }[]
   { key: 'ioc-relationship', labelKey: 'view.iocRelations', color: '#f59e0b' },
   { key: 'timeline-link', labelKey: 'view.timelineLinks', color: '#6366f1' },
   { key: 'entity-link', labelKey: 'view.entityLinks', color: '#22c55e' },
+  { key: 'identity-connection', labelKey: 'view.identityConnections', color: '#0ea5e9' },
+  { key: 'identity-link', labelKey: 'view.identityLinks', color: '#38bdf8' },
 ];
 
-export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent, onUpdateNote, onUpdateTask, onUpdateEvent, scopedNotes, scopedTasks, scopedTimelineEvents, visible = true }: GraphViewProps) {
+export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent, onUpdateNote, onUpdateTask, onUpdateEvent, scopedNotes, scopedTasks, scopedTimelineEvents,
+  identities, scopedIdentities, onOpenIdentity, onUpdateIdentity, visible = true }: GraphViewProps) {
   const { t } = useTranslation('graph');
+  const identityLinks = useIdentityLinks();
+  // Always mounted, so the identities strings must not hold up the app's first render.
+  const identityLabels = useIdentityLabels({ suspense: false });
   const { graphLayout: layout, setGraphLayout: handleLayoutChange } = useNavigation();
   const { selectedFolderId, selectedFolder } = useInvestigation();
   const selectedFolderName = selectedFolder?.name;
@@ -53,9 +72,12 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
   const [scopeMode, setScopeMode] = useState<'investigation' | 'global'>('investigation');
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [visibleNodeTypes, setVisibleNodeTypes] = useState<Set<NodeTypeFilter>>(new Set(['ioc', 'note', 'task', 'timeline-event']));
+  const [visibleNodeTypes, setVisibleNodeTypes] = useState<Set<NodeTypeFilter>>(new Set(['ioc', 'note', 'task', 'timeline-event', 'identity']));
   const [visibleIOCTypes, setVisibleIOCTypes] = useState<Set<IOCType>>(new Set(ALL_IOC_TYPES));
-  const [visibleEdgeTypes, setVisibleEdgeTypes] = useState<Set<EdgeTypeFilter>>(new Set(['contains-ioc', 'ioc-relationship', 'timeline-link', 'entity-link']));
+  const [visibleEdgeTypes, setVisibleEdgeTypes] = useState<Set<EdgeTypeFilter>>(new Set(['contains-ioc', 'ioc-relationship', 'timeline-link', 'entity-link', 'identity-connection', 'identity-link']));
+  const [connectState, setConnectState] = useState<{ from: Identity; to: Identity } | null>(null);
+  /** Whether the analyst chose to show identity nodes; null follows the default (shown up to a limit). */
+  const [identityNodesChoice, setIdentityNodesChoice] = useState<boolean | null>(null);
   const [editingIOCNode, setEditingIOCNode] = useState<GraphNode | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [linkDialogState, setLinkDialogState] = useState<{ sourceNodeId: string; targetNodeId: string } | null>(null);
@@ -71,6 +93,10 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
   const effectiveNotes = selectedFolderId && scopeMode === 'investigation' && scopedNotes ? scopedNotes : notes;
   const effectiveTasks = selectedFolderId && scopeMode === 'investigation' && scopedTasks ? scopedTasks : tasks;
   const effectiveEvents = selectedFolderId && scopeMode === 'investigation' && scopedTimelineEvents ? scopedTimelineEvents : timelineEvents;
+  const effectiveIdentities = selectedFolderId && scopeMode === 'investigation' && scopedIdentities ? scopedIdentities : identities;
+  // Local and, in a remote investigation, the server's identities: nodes can come from either.
+  const identitiesById = useMemo(() => new Map([...(identities ?? []), ...(scopedIdentities ?? [])].map(identity => [identity.id, identity])), [identities, scopedIdentities]);
+  const { addToast } = useToast();
 
   // Stable ref to full graph data for use in cytoscape callbacks
   const fullGraphDataRef = React.useRef<ReturnType<typeof buildGraphData>>({ nodes: [], edges: [] });
@@ -78,20 +104,31 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
   // Build full graph data — skip expensive computation when not visible
   const fullGraphData = useMemo(() => {
     if (!visible) return { nodes: [] as GraphNode[], edges: [] as GraphEdge[] };
-    return buildGraphData(effectiveNotes, effectiveTasks, effectiveEvents, settings);
-  }, [visible, effectiveNotes, effectiveTasks, effectiveEvents, settings]);
+    const identityGraph = identityLinks && effectiveIdentities ? {
+      identities: effectiveIdentities, linkFor: identityLinks.linkFor, belongsTo: identityLinks.belongsTo,
+      phrase: (label: string) => identityLabels.phrase(label, true), typeLabel: identityLabels.typeLabel,
+      roles: { actor: t('view.edgeActor'), asset: t('view.edgeAsset'), belongsTo: t('view.edgeBelongsTo') },
+    } : undefined;
+    return buildGraphData(effectiveNotes, effectiveTasks, effectiveEvents, settings, identityGraph);
+  }, [visible, effectiveNotes, effectiveTasks, effectiveEvents, settings, identityLinks, effectiveIdentities, identityLabels, t]);
 
   // Keep ref in sync for use in cytoscape callbacks (outside render)
   React.useEffect(() => {
     fullGraphDataRef.current = fullGraphData;
   }, [fullGraphData]);
 
+  // Many identities make the force-directed layout slow (1,500 take seconds), so above a limit
+  // they start hidden until the analyst ticks them.
+  const identityNodeCount = useMemo(() => fullGraphData.nodes.filter(node => node.type === 'identity').length, [fullGraphData.nodes]);
+  const identitiesAutoHidden = identityNodesChoice === null && identityNodeCount > IDENTITY_NODES_SHOWN_BY_DEFAULT;
+  const showIdentityNodes = identityNodesChoice ?? identityNodeCount <= IDENTITY_NODES_SHOWN_BY_DEFAULT;
+
   // Filter graph data
   const filteredGraphData = useMemo(() => {
     const query = searchQuery.toLowerCase();
     const filteredNodes = fullGraphData.nodes.filter((node) => {
       // Node type filter
-      if (!visibleNodeTypes.has(node.type)) return false;
+      if (node.type === 'identity' ? !showIdentityNodes : !visibleNodeTypes.has(node.type)) return false;
       // IOC type filter
       if (node.type === 'ioc' && node.iocType && !visibleIOCTypes.has(node.iocType)) return false;
       // Search filter
@@ -103,7 +140,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
       (e) => nodeIds.has(e.source) && nodeIds.has(e.target) && visibleEdgeTypes.has(e.type),
     );
     return { nodes: filteredNodes, edges: filteredEdges };
-  }, [fullGraphData, visibleNodeTypes, visibleIOCTypes, visibleEdgeTypes, searchQuery]);
+  }, [fullGraphData, visibleNodeTypes, visibleIOCTypes, visibleEdgeTypes, searchQuery, showIdentityNodes]);
 
   const selectedNode = useMemo(
     () => filteredGraphData.nodes.find((n) => n.id === selectedNodeId)
@@ -113,6 +150,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
   );
 
   const toggleNodeType = (type: NodeTypeFilter) => {
+    if (type === 'identity') { setIdentityNodesChoice(!showIdentityNodes); return; }
     setVisibleNodeTypes((prev) => {
       const next = new Set(prev);
       if (next.has(type)) next.delete(type);
@@ -139,7 +177,8 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
     });
   };
 
-  // Handle node click: IOC nodes open edit dialog directly, others show detail panel
+  // Handle node click: IOC nodes open edit dialog directly, others show detail panel. In the
+  // Focus layout an IOC is selected like any node, so it can be focused (Edit stays in the panel).
   const handleSelectNode = useCallback((nodeId: string | null) => {
     setSelectedNodeIds([]);
     if (!nodeId) {
@@ -148,13 +187,13 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
     }
     // Look up from ref (always up-to-date) to handle IOC nodes
     const node = fullGraphDataRef.current.nodes.find((n) => n.id === nodeId);
-    if (node?.type === 'ioc' && onUpdateNote && onUpdateTask) {
+    if (node?.type === 'ioc' && onUpdateNote && onUpdateTask && layout !== 'focus') {
       setEditingIOCNode(node);
       setSelectedNodeId(null);
     } else {
       setSelectedNodeId(nodeId);
     }
-  }, [onUpdateNote, onUpdateTask]);
+  }, [onUpdateNote, onUpdateTask, layout]);
 
   const handleSelectMulti = useCallback((nodeIds: string[]) => {
     setSelectedNodeId(null);
@@ -171,8 +210,11 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
     } else if (node.type === 'timeline-event') {
       const id = node.sourceEntityIds[0];
       if (id) onNavigateToTimelineEvent(id);
+    } else if (node.type === 'identity') {
+      const identity = identitiesById.get(node.sourceEntityIds[0]);
+      if (identity) onOpenIdentity?.(identity);
     }
-  }, [onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent]);
+  }, [onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent, identitiesById, onOpenIdentity]);
 
   const handleDoubleClickNode = useCallback((nodeId: string) => {
     const node = fullGraphData.nodes.find((n) => n.id === nodeId);
@@ -186,8 +228,16 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
 
   const handleLinkNodes = useCallback((sourceId: string, targetId: string) => {
     if (sourceId === targetId) return;
+    // Alt+drag between two identities records a connection; identities are not linked to other records this way.
+    const from = sourceId.startsWith('identity:') ? identitiesById.get(sourceId.slice('identity:'.length)) : undefined;
+    const to = targetId.startsWith('identity:') ? identitiesById.get(targetId.slice('identity:'.length)) : undefined;
+    if (from || to || sourceId.startsWith('identity:') || targetId.startsWith('identity:')) {
+      if (from && to && onUpdateIdentity && from.folderId === to.folderId) setConnectState({ from, to });
+      else addToast('info', t(onUpdateIdentity ? 'view.connectIdentitiesOnly' : 'view.connectReadOnly'));
+      return;
+    }
     setLinkDialogState({ sourceNodeId: sourceId, targetNodeId: targetId });
-  }, []);
+  }, [identitiesById, onUpdateIdentity, addToast, t]);
 
   const handleOpenNewTab = useCallback((node: GraphNode) => {
     const entityId = node.sourceEntityIds[0];
@@ -199,7 +249,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
   }, []);
 
   const nodeTypeCounts = useMemo(() => {
-    const counts = { ioc: 0, note: 0, task: 0, 'timeline-event': 0 };
+    const counts = { ioc: 0, note: 0, task: 0, 'timeline-event': 0, identity: 0 };
     for (const n of fullGraphData.nodes) counts[n.type]++;
     return counts;
   }, [fullGraphData.nodes]);
@@ -211,14 +261,16 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
     for (const id of selectedNodeIds) {
       const node = fullGraphData.nodes.find((n) => n.id === id);
       if (node) {
-        const label = node.type === 'ioc' ? 'IOC' : node.type === 'note' ? 'Note' : node.type === 'task' ? 'Task' : 'Event';
+        const label = t(node.type === 'ioc' ? 'view.iocs' : node.type === 'note' ? 'view.notes' : node.type === 'task' ? 'view.tasks' : node.type === 'identity' ? 'view.identities' : 'view.events');
         counts[label] = (counts[label] || 0) + 1;
       }
     }
     return { total: selectedNodeIds.length, counts };
-  }, [selectedNodeIds, fullGraphData.nodes]);
+  }, [selectedNodeIds, fullGraphData.nodes, t]);
 
-  const legendEntries = useMemo(() => getLegendEntries(), []);
+  const legendEntries = useMemo((): LegendEntry[] => [...getLegendEntries(), ...BUILTIN_TYPES.map(type => ({
+    type: 'identity' as const, label: identityLabels.typeLabel(type), color: identityNodeColor(type), icon: getNodeIcon('identity', identityNodeColor(type), undefined, type),
+  }))], [identityLabels]);
 
   return (
     <div className="flex flex-1 overflow-hidden h-full relative">
@@ -276,11 +328,12 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
             { key: 'task' as const, labelKey: 'view.tasks', color: '#22c55e' },
             { key: 'ioc' as const, labelKey: 'view.iocs', color: '#f59e0b' },
             { key: 'timeline-event' as const, labelKey: 'view.events', color: '#6366f1' },
+            { key: 'identity' as const, labelKey: 'view.identities', color: '#0ea5e9' },
           ]).map(({ key, labelKey, color }) => (
             <label key={key} className="flex items-center gap-2 text-xs cursor-pointer">
               <input
                 type="checkbox"
-                checked={visibleNodeTypes.has(key)}
+                checked={key === 'identity' ? showIdentityNodes : visibleNodeTypes.has(key)}
                 onChange={() => toggleNodeType(key)}
                 className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-accent"
               />
@@ -289,6 +342,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
               <span className="text-gray-600 ms-auto">{nodeTypeCounts[key]}</span>
             </label>
           ))}
+          {identitiesAutoHidden && <p className="text-[10px] text-gray-500">{t('view.identitiesHiddenMany', { count: IDENTITY_NODES_SHOWN_BY_DEFAULT })}</p>}
         </div>
 
         {/* IOC type filters */}
@@ -339,7 +393,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
           {legendOpen && (
             <div className="mt-2 space-y-1.5">
               {legendEntries.map((entry) => (
-                <div key={entry.type + (entry.iocType ?? '')} className="flex items-center gap-2">
+                <div key={entry.type + (entry.iocType ?? '') + entry.label} className="flex items-center gap-2">
                   <img src={entry.icon} alt={entry.label} className="w-4 h-4" />
                   <span className="text-[11px] text-gray-400">{entry.label}</span>
                 </div>
@@ -360,6 +414,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
               <option value="cose-bilkent">{t('view.forceDirected')}</option>
               <option value="circle">{t('view.circle')}</option>
               <option value="breadthfirst">{t('view.breadthFirst')}</option>
+              <option value="focus">{t('view.focus')}</option>
             </select>
             <button
               onClick={() => setFitTrigger((n) => n + 1)}
@@ -370,6 +425,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
               <Maximize2 size={14} />
             </button>
           </div>
+          {layout === 'focus' && <p className="text-[10px] text-gray-500">{selectedNodeId ? t('view.focusHint') : t('view.focusNone')}</p>}
         </div>
 
         {/* Stats */}
@@ -406,6 +462,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
             <GraphCanvas
               data={filteredGraphData}
               layout={layout}
+              focusNodeId={selectedNodeId ?? undefined}
               onSelectNode={handleSelectNode}
               onDoubleClickNode={handleDoubleClickNode}
               onSelectMulti={handleSelectMulti}
@@ -460,6 +517,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
           }}
           onOpenNewTab={handleOpenNewTab}
           onEditIOC={onUpdateNote && onUpdateTask ? setEditingIOCNode : undefined}
+          onOpenIdentity={onOpenIdentity ? navigateToEntity : undefined}
           notes={notes}
           tasks={tasks}
           timelineEvents={timelineEvents}
@@ -504,6 +562,12 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
           onUpdateEvent={onUpdateEvent}
           onClose={() => setEditingIOCNode(null)}
         />
+      )}
+
+      {/* Connect two identities (Alt+drag) */}
+      {connectState && onUpdateIdentity && (
+        <GraphConnectDialog from={connectState.from} to={connectState.to} labels={identityLabels}
+          onClose={() => setConnectState(null)} onUpdate={onUpdateIdentity} />
       )}
 
       {/* Link dialog */}

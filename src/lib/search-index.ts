@@ -1,6 +1,6 @@
 import MiniSearch from 'minisearch';
 import { generateSnippet, parseAdvancedQuery, type SearchQuery, type SearchResult, type SearchResultType, type UnifiedSearchResult } from './search';
-import { TIMELINE_EVENT_TYPE_LABELS, type Note, type Task, type TimelineEvent, type Whiteboard, type StandaloneIOC, type ChatThread, type EvidenceItem } from '../types';
+import { TIMELINE_EVENT_TYPE_LABELS, type Note, type Task, type TimelineEvent, type Whiteboard, type StandaloneIOC, type ChatThread, type EvidenceItem, type Identity } from '../types';
 
 export interface SearchSources {
   notes: Note[];
@@ -11,6 +11,7 @@ export interface SearchSources {
   standaloneIOCs?: StandaloneIOC[];
   chatThreads?: ChatThread[];
   evidenceItems?: EvidenceItem[];
+  identities?: Identity[];
 }
 
 /** Only searchable text crosses the worker boundary: never image bytes, files,
@@ -28,9 +29,9 @@ export interface SearchDocument {
   updatedAt: number;
 }
 export interface SearchPatch { revision: number; upserts: SearchDocument[]; deleted: string[] }
-export const SEARCH_TYPES: SearchResultType[] = ['note', 'clip', 'task', 'timeline', 'whiteboard', 'ioc', 'chat', 'evidence'];
+export const SEARCH_TYPES: SearchResultType[] = ['note', 'clip', 'task', 'timeline', 'whiteboard', 'ioc', 'chat', 'evidence', 'identity'];
 
-type Entity = Note | Task | TimelineEvent | Whiteboard | StandaloneIOC | ChatThread | EvidenceItem;
+type Entity = Note | Task | TimelineEvent | Whiteboard | StandaloneIOC | ChatThread | EvidenceItem | Identity;
 
 export class SearchProjection {
   readonly documents = new Map<string, SearchDocument>();
@@ -62,6 +63,9 @@ export class SearchProjection {
     for (const i of sources.standaloneIOCs || []) add(i, 'ioc', () => ({ title: i.value, content: [i.type, i.analystNotes, i.attribution].filter(Boolean).join(' ') }));
     for (const c of sources.chatThreads || []) add(c, 'chat', () => ({ title: c.title, content: c.messages.map(m => m.content).join(' ') }));
     for (const e of sources.evidenceItems || []) add(e, 'evidence', () => ({ title: e.title, content: [e.fileName, e.content, e.imageOcrText, e.imageAnalysis].filter(Boolean).join(' ') }));
+    // Private details never enter the index.
+    for (const i of sources.identities || []) add(i, 'identity', () => ({ title: i.name,
+      content: [i.type, i.description, ...i.aliases, ...i.details.filter(detail => !detail.private).map(detail => detail.value)].filter(Boolean).join(' ') }));
     const deleted: string[] = [];
     for (const key of this.documents.keys()) if (!seen.has(key)) { deleted.push(key); this.documents.delete(key); }
     if (upserts.length || deleted.length) this.revision++;

@@ -4,6 +4,8 @@ import { ZoomIn, ZoomOut, Maximize2, Layers } from 'lucide-react';
 import type { TimelineEvent, TimelineEventType } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS } from '../../types';
 import { cn, currentLocale } from '../../lib/utils';
+import { reportGroup } from '../../lib/identity-match';
+import { useIdentityLinks } from '../Identities/identity-links';
 
 interface TimelineGanttProps {
   events: TimelineEvent[];
@@ -66,6 +68,13 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
   const chartRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+  const identityLinks = useIdentityLinks();
+  /** The actor as written, with the identity it names when that reads differently ("T. Lindqvist (Tomas Lindqvist)"). */
+  const actorText = (event: TimelineEvent) => {
+    const actor = event.actor ?? '';
+    const label = reportGroup(identityLinks?.linkFor(event.folderId, actor), actor).label;
+    return label.trim().toLowerCase() === actor.trim().toLowerCase() ? actor : `${actor} (${label})`;
+  };
   const [groupByType, setGroupByType] = useState(false);
 
   // Sort events by timestamp ascending
@@ -414,7 +423,7 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
               </span>
             </div>
             {tooltip.event.source && <div>{t('gantt.tooltipSource', { source: tooltip.event.source })}</div>}
-            {tooltip.event.actor && <div>{t('gantt.tooltipActor', { actor: tooltip.event.actor })}</div>}
+            {tooltip.event.actor && <div>{t('gantt.tooltipActor', { actor: actorText(tooltip.event) })}</div>}
           </div>
         </div>
       )}

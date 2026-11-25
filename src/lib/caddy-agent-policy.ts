@@ -14,6 +14,11 @@ export const AGENT_NEVER_TOOLS: ReadonlySet<string> = new Set([
 /** Agent-configuration changes: always need a person (chat card or queued proposal). */
 export const AGENT_CONTROL_TOOLS: ReadonlySet<string> = new Set([
   'spawn_agent', 'define_specialist', 'dismiss_agent', 'reflect_on_performance']);
+/** Tools over people and their details (personal data). Agents get them like other tools (a
+ * profile that lists its tools gets only those it lists), but never through the agent bridge,
+ * and an agent's identity write always needs a person's approval. */
+export const IDENTITY_TOOLS: ReadonlySet<string> = new Set(['search_identities', 'read_identity', 'create_identity', 'update_identity', 'connect_identities']);
+export const IDENTITY_WRITE_TOOLS: ReadonlySet<string> = new Set(['create_identity', 'update_identity', 'connect_identities']);
 /** Offered to an agent only when its profile lists them explicitly. Cross-case readers also need a local-only home. */
 export const EXPLICIT_ONLY_TOOLS: ReadonlySet<string> = new Set([...CROSS_CASE_READ_TOOLS, 'query_siem', 'create_ticket']);
 export const isEgressToolName = (n: string) =>
@@ -68,6 +73,8 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   get_investigation_details: 'read',
   search_across_investigations: 'read',
   compare_investigations: 'read',
+  search_identities: 'read',
+  read_identity: 'read',
 
   // Enrich tools — extract/analyze data without external calls
   extract_iocs: 'enrich',
@@ -84,12 +91,15 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   generate_report: 'create',
   create_in_investigation: 'create',
   link_entities: 'create',
+  create_identity: 'create',
+  connect_identities: 'create',
 
   // Modify tools — change existing entities
   update_note: 'modify',
   update_task: 'modify',
   update_ioc: 'modify',
   update_timeline_event: 'modify',
+  update_identity: 'modify',
 
   // Integration / enrichment tools
   enrich_ioc: 'enrich',
@@ -180,6 +190,8 @@ export function getToolActionClass(toolName: string): AgentActionClass {
 
 /** Check if a tool call should be auto-approved given the investigation's agent policy. */
 export function shouldAutoApprove(toolName: string, policy: AgentPolicy): boolean {
+  // Owner decision: agents create and change identities only with a person's approval.
+  if (IDENTITY_WRITE_TOOLS.has(toolName)) return false;
   const actionClass = getToolActionClass(toolName);
   switch (actionClass) {
     case 'read':     return policy.autoApproveReads;

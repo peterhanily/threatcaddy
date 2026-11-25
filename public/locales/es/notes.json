@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "Vincular a nota"
   },
+  "mentionMenu": {
+    "header": "Mencionar una identidad"
+  },
   "slashCommands": {
     "heading1": "Encabezado 1",
     "heading1Desc": "Encabezado grande",

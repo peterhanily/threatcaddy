@@ -77,13 +77,15 @@ docs/                   Documentation
 
 - **ChatThread** -- LLM conversation threads with tool-use support, enabling AI-assisted analysis within investigations.
 
+- **Identity** -- A person, organization, system or account in one investigation (custom types are allowed). It holds other names, labelled details (some marked private), connections to other identities in the same investigation with a phrase such as "works at" or "reports to", a status (compromised, contained, suspicious, cleared), a classification and a contact flag. Other entities never store identity IDs: timeline actors and assets, note mentions and IOC values are matched to identities by text when shown (`src/lib/identity-match.ts`), so no existing table, backup field or server column changed. Private details are masked in the UI, never sent to AI, and left out of the Identities CSV export unless chosen.
+
 ### 3.2 Entity Relationships
 
 All entities support cross-linking through `linkedNoteIds`, `linkedTaskIds`, and `linkedTimelineEventIds` arrays. IOCs use typed relationships with the following link types: resolves-to, downloads, communicates-with, drops, hosts, attributed-to, exploits, uses-technique, detected-by, alerts-on, and related-to.
 
 ### 3.3 Client-Side Storage (IndexedDB via Dexie)
 
-The migration definitions in `src/db.ts` are authoritative. Tables include notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, activityLog, standaloneIOCs, chatThreads, evidenceItems, templates, integrations, and internal sync, migration and clip-receipt records. The portable backup registry explicitly distinguishes supported portable content from runtime/internal state.
+The migration definitions in `src/db.ts` are authoritative. Tables include notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, activityLog, standaloneIOCs, chatThreads, evidenceItems, identities, templates, integrations, and internal sync, migration and clip-receipt records. The portable backup registry explicitly distinguishes supported portable content from runtime/internal state.
 
 ### 3.4 Server-Side Storage (PostgreSQL via Drizzle ORM)
 
@@ -94,7 +96,7 @@ Drizzle ORM with the `postgres.js` driver manages the connection pool (max 20 co
 ### 3.5 Entity Relationship Summary
 
 - Users have sessions, investigation memberships, files, backups, and bot configs.
-- Folders contain notes, tasks, timeline events, whiteboards, standalone IOCs, chat threads, and posts.
+- Folders contain notes, tasks, timeline events, whiteboards, standalone IOCs, evidence items, identities, chat threads, and posts.
 - Folders have investigation members that bind users to specific roles.
 - Timelines contain timeline events.
 - Bot configs have bot runs.
@@ -114,15 +116,19 @@ The client sends bounded batches from `_syncQueue` to `POST /api/sync/push`. A r
 
 Current clients use `GET /api/sync/pull?cursor=…&generation=…`. Cursors are decimal strings, not JavaScript numbers or timestamps. Each page returns flat entity changes, the next cursor, generation, `hasMore` and `serverTimestamp`. Authorization and the page watermark are read from one consistent database snapshot. A requested folder narrows the results; `metadataOnly=true` omits selected heavy fields, not all sensitive content. Deleted or moved-out entities can be represented by minimal tombstones.
 
+Clients list the tables they read (`tables=…`), and the server sends only those. A client that lists none (2.0.4 and earlier) gets only the ten tables it knows, because it stops a pull at an unknown table. Pages report the tables the server syncs. A client holds changes to any other table on the device and says so, and skips a table the server lists but the client does not know. When its saved cursor predates a table it now syncs, it fetches that table's history once from the start (`tables=` naming only that table) and keeps its saved cursor; it does so only after the server has accepted the saved cursor and history.
+
 A changed history generation or a cursor ahead of the server returns `409 SYNC_CURSOR_RESET` with `resetRequired: true`. The client pauses for explicit recovery rather than silently resetting its cursor. The legacy `since` request remains available, but returns a full currently visible resync, not a timestamp-based incremental page.
 
 ### 4.3 Snapshot
 
-`GET /api/sync/snapshot/:folderId` returns a currently authorized investigation as a map of tables to rows. This is not a portable backup or permission to overwrite pending local work. Current client recovery also checks workspace identity and history generation; see [server sync recovery](../server/docs/sync-recovery.md).
+`GET /api/sync/snapshot/:folderId` returns a currently authorized investigation as a map of tables to rows, limited to the `tables` the client lists, as for pull. A snapshot is not a portable backup or permission to overwrite pending local work. Current client recovery also checks workspace identity and history generation; see [server sync recovery](../server/docs/sync-recovery.md).
+
+The server's change log keeps every revision of every synced record, and history rotation does not compact it. A field removed from a record, including a private identity detail, can therefore still reach a member who joins later, or any device that pulls from the start, through an earlier revision. Members of the investigation at the time already received it.
 
 ### 4.4 Conflict Resolution
 
-Updates use compare-and-swap, not last-writer-wins: an existing entity's `clientVersion` must equal its current server version. An accepted write advances that version; a stale or missing baseline returns the current server row as a conflict. A new put accepts an absent or zero baseline. Choosing "mine" retries against the reviewed version, so another intervening server edit can conflict again. Choosing "theirs" applies the reviewed server state with local pending-work checks.
+Updates use compare-and-swap, not last-writer-wins: an existing entity's `clientVersion` must equal its current server version. An accepted write advances that version; a stale or missing baseline returns the current server row as a conflict. Two exceptions are accepted whatever the baseline: a change that would leave the row as it is (deleting a row already deleted, or a put equal to the stored row) is accepted as `unchanged`, with no write, revision, event or activity entry; and an item's delete sent in the same batch as its investigation's delete completes that deletion. A new put accepts an absent or zero baseline. Choosing "mine" retries against the reviewed version, so another intervening server edit can conflict again. Choosing "theirs" applies the reviewed server state with local pending-work checks.
 
 Server-managed fields (id, createdBy, updatedBy, version, createdAt, updatedAt, deletedAt) are stripped from client payloads and never trusted from the client. Delete operations use soft-delete (setting `deletedAt` and bumping the version) so other clients discover deletions on their next pull.
 
@@ -135,7 +141,7 @@ Committed writes wake the sync engine, with periodic retries as a safety net. Pu
 ### 4.6 Authorization on Push
 
 - All public pushes require a current active admin or analyst account and valid data/version baselines. Global tables (tags, timelines) do not require investigation membership, but do not bypass those checks.
-- Folder-scoped writes require current editor access to live source and destination investigations. Ordinary folder deletion and restoration require an eligible owner; a separate confirmed admin purge is a physical deletion, not device erasure.
+- Folder-scoped writes require current editor access to live source and destination investigations. The exception is an item's delete in an investigation that is deleted (in the same batch, or earlier when the item's version matches): it is accepted, and restoring the investigation does not bring that item back. Ordinary folder deletion and restoration require an eligible owner; a separate confirmed admin purge is a physical deletion, not device erasure.
 - New folders auto-create an owner membership for the creating user.
 - Folders marked `localOnly` (and their scoped entities) are excluded from capture. This setting does not erase copies previously shared with other devices or exported.
 
@@ -206,6 +212,8 @@ In-memory sliding window rate limiting, keyed by IP address. Limits are configur
 
 **Tool calls.** Investigation content can carry instructions aimed at the model, so a call is judged by where it reaches, not by why the model made it. `classifyToolCall` (`src/lib/tool-reach.ts`) records whether a call writes, makes an outbound request (web fetch, vendor lookups, skills, SIEM or ticket calls), reaches another investigation, changes agents, or was taken from reply text. `decideToolCall` turns that into run, ask or deny for each surface: chat in Act, YOLO or Plan mode, agents, the supervisor and the agent bridge. Decision sites use it to show a chat approval card or queue an agent proposal; `dispatchTool` runs it again for every call, and runs a call that needs a person only with a single-use `HumanApproval` bound to that call's name, input and investigation. Only the chat card handler (`ChatView.tsx`) and the agent panel's approval of a queued action (`agent-action-approval.ts`) mint one (an import-boundary test enforces this). For agents, the investigation's saved auto-approve settings are a ceiling on each agent's own settings (`resolveEffectivePolicy`), and `buildAgentToolset` remains the single list of tools an agent is offered and may run.
 
+**Identities.** The five identity tools (`src/lib/llm-tools-identities.ts`) never return, search or confirm a private detail: whether a new detail is private depends on its label alone, and replies do not depend on private values. They read ids exactly as `tool-reach` does, so the reach rules above apply. An agent's identity write always needs approval (`shouldAutoApprove`) and is never part of "Approve all" (`agent-action-approval.ts`); observer agents get a name-only search; the agent bridge and the supervisor do not have the tools.
+
 **Local-only investigations** are not listed, searched or read by AI calls made from an investigation that can sync, meaning any investigation that is not local-only, whether or not a team server is bound yet (`isShareableFolder` in `src/lib/ai-scope.ts`). A home with no local folder row, such as a team investigation viewed without syncing it (remote mode) or an evicted folder, counts as able to sync. CaddyAI's list and search results (`list_investigations`, `search_across_investigations`) report how many investigations were left out; the bridge's `investigations()` does not. Before an investigation that holds AI-written content stops being local-only, the investigation details panel asks for confirmation (`hasAiWrittenContent` in `src/lib/ai-content.ts`, a best-effort check).
 
 ---
@@ -221,7 +229,7 @@ Real-time collaboration is powered by WebSocket connections between the client a
 - subscribe / unsubscribe -- Join or leave folder channels (verified against investigation_members).
 - presence-update -- Report current view and entity being edited. Server broadcasts presence to other subscribers.
 - entity-change-preview -- Optimistic relay from sender to other subscribers (verified for editor access).
-- entity-change -- Server-authoritative entity changes broadcast after sync push acceptance.
+- entity-change -- Server-authoritative entity changes broadcast after sync push acceptance. An identity change is announced without its record (`data`) or title: subscribers include clients that never receive identities, and clients pull the record instead.
 - ping / pong -- Keep-alive (25-second interval).
 - access-revoked -- Sent when a user is removed from an investigation.
 - error -- Sent on malformed messages or unauthorized actions.
@@ -242,8 +250,8 @@ ThreatCaddy supports multiple interchange formats for interoperability with othe
 
 | Format | Direction | Description |
 |---|---|---|
-| JSON | Import/Export | Portable backup of 19 supported entity tables, or single-investigation export; operational sync/receipt stores and credentials are not a raw database dump |
-| CSV | Export | IOC export with configurable column selection |
+| JSON | Import/Export | Portable backup of 20 supported entity tables, or single-investigation export; operational sync/receipt stores and credentials are not a raw database dump |
+| CSV | Import/Export | IOC export with configurable column selection; identities export from the Identities view (private details only when chosen) and import through Data Import |
 | STIX 2.1 | Import/Export | Full bundle with Indicator SDOs, Vulnerability SDOs, Relationship SROs, and TLP markings using official OASIS UUIDs |
 | MISP | Import/Export | Event-level export and import with attribute type mapping |
 | Markdown | Import/Export | Individual note export; import from Markdown files via file picker (`Ctrl+O`), drag-and-drop, or PWA file handler |
@@ -315,7 +323,7 @@ Bots are granted explicit capabilities that gate what operations they can perfor
 
 | Capability | Grants |
 |---|---|
-| read_entities | Search, list, read notes/tasks/IOCs/timeline events |
+| read_entities | Search, list, read notes/tasks/IOCs/timeline events (never identities) |
 | create_entities | Create notes, tasks, IOCs, timeline events |
 | update_entities | Update existing entities |
 | post_to_feed | Post to CaddyShack social feed |
@@ -418,7 +426,7 @@ A cleanup service runs on startup and every 6 hours to enforce retention policie
 |---|---|---|
 | Notifications | 90 days | Yes (server setting) |
 | Audit log entries | 365 days | Yes (server setting) |
-| Soft-deleted entities (tombstones) | 90 days | Yes (server setting) |
+| Soft-deleted entities (tombstones) | 90 days | No (the `tombstone_retention_days` server setting is read, but no admin screen or API sets it) |
 | Sync history (`sync_changes`), including purged investigations | Not pruned | No |
 | Orphaned investigation memberships | Immediate | No |
 | Bot run history | 90 days | No |

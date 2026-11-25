@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "Link do notatki"
   },
+  "mentionMenu": {
+    "header": "Wspomnij o tożsamości"
+  },
   "slashCommands": {
     "heading1": "Nagłówek 1",
     "heading1Desc": "Duży nagłówek",

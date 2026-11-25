@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Activity, FileText, ListChecks, Clock, PenTool,
-  FolderOpen, Tag, Shield, Cloud, Database, Trash2, MessageSquare, Bot,
+  FolderOpen, Tag, Shield, Cloud, Database, Trash2, MessageSquare, Bot, Contact,
 } from 'lucide-react';
 import type { ActivityLogEntry, ActivityCategory } from '../../types';
 import { ACTIVITY_CATEGORY_LABELS } from '../../types';
@@ -32,6 +32,7 @@ const CATEGORY_ICONS: Record<ActivityCategory, typeof FileText> = {
   tag: Tag,
   ioc: Shield,
   evidence: FileText,
+  identity: Contact,
   sync: Cloud,
   data: Database,
   'agent-bridge': Bot,
@@ -39,7 +40,7 @@ const CATEGORY_ICONS: Record<ActivityCategory, typeof FileText> = {
 };
 
 const ALL_CATEGORIES: ActivityCategory[] = [
-  'note', 'task', 'timeline', 'whiteboard', 'folder', 'tag', 'ioc', 'evidence', 'sync', 'data', 'chat',
+  'note', 'task', 'timeline', 'whiteboard', 'folder', 'tag', 'ioc', 'evidence', 'identity', 'sync', 'data', 'chat',
 ];
 
 function getTimePeriod(timestamp: number): string {

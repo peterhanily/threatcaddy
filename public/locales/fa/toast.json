@@ -30,6 +30,7 @@
   },
   "import": {
     "dataImported": "{{events}} رویداد و {{iocs}} IOC وارد شد",
+    "identitiesImported": "هویت‌ها: {{created}} افزوده شد، {{updated}} به‌روزرسانی شد",
     "jsonImported": "{{notes}} یادداشت، {{tasks}} وظیفه وارد شد",
     "markdownImported": "{{count}} یادداشت از Markdown وارد شد",
     "importFailed": "ورود ناموفق بود",

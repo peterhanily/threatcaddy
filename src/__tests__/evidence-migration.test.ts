@@ -184,7 +184,7 @@ describe('v29→v32 evidence migration (non-destructive)', () => {
     await createV28DB([encrypted as unknown as Partial<Note>]);
     setEncryptionMeta({ version: 1, salt: '', wrappedKey: '', recoverySalt: '', recoveryWrappedKey: '', enabledAt: 1 });
     await db.open();
-    expect(db.verno).toBe(34);
+    expect(db.verno).toBe(35);
     expect(await db.evidenceItems.count()).toBe(0);
     await expect(runWorkspaceContentMigrations()).rejects.toThrow('Unlock');
     expect(isEncryptedEnvelope((await db.notes.get('encrypted-evidence'))?.content)).toBe(true);
@@ -368,7 +368,7 @@ describe('v29→v32 evidence migration (non-destructive)', () => {
   it('reaches structural schema version 34 before keyed content migration', async () => {
     await createV28DB([makeNote({ id: 'plain', tags: [] })]);
     await runMigration();
-    expect(db.verno).toBe(34);
+    expect(db.verno).toBe(35);
   });
 
   it('full chain: a realistic mix survives — every seeded note is still present', async () => {

@@ -29,11 +29,14 @@ download them from the team server:
 | Chat messages | Tool calls/results, image attachments and agent cycle summaries |
 
 The sync registry includes notes, tasks, investigations, tags, timeline events,
-timelines, whiteboards, standalone IOCs, chat threads and evidence items. Their
-supported shared fields include IOC/timeline comments and timeline coordinates.
-Agent actions/profiles/deployments/meetings, note/playbook/integration templates,
-installed integrations and custom slash commands are separate local entity
-tables; they are included in full portable backups, not team entity sync.
+timelines, whiteboards, standalone IOCs, chat threads, evidence items and
+identities (people, organizations, systems and accounts). Their supported shared
+fields include IOC/timeline comments and timeline coordinates. A team server from
+before identities does not store them: their changes stay on the device until the
+server is updated. Agent actions/profiles/deployments/meetings,
+note/playbook/integration templates, installed integrations and custom slash
+commands are separate local entity tables; they are included in full portable
+backups, not team entity sync.
 Unshared local investigations also require a client backup.
 
 Before **Remove Local Copy**, browser-storage clearing, or **Reset Workspace**,
@@ -43,11 +46,19 @@ unencrypted JSON, even when local encryption is enabled. Use the separate
 encrypted-backup flow when a password-protected archive is required. A
 server/PostgreSQL backup cannot recover details that were never uploaded.
 
-The export includes all 19 portable entity tables and flushes registered drafts
+The export includes all 20 portable entity tables and flushes registered drafts
 before capturing a consistent snapshot; an unsaved draft that cannot be
 persisted blocks export. Transport revisions are kept separately from portable
 content. Older sync rows with a stored server revision remain exportable without
 discarding supported local fields or authorship metadata.
+
+A backup with no identities leaves that table out, so versions of ThreatCaddy
+from before identities can still read it. A backup that contains identities
+can only be restored by a version that has them. Backups made before
+identities existed restore normally. A portable file from before then holds no
+identities, so Replace All clears them. A server or encrypted backup from before
+then leaves identities as they are, except those in an investigation that
+Replace removes because the backup does not have it.
 
 ### Hosted App: JSON Backup and a Restore Drill
 
@@ -62,7 +73,8 @@ Verify recovery in a new temporary browser profile before relying on a backup:
 2. Open the app in a separate, empty profile. Do not clear your working profile.
 3. Import the JSON backup. Use **Replace All** only in that empty profile; it
    replaces the entity types included in the file at the destination. An empty
-   list clears that type; an omitted type is preserved. The header also offers
+   list clears that type; an omitted type is preserved, except identities: a
+   backup file without them has none, so Replace All clears them. The header also offers
    **Merge** for a populated destination; back that destination up first.
 4. Compare investigation names, note and chat content, classifications, source
    associations, and any templates or whiteboard content you depend on.
@@ -197,6 +209,10 @@ describe that flow, not the plain JSON export.
 |------|-------------|
 | **Full** | Entities from the supported backup tables (or scoped to an investigation/entity) |
 | **Differential** | Snapshot differences against a verified full parent, including removed IDs; the matching full parent is required for restore |
+
+Encrypted backup payloads always list identities, even when there are none, so a
+ThreatCaddy version from before identities cannot restore a payload made after
+them. Restore it with this version or later.
 
 ### Backup Scopes
 
@@ -342,6 +358,18 @@ Backup blobs are stored on disk at `${FILE_STORAGE_PATH}/backups/<id>.enc`. The 
 ---
 
 ## 3. Database Backup (PostgreSQL)
+
+### What the Database Holds
+
+Protect the database, its dumps and its volume snapshots as you would the investigations themselves. Everything a team syncs is stored readable in PostgreSQL: local workspace encryption protects the browser's copy only. For identities this includes details marked private, such as phone numbers and home addresses:
+
+- **Current records:** in the `identities` table.
+- **History:** in every revision of a record that the sync change log (`sync_changes`) keeps. History rotation does not compact it, so a detail later removed or made private is still in earlier revisions.
+- **Deleted identities:** kept as tombstones with their details for the tombstone retention period (90 days by default).
+- **Rows removed for good:** when retention or an investigation's purge removes a row, the change log records a final copy of the whole row.
+- **Activity log:** it records identity changes by id and action, without names, and is kept for the audit log retention period (365 days by default).
+
+The audit log retention period can be changed in the admin settings. The tombstone period cannot be changed there: the server reads `tombstone_retention_days` from its settings table, but no admin screen or API sets it. A dump or volume snapshot holds all of the above, so keep it private and encrypt off-device copies.
 
 ### Docker Compose Setup
 

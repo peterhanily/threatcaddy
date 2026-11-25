@@ -2,6 +2,7 @@ import Papa from 'papaparse';
 import { nanoid } from 'nanoid';
 import { extractIOCs, mergeIOCAnalysis } from './ioc-extractor';
 import { createLabelProxy } from './i18n-labels';
+import { hasIdentityOnlyColumns, identityMappingFor, isIdentityExport, isPrivateDetailColumn, looksLikeIdentities } from './identity-import';
 import type {
   TimelineEvent,
   TimelineEventType,
@@ -23,6 +24,9 @@ export type ColumnMapping =
   | 'ioc-md5' | 'ioc-sha1' | 'ioc-sha256' | 'ioc-cve' | 'ioc-file-path'
   | 'event-title' | 'event-description' | 'event-type'
   | 'source' | 'mitre-technique' | 'confidence' | 'actor' | 'asset'
+  | 'identity-name' | 'identity-type' | 'identity-description' | 'identity-organization' | 'identity-aliases'
+  | 'identity-status' | 'identity-contact' | 'identity-detail' | 'identity-connection' | 'identity-connections'
+  | 'identity-classification' | 'identity-tags'
   | 'ignore';
 
 export interface ParseResult {
@@ -49,6 +53,8 @@ export interface ImportActions {
 export interface ImportResult {
   timelineEventsCreated: number;
   iocsExtracted: number;
+  identitiesCreated: number;
+  identitiesUpdated: number;
   summaryNoteCreated: boolean;
   errors: string[];
 }
@@ -412,6 +418,24 @@ const SCHEMA_RULES: PatternDef[] = [
 ];
 
 export function detectSchema(headers: string[]): ColumnDetection[] {
+  const detections = detectEventColumns(headers);
+  // A list of identities maps its columns to identity fields: always an Identities › Export file,
+  // and otherwise a file with Name and identity-like columns but no timestamp, IP, URL or hash
+  // columns (a log or indicator export keeps its usual detection).
+  const logLike = detections.some(detection => detection.mapping === 'timestamp' || LOG_IOC_MAPPINGS.has(detection.mapping));
+  // An email or domain column alone (a phishing-recipient list: Name, Email, Status) keeps its
+  // indicator detection unless a column only identity lists have says otherwise.
+  const indicatorList = detections.some(detection => detection.mapping === 'ioc-email' || detection.mapping === 'ioc-domain');
+  if (isIdentityExport(headers) || (!logLike && looksLikeIdentities(headers) && (!indicatorList || hasIdentityOnlyColumns(headers)))) {
+    return headers.map(column => ({ column, mapping: identityMappingFor(column), confidence: 0.8 }));
+  }
+  return detections;
+}
+
+/** Indicator columns that mark a file as a log or indicator export rather than a list of identities. */
+const LOG_IOC_MAPPINGS = new Set<ColumnMapping>(['ioc-ipv4', 'ioc-url', 'ioc-md5', 'ioc-sha1', 'ioc-sha256', 'ioc-cve', 'ioc-file-path']);
+
+function detectEventColumns(headers: string[]): ColumnDetection[] {
   const detections: ColumnDetection[] = [];
   const usedMappings = new Set<ColumnMapping>();
 
@@ -569,7 +593,13 @@ export function buildTimelineEvents(
   mappings: Map<string, ColumnMapping>,
   timelineId: string,
   folderId?: string,
+  /** Columns kept out of each event's raw data: those imported as private identity details. By
+   * default, when the rows also make identities, every detail column private by its label. */
+  omitColumns?: ReadonlySet<string>,
 ): { events: TimelineEvent[]; errors: string[] } {
+  const makesIdentities = [...mappings.values()].includes('identity-name');
+  const omitted = omitColumns ?? new Set(makesIdentities
+    ? [...mappings].filter(([column, mapping]) => mapping === 'identity-detail' && isPrivateDetailColumn(column)).map(([column]) => column) : []);
   const events: TimelineEvent[] = [];
   const errors: string[] = [];
   const now = Date.now();
@@ -612,8 +642,9 @@ export function buildTimelineEvents(
       assets.push(...row[assetCol].split(/[,;]\s*/).filter(Boolean));
     }
 
-    // Build rawData from all row values
-    const rawData = JSON.stringify(row);
+    // Build rawData from the row's values, without columns imported as private identity details
+    // (the event would otherwise keep them readable, even while screensharing).
+    const rawData = JSON.stringify(omitted.size ? Object.fromEntries(Object.entries(row).filter(([column]) => !omitted.has(column))) : row);
 
     // Run IOC extraction on description
     const allText = [description, title].filter(Boolean).join(' ');
@@ -720,6 +751,10 @@ export function buildSummaryNote(
   mappings: Map<string, ColumnMapping>,
   result: ImportResult,
   folderId?: string,
+  /** Labels private by default in the interface language, as well as in English. */
+  isPrivateLabel?: (label: string) => boolean,
+  /** Columns a person chose to import as private details, also kept out of the note. */
+  privateColumns: ReadonlySet<string> = new Set(),
 ): Note {
   const now = Date.now();
   const dateStr = new Date(now).toISOString().slice(0, 19).replace('T', ' ');
@@ -732,7 +767,11 @@ export function buildSummaryNote(
 
   // Sample rows (first 10)
   const sampleRows = parseResult.rows.slice(0, 10);
-  const sampleHeaders = parseResult.headers.slice(0, 8); // cap columns for readability
+  // Columns of private details (Phone, Home address, "… (private)") are never copied into the
+  // note, which shows them unmasked, whatever they were mapped to.
+  const sampleHeaders = parseResult.headers
+    .filter((h) => !privateColumns.has(h) && !isPrivateDetailColumn(h, isPrivateLabel))
+    .slice(0, 8); // cap columns for readability
   const headerRow = sampleHeaders.map((h) => h).join(' | ');
   const separatorRow = sampleHeaders.map(() => '---').join(' | ');
   const dataRows = sampleRows
@@ -749,6 +788,7 @@ export function buildSummaryNote(
 
 - Timeline events created: **${result.timelineEventsCreated}**
 - IOCs extracted: **${result.iocsExtracted}**
+- Identities added: **${result.identitiesCreated}**, updated: **${result.identitiesUpdated}**
 - Errors: ${result.errors.length > 0 ? result.errors.length : 'none'}
 
 ## Column Mappings
@@ -809,6 +849,18 @@ export const MAPPING_COLORS: Record<ColumnMapping, string> = {
   'ioc-sha256': '#ef4444',
   'ioc-cve': '#10b981',
   'ioc-file-path': '#64748b',
+  'identity-name': '#0ea5e9',   // sky
+  'identity-type': '#0ea5e9',
+  'identity-description': '#0ea5e9',
+  'identity-organization': '#0ea5e9',
+  'identity-aliases': '#0ea5e9',
+  'identity-status': '#0ea5e9',
+  'identity-contact': '#0ea5e9',
+  'identity-detail': '#0ea5e9',
+  'identity-connection': '#0ea5e9',
+  'identity-connections': '#0ea5e9',
+  'identity-classification': '#0ea5e9',
+  'identity-tags': '#0ea5e9',
   'ignore': '#6b7280',         // gray
 };
 
@@ -819,6 +871,9 @@ export const ALL_MAPPINGS: ColumnMapping[] = [
   'source', 'mitre-technique', 'confidence', 'actor', 'asset',
   'ioc-ipv4', 'ioc-domain', 'ioc-url', 'ioc-email',
   'ioc-md5', 'ioc-sha1', 'ioc-sha256', 'ioc-cve', 'ioc-file-path',
+  'identity-name', 'identity-type', 'identity-description', 'identity-organization', 'identity-aliases',
+  'identity-status', 'identity-contact', 'identity-detail', 'identity-connection', 'identity-connections',
+  'identity-classification', 'identity-tags',
   'ignore',
 ];
 

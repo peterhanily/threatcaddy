@@ -24,7 +24,7 @@ vi.mock('../lib/ws-client', () => ({ WSClient: class {
   onStatusChange(handler: (connected: boolean) => void) { this.status = handler; }
 } }));
 const makeAuth = () => ({ user: { id: 'analyst' }, serverUrl: 'https://first.example', connected: true, getAccessToken: vi.fn(async () => 'test-token'), setReachable: vi.fn() });
-const reloads = () => ({ notes: vi.fn(), tasks: vi.fn(), timeline: vi.fn(), timelines: vi.fn(), whiteboards: vi.fn(), standaloneIOCs: vi.fn(), evidenceItems: vi.fn(), chats: vi.fn(), folders: vi.fn(), tags: vi.fn(), onSyncPullComplete: vi.fn() });
+const reloads = () => ({ notes: vi.fn(), tasks: vi.fn(), timeline: vi.fn(), timelines: vi.fn(), whiteboards: vi.fn(), standaloneIOCs: vi.fn(), evidenceItems: vi.fn(), identities: vi.fn(), chats: vi.fn(), folders: vi.fn(), tags: vi.fn(), onSyncPullComplete: vi.fn() });
 beforeEach(() => { vi.clearAllMocks(); mocks.sockets.length = 0; mocks.apply.mockResolvedValue(undefined); mocks.resolve.mockResolvedValue(undefined); });
 
 describe('sync callback ownership', () => {

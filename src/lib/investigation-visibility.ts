@@ -21,6 +21,7 @@ export interface InvestigationVisibilityInput {
   standaloneIOCs: readonly InvestigationVisibilityEntity[];
   chatThreads: readonly InvestigationVisibilityEntity[];
   evidenceItems: readonly InvestigationVisibilityEntity[];
+  identities: readonly InvestigationVisibilityEntity[];
   maxLevel: string | null | undefined;
   effectiveLevels: string[];
   /** False until every local collection has loaded; prevents metadata flashes. */
@@ -34,7 +35,14 @@ export interface InvestigationVisibility {
   hiddenFolderIds: ReadonlySet<string>;
   isEntityVisible: (entity: InvestigationVisibilityEntity) => boolean;
   isTimelineVisible: (timeline: { id: string }) => boolean;
+  /** Investigations hidden because an identity in them is classified above the shared level (its
+   * level is set on its profile), so the hidden view can say so. */
+  hiddenByIdentities?: ReadonlySet<string>;
 }
+
+/** One function, not a new one per data change: what reads it (the identity link index) can tell
+ * that nothing about visibility changed. */
+const ALWAYS_VISIBLE = () => true;
 
 /**
  * Build one screenshare policy for investigation metadata and its contents.
@@ -49,8 +57,8 @@ export function buildInvestigationVisibility(input: InvestigationVisibilityInput
       remoteInvestigations,
       visibleFolderIds: new Set(folders.map(folder => folder.id)),
       hiddenFolderIds: new Set(),
-      isEntityVisible: () => true,
-      isTimelineVisible: () => true,
+      isEntityVisible: ALWAYS_VISIBLE,
+      isTimelineVisible: ALWAYS_VISIBLE,
     };
   }
 
@@ -109,13 +117,21 @@ export function buildInvestigationVisibility(input: InvestigationVisibilityInput
   };
 
   const collections = [input.notes, input.tasks, input.timelineEvents, input.whiteboards,
-    input.standaloneIOCs, input.chatThreads, input.evidenceItems];
+    input.standaloneIOCs, input.chatThreads, input.evidenceItems, input.identities];
+  // Identities are said to be the cause only where nothing else hides the investigation (its own
+  // level, a timeline, another item): changing their level then shows it again.
+  const byIdentities = new Set<string>();
+  const byOthers = new Set(hiddenFolderIds);
   for (const entities of collections) {
     for (const entity of entities) {
       if (!isRestricted(entity)) continue;
-      for (const folderId of linkedFolderIds(entity)) hiddenFolderIds.add(folderId);
+      for (const folderId of linkedFolderIds(entity)) {
+        hiddenFolderIds.add(folderId);
+        (entities === input.identities ? byIdentities : byOthers).add(folderId);
+      }
     }
   }
+  const hiddenByIdentities = new Set([...byIdentities].filter(folderId => !byOthers.has(folderId)));
 
   const visibleFolders = folders.filter(folder => !hiddenFolderIds.has(folder.id));
   const visibleFolderIds = new Set(visibleFolders.map(folder => folder.id));
@@ -127,6 +143,7 @@ export function buildInvestigationVisibility(input: InvestigationVisibilityInput
     remoteInvestigations: [],
     visibleFolderIds,
     hiddenFolderIds,
+    hiddenByIdentities,
     isEntityVisible: entity => !isRestricted(entity)
       && (!entity.timelineId || !hiddenTimelineIds.has(entity.timelineId))
       && [...linkedFolderIds(entity)].every(folderId => visibleFolderIds.has(folderId)),

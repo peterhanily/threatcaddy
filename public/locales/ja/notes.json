@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "ノートにリンク"
   },
+  "mentionMenu": {
+    "header": "アイデンティティをメンション"
+  },
   "slashCommands": {
     "heading1": "見出し1",
     "heading1Desc": "大きな見出し",

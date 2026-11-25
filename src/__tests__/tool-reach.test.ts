@@ -15,7 +15,8 @@ const STATIC_TOOLS = [...TOOL_DEFINITIONS, ...DELEGATION_TOOL_DEFINITIONS, ...EX
 const READ_ONLY = new Set(['search_notes', 'search_all', 'read_note', 'list_tasks', 'list_iocs', 'list_timeline_events', 'read_task',
   'read_ioc', 'read_timeline_event', 'get_investigation_summary', 'analyze_graph', 'fetch_url', 'extract_iocs', 'list_investigations',
   'get_investigation_details', 'search_across_investigations', 'compare_investigations', 'list_integrations', 'forensicate_scan',
-  'recall_knowledge', 'query_siem', 'list_folders', 'list_deployed_agents', 'list_agent_activity', 'read_soul']);
+  'recall_knowledge', 'query_siem', 'list_folders', 'list_deployed_agents', 'list_agent_activity', 'read_soul',
+  'search_identities', 'read_identity']);
 const EGRESS: Record<string, string> = { fetch_url: 'open-fetch', enrich_ioc: 'vendor', query_siem: 'configured' };
 const NEVER = new Set(['deploy_agent', 'stop_agent', 'run_agent_cycle', 'create_in_investigation', 'run_remote_command']);
 const CONTROL = new Set(['spawn_agent', 'define_specialist', 'dismiss_agent', 'reflect_on_performance']);
@@ -25,8 +26,8 @@ const INPUT: Record<string, Record<string, unknown>> = { fetch_url: { url: 'http
 beforeEach(seedAIWorkspace);
 
 describe('A-REACH-1 static classification of every tool', () => {
-  it('covers all 46 + 7 + 5 static tools', () => {
-    expect(STATIC_TOOLS).toHaveLength(58);
+  it('covers all 51 + 7 + 5 static tools', () => {
+    expect(STATIC_TOOLS).toHaveLength(63);
   });
 
   it.each(STATIC_TOOLS)('%s: write, egress, agent control and cross-case reading', async name => {

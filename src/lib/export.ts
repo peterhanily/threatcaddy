@@ -1,13 +1,13 @@
 import { db } from '../db';
-import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, EvidenceItem, ChatThread, ChatMessage, NoteTemplate, PlaybookTemplate, PlaybookStep, ExportData, TimelineExportData, TimelineEventType, ConfidenceLevel, IOCAnalysis, IOCEntry, IOCRelationship, TaskComment, NoteAnnotation, EntityComment, ChecklistItem, ToolCallRecord, ChatAttachment, AgentCycleSummary, AgentEntityRef, QuickLink, LLMProvider, IOCType, TemplateSource, PlaybookStepEntity, AgentAction, EvidenceExtractionStatus, EvidenceKind, ProductBaselineAsset, ProductBaselineMetadata, ProductBaselineSourceDocument, ProductBaselineTestFixture } from '../types';
+import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, EvidenceItem, Identity, IdentityConnection, IdentityDetail, ChatThread, ChatMessage, NoteTemplate, PlaybookTemplate, PlaybookStep, ExportData, TimelineExportData, TimelineEventType, ConfidenceLevel, IOCAnalysis, IOCEntry, IOCRelationship, TaskComment, NoteAnnotation, EntityComment, ChecklistItem, ToolCallRecord, ChatAttachment, AgentCycleSummary, AgentEntityRef, QuickLink, LLMProvider, IOCType, TemplateSource, PlaybookStepEntity, AgentAction, EvidenceExtractionStatus, EvidenceKind, ProductBaselineAsset, ProductBaselineMetadata, ProductBaselineSourceDocument, ProductBaselineTestFixture } from '../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_TYPE_LABELS } from '../types';
 import { nanoid } from 'nanoid';
 import { workspaceStorageKey } from './workspace-profiles';
-import { ENTITY_RELATIONS, mapEntityReferences, type EntityRecord } from './entity-relations';
+import { ENTITY_RELATIONS, FOLDER_CONTENT_TABLES, mapEntityReferences, type EntityRecord } from './entity-relations';
 import { withEntityDraftBarrier } from './entity-drafts';
 import { buildFullBackupPayload, portableRows, type BackupRow } from './backup-data';
 import { canonicalBackupJSON, encryptBackup, type BackupPayload } from './backup-crypto';
-import { BACKUP_TABLES, investigationOf, type BackupTable } from './backup-tables';
+import { BACKUP_TABLES, investigationOf, TABLES_ADDED_AFTER_PORTABLE_BACKUPS, type BackupTable } from './backup-tables';
 import { assertBackupSize, isBackupObject, validateBackupJSON, validateBackupQuickLinks, validatePortableTables, type PortableRow } from './backup-records';
 import { isBase64Data, isChatImageMime } from './backup-media-validation';
 import { decodePortableBackup, INVESTIGATION_EXPORT_FORMAT, PORTABLE_BACKUP_FORMAT, portableTableCounts, suspendRestoredAutomation } from './portable-backup';
@@ -16,6 +16,7 @@ import { previewRestore, restoreFullReplace, restoreMerge } from './backup-resto
 import { nextTimelineOrder } from './sync-capture-policy';
 import { findSupervisorFolder, supervisorProposalRationale } from './caddy-agent-supervisor';
 import { SUPERVISOR_ACTION_PROFILE } from './supervisor-tool-policy';
+import { IDENTITY_STATUSES } from './entity-enums';
 
 export async function exportJSON(): Promise<string> {
   const json = JSON.stringify(await portableSnapshot(false), null, 2);
@@ -41,6 +42,9 @@ async function portableSnapshot(includeConfiguration: boolean): Promise<ExportDa
   if (!includeConfiguration) {
     data.installedIntegrations = (data.installedIntegrations ?? []).map(row => ({ ...row, config: {} }));
   }
+  // Older versions refuse a file with a table they do not know; when it is empty, leave
+  // it out. A portable file without it restores as holding none (portable-backup.ts).
+  for (const name of TABLES_ADDED_AFTER_PORTABLE_BACKUPS) if (!data[name]?.length) delete data[name];
   let quickLinks: QuickLink[] | undefined;
   const stored = localStorage.getItem(workspaceStorageKey('threatcaddy-settings'));
   if (stored) {
@@ -555,6 +559,50 @@ export function sanitizeEvidenceItem(raw: unknown): EvidenceItem | null {
     archived: bool(r.archived),
     createdBy: r.createdBy != null ? str(r.createdBy) : undefined,
     updatedBy: r.updatedBy != null ? str(r.updatedBy) : undefined,
+    createdAt: num(r.createdAt, Date.now()),
+    updatedAt: num(r.updatedAt, Date.now()),
+  };
+}
+
+const IDENTITY_NAME_LIMIT = 1000;   // a name, other name, type, label or connection phrase
+const IDENTITY_TEXT_LIMIT = 20_000; // a description or a detail's value
+const IDENTITY_LIST_LIMIT = 2000;   // other names, details or connections
+export function sanitizeIdentity(raw: unknown): Identity | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const objects = (v: unknown) => (Array.isArray(v) ? v : []).filter((x): x is Record<string, unknown> => !!x && typeof x === 'object');
+  // Far above anything the forms, import or the AI tools store: a crafted row cannot make every
+  // reader's name matching work through megabytes of text.
+  const short = (v: unknown, fallback = '') => str(v, fallback).slice(0, IDENTITY_NAME_LIMIT);
+  const long = (v: unknown) => str(v).slice(0, IDENTITY_TEXT_LIMIT);
+  const detailIds = new Set<string>();
+  const details: IdentityDetail[] = objects(r.details).slice(0, IDENTITY_LIST_LIMIT).map((d, index) => {
+    // Two details with one id would be shown, hidden and removed together.
+    let id = str(d.id) || nanoid();
+    if (detailIds.has(id)) id = `${id}~${index}`;
+    detailIds.add(id);
+    // Private unless it plainly is not: a flag of another shape ("true", 1) must not publish the value.
+    return { id, label: short(d.label), value: long(d.value), ...(d.private == null || d.private === false ? {} : { private: true }) };
+  });
+  const connections: IdentityConnection[] = objects(r.connections).slice(0, IDENTITY_LIST_LIMIT)
+    .filter(c => typeof c.targetId === 'string' && c.targetId !== '').map(c => ({ targetId: str(c.targetId), label: short(c.label) }));
+  return {
+    id: str(r.id),
+    folderId: r.folderId != null ? str(r.folderId) : undefined,
+    type: short(r.type, 'person'),
+    name: short(r.name),
+    description: r.description != null ? long(r.description) : undefined,
+    aliases: strArr(r.aliases).slice(0, IDENTITY_LIST_LIMIT).map(alias => alias.slice(0, IDENTITY_NAME_LIMIT)),
+    status: IDENTITY_STATUSES.find(value => value === r.status),
+    contact: r.contact === true ? true : undefined,
+    details,
+    connections,
+    tags: strArr(r.tags),
+    clsLevel: r.clsLevel != null ? str(r.clsLevel) : undefined,
+    trashed: bool(r.trashed),
+    trashedAt: r.trashedAt != null ? num(r.trashedAt) : undefined,
+    archived: bool(r.archived),
+    ...provenance(r),
     createdAt: num(r.createdAt, Date.now()),
     updatedAt: num(r.updatedAt, Date.now()),
   };
@@ -1245,7 +1293,7 @@ async function prepareJSONImport(json: string, password?: string) {
   const sanitizers: Partial<Record<BackupTable, (value: unknown) => object | null>> = {
     notes: sanitizeNote, tasks: sanitizeTask, folders: sanitizeFolder, tags: sanitizeTag,
     timelineEvents: sanitizeTimelineEvent, timelines: sanitizeTimeline, whiteboards: sanitizeWhiteboard,
-    standaloneIOCs: sanitizeStandaloneIOC, evidenceItems: sanitizeEvidenceItem, chatThreads: sanitizeChatThread,
+    standaloneIOCs: sanitizeStandaloneIOC, evidenceItems: sanitizeEvidenceItem, identities: sanitizeIdentity, chatThreads: sanitizeChatThread,
     agentActions: sanitizeAgentAction, agentProfiles: sanitizeAgentProfile, agentDeployments: sanitizeAgentDeployment,
     agentMeetings: sanitizeAgentMeeting, noteTemplates: sanitizeNoteTemplate, playbookTemplates: sanitizePlaybookTemplate,
   };
@@ -1330,7 +1378,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
   // and no result either: a refusal can quote that input.
   const supervisorRationale = (await findSupervisorFolder())?.id === folderId ? undefined : await supervisorProposalRationale();
   return db.transaction('r', [...Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), db.tags], async () => {
-  const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards, allIOCs, allEvidenceItems, allChats, allAgentActions, allAgentDeployments, allAgentMeetings, allAgentProfiles] = await Promise.all([
+  const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards, allIOCs, allEvidenceItems, allIdentities, allChats, allAgentActions, allAgentDeployments, allAgentMeetings, allAgentProfiles] = await Promise.all([
     db.folders.get(folderId),
     db.notes.where('folderId').equals(folderId).toArray(),
     db.tasks.where('folderId').equals(folderId).toArray(),
@@ -1340,6 +1388,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     db.whiteboards.where('folderId').equals(folderId).toArray(),
     db.standaloneIOCs.where('folderId').equals(folderId).toArray(),
     db.evidenceItems.where('folderId').equals(folderId).toArray(),
+    db.identities.where('folderId').equals(folderId).toArray(),
     db.chatThreads.where('folderId').equals(folderId).toArray(),
     db.agentActions.where('investigationId').equals(folderId).toArray(),
     db.agentDeployments.where('investigationId').equals(folderId).toArray(),
@@ -1360,6 +1409,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
   for (const w of allWhiteboards) w.tags.forEach((tg) => usedTagNames.add(tg));
   for (const i of allIOCs) i.tags.forEach((tg) => usedTagNames.add(tg));
   for (const evidence of evidenceItems) evidence.tags.forEach((tg) => usedTagNames.add(tg));
+  for (const identity of allIdentities) identity.tags.forEach((tg) => usedTagNames.add(tg));
   for (const c of allChats) c.tags.forEach((tg) => usedTagNames.add(tg));
   if (folder.tags) folder.tags.forEach((t) => usedTagNames.add(t));
 
@@ -1383,6 +1433,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     whiteboards: allWhiteboards,
     standaloneIOCs: allIOCs,
     evidenceItems: evidenceItems.length > 0 ? evidenceItems : undefined,
+    identities: allIdentities.length > 0 ? allIdentities : undefined,
     chatThreads: allChats,
     agentActions: allAgentActions.length > 0 ? allAgentActions.map(action => supervisorRationale && action.agentConfigId === SUPERVISOR_ACTION_PROFILE
       ? { ...action, rationale: supervisorRationale, ...(action.status === 'executed' ? {} : { toolInput: {}, resultSummary: undefined }) } : action) : undefined,
@@ -1538,7 +1589,7 @@ export async function mergeTimelineInto(parsed: TimelineExportData, targetTimeli
 
 // --- Merge / Investigation import ---
 
-export async function importInvestigationJSON(json: string): Promise<{ folderId: string; notes: number; tasks: number; timelineEvents: number; standaloneIOCs: number; evidenceItems: number; warnings: string[] }> {
+export async function importInvestigationJSON(json: string): Promise<{ folderId: string; notes: number; tasks: number; timelineEvents: number; standaloneIOCs: number; evidenceItems: number; identities: number; warnings: string[] }> {
   if (json.length > MAX_IMPORT_SIZE) throw new Error('File too large for an investigation import');
   const data = JSON.parse(json);
   if (!data || typeof data !== 'object' || !Array.isArray(data.folders) || data.folders.length !== 1) throw new Error('An investigation export must contain exactly one folder');
@@ -1556,6 +1607,7 @@ export async function importInvestigationJSON(json: string): Promise<{ folderId:
     timelines: rows('timelines', sanitizeTimeline), whiteboards: rows('whiteboards', sanitizeWhiteboard),
     standaloneIOCs: rows('standaloneIOCs', sanitizeStandaloneIOC),
     evidenceItems: mergeEvidenceItemLists(rows('evidenceItems', sanitizeEvidenceItem) as unknown as EvidenceItem[], evidenceItemsFromNotes(allNotes)) as unknown as EntityRecord[],
+    identities: rows('identities', sanitizeIdentity),
     chatThreads: rows('chatThreads', sanitizeChatThread), agentActions: rows('agentActions', sanitizeAgentAction),
     agentProfiles: rows('agentProfiles', sanitizeAgentProfile), agentDeployments: rows('agentDeployments', sanitizeAgentDeployment),
     agentMeetings: rows('agentMeetings', sanitizeAgentMeeting),
@@ -1588,7 +1640,7 @@ export async function importInvestigationJSON(json: string): Promise<{ folderId:
       return id; // No invented IDs for records that are not in the export.
     });
     row.id = maps.get(table)?.get(entity.id) ?? entity.id;
-    if (['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'chatThreads'].includes(table)) row.folderId = folderId;
+    if ((FOLDER_CONTENT_TABLES as readonly string[]).includes(table)) row.folderId = folderId;
     const analysis = row.iocAnalysis as IOCAnalysis | undefined;
     if (analysis) for (const ioc of analysis.iocs) ioc.id = iocMap.get(ioc.id) ?? ioc.id;
     if (table === 'folders') {
@@ -1618,7 +1670,7 @@ export async function importInvestigationJSON(json: string): Promise<{ folderId:
     }
   }));
   return { folderId, notes: collections.notes.length, tasks: collections.tasks.length, timelineEvents: collections.timelineEvents.length,
-    standaloneIOCs: collections.standaloneIOCs.length, evidenceItems: collections.evidenceItems.length, warnings: [...warnings] };
+    standaloneIOCs: collections.standaloneIOCs.length, evidenceItems: collections.evidenceItems.length, identities: collections.identities.length, warnings: [...warnings] };
 }
 
 export interface MergeImportTableResult {

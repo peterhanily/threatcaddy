@@ -1,17 +1,17 @@
 /** Consistent full snapshots and verified, snapshot-based differential backups. */
 import { db } from '../db';
 import { backupFingerprint, backupStateFingerprint, canonicalBackupJSON, type BackupPayload } from './backup-crypto';
-import { BACKUP_TABLES, investigationOf, parseEntityScope, type BackupTable } from './backup-tables';
+import { BACKUP_TABLES, investigationOf, parseEntityScope, TABLES_ADDED_AFTER_PORTABLE_BACKUPS, type BackupTable } from './backup-tables';
 import { flushEntityDrafts } from './entity-drafts';
 import { validatePortableTables } from './backup-records';
 import { isSyncTable } from './sync-state';
 
 export type BackupRow = Record<string, unknown> & { id: string };
-const INVESTIGATION_TABLES: BackupTable[] = [
+export const INVESTIGATION_TABLES: readonly BackupTable[] = [
   'folders', 'notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs',
-  'evidenceItems', 'chatThreads', 'agentActions', 'agentDeployments', 'agentMeetings',
+  'evidenceItems', 'identities', 'chatThreads', 'agentActions', 'agentDeployments', 'agentMeetings',
 ];
-const SHARED_TABLES = new Set<BackupTable>(['tags', 'timelines']);
+export const SHARED_TABLES: ReadonlySet<BackupTable> = new Set<BackupTable>(['tags', 'timelines']);
 
 /** Older sync clients persisted the server revision on entity rows. Project
  * that transport-only value out without mutating IndexedDB or sanitizing away
@@ -74,16 +74,18 @@ export function buildFullBackupPayload(scope: BackupPayload['scope'], scopeId?: 
   return collectSnapshot(scope, scopeId);
 }
 
-/** A differential must start with a complete, unambiguous supported full base. */
-export function requireDifferentialBase(parent: BackupPayload, scope: BackupPayload['scope'], scopeId?: string): void {
+/** A differential must start with a complete, unambiguous supported full base. When
+ * restoring, a base made before a table existed may lack it: that chain never covered it. */
+export function requireDifferentialBase(parent: BackupPayload, scope: BackupPayload['scope'], scopeId?: string, restoring = false): void {
   if (!parent || parent.version !== 1 || parent.type !== 'full' || parent.scope !== scope || parent.scopeId !== scopeId
     || !Number.isFinite(parent.createdAt) || !parent.data || typeof parent.data !== 'object' || Array.isArray(parent.data)
     || (parent.deletedIds !== undefined && (!parent.deletedIds || typeof parent.deletedIds !== 'object'
       || Array.isArray(parent.deletedIds) || Object.values(parent.deletedIds).some(ids => !Array.isArray(ids) || ids.length)))) {
     throw new Error('Differential backup requires a full parent with the same scope.');
   }
-  const names: BackupTable[] = scope === 'all' ? [...BACKUP_TABLES] : scope === 'entity' ? [parseEntityScope(scopeId).table]
-    : [...INVESTIGATION_TABLES, 'tags', 'timelines'];
+  const names = (scope === 'all' ? [...BACKUP_TABLES] : scope === 'entity' ? [parseEntityScope(scopeId).table]
+    : [...INVESTIGATION_TABLES, 'tags', 'timelines'] as BackupTable[])
+    .filter(name => !restoring || Object.hasOwn(parent.data, name) || !TABLES_ADDED_AFTER_PORTABLE_BACKUPS.has(name));
   if (Object.keys(parent.data).length !== names.length || names.some(name => !Array.isArray(parent.data[name]))) {
     throw new Error('The parent does not contain a complete supported snapshot. Create a new full backup first.');
   }

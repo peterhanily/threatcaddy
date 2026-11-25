@@ -11,6 +11,9 @@ import { rejectRestoredAction } from './portable-backup';
 
 const RECOVERY_KEY = SYNC_RECOVERY_KEY;
 type Snapshot = Record<string, Record<string, unknown>[]>;
+/** Recovery archives restore from this database version onwards; list each store added since with its version. */
+const OLDEST_ARCHIVE_VERSION = 34;
+const STORES_ADDED_AFTER_OLDEST_ARCHIVE: Record<string, number> = { identities: 35 };
 interface RecoveryArchive { version: 1; kind: 'threatcaddy-workspace-recovery'; databaseVersion: number; data: Snapshot }
 export interface SyncRecoveryReceipt { blob: EncryptedBackupBlob; filename: string; records: number }
 const receipts = new WeakMap<SyncRecoveryReceipt, string>();
@@ -131,10 +134,13 @@ export async function restoreSyncRecovery(password: string, blob: EncryptedBacku
   if (!confirmed) throw new Error('Confirm recovery into an empty workspace first.');
   if (new TextEncoder().encode(JSON.stringify(blob)).byteLength > 512 * 1024 * 1024) throw new Error('Recovery archive exceeds 512 MiB.');
   const archive = await decryptBackup<RecoveryArchive>(password, blob).catch((cause: Error) => { throw coded(cause, 'wrongPassword'); });
-  if (archive?.version !== 1 || archive.kind !== 'threatcaddy-workspace-recovery' || archive.databaseVersion !== db.verno
-    || !archive.data || Array.isArray(archive.data) || Object.keys(archive.data).length !== db.tables.length) throw coded(new Error('Unsupported workspace recovery archive.'), 'unsupportedArchive');
+  // An archive from an earlier supported version restores without the stores added since.
+  const version = typeof archive?.databaseVersion === 'number' ? archive.databaseVersion : NaN;
+  const stores = db.tables.filter(table => (STORES_ADDED_AFTER_OLDEST_ARCHIVE[table.name] ?? 0) <= version);
+  if (archive?.version !== 1 || archive.kind !== 'threatcaddy-workspace-recovery' || !(Number.isInteger(version) && version >= OLDEST_ARCHIVE_VERSION && version <= db.verno)
+    || !archive.data || Array.isArray(archive.data) || Object.keys(archive.data).length !== stores.length) throw coded(new Error('Unsupported workspace recovery archive.'), 'unsupportedArchive');
   for (const [name, rows] of Object.entries(archive.data)) {
-    const table = db.tables.find(table => table.name === name);
+    const table = stores.find(table => table.name === name);
     if (!table || !Array.isArray(rows)) throw coded(new Error('Unsupported recovery store.'), 'unsupportedArchive');
     const key = table.schema.primKey.keyPath;
     if (typeof key !== 'string' || rows.some(row => !row || typeof row !== 'object' || Array.isArray(row) || !['string', 'number'].includes(typeof row[key]))

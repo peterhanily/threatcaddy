@@ -27,5 +27,22 @@
   "summaryNote": "Nota de resumo",
   "errorCount": "{{count}} erro(s):",
   "andMore": "... e mais {{count}}",
-  "done": "Concluído"
+  "done": "Concluído",
+  "identities.create": "Criar ou atualizar identidades",
+  "identities.noName": "(sem coluna de nome mapeada)",
+  "identities.needsInvestigation": "(escolha uma investigação)",
+  "identities.organization": "Trabalha em, para linhas sem organização",
+  "identities.noOrganization": "Não registrado",
+  "identities.privateColumn": "Privado",
+  "identities.privateColumnAria": "Importar {{column}} como detalhe privado",
+  "identities.privateHint": "Colunas de detalhe marcadas como Privado são importadas como detalhes privados, que ficam ocultos até você clicar em Mostrar e durante o compartilhamento de tela, nunca são enviados para a IA e ficam fora da exportação CSV de Identidades (a menos que você opte por incluí-los), da nota de resumo desta importação e dos eventos dela. Colunas de números de telefone, endereços postais, datas de nascimento, passaportes e números de identificação nacional já começam marcadas; verifique as demais.",
+  "identities.unrecognised": "Não reconhecido em inglês nem no idioma da interface:",
+  "identities.unrecognisedTypes": "Tipo {{values}}: mantido como escrito, como tipo personalizado.",
+  "identities.unrecognisedStatuses": "Status {{values}}: não é importado.",
+  "identities.unrecognisedContacts": "Contato {{values}}: não é importado (use sim ou não).",
+  "identities.unrecognisedPhrases": "Conexão {{values}}: mantida como escrita, por isso os organogramas não a usam.",
+  "identities.result": "Identidades",
+  "identities.updated_one": "{{count}} atualizada",
+  "identities.updated_many": "{{count}} atualizadas",
+  "identities.updated_other": "{{count}} atualizadas"
 }

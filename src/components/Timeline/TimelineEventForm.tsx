@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import type { TimelineEvent, TimelineEventType, ConfidenceLevel, Folder, Tag, IOCTarget, IOCAnalysis, IOCType, EntityComment } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { TagInput } from '../Common/TagInput';
 import { AttributionComboInput } from '../Analysis/AttributionComboInput';
+import { useIdentityLinks } from '../Identities/identity-links';
 import { IOCPanel } from '../Analysis/IOCPanel';
 import { MitreComboInput } from './MitreComboInput';
 import { EntityComments } from '../Common/EntityComments';
@@ -53,6 +54,9 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
   const [confidence, setConfidence] = useState<ConfidenceLevel>(event?.confidence || 'low');
   const [source, setSource] = useState(event?.source || '');
   const [folderId, setFolderId] = useState(event?.folderId || defaultFolderId || '');
+  // The investigation's identities, suggested for Actor after the threat actors.
+  const identityLinks = useIdentityLinks();
+  const identityNames = useMemo(() => identityLinks?.folder(folderId)?.identities.map((identity) => identity.name) ?? [], [identityLinks, folderId]);
   const [actor, setActor] = useState(event?.actor || '');
   const [description, setDescription] = useState(event?.description || '');
   const [assets, setAssets] = useState(event?.assets.join(', ') || '');
@@ -268,7 +272,9 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
           value={actor}
           onChange={setActor}
           actors={settings.attributionActors || []}
+          identities={identityLinks ? identityNames : undefined}
           placeholder={t('eventForm.actorPlaceholder')}
+          ariaLabel={t('eventForm.actor')}
         />
       </div>
 

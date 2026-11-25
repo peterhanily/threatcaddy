@@ -3,15 +3,18 @@ import cytoscape from 'cytoscape';
 // @ts-expect-error no type declarations for this package
 import coseBilkent from 'cytoscape-cose-bilkent';
 import type { GraphData } from '../../lib/graph-data';
+import { focusRings } from '../../lib/graph-focus';
 
 // Register layout extension once
 cytoscape.use(coseBilkent);
 
-export type LayoutName = 'cose-bilkent' | 'circle' | 'breadthfirst';
+export type LayoutName = 'cose-bilkent' | 'circle' | 'breadthfirst' | 'focus';
 
 interface GraphCanvasProps {
   data: GraphData;
   layout: LayoutName;
+  /** The node the Focus layout centres on. */
+  focusNodeId?: string;
   onSelectNode: (nodeId: string | null) => void;
   onDoubleClickNode: (nodeId: string) => void;
   onSelectMulti?: (nodeIds: string[]) => void;
@@ -20,8 +23,11 @@ interface GraphCanvasProps {
   fitTrigger?: number;
 }
 
-export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickNode, onSelectMulti, onLinkNodes, theme, fitTrigger }: GraphCanvasProps) {
+export default function GraphCanvas({ data, layout, focusNodeId, onSelectNode, onDoubleClickNode, onSelectMulti, onLinkNodes, theme, fitTrigger }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // The node the Focus layout centres on, read when the graph is rebuilt, and the last one laid out.
+  const focusRef = useRef(focusNodeId);
+  const focusLaidOut = useRef<string | undefined>(undefined);
   const cyRef = useRef<cytoscape.Core | null>(null);
   // Stable refs for callbacks so cytoscape event handlers always use latest versions
   const onSelectNodeRef = useRef(onSelectNode);
@@ -40,8 +46,18 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
 
   const isDark = theme === 'dark';
 
-  const getLayoutOptions = useCallback((name: LayoutName) => {
-    switch (name) {
+  const getLayoutOptions = useCallback((name: LayoutName, focus?: cytoscape.NodeSingular) => {
+    switch (focus || name !== 'focus' ? name : 'cose-bilkent') {
+      case 'focus': {
+        // Rings around the selected node (without one, the switch uses the force-directed layout).
+        if (!focus) return { name: 'cose-bilkent', animate: false };
+        const rings = focusRings(focus);
+        return {
+          name: 'concentric', animate: false, minNodeSpacing: 30,
+          concentric: (node: cytoscape.NodeSingular) => rings.get(node.id()) ?? 0,
+          levelWidth: () => 1,
+        };
+      }
       case 'cose-bilkent':
         return {
           name: 'cose-bilkent',
@@ -116,6 +132,14 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
           },
         },
         {
+          selector: 'node[type = "identity"]',
+          style: {
+            'width': 32,
+            'height': 32,
+            'shape': 'ellipse',
+          },
+        },
+        {
           selector: 'node:selected',
           style: {
             'border-width': 3,
@@ -168,6 +192,28 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
           style: {
             'line-color': '#22c55e',
             'width': 2,
+          },
+        },
+        {
+          selector: 'edge[type = "identity-connection"]',
+          style: {
+            'line-color': '#0ea5e9',
+            'target-arrow-color': '#0ea5e9',
+            'target-arrow-shape': 'triangle',
+            'arrow-scale': 0.8,
+            'label': 'data(label)',
+            'width': 2,
+          },
+        },
+        {
+          selector: 'edge[type = "identity-link"]',
+          style: {
+            'line-color': isDark ? '#38bdf8' : '#7dd3fc',
+            'line-style': 'dotted',
+            'target-arrow-color': isDark ? '#38bdf8' : '#7dd3fc',
+            'target-arrow-shape': 'triangle',
+            'arrow-scale': 0.6,
+            'label': 'data(label)',
           },
         },
         {
@@ -346,6 +392,7 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
             type: node.type,
             icon: node.icon,
             iocType: node.iocType ?? '',
+            identityType: node.identityType ?? '',
           },
         });
       }
@@ -369,9 +416,24 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
     });
 
     // Run layout
-    cy.layout(getLayoutOptions(layout)).run();
+    const focus = layout === 'focus' && focusRef.current ? cy.getElementById(focusRef.current) : undefined;
+    cy.layout(getLayoutOptions(layout, focus?.nonempty() ? focus : undefined) as cytoscape.LayoutOptions).run();
+    focusLaidOut.current = layout === 'focus' ? focusRef.current : undefined;
     cy.fit(undefined, 40);
   }, [data, layout, getLayoutOptions]);
+
+  // The Focus layout follows the selected node by moving the existing nodes: no rebuild, so the
+  // selection and its highlight stay. Clearing the selection leaves the nodes where they are.
+  useEffect(() => {
+    focusRef.current = focusNodeId;
+    const cy = cyRef.current;
+    if (!cy || layout !== 'focus' || !focusNodeId || focusLaidOut.current === focusNodeId) return;
+    const focus = cy.getElementById(focusNodeId);
+    if (focus.empty()) return;
+    cy.layout(getLayoutOptions('focus', focus) as cytoscape.LayoutOptions).run();
+    focusLaidOut.current = focusNodeId;
+    cy.fit(undefined, 40);
+  }, [layout, focusNodeId, getLayoutOptions]);
 
   // Fit-to-view on trigger change
   useEffect(() => {

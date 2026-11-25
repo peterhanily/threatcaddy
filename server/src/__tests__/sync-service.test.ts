@@ -52,7 +52,7 @@ vi.mock('../db/index.js', () => {
 vi.mock('../bots/event-bus.js', () => ({ emitEntityEvent: (...args: unknown[]) => state.events(state.inTransaction, ...args) }));
 vi.mock('../lib/logger.js', () => ({ logger: { warn: vi.fn(), error: vi.fn() } }));
 
-import { processPush, lookupEntityFolderId, pullChanges } from '../services/sync-service.js';
+import { processPush, lookupEntityFolderId, pullChanges, clientSyncTables, LEGACY_SYNC_TABLES, SYNC_TABLE_NAMES } from '../services/sync-service.js';
 
 beforeEach(() => {
   state.rows.length = 0; state.returned.length = 0;
@@ -361,5 +361,19 @@ describe('legacy sync compatibility and folder lookup', () => {
   it('represents soft-deleted catalog records as deletes', async () => {
     state.rows.push([{ id: 'tag-1', deletedAt: new Date() }], []);
     expect((await pullChanges('2000-01-01', [])).changes).toEqual([{ table: 'tags', op: 'delete', id: 'tag-1' }]);
+  });
+});
+
+describe('the tables a client reads', () => {
+  it('gives a client that lists no tables only those 2.0.4 knew, so it never meets a table it would stop at', () => {
+    expect(clientSyncTables(undefined)).toBe(LEGACY_SYNC_TABLES);
+    expect(LEGACY_SYNC_TABLES).not.toContain('identities');
+    expect(SYNC_TABLE_NAMES).toContain('identities');
+  });
+
+  it('keeps the listed tables this server syncs and ignores the rest', () => {
+    expect(clientSyncTables('identities,notes,futureTable,__proto__,constructor')).toEqual(['notes', 'identities']);
+    expect(clientSyncTables(SYNC_TABLE_NAMES.join(','))).toEqual(SYNC_TABLE_NAMES);
+    expect(clientSyncTables('')).toEqual([]);
   });
 });

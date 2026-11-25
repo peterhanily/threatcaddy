@@ -27,5 +27,21 @@
   "summaryNote": "सारांश नोट",
   "errorCount": "{{count}} त्रुटि(याँ):",
   "andMore": "... और {{count}} अधिक",
-  "done": "हो गया"
+  "done": "हो गया",
+  "identities.create": "पहचान बनाएँ या अपडेट करें",
+  "identities.noName": "(कोई नाम कॉलम मैप नहीं)",
+  "identities.needsInvestigation": "(कोई जाँच चुनें)",
+  "identities.organization": "कार्यस्थल, उन पंक्तियों के लिए जिनमें कोई संगठन नहीं है",
+  "identities.noOrganization": "दर्ज नहीं",
+  "identities.privateColumn": "निजी",
+  "identities.privateColumnAria": "{{column}} को निजी जानकारी के रूप में आयात करें",
+  "identities.privateHint": "जिन जानकारी कॉलम में निजी पर टिक लगा है, वे निजी जानकारी के रूप में आयात होते हैं: यह जानकारी तब तक छिपी रहती है जब तक आप दिखाएँ पर क्लिक न करें और स्क्रीन शेयरिंग के दौरान भी छिपी रहती है, AI को कभी नहीं भेजी जाती, और पहचान के CSV निर्यात (जब तक आप इसे शामिल करना न चुनें), इस आयात के सारांश नोट और इसके इवेंट में शामिल नहीं होती। फ़ोन नंबर, डाक पता, जन्म तिथि, पासपोर्ट और राष्ट्रीय आईडी नंबर वाले कॉलम पर शुरू से टिक लगा रहता है; बाकी कॉलम आप खुद जाँचें।",
+  "identities.unrecognised": "अंग्रेज़ी या इंटरफ़ेस की भाषा में नहीं पहचाना गया:",
+  "identities.unrecognisedTypes": "प्रकार {{values}}: जैसा लिखा है वैसा, कस्टम प्रकार के रूप में रखा जाता है।",
+  "identities.unrecognisedStatuses": "स्थिति {{values}}: आयात नहीं की जाती।",
+  "identities.unrecognisedContacts": "संपर्क {{values}}: आयात नहीं किया जाता (हाँ या नहीं का उपयोग करें)।",
+  "identities.unrecognisedPhrases": "संबंध {{values}}: जैसा लिखा है वैसा रखा जाता है, इसलिए संगठन चार्ट इसका उपयोग नहीं करते।",
+  "identities.result": "पहचान",
+  "identities.updated_one": "{{count}} अपडेट हुई",
+  "identities.updated_other": "{{count}} अपडेट हुईं"
 }

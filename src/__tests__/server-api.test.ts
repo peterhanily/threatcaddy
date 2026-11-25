@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { configureServerApi, fetchMe, syncPush, syncPull, fetchInvestigations, uploadFile, getFileUrl, updateProfile, fetchServerInfo, shareIntegrationTemplate, fetchTeamTemplates, deleteTeamTemplate } from '../lib/server-api';
+import { configureServerApi, fetchMe, syncPush, syncPull, syncSnapshot, fetchInvestigations, uploadFile, getFileUrl, updateProfile, fetchServerInfo, shareIntegrationTemplate, fetchTeamTemplates, deleteTeamTemplate } from '../lib/server-api';
+import { SYNC_TABLES } from '../lib/sync-state';
 
 // ---------------------------------------------------------------------------
 // Mock fetch globally
@@ -286,6 +287,16 @@ describe('server-api', () => {
       expect(url).toContain('/api/sync/pull?');
       expect(url).toContain('since=2024-01-01T00%3A00%3A00Z');
       expect(url).toContain('folderId=folder1');
+      // Servers leave out the tables a client does not list; older clients list none.
+      expect(new URL(url).searchParams.get('tables')?.split(',')).toEqual([...SYNC_TABLES]);
+    });
+
+    it('syncSnapshot lists the tables this client reads', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({}) });
+      await syncSnapshot('folder1');
+      const url = new URL(mockFetch.mock.calls[0][0]);
+      expect(url.pathname).toBe('/api/sync/snapshot/folder1');
+      expect(url.searchParams.get('tables')?.split(',')).toEqual([...SYNC_TABLES]);
     });
 
     it('fetchInvestigations calls GET /api/investigations', async () => {

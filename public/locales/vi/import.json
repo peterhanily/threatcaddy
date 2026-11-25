@@ -27,5 +27,21 @@
   "summaryNote": "Ghi chú tóm tắt",
   "errorCount": "{{count}} lỗi:",
   "andMore": "... và {{count}} nữa",
-  "done": "Xong"
+  "done": "Xong",
+  "identities.create": "Tạo hoặc cập nhật danh tính",
+  "identities.noName": "(không có cột tên được ánh xạ)",
+  "identities.needsInvestigation": "(chọn một cuộc điều tra)",
+  "identities.organization": "Làm việc tại, cho các hàng không ghi tổ chức",
+  "identities.noOrganization": "Chưa ghi nhận",
+  "identities.privateColumn": "Riêng tư",
+  "identities.privateColumnAria": "Nhập {{column}} dưới dạng chi tiết riêng tư",
+  "identities.privateHint": "Các cột chi tiết được đánh dấu “Riêng tư” sẽ được nhập dưới dạng chi tiết riêng tư: bị ẩn cho đến khi bạn nhấp “Hiển thị” và khi chia sẻ màn hình, không bao giờ được gửi cho AI, và không có trong bản xuất CSV Danh tính (trừ khi bạn chọn bao gồm chúng), ghi chú tóm tắt của lần nhập này cũng như các sự kiện của nó. Các cột số điện thoại, địa chỉ bưu chính, ngày sinh, hộ chiếu và số định danh quốc gia được đánh dấu sẵn từ đầu; hãy kiểm tra các cột còn lại.",
+  "identities.unrecognised": "Không nhận ra bằng tiếng Anh hay ngôn ngữ giao diện:",
+  "identities.unrecognisedTypes": "Loại {{values}}: được giữ nguyên như đã viết, dưới dạng loại tùy chỉnh.",
+  "identities.unrecognisedStatuses": "Trạng thái {{values}}: không được nhập.",
+  "identities.unrecognisedContacts": "Người liên hệ {{values}}: không được nhập (dùng có hoặc không).",
+  "identities.unrecognisedPhrases": "Mối liên kết {{values}}: được giữ nguyên như đã viết, nên sơ đồ tổ chức không dùng đến.",
+  "identities.result": "Danh tính",
+  "identities.updated_one": "Đã cập nhật {{count}}",
+  "identities.updated_other": "Đã cập nhật {{count}}"
 }

@@ -9,6 +9,10 @@ import { retainLockedChatResult, type ChatRecoveryTarget } from '../lib/locked-c
 import { postMessageOrigin } from '../lib/utils';
 import { announcedBridge, checkPairedBridge, extensionRefusal } from '../lib/extension-bridge';
 import i18n from '../i18n';
+import { truncateToolResult } from '../lib/llm-tool-execution';
+
+/** As agents cap a tool result (caddy-agent.ts). */
+const MAX_TOOL_RESULT_CHARS = 50_000;
 
 interface ToolDef {
   name: string;
@@ -296,7 +300,9 @@ export function useLLM() {
         return {
           type: 'tool_result',
           tool_use_id: toolUse.id,
-          content: result.result,
+          // What the model gets is capped as agents cap it (it is resent on each later turn of the
+          // request); the conversation keeps the whole result for its sources and previews.
+          content: truncateToolResult(result.result, MAX_TOOL_RESULT_CHARS),
           is_error: result.isError,
         };
       };

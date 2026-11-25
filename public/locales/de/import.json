@@ -27,5 +27,21 @@
   "summaryNote": "Zusammenfassungsnotiz",
   "errorCount": "{{count}} Fehler:",
   "andMore": "... und {{count}} weitere",
-  "done": "Fertig"
+  "done": "Fertig",
+  "identities.create": "Identitäten erstellen oder aktualisieren",
+  "identities.noName": "(keine Namensspalte zugeordnet)",
+  "identities.needsInvestigation": "(Untersuchung auswählen)",
+  "identities.organization": "Arbeitet bei, für Zeilen ohne Organisation",
+  "identities.noOrganization": "Nicht erfasst",
+  "identities.privateColumn": "Privat",
+  "identities.privateColumnAria": "{{column}} als privates Detail importieren",
+  "identities.privateHint": "Detailspalten mit Häkchen bei „Privat“ werden als private Details importiert: ausgeblendet, bis Sie auf „Anzeigen“ klicken, und während der Bildschirmfreigabe, nie an die KI gesendet und nicht im CSV-Export der Identitäten (sofern Sie sie nicht einschließen), der Zusammenfassungsnotiz dieses Imports oder seinen Ereignissen enthalten. Spalten für Telefonnummern, Postanschriften, Geburtsdaten, Reisepässe und nationale Ausweisnummern sind anfangs angehakt; prüfen Sie die übrigen.",
+  "identities.unrecognised": "Weder auf Englisch noch in der Sprache der Oberfläche erkannt:",
+  "identities.unrecognisedTypes": "Typ {{values}}: bleibt wie geschrieben, als eigener Typ.",
+  "identities.unrecognisedStatuses": "Status {{values}}: wird nicht importiert.",
+  "identities.unrecognisedContacts": "Kontakt {{values}}: wird nicht importiert (verwenden Sie Ja oder Nein).",
+  "identities.unrecognisedPhrases": "Verbindung {{values}}: bleibt wie geschrieben, daher verwenden Organigramme sie nicht.",
+  "identities.result": "Identitäten",
+  "identities.updated_one": "{{count}} aktualisiert",
+  "identities.updated_other": "{{count}} aktualisiert"
 }

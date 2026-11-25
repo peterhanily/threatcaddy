@@ -19,13 +19,13 @@ const remote = (folderId: string, clsLevel?: string): InvestigationSummary => ({
 const input = (overrides: Partial<InvestigationVisibilityInput> = {}): InvestigationVisibilityInput => ({
   folders: [folder('public', 'TLP:CLEAR'), folder('investigation', 'TLP:GREEN')],
   remoteInvestigations: [], notes: [], tasks: [], timelineEvents: [], whiteboards: [],
-  standaloneIOCs: [], chatThreads: [], evidenceItems: [],
+  standaloneIOCs: [], chatThreads: [], evidenceItems: [], identities: [],
   maxLevel: 'TLP:GREEN', effectiveLevels: DEFAULT_CLS_LEVELS,
   ...overrides,
 });
 
 const childCollections = [
-  'notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'evidenceItems',
+  'notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'evidenceItems', 'identities',
 ] as const;
 
 describe('buildInvestigationVisibility', () => {

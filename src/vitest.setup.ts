@@ -28,6 +28,7 @@ import trashEn from '../public/locales/en/trash.json';
 import investigationsEn from '../public/locales/en/investigations.json';
 import toastEn from '../public/locales/en/toast.json';
 import evidenceEn from '../public/locales/en/evidence.json';
+import identitiesEn from '../public/locales/en/identities.json';
 import productsEn from '../public/locales/en/products.json';
 
 const namespaces: Record<string, Record<string, unknown>> = {
@@ -38,7 +39,7 @@ const namespaces: Record<string, Record<string, unknown>> = {
   search: searchEn, activity: activityEn, whiteboard: whiteboardEn,
   tour: tourEn, playbooks: playbooksEn, import: importEn, trash: trashEn,
   investigations: investigationsEn, toast: toastEn,
-  evidence: evidenceEn, products: productsEn,
+  evidence: evidenceEn, identities: identitiesEn, products: productsEn,
 };
 
 for (const [ns, data] of Object.entries(namespaces)) {

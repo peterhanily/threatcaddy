@@ -10,6 +10,7 @@ import type {
   StandaloneIOC,
   ChatThread,
   EvidenceItem,
+  Identity,
   InvestigationDataMode,
 } from '../types';
 
@@ -21,6 +22,7 @@ export interface InvestigationData {
   iocs: StandaloneIOC[];
   chats: ChatThread[];
   evidence: EvidenceItem[];
+  identities: Identity[];
   loading: boolean;
   loadedSuccessfully: boolean;
   error: string | null;
@@ -36,6 +38,7 @@ const EMPTY: InvestigationData = {
   iocs: [],
   chats: [],
   evidence: [],
+  identities: [],
   loading: false,
   loadedSuccessfully: false,
   error: null,
@@ -54,6 +57,7 @@ export function useInvestigationData(
   const [iocs, setIOCs] = useState<StandaloneIOC[]>([]);
   const [chats, setChats] = useState<ChatThread[]>([]);
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
+  const [identities, setIdentities] = useState<Identity[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,10 +81,11 @@ export function useInvestigationData(
     setIOCs([]);
     setChats([]);
     setEvidence([]);
+    setIdentities([]);
   }, []);
 
   const loadLocal = useCallback(async (id: string, current: () => boolean) => {
-    const [n, t, e, w, i, c, ev] = await Promise.all([
+    const [n, t, e, w, i, c, ev, ids] = await Promise.all([
       db.notes.where('folderId').equals(id).toArray(),
       db.tasks.where('folderId').equals(id).toArray(),
       db.timelineEvents.where('folderId').equals(id).toArray(),
@@ -88,6 +93,7 @@ export function useInvestigationData(
       db.standaloneIOCs.where('folderId').equals(id).toArray(),
       db.chatThreads.where('folderId').equals(id).toArray(),
       db.evidenceItems.where('folderId').equals(id).toArray(),
+      db.identities.where('folderId').equals(id).toArray(),
     ]);
 
     // Filter out trashed and archived entities
@@ -103,6 +109,7 @@ export function useInvestigationData(
     setIOCs(filterActive(i));
     setChats(filterActive(c));
     setEvidence(filterActive(ev));
+    setIdentities(filterActive(ids));
   }, []);
 
   const loadRemote = useCallback(async (id: string, current: () => boolean) => {
@@ -122,6 +129,7 @@ export function useInvestigationData(
     setIOCs(filterActive((snapshot.standaloneIOCs ?? []) as unknown as StandaloneIOC[]));
     setChats(filterActive((snapshot.chatThreads ?? []) as unknown as ChatThread[]));
     setEvidence(filterActive((snapshot.evidenceItems ?? []) as unknown as EvidenceItem[]));
+    setIdentities(filterActive((snapshot.identities ?? []) as unknown as Identity[]));
   }, []);
 
   const load = useCallback(async () => {
@@ -173,6 +181,7 @@ export function useInvestigationData(
         iocs,
         chats,
         evidence,
+        identities,
         loading,
         // Scope equality invalidates readiness in the first render after navigation,
         // before the loading effect runs. A failed read is never an empty success.

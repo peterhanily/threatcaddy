@@ -54,6 +54,7 @@ const TOMBSTONE_TABLES: { name: string; table: any }[] = [
   { name: 'standaloneIOCs', table: schema.standaloneIOCs },
   { name: 'chatThreads', table: schema.chatThreads },
   { name: 'evidenceItems', table: schema.evidenceItems },
+  { name: 'identities', table: schema.identities },
 ];
 
 export async function pruneOldData(): Promise<void> {

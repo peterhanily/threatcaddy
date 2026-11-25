@@ -121,6 +121,9 @@
   "linkMenu": {
     "header": "नोट से लिंक करें"
   },
+  "mentionMenu": {
+    "header": "किसी पहचान को मेंशन करें"
+  },
   "slashCommands": {
     "heading1": "शीर्षक 1",
     "heading1Desc": "बड़ा शीर्षक",

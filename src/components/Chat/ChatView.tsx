@@ -792,7 +792,12 @@ export function ChatView({
     if (!restoreConfirmMsgId) return;
     const cps = await db.checkpoints.where('messageId').equals(restoreConfirmMsgId).toArray();
     const cp = cps.find(c => !c.restored);
-    if (!cp) return;
+    if (!cp) {
+      // Already gone (what it changed was edited or deleted since): nothing left to undo.
+      setCheckpointMessageIds(prev => { const next = new Set(prev); next.delete(restoreConfirmMsgId); return next; });
+      setRestoreConfirmMsgId(null);
+      return;
+    }
 
     let restored = false;
     try {

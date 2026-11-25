@@ -8,25 +8,26 @@ import { installEncryptionMiddleware, setSessionKey } from '../lib/encryptionMid
 import { clearEncryptionMeta, encryptionStorageKey, setEncryptionMeta } from '../lib/encryptionStore';
 import { disableSync } from '../lib/sync-state';
 import * as workspaces from '../lib/workspace-profiles';
-import { DEFAULT_CLS_LEVELS, type EvidenceItem, type Note, type NoteTemplate, type StandaloneIOC, type Task, type TimelineEvent } from '../types';
+import { DEFAULT_CLS_LEVELS, type EvidenceItem, type Identity, type Note, type NoteTemplate, type StandaloneIOC, type Task, type TimelineEvent } from '../types';
 
 const common = { folderId: 'case', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1, clsLevel: 'TLP:CLEAR' };
 const note = (id: string, extra: Partial<Note> = {}): Note => ({ ...common, id, title: id, content: `Fictional content for ${id}`, pinned: false, ...extra });
 const task = (id: string): Task => ({ ...common, id, title: id, completed: false, priority: 'none', status: 'todo', order: 0 });
 const event = (id: string): TimelineEvent => ({ ...common, id, title: id, timestamp: 0, timelineId: 'timeline', eventType: 'other', source: 'Fictional source', confidence: 'medium', linkedIOCIds: [], linkedNoteIds: [], linkedTaskIds: [], mitreAttackIds: [], assets: [], starred: false });
 const ioc = (id: string): StandaloneIOC => ({ ...common, id, type: 'domain', value: 'fictional.example', confidence: 'low' });
+const identity = (id: string, extra: Partial<Identity> = {}): Identity => ({ ...common, id, type: 'person', name: 'Fictional person', aliases: [], details: [], connections: [], ...extra });
 const evidence = (id: string): EvidenceItem => ({ ...common, id, title: id, content: 'Fictional evidence', fileName: 'fixture.txt', fileType: 'text', size: 0, extractionStatus: 'extracted', importedAt: 0, chunkIndex: 0, chunkCount: 1 });
 const snapshot = (): ProductComposerSnapshot => ({
   folder: { id: 'case', name: 'Fictional investigation', order: 0, createdAt: 0, clsLevel: 'TLP:CLEAR' },
   notes: [note('source-note')], tasks: [task('source-task')], timelineEvents: [event('source-event')],
-  iocs: [ioc('source-ioc')], evidence: [evidence('source-evidence')],
+  iocs: [ioc('source-ioc')], evidence: [evidence('source-evidence')], identities: [identity('source-identity')],
 });
 const baseline = (): NoteTemplate => ({
   id: 'baseline', name: 'Fictional baseline', category: 'Product Baseline', source: 'user', createdAt: 0, updatedAt: 0,
   content: '# Report\n\n## Findings', clsLevel: 'TLP:CLEAR',
   productBaseline: { schemaVersion: 1, kind: 'markdown', productType: 'custom', renderer: 'markdown', visualFidelity: 'structural', importedAt: 0 },
 });
-const tables = [db.notes, db.tasks, db.timelineEvents, db.standaloneIOCs, db.evidenceItems, db.folders, db.noteTemplates];
+const tables = [db.notes, db.tasks, db.timelineEvents, db.standaloneIOCs, db.evidenceItems, db.identities, db.folders, db.noteTemplates];
 const settingsKey = workspaces.workspaceStorageKey('threatcaddy-settings');
 
 async function seed(source = snapshot(), template?: NoteTemplate) {
@@ -36,6 +37,7 @@ async function seed(source = snapshot(), template?: NoteTemplate) {
   await db.timelineEvents.bulkAdd([...source.timelineEvents]);
   await db.standaloneIOCs.bulkAdd([...source.iocs]);
   await db.evidenceItems.bulkAdd([...source.evidence]);
+  await db.identities.bulkAdd([...source.identities]);
   if (template) await db.noteTemplates.add(template);
   return source;
 }
@@ -112,6 +114,17 @@ describe('atomic current-persisted product classification', () => {
     expect(candidate.content).toContain('TLP:CLEAR');
   });
 
+  it('includes identities: a reclassified or removed identity blocks the save', async () => {
+    const source = await seed();
+    let staged = prepare(source);
+    await db.identities.update('source-identity', { clsLevel: 'TLP:RED' });
+    await expect(staged.persist(staged.candidate)).rejects.toThrow('classification');
+    await db.identities.update('source-identity', { clsLevel: undefined, trashed: true });
+    staged = prepare(source);
+    await expect(staged.persist(staged.candidate)).rejects.toThrow('source was deleted');
+    expect(await db.notes.get(staged.candidate.id)).toBeUndefined();
+  });
+
   it('includes current embedded IOC classifications', async () => {
     const source = await seed();
     const { candidate, persist } = prepare(source);
@@ -141,7 +154,7 @@ describe('atomic current-persisted product classification', () => {
   it('preserves unknown original handling restrictions after the persisted label changes', async () => {
     const source = snapshot();
     source.folder.clsLevel = undefined;
-    for (const key of ['notes', 'tasks', 'timelineEvents', 'iocs', 'evidence'] as const) {
+    for (const key of ['notes', 'tasks', 'timelineEvents', 'iocs', 'evidence', 'identities'] as const) {
       for (const row of source[key]) row.clsLevel = undefined;
     }
     source.notes[0].clsLevel = 'CUSTOM RESTRICTION';
@@ -327,7 +340,7 @@ describe('asynchronous session, transaction and hierarchy fences', () => {
     localStorage.setItem(settingsKey, JSON.stringify({ tiClsLevels: levels }));
     const source = snapshot();
     source.folder.clsLevel = 'PUBLIC';
-    for (const key of ['notes', 'tasks', 'timelineEvents', 'iocs', 'evidence'] as const) for (const row of source[key]) row.clsLevel = 'INTERNAL';
+    for (const key of ['notes', 'tasks', 'timelineEvents', 'iocs', 'evidence', 'identities'] as const) for (const row of source[key]) row.clsLevel = 'INTERNAL';
     await seed(source);
     const { candidate, persist } = prepare(source, { levels, clsLevel: 'INTERNAL' });
     localStorage.setItem(settingsKey, JSON.stringify({ tiClsLevels: levels, theme: 'light' }));

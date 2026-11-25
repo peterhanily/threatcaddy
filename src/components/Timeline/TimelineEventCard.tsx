@@ -1,4 +1,5 @@
 import React from 'react';
+import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Star, FileText, ListChecks, Trash2, MapPin, Search } from 'lucide-react';
 import type { TimelineEvent } from '../../types';
@@ -7,6 +8,10 @@ import { cn, truncate, currentLocale } from '../../lib/utils';
 import { getTechniqueLabel } from '../../lib/mitre-attack';
 import { ClsBadge } from '../Common/ClsBadge';
 import { TagPills } from '../Common/TagPills';
+import { IdentityChip } from '../Identities/IdentityChip';
+
+/** Assets shown as chips on a card; the rest are counted. */
+const SHOWN_ASSETS = 3;
 
 interface TimelineEventCardProps {
   event: TimelineEvent;
@@ -28,12 +33,14 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
   onDelete,
 }: TimelineEventCardProps) {
   const { t } = useTranslation('timeline');
+  // Asset names past the first few are listed on request, so the keyboard reaches them too.
+  const [allAssets, setAllAssets] = React.useState(false);
   const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType] ?? { label: event.eventType || 'Unknown', color: '#6b7280' };
   const confidenceInfo = CONFIDENCE_LEVELS[event.confidence] ?? { label: event.confidence || 'unknown', color: '#6b7280', description: '' };
   const preview = event.description?.replace(/[#*`_[\]()>-]/g, '').trim() || '';
 
   return (
-    <div role="group" aria-label={event.title || t('eventCard.untitledEvent')}
+    <div role="group" data-focus-host aria-label={event.title || t('eventCard.untitledEvent')}
       onClick={(e) => { if (!(e.target as HTMLElement).closest('button, a, input')) onSelect(event.id); }}
       className={cn(
         'w-full text-start p-3 rounded-lg border transition-colors group',
@@ -91,7 +98,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
 
       {/* Title */}
       <h3 className="font-medium text-sm text-gray-200 truncate mt-1.5">
-        <button type="button" className="w-full text-start truncate" onClick={() => onSelect(event.id)}>{event.title || t('eventCard.untitledEvent')}</button>
+        <button type="button" data-focus-return className="w-full text-start truncate" onClick={() => onSelect(event.id)}>{event.title || t('eventCard.untitledEvent')}</button>
       </h3>
 
       {/* Description preview */}
@@ -108,9 +115,8 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
         )}
         {event.clsLevel && <ClsBadge level={event.clsLevel} />}
         {event.actor && (
-          <span className="text-[10px] px-1.5 rounded-full bg-purple-500/15 text-purple-400 truncate max-w-[100px]">
-            {event.actor}
-          </span>
+          <IdentityChip folderId={event.folderId} text={event.actor} tone="actor" role={t('eventCard.actor')}
+            source={{ kind: 'actor', id: event.id, title: event.title }} />
         )}
         {event.mitreAttackIds.length > 0 && (
           <>
@@ -152,8 +158,24 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
             <Search size={9} />{event.linkedIOCIds.length}
           </span>
         )}
-        {event.assets.length > 0 && (
-          <span className="text-[10px] text-gray-500">{t('eventCard.assetCount', { count: event.assets.length })}</span>
+        {(allAssets ? event.assets : event.assets.slice(0, SHOWN_ASSETS)).map((asset, index) => (
+          <span key={`${index}:${asset}`} data-asset className="contents">
+            <IdentityChip folderId={event.folderId} text={asset} tone="asset" role={t('eventCard.asset')}
+              source={{ kind: 'asset', id: event.id, title: event.title }} />
+          </span>
+        ))}
+        {event.assets.length > SHOWN_ASSETS && !allAssets && (
+          <button type="button" className="inline-flex min-h-6 min-w-6 items-center justify-center rounded text-[10px] text-gray-500 hover:text-gray-300 hover:underline" title={event.assets.slice(SHOWN_ASSETS).join(', ')}
+            aria-label={t('eventCard.showAllAssets', { number: event.assets.length - SHOWN_ASSETS })}
+            onClick={click => {
+              // The button goes away: focus moves to the first asset it showed (else the event's title).
+              const card = click.currentTarget.closest<HTMLElement>('[data-focus-host]');
+              flushSync(() => setAllAssets(true));
+              const shown = card?.querySelectorAll<HTMLElement>('[data-asset]')[SHOWN_ASSETS]?.querySelector<HTMLElement>('button');
+              (shown ?? card?.querySelector<HTMLElement>('[data-focus-return]'))?.focus();
+            }}>
+            {t('eventCard.moreAssets', { count: event.assets.length - SHOWN_ASSETS })}
+          </button>
         )}
         <TagPills tags={event.tags} />
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { ToolChangeSummary } from '../Common/ToolChangeSummary';
 import { Check, Shield, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { db } from '../../db';
@@ -124,6 +125,7 @@ export function ChatApprovalCard({ item, index, total, onApprove, onReject }: {
         <div className="text-xs">
           <span dir="ltr" className="font-mono font-medium text-purple">{toolUse.name}</span>
         </div>
+        <ToolChangeSummary tool={toolUse.name} input={toolUse.input as Record<string, unknown>} folderId={reach.homeFolderId} />
         {summary.length > 0 && (
           <ul className="space-y-0.5 text-xs text-text-primary">
             {summary.map((line, i) => <li key={i}>{line}</li>)}

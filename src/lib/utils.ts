@@ -45,6 +45,10 @@ export function wordCount(text: string): { words: number; chars: number } {
   };
 }
 
+/** The first `max` UTF-16 units of `text`, never ending on half of a surrogate pair (an emoji, a rare
+ * Han character): the half would be an invalid character in JSON or a model request. */
+export const sliceText = (text: string, max: number) => text.slice(0, max).replace(/[\uD800-\uDBFF]$/, '');
+
 export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';

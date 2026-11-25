@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { optionId } from './menu-ids';
 import { useTranslation } from 'react-i18next';
-import { FileText } from 'lucide-react';
+import { FileText, type LucideIcon } from 'lucide-react';
 
 const MAX_VISIBLE = 8;
 const LINE_HEIGHT = 24;
@@ -17,9 +18,14 @@ interface LinkAutocompleteMenuProps {
   position: { top: number; left: number };
   onSelect: (candidate: LinkCandidate) => void;
   menuRef: RefObject<HTMLDivElement | null>;
+  /** Defaults to linking a note. */
+  header?: string;
+  icon?: LucideIcon;
+  /** The listbox's id; the editor points `aria-controls` and `aria-activedescendant` at it. */
+  listId?: string;
 }
 
-export function LinkAutocompleteMenu({ items, activeIndex, position, onSelect, menuRef }: LinkAutocompleteMenuProps) {
+export function LinkAutocompleteMenu({ items, activeIndex, position, onSelect, menuRef, header, icon: Icon = FileText, listId }: LinkAutocompleteMenuProps) {
   const { t } = useTranslation('notes');
   const listRef = useRef<HTMLDivElement>(null);
   const [adjustedPos, setAdjustedPos] = useState<{ top: number; left: number } | null>(null);
@@ -71,13 +77,18 @@ export function LinkAutocompleteMenu({ items, activeIndex, position, onSelect, m
         maxWidth: 340,
       }}
     >
-      <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold sticky top-0 bg-gray-800">
-        {t('linkMenu.header')}
+      <div id={listId ? `${listId}-label` : undefined} className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold sticky top-0 bg-gray-800">
+        {header ?? t('linkMenu.header')}
       </div>
-      <div ref={listRef}>
+      {/* The editor keeps focus; options are announced through aria-activedescendant, so they are not tab stops. */}
+      <div ref={listRef} id={listId} role="listbox" aria-labelledby={listId ? `${listId}-label` : undefined}>
         {items.map((item, index) => (
           <button
             key={item.id}
+            id={listId ? optionId(listId, index) : undefined}
+            role="option"
+            aria-selected={index === activeIndex}
+            tabIndex={-1}
             data-index={index}
             className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-start text-sm transition-colors ${
               index === activeIndex ? 'bg-gray-700 text-gray-100' : 'text-gray-300 hover:bg-gray-700/50'
@@ -87,7 +98,7 @@ export function LinkAutocompleteMenu({ items, activeIndex, position, onSelect, m
               onSelect(item);
             }}
           >
-            <FileText size={14} className="shrink-0 text-gray-400" />
+            <Icon size={14} className="shrink-0 text-gray-400" />
             <span className="truncate">{item.title}</span>
           </button>
         ))}

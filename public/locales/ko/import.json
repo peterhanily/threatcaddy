@@ -60,5 +60,21 @@
   "summaryNote": "요약 노트",
   "errorCount": "{{count}}개 오류:",
   "andMore": "... 그리고 {{count}}개 더",
-  "done": "완료"
+  "done": "완료",
+  "identities.create": "신원 생성 또는 업데이트",
+  "identities.noName": "(이름 열 매핑 없음)",
+  "identities.needsInvestigation": "(조사를 선택하세요)",
+  "identities.organization": "근무처 (조직이 없는 행에 적용)",
+  "identities.noOrganization": "기록 없음",
+  "identities.privateColumn": "비공개",
+  "identities.privateColumnAria": "{{column}}을(를) 비공개 세부 정보로 가져오기",
+  "identities.privateHint": "비공개에 체크한 세부 정보 열은 비공개 세부 정보로 가져옵니다. 표시를 클릭하기 전까지, 그리고 화면 공유 중에는 숨겨지고, AI로 전송되지 않으며, 신원 CSV 내보내기(포함하도록 선택한 경우 제외), 이 가져오기의 요약 노트 및 해당 이벤트에서 제외됩니다. 전화번호, 우편 주소, 생년월일, 여권, 국가 ID 번호 열은 처음부터 체크되어 있습니다. 나머지 열은 직접 확인하세요.",
+  "identities.unrecognised": "영어나 인터페이스 언어로 인식되지 않음:",
+  "identities.unrecognisedTypes": "유형 {{values}}: 적힌 그대로 사용자 지정 유형으로 유지됩니다.",
+  "identities.unrecognisedStatuses": "상태 {{values}}: 가져오지 않습니다.",
+  "identities.unrecognisedContacts": "연락 담당자 {{values}}: 가져오지 않습니다(예 또는 아니오를 사용하세요).",
+  "identities.unrecognisedPhrases": "연결 {{values}}: 적힌 그대로 유지되므로 조직도에서 사용되지 않습니다.",
+  "identities.result": "신원",
+  "identities.updated_one": "{{count}}개 업데이트됨",
+  "identities.updated_other": "{{count}}개 업데이트됨"
 }

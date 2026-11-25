@@ -162,7 +162,7 @@ the release, so expose this route only to monitoring systems.
 ```json
 {
   "status": "ok",
-  "version": "2.0.4"
+  "version": "2.1.0"
 }
 ```
 
@@ -170,7 +170,7 @@ the release, so expose this route only to monitoring systems.
 ```json
 {
   "status": "degraded",
-  "version": "2.0.4"
+  "version": "2.1.0"
 }
 ```
 
@@ -357,9 +357,9 @@ Push entity changes to the server. Requires `admin` or `analyst`; each change is
 }
 ```
 
-The UUID above is illustrative; use the generation returned by this server. A batch accepts at most 500 changes and 16 MiB of JSON. Duplicate table/entity pairs and invalid fields return bounded `400 VALIDATION_FAILED` errors before writes; an oversized body returns `413 PAYLOAD_TOO_LARGE`. Empty batches remain valid. Structural limits also bound dictionary width, nested collections and traversal; see [verification](development-verification.md#request-validation-resource-regression).
+The UUID above is illustrative; use the generation returned by this server. A batch accepts at most 500 changes and 16 MiB of JSON. Duplicate table/entity pairs and an invalid request shape return bounded `400 VALIDATION_FAILED` errors before writes. A field the server refuses for one change (an identity field of the wrong shape, an unknown IOC type, an invalid evidence preview) comes back in the `200` response as that change's `rejected` result with a `reason`, and the rest of the batch is applied. A change that would leave the row as it is comes back `accepted` with `unchanged: true` and no new revision; an oversized body returns `413 PAYLOAD_TOO_LARGE`. Empty batches remain valid. Structural limits also bound dictionary width, nested collections and traversal; see [verification](development-verification.md#request-validation-resource-regression).
 
-**Supported tables:** `folders`, `notes`, `tasks`, `timelineEvents`, `whiteboards`, `standaloneIOCs`, `chatThreads`, `evidenceItems`, `tags`, `timelines` (last two are global, not folder-scoped).
+**Supported tables:** `folders`, `notes`, `tasks`, `timelineEvents`, `whiteboards`, `standaloneIOCs`, `chatThreads`, `evidenceItems`, `identities`, `tags`, `timelines` (last two are global, not folder-scoped). Bots receive no events for `identities`.
 
 A changed history generation returns `409 SYNC_CURSOR_RESET`. Preserve an encrypted archive and follow [sync recovery](../server/docs/sync-recovery.md); do not discard local edits or guess a new cursor.
 
@@ -375,7 +375,7 @@ A changed history generation returns `409 SYNC_CURSOR_RESET`. Preserve an encryp
 
 ---
 
-#### `GET /api/sync/pull?cursor={cursor}&generation={uuid}&folderId={id}`
+#### `GET /api/sync/pull?cursor={cursor}&generation={uuid}&tables={names}&folderId={id}`
 
 Pull a bounded page of authorized changes. Start with `cursor=0` and no generation to discover the current history. Keep `cursor` as a decimal string, retain the returned `generation`, and continue while `hasMore` is true. Without `folderId`, the page covers visible investigations and authorized global entities.
 
@@ -386,14 +386,15 @@ Pull a bounded page of authorized changes. Start with `cursor=0` and no generati
 | `limit` | No | 1–1000 changes; default 200 |
 | `folderId` | No | Scope to a single folder (requires viewer access) |
 | `metadataOnly` | No | `true` requests metadata without content bodies |
+| `tables` | No | Comma-separated tables this client reads. Without it, the server sends only the ten tables clients synced before identities (every table except `identities`), because those clients stop a pull at a table they do not know. Unknown names are ignored. |
 
-The response contains `changes`, `cursor`, `generation`, `hasMore` and `serverTimestamp`. Changed history or a cursor ahead of the server returns `409 SYNC_CURSOR_RESET`. The deprecated `since` form performs a full visible resync; its timestamp is not an incremental lower bound. The [OpenAPI schema](api-reference.yml) describes both response forms.
+The response contains `changes`, `cursor`, `generation`, `hasMore`, `serverTimestamp` and `tables`, the tables this server syncs. A server that leaves `tables` out (2.0.4 and earlier) syncs only the ten older tables; clients keep changes to other tables on the device until it is updated. Changed history or a cursor ahead of the server returns `409 SYNC_CURSOR_RESET`. The deprecated `since` form performs a full visible resync; its timestamp is not an incremental lower bound. The [OpenAPI schema](api-reference.yml) describes both response forms.
 
 ---
 
 #### `GET /api/sync/snapshot/{folderId}`
 
-Returns a full snapshot of all entities in a folder. Requires viewer access.
+Returns a full snapshot of all entities in a folder. Requires viewer access. The optional `tables` parameter works as for pull; without it, the snapshot holds only the ten older tables.
 
 ---
 
@@ -477,7 +478,7 @@ Invite a member by email. **Owner only.**
 
 #### `DELETE /api/investigations/:id`
 
-Permanently delete an investigation and all its content. **Owner only.** Deletes notes, tasks, timeline events, whiteboards, IOCs, chat threads, posts, files, notifications, and memberships. The server's sync history, audit entries and database backups still hold earlier copies; the investigation ID cannot be re-created afterwards.
+Permanently delete an investigation and all its content. **Owner only.** Deletes notes, tasks, timeline events, whiteboards, IOCs, chat threads, evidence items, identities, posts, files, notifications, and memberships. The server's sync history, audit entries and database backups still hold earlier copies; the investigation ID cannot be re-created afterwards.
 
 ---
 
@@ -1238,7 +1239,7 @@ List all investigations with creator info and member counts.
 
 ##### `GET /admin/api/investigations/:id/detail`
 
-Detailed view: investigation metadata, members, and entity counts (notes, tasks, timeline events, whiteboards, IOCs, chat threads, files).
+Detailed view: investigation metadata, members, and entity counts (notes, tasks, timeline events, whiteboards, IOCs, chat threads, files, evidence items, identities).
 
 ##### `PATCH /admin/api/investigations/:id`
 

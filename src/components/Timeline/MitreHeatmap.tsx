@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MITRE_TACTICS, MITRE_TECHNIQUES, getParentTechniqueId, confidenceToRank } from '../../lib/mitre-attack';
 import type { TimelineEvent } from '../../types';
+import { reportGroup } from '../../lib/identity-match';
+import { useIdentityLinks } from '../Identities/identity-links';
 
 export type HeatmapColorMode = 'count' | 'confidence' | 'actors';
 
@@ -51,6 +53,7 @@ function getCellColor(tech: TechData, mode: HeatmapColorMode, maxCount: number, 
 
 export function MitreHeatmap({ events, colorMode, onTechniqueClick }: MitreHeatmapProps) {
   const { t } = useTranslation('timeline');
+  const identityLinks = useIdentityLinks();
   const { columns, maxCount, maxActorCount, stats } = useMemo(() => {
     // Build maps: parentTechniqueId → aggregated data
     const countMap = new Map<string, Set<string>>();
@@ -73,10 +76,11 @@ export function MitreHeatmap({ events, colorMode, onTechniqueClick }: MitreHeatm
         if (rank > prev) confMap.set(parent, rank);
 
         // Actor map
+        // Actors are counted once per identity they name (other spellings included).
         if (ev.actor) {
           let actSet = actorMap.get(parent);
           if (!actSet) { actSet = new Set(); actorMap.set(parent, actSet); }
-          actSet.add(ev.actor);
+          actSet.add(reportGroup(identityLinks?.linkFor(ev.folderId, ev.actor), ev.actor).key);
         }
       }
     }
@@ -117,7 +121,7 @@ export function MitreHeatmap({ events, colorMode, onTechniqueClick }: MitreHeatm
         tacticsWithCoverage: tacticsHit.size,
       },
     };
-  }, [events]);
+  }, [events, identityLinks]);
 
   // Legend configuration per mode
   const legendLabel = colorMode === 'count' ? t('view.colorModeEvents') : colorMode === 'confidence' ? t('view.colorModeConfidence') : t('view.colorModeActors');

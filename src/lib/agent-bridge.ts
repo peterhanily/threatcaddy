@@ -15,7 +15,7 @@
 
 import { executeTool } from './llm-tools';
 import { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
-import { AGENT_NEVER_TOOLS, EXPLICIT_ONLY_TOOLS, isEgressToolName } from './caddy-agent-policy';
+import { AGENT_NEVER_TOOLS, EXPLICIT_ONLY_TOOLS, IDENTITY_TOOLS, isEgressToolName } from './caddy-agent-policy';
 import { isFolderLocalOnly, isShareableFolder } from './ai-scope';
 import { workspaceStorageKey } from './workspace-profiles';
 import { db } from '../db';
@@ -44,9 +44,10 @@ let activeFolderId: string | undefined;
 let bridgeNonce: string | undefined;
 
 /** In-scope tools only; the dispatcher's bridge surface enforces the rest.
- * Network tools are left out because the bridge surface refuses every call. */
-const BRIDGE_TOOLS: ReadonlySet<string> = new Set(TOOL_DEFINITIONS.map(t => t.name)
-  .filter(name => !AGENT_NEVER_TOOLS.has(name) && !EXPLICIT_ONLY_TOOLS.has(name) && !isEgressToolName(name)));
+ * Network tools are left out because the bridge surface refuses every call. Identity tools are
+ * left out: the bridge runs writes without asking, and identities hold personal data. */
+export const BRIDGE_TOOLS: ReadonlySet<string> = new Set(TOOL_DEFINITIONS.map(t => t.name)
+  .filter(name => !AGENT_NEVER_TOOLS.has(name) && !EXPLICIT_ONLY_TOOLS.has(name) && !isEgressToolName(name) && !IDENTITY_TOOLS.has(name)));
 
 /** Read at call time, like the dispatcher reads settings. */
 function isBridgeEnabled(): boolean {

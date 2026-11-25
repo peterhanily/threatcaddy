@@ -31,7 +31,7 @@ export interface ProductComposerProps {
   suspended?: boolean;
 }
 
-const sourceKinds: ProductComposerSourceKind[] = ['notes', 'tasks', 'timeline', 'iocs', 'evidence'];
+const sourceKinds: ProductComposerSourceKind[] = ['notes', 'tasks', 'timeline', 'iocs', 'evidence', 'identities'];
 const control = 'w-full min-w-0 rounded border border-gray-700 bg-gray-800 px-2 py-2 text-sm text-gray-100 disabled:opacity-50';
 const button = 'min-h-11 md:min-h-9 rounded border border-gray-700 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-800 disabled:opacity-40';
 
@@ -127,7 +127,7 @@ function ProductComposerSession({ snapshot, baselines, initialBaselineId, effect
     if (initializationError) return [];
     const rows = sourceKind === 'timeline' ? snapshot.timelineEvents : snapshot[sourceKind];
     return rows.filter(row => row.folderId === snapshot.folder.id && !row.trashed && !row.archived)
-      .map(row => ({ id: row.id, label: 'value' in row ? row.value : row.title }));
+      .map(row => ({ id: row.id, label: 'value' in row ? row.value : 'name' in row ? row.name : row.title }));
   }, [snapshot, sourceKind, initializationError]);
   const target = draft.sections.find(section => section.id === targetId) ?? draft.sections[0];
   const markdown = useMemo(() => {

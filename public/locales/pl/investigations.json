@@ -145,6 +145,8 @@
   "card.entity.events": "Zdarzenia",
   "card.entity.whiteboards": "Tablice",
   "card.entity.chats": "Czaty",
+  "card.entity.evidence": "Dowody",
+  "card.entity.identities": "Tożsamości",
   "card.members_few": "{{count}} członków",
   "card.members_many": "{{count}} członków",
   "firstRun.title": "Od sprawy do raportu",
