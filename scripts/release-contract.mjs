@@ -225,3 +225,44 @@ export async function waitForRelease(site, files, {
   }
   throw new ReleaseContractError(`Publication did not converge to the verified artifact within ${timeoutMs}ms`);
 }
+
+/** After the critical files match, wait until every other file of the artifact is served
+ * with its exact bytes: the CDN can answer 503 for a file for some seconds after a
+ * deployment, which would fail the browser stage. Retries availability only; a wrong
+ * body that is served with status 200 after the deadline is still a failure.
+ */
+export async function waitForFiles(site, files, {
+  timeoutMs = 180_000, intervalMs = 5_000, concurrency = 4, fetchImpl = fetch, now = Date.now, sleep = delay, onAttempt = () => {},
+} = {}) {
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 600_000 || !Number.isInteger(intervalMs) || intervalMs < 1
+    || !Number.isInteger(concurrency) || concurrency < 1) {
+    throw new ReleaseContractError('Invalid propagation deadline or interval');
+  }
+  const deadline = now() + timeoutMs;
+  // `.nojekyll` only configures the host; the critical files were compared by waitForRelease.
+  let pending = [...files.keys()].filter(path => path !== '.nojekyll' && !CRITICAL_FILES.includes(path)).sort();
+  const total = pending.length;
+  let attempt = 0;
+  while (now() < deadline) {
+    const failed = [];
+    for (let index = 0; index < pending.length && now() < deadline; index += concurrency) {
+      await Promise.all(pending.slice(index, index + concurrency).map(async path => {
+        try {
+          const result = await fetchArtifact(new URL(path, site).href, files.get(path), {
+            fetchImpl, timeoutMs: Math.max(1, Math.min(15_000, deadline - now())),
+          });
+          if (!result.matches) failed.push({ path, status: result.status, ...(result.error ? { error: result.error } : {}) });
+        } catch (error) {
+          if (error instanceof ReleaseContractError) throw error;
+          failed.push({ path, error: error.message });
+        }
+      }));
+    }
+    failed.sort((a, b) => a.path.localeCompare(b.path));
+    onAttempt({ attempt: ++attempt, total, failed });
+    if (now() <= deadline && failed.length === 0) return total;
+    pending = failed.map(file => file.path);
+    if (now() < deadline) await sleep(Math.min(intervalMs, deadline - now()));
+  }
+  throw new ReleaseContractError(`${pending.length} of ${total} published files were not served as verified within ${timeoutMs}ms (first: ${pending[0]})`);
+}

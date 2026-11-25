@@ -8,7 +8,7 @@ import { promisify } from 'node:util';
 import {
   CRITICAL_FILES, OFFLINE_PROBE_PATH, ReleaseContractError, artifactMember,
   expectedOfflineFailure, fetchArtifact, loadVerifiedArtifact, requestPolicy,
-  sha256, validateArchiveListing, validateSiteURL, validateSourceSHA, waitForRelease,
+  sha256, validateArchiveListing, validateSiteURL, validateSourceSHA, waitForFiles, waitForRelease,
 } from './release-contract.mjs';
 
 const sourceSHA = 'a'.repeat(40);
@@ -198,4 +198,28 @@ test('network errors and unsuccessful status retry only until the deadline', asy
     return new Response('not found', { status: 404 });
   } })), /did not converge/);
   assert.equal(calls, 9);
+});
+
+test('every other published file is retried until it is served with its exact bytes', async () => {
+  const all = new Map([...files, ['assets/app.js', { hash: sha256(Buffer.from('assets/app.js')), size: 13 }],
+    ['locales/en/common.json', { hash: sha256(Buffer.from('locales/en/common.json')), size: 22 }], ['.nojekyll', { hash: sha256(Buffer.from('')), size: 0 }]]);
+  const requested = [];
+  const observations = [];
+  const served = await waitForFiles(site, all, clockOptions({
+    fetchImpl: async url => {
+      const path = new URL(url).pathname.slice(1);
+      requested.push(path);
+      return requested.length === 1 ? new Response('busy', { status: 503 }) : new Response(path);
+    }, onAttempt: result => observations.push(result),
+  }));
+  assert.equal(served, 2);
+  // The critical files and .nojekyll are not requested; only the file that failed is asked again.
+  assert.deepEqual(requested, ['assets/app.js', 'locales/en/common.json', 'assets/app.js']);
+  assert.deepEqual(observations.map(result => result.failed), [[{ path: 'assets/app.js', status: 503 }], []]);
+
+  await assert.rejects(waitForFiles(site, all, clockOptions({
+    fetchImpl: async url => new Response(new URL(url).pathname.endsWith('app.js') ? 'other bytes' : new URL(url).pathname.slice(1)),
+  })), /1 of 2 published files were not served as verified within 30ms \(first: assets\/app\.js\)/);
+  await assert.rejects(waitForFiles(site, all, clockOptions({ fetchImpl: async () => new Response('', { status: 301 }) })), /must not redirect/);
+  await assert.rejects(waitForFiles(site, all, { concurrency: 0 }), /Invalid propagation/);
 });
