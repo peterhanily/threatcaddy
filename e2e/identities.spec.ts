@@ -544,11 +544,13 @@ test('draws a Latin name in its own order in a right-to-left interface', async (
     }
     return out;
   }, text);
-  // In the list row and the profile heading.
-  await page.locator('[data-identity-row="ghost"]').click();
-  expect(await order('@ghost_ledger')).toEqual(['ok', 'ok']);
-  await page.locator('[data-identity-row="acme"]').click();
-  expect(await order('Acme, Inc.')).toEqual(['ok', 'ok']);
+  // In the list row, the profile heading and the sentences that name it: every one in order.
+  for (const [row, name] of [['ghost', '@ghost_ledger'], ['acme', 'Acme, Inc.']]) {
+    await page.locator(`[data-identity-row="${row}"]`).click();
+    const drawn = await order(name);
+    expect(drawn.length, name).toBeGreaterThanOrEqual(2);
+    expect(drawn.every(result => result === 'ok'), name).toBe(true);
+  }
 });
 
 test('fits long Russian card labels, and the German header on a phone', async ({ page }) => {
