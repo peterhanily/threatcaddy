@@ -84,6 +84,16 @@ describe('a private detail', () => {
     return <IdentityProfile identity={identity} byId={new Map([[identity.id, identity]])} sameInvestigation={[identity]} everywhere={[identity]} folders={folders}
       showInvestigation={false} readOnly={false} screensharing={screensharing} labels={labels} onUpdate={vi.fn(async () => {})} onEdit={vi.fn()} onOpen={vi.fn()} onOpenChart={vi.fn()} />;
   }
+  it('isolates names inside sentences (a right-to-left interface keeps "Acme, Inc." in order)', () => {
+    const acme = make('acme', 'Acme, Inc.', { type: 'organization' });
+    view([acme], { selectRequest: { id: 'acme', request: 1 } });
+    // The name, in its own <bdi>, inside each sentence that names it.
+    expect([...document.querySelectorAll('bdi')].filter(element => element.textContent === 'Acme, Inc.').map(element => element.parentElement?.textContent)).toEqual([
+      'Nobody yet. When you add a person, choose Acme, Inc. under Works at.',
+      'Nothing on the timeline, in notes or in IOCs names Acme, Inc. yet.',
+    ]);
+  });
+
   it('is read out when shown, and not while screensharing masks every value', async () => {
     const dana = make('dana', 'Dana Okafor', { details: [{ id: 'p', label: 'Phone', value: '+44 7700 900123', private: true }] });
     const { rerender } = render(<ToastProvider><Profile identity={dana} screensharing={false} /></ToastProvider>);
