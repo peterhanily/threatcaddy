@@ -539,6 +539,7 @@ const AppInner = memo(function AppInner({
   useEffect(() => {
     reportPresence(selectedFolderId ?? null, showSettings ? 'settings' : activeView);
   }, [reportPresence, selectedFolderId, showSettings, activeView]);
+  const presenceUsers = useMemo(() => (screenshareMaxLevel ? [] : presenceFor(selectedFolderId)), [presenceFor, screenshareMaxLevel, selectedFolderId]);
   const editingFolder = folders.find(folder => folder.id === editingFolderId);
   const timelines = useMemo(() => allTimelines.filter(visibility.isTimelineVisible), [allTimelines, visibility]);
   const tags = useMemo(() => {
@@ -1780,7 +1781,7 @@ const AppInner = memo(function AppInner({
             onQuickLoad={handleQuickLoad}
             onStartTour={() => tour.start(activeView)}
             effectiveClsLevels={effectiveClsLevels}
-            presenceUsers={screenshareMaxLevel ? [] : presenceFor(selectedFolderId)}
+            presenceUsers={presenceUsers}
             addToast={addToast}
           />
           </ErrorBoundary>

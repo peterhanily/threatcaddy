@@ -174,21 +174,44 @@ export class WSClient {
    * while the page is visible; the server drops a person 30 seconds after the last one.
    */
   setPresence(folderId: string | null, view: string) {
-    const changed = this.presence?.folderId !== (folderId ?? undefined) || this.presence?.view !== view;
+    const previous = this.presence;
+    const changed = previous?.folderId !== (folderId ?? undefined) || previous?.view !== view;
     this.presence = folderId ? { folderId, view } : null;
+    // Say so when leaving an investigation; a server that does not know the message forgets after 30 seconds.
+    if (previous && previous.folderId !== folderId && this.canSendPresence(previous.folderId)) {
+      this.send({ type: 'presence-leave', folderId: previous.folderId });
+    }
     if (this.presence && !this.presenceTimer) {
       this.presenceTimer = setInterval(() => {
         if (typeof document === 'undefined' || !document.hidden) this.sendPresence();
       }, PRESENCE_INTERVAL_MS);
-    } else if (!this.presence && this.presenceTimer) {
-      clearInterval(this.presenceTimer);
-      this.presenceTimer = null;
+      if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisible);
+    } else if (!this.presence) {
+      this.stopPresence();
     }
     if (changed) this.sendPresence();
   }
 
+  /** Back in front of the page: do not wait for the next 15-second update. */
+  private onVisible = () => {
+    if (!document.hidden) this.sendPresence();
+  };
+
+  private stopPresence() {
+    if (this.presenceTimer) {
+      clearInterval(this.presenceTimer);
+      this.presenceTimer = null;
+    }
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.onVisible);
+  }
+
+  /** Only for an investigation this connection is subscribed to, and that the server has confirmed. */
+  private canSendPresence(folderId: string) {
+    return this.authenticated && this.subscribed.has(folderId) && this.wanted.has(folderId) && this.presenceReady.has(folderId);
+  }
+
   private sendPresence() {
-    if (!this.presence || !this.authenticated || !this.presenceReady.has(this.presence.folderId)) return;
+    if (!this.presence || !this.canSendPresence(this.presence.folderId)) return;
     this.send({ type: 'presence-update', folderId: this.presence.folderId, view: this.presence.view });
   }
 
@@ -225,10 +248,7 @@ export class WSClient {
       clearTimeout(this.subscriptionTimer);
       this.subscriptionTimer = null;
     }
-    if (this.presenceTimer) {
-      clearInterval(this.presenceTimer);
-      this.presenceTimer = null;
-    }
+    this.stopPresence();
     this.authenticated = false;
     this.connection = null;
     if (this.ws) {

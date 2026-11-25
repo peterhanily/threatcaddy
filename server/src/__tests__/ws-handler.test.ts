@@ -312,6 +312,22 @@ describe('WebSocket Handler', () => {
     const got = (ws: import('hono/ws').WSContext, message: unknown) =>
       (ws.send as ReturnType<typeof vi.fn>).mock.calls.some(([sent]) => sent === JSON.stringify(message));
 
+    it('forgets a person who says they left, and tells the others at once', async () => {
+      const dana = await connect({ ...TEST_USER, id: 'dana' });
+      const omar = await connect({ ...TEST_USER, id: 'omar' });
+      const broadcasts = (ws: import('hono/ws').WSContext) => (ws.send as ReturnType<typeof vi.fn>).mock.calls
+        .filter(([message]) => JSON.parse(String(message)).type === 'presence').length;
+      mockRemovePresence.mockClear();
+      // Not for an investigation this connection is not subscribed to.
+      await handleWSMessage(dana.ws, JSON.stringify({ type: 'presence-leave', folderId: 'folder-2' }));
+      expect(mockRemovePresence).not.toHaveBeenCalled();
+      const before = broadcasts(omar.ws);
+      await handleWSMessage(dana.ws, JSON.stringify({ type: 'presence-leave', folderId: 'folder-1' }));
+      expect(mockRemovePresence).toHaveBeenCalledWith('folder-1', 'dana');
+      expect(broadcasts(omar.ws)).toBe(before + 1);
+      for (const { ws } of [dana, omar]) handleWSClose(ws);
+    });
+
     it('skips only the pushing connection when the push names it, and the whole author otherwise', async () => {
       const laptop = await connect(TEST_USER);
       const phone = await connect(TEST_USER);

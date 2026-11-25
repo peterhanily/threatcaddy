@@ -39,6 +39,8 @@ interface ReloadFns {
   onSyncPullComplete?: () => void;
 }
 
+const OWN_CHANGE_DELAY_MS = 1500;
+
 /**
  * Manages server sync engine, WebSocket connection, presence, and conflict state.
  * Extracted from App.tsx to isolate sync concerns.
@@ -77,6 +79,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
     const current = () => active && activeScope.current === scope;
     const { serverUrl, connected, userId } = scope;
     let stopFolderWatch: (() => void) | null = null;
+    const ownChangeTimers = new Set<ReturnType<typeof setTimeout>>();
     const currentAuth = callbacks.current.auth;
     setStateScope(scope);
     setPresenceByFolder({});
@@ -126,7 +129,14 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
           syncEngine.setWSClient(ws);
           ws.on('entity-change', (msg) => {
             if (!current()) return;
-            const { table, op, entityId, data } = msg as { table: string; op: 'put' | 'delete'; entityId: string; data?: Record<string, unknown> };
+            const { table, op, entityId, data, updatedBy } = msg as { table: string; op: 'put' | 'delete'; entityId: string; data?: Record<string, unknown>; updatedBy?: string };
+            if (updatedBy && updatedBy === userId) {
+              // This person's change from another device or tab. A tab of the same browser shares the
+              // outgoing queue, and the server announces before the pushing tab has its answer: wait
+              // until that tab has cleared the queue, so this one does not send the same rows again.
+              ownChangeTimers.add(setTimeout(() => { if (current()) void syncEngine.sync(); }, OWN_CHANGE_DELAY_MS));
+              return;
+            }
             if (table && op && entityId) {
               syncEngine.applyRemoteChange(table, op, entityId, data).catch(() => {
                 if (current()) syncEngine.sync();
@@ -138,7 +148,9 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
           ws.on('presence', (msg) => {
             const { folderId, users } = msg as { folderId?: unknown; users?: unknown };
             if (!current() || typeof folderId !== 'string') return;
-            setPresenceByFolder(previous => ({ ...previous, [folderId]: Array.isArray(users) ? users as PresenceUser[] : [] }));
+            const list = Array.isArray(users) ? users as PresenceUser[] : [];
+            // The server repeats the list at every member's 15-second update: keep the state when nothing changed.
+            setPresenceByFolder(previous => (JSON.stringify(previous[folderId] ?? []) === JSON.stringify(list) ? previous : { ...previous, [folderId]: list }));
           });
           ws.setPresence(presenceTarget.current.folderId, presenceTarget.current.view);
           ws.on('notification', () => {
@@ -183,6 +195,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
     return () => {
       active = false;
       stopFolderWatch?.();
+      for (const timer of ownChangeTimers) clearTimeout(timer);
       syncEngine.stop();
       syncEngine.setWSClient(null);
       if (wsClientRef.current) {

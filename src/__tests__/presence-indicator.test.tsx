@@ -19,4 +19,11 @@ describe('PresenceIndicator', () => {
     // A view this version does not know is not shown as raw text.
     expect(screen.getByText('Li').parentElement).toHaveTextContent(/^Li$/);
   });
+
+  it('does not break on a view named like an object member, which a teammate can send', () => {
+    render(<PresenceIndicator users={['constructor', 'toString', '__proto__', 'hasOwnProperty'].map((view, index) => user(String(index), `Person ${index}`, view))} />);
+    fireEvent.click(screen.getByRole('button', { name: /4 online/ }));
+    expect(screen.getByText('Person 0').parentElement).toHaveTextContent(/^Person 0$/);
+    expect(screen.getByText('Person 2').parentElement).toHaveTextContent(/^Person 2$/);
+  });
 });

@@ -470,6 +470,40 @@ describe('WSClient', () => {
       } finally { vi.useRealTimers(); }
     });
 
+    it('says when this person leaves an investigation, and reports again when the page is shown', () => {
+      const { client, ws } = open(['folder-1', 'folder-2']);
+      ws.simulateMessage({ type: 'presence', folderId: 'folder-1', users: [] });
+      ws.simulateMessage({ type: 'presence', folderId: 'folder-2', users: [] });
+      client.setPresence('folder-1', 'notes');
+      client.setPresence('folder-2', 'tasks');
+      const sent = () => parseSent(ws).filter(message => String(message.type).startsWith('presence'));
+      expect(sent()).toEqual([
+        { type: 'presence-update', folderId: 'folder-1', view: 'notes' },
+        { type: 'presence-leave', folderId: 'folder-1' },
+        { type: 'presence-update', folderId: 'folder-2', view: 'tasks' },
+      ]);
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(sent()).toHaveLength(4);
+      client.setPresence(null, 'investigations');
+      expect(sent().at(-1)).toEqual({ type: 'presence-leave', folderId: 'folder-2' });
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(sent()).toHaveLength(5);
+      client.disconnect();
+    });
+
+    it('stops when the investigation is no longer subscribed, whatever the server still sends', () => {
+      const { client, ws } = open();
+      ws.simulateMessage({ type: 'presence', folderId: 'folder-1', users: [] });
+      client.setPresence('folder-1', 'notes');
+      client.setSubscriptions([]); // made local-only, or access removed
+      ws.simulateMessage({ type: 'presence', folderId: 'folder-1', users: [] }); // a broadcast that was in flight
+      ws.sentMessages = [];
+      client.setPresence('folder-1', 'timeline');
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(presence(ws)).toEqual([]);
+      client.disconnect();
+    });
+
     it('keeps the connection id the server gives at sign-in, and drops it with the connection', () => {
       const { client, ws } = open();
       expect(client.connectionId).toBe('11111111-1111-4111-8111-111111111111');

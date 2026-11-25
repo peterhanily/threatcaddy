@@ -230,6 +230,17 @@ export async function handleWSMessage(ws: WSContext, data: string) {
         break;
       }
 
+      case 'presence-leave': {
+        // The user closed the investigation on this device but keeps its subscription. Another
+        // device of theirs that still has it open says so again within 15 seconds.
+        const folderId = msg.folderId as string;
+        if (typeof folderId === 'string' && client.subscribedFolders.has(folderId)) {
+          removePresence(folderId, client.user.id);
+          await broadcastPresence(folderId);
+        }
+        break;
+      }
+
       case 'entity-change-preview': {
         // Older clients still send optimistic previews. Only committed server
         // mutations may produce entity-change messages that peers persist.

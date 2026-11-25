@@ -11,7 +11,8 @@ interface PresenceIndicatorProps {
 export function PresenceIndicator({ users, maxDisplay = 5 }: PresenceIndicatorProps) {
   const [expanded, setExpanded] = useState(false);
   const { t } = useTranslation('common');
-  const viewLabel = (view: string) => (VIEW_LABEL_KEYS[view] ? t(VIEW_LABEL_KEYS[view]) : '');
+  // The view is a teammate's text: only a name of this table is looked up ("constructor" is not one).
+  const viewLabel = (view: string) => (Object.hasOwn(VIEW_LABEL_KEYS, view) ? t(VIEW_LABEL_KEYS[view]) : '');
 
   if (users.length === 0) return null;
 
