@@ -424,5 +424,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "ไม่พบในอุปกรณ์นี้: {{id}}",
   "toolChange.changed": "เปลี่ยนแล้ว",
-  "toolChange.private": "ส่วนตัว"
+  "toolChange.private": "ส่วนตัว",
+  "presence.onlineCount": "ออนไลน์ {{n}} คน",
+  "presence.title": "อยู่ในการสืบสวนนี้ตอนนี้"
 }

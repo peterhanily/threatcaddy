@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Presence.** In a shared investigation the header shows who else has it open and which view they are on. The app sends the view's name only, once the server holds the subscription and every 15 seconds while the page is visible; the server keeps it in memory and forgets a person after 30 seconds. Nothing is sent for a local-only investigation, and the indicator is hidden while screensharing. No earlier version sent presence, so the indicator was always empty.
+- **Your own other devices.** A change you make reaches your other signed-in devices within about a second instead of with their next 30-second pull. The server gives each WebSocket connection an id at sign-in, the app names it in a push, and the server then skips only that connection. Needs this version on the server and on the device that makes the change; with an older server or client, your other devices wait for the pull as before.
+
 ## v2.1.1 — 2026-11-25
 
 - **Live team updates.** The app now subscribes to its shared investigations on the team server's WebSocket, so a teammate's change arrives within about a second instead of with the next 30-second pull. No released version sent the subscription, so the server's change announcements reached no app. The subscriptions are sent again after a reconnect, and only for investigations the server holds. Presence is unchanged.

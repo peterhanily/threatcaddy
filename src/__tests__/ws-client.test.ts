@@ -398,38 +398,91 @@ describe('WSClient', () => {
   // ─── Presence updates ─────────────────────────────────────────
 
   describe('presence updates', () => {
-    it('sends presence update with folderId and view', () => {
+    const open = (subscribe: string[] = ['folder-1']) => {
       const client = new WSClient('http://localhost:3000', 'token');
       client.connect();
       const ws = getLastMockWS();
       ws.simulateOpen();
+      ws.simulateMessage({ type: 'auth-ok', connectionId: '11111111-1111-4111-8111-111111111111' });
+      client.setSubscriptions(subscribe);
       ws.sentMessages = [];
-      client.updatePresence('folder-1', 'notes');
-      const messages = parseSent(ws);
-      expect(messages).toHaveLength(1);
-      expect(messages[0]).toEqual({
-        type: 'presence-update',
-        folderId: 'folder-1',
-        view: 'notes',
-      });
+      return { client, ws };
+    };
+    const presence = (ws: MockWebSocket) => parseSent(ws).filter(message => message.type === 'presence-update');
+
+    it('waits for the server to confirm the subscription, then says where this person is', () => {
+      const { client, ws } = open();
+      client.setPresence('folder-1', 'notes');
+      // The server ignores a presence update for an investigation it has not subscribed this connection to yet.
+      expect(presence(ws)).toEqual([]);
+      ws.simulateMessage({ type: 'presence', folderId: 'folder-1', users: [] });
+      expect(presence(ws)).toEqual([{ type: 'presence-update', folderId: 'folder-1', view: 'notes' }]);
+      // The server's later presence messages (one per teammate update) do not make it answer again.
+      ws.simulateMessage({ type: 'presence', folderId: 'folder-1', users: [] });
+      expect(presence(ws)).toHaveLength(1);
       client.disconnect();
     });
 
-    it('sends presence update with optional entityId', () => {
-      const client = new WSClient('http://localhost:3000', 'token');
-      client.connect();
-      const ws = getLastMockWS();
-      ws.simulateOpen();
-      ws.sentMessages = [];
-      client.updatePresence('folder-1', 'notes', 'note-42');
-      const messages = parseSent(ws);
-      expect(messages[0]).toEqual({
-        type: 'presence-update',
-        folderId: 'folder-1',
-        view: 'notes',
-        entityId: 'note-42',
-      });
+    it('sends a change of view at once and repeats every 15 seconds while the page is visible', () => {
+      vi.useFakeTimers();
+      try {
+        const { client, ws } = open();
+        ws.simulateMessage({ type: 'presence', folderId: 'folder-1', users: [] });
+        client.setPresence('folder-1', 'notes');
+        client.setPresence('folder-1', 'notes');
+        client.setPresence('folder-1', 'timeline');
+        expect(presence(ws).map(message => message.view)).toEqual(['notes', 'timeline']);
+        vi.advanceTimersByTime(15_000);
+        expect(presence(ws)).toHaveLength(3);
+        const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+        vi.advanceTimersByTime(60_000);
+        expect(presence(ws)).toHaveLength(3);
+        hidden.mockRestore();
+        // No investigation open: nothing more is sent, and the server forgets this person after 30 seconds.
+        client.setPresence(null, 'investigations');
+        vi.advanceTimersByTime(60_000);
+        expect(presence(ws)).toHaveLength(3);
+        client.disconnect();
+      } finally { vi.useRealTimers(); }
+    });
+
+    it('says nothing for an investigation the server does not hold, and starts again after a reconnect', () => {
+      vi.useFakeTimers();
+      try {
+        const { client, ws } = open();
+        client.setPresence('local-only', 'notes');
+        vi.advanceTimersByTime(60_000);
+        expect(presence(ws)).toEqual([]);
+        client.setPresence('folder-1', 'notes');
+        ws.simulateMessage({ type: 'presence', folderId: 'folder-1', users: [] });
+        expect(presence(ws)).toHaveLength(1);
+        ws.simulateClose();
+        vi.advanceTimersByTime(2_000);
+        const next = getLastMockWS();
+        expect(next).not.toBe(ws);
+        next.simulateOpen();
+        next.simulateMessage({ type: 'auth-ok' });
+        vi.advanceTimersByTime(15_000);
+        expect(presence(next)).toEqual([]);
+        next.simulateMessage({ type: 'presence', folderId: 'folder-1', users: [] });
+        expect(presence(next)).toEqual([{ type: 'presence-update', folderId: 'folder-1', view: 'notes' }]);
+        client.disconnect();
+      } finally { vi.useRealTimers(); }
+    });
+
+    it('keeps the connection id the server gives at sign-in, and drops it with the connection', () => {
+      const { client, ws } = open();
+      expect(client.connectionId).toBe('11111111-1111-4111-8111-111111111111');
+      ws.simulateClose();
+      expect(client.connectionId).toBeNull();
       client.disconnect();
+      // An older server sends none.
+      const older = new WSClient('http://localhost:3000', 'token');
+      older.connect();
+      getLastMockWS().simulateOpen();
+      getLastMockWS().simulateMessage({ type: 'auth-ok' });
+      expect(older.connectionId).toBeNull();
+      older.disconnect();
     });
   });
 

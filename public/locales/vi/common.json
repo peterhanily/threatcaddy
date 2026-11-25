@@ -319,5 +319,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "Không tìm thấy trên thiết bị này: {{id}}",
   "toolChange.changed": "đã thay đổi",
-  "toolChange.private": "riêng tư"
+  "toolChange.private": "riêng tư",
+  "presence.onlineCount": "{{n}} trực tuyến",
+  "presence.title": "Đang ở trong cuộc điều tra này"
 }

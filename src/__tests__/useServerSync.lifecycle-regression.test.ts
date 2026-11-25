@@ -22,6 +22,7 @@ vi.mock('../lib/ws-client', () => ({ WSClient: class {
   constructor() { mocks.sockets.push(this); }
   connect() {}
   setSubscriptions() {}
+  setPresence() {}
   on(name: string, handler: (message: Record<string, unknown>) => void) { this.handlers.set(name, handler); }
   onStatusChange(handler: (connected: boolean) => void) { this.status = handler; }
 } }));
@@ -84,17 +85,17 @@ describe('sync callback ownership', () => {
     const old = mocks.sockets[0];
     if (!old) throw new Error('Expected the old socket');
     act(() => {
-      old.handlers.get('presence')?.({ users: [{ id: 'old-user' }] });
+      old.handlers.get('presence')?.({ folderId: 'folder-1', users: [{ id: 'old-user' }] });
       mocks.conflicts.mock.calls[0][0]([{ entityId: 'old', table: 'notes', status: 'conflict' }]);
     });
     const oldDecision = result.current.handleResolveAllConflicts;
     rerender({ serverUrl: 'https://second.example' });
     await act(async () => {
-      old.handlers.get('presence')?.({ users: [{ id: 'late-old-user' }] });
+      old.handlers.get('presence')?.({ folderId: 'folder-1', users: [{ id: 'late-old-user' }] });
       mocks.error.mock.calls[0][0]('Old transport error');
       await oldDecision('mine');
     });
-    expect(result.current.presenceUsers).toEqual([]);
+    expect(result.current.presenceFor('folder-1')).toEqual([]);
     expect(result.current.syncConflicts).toEqual([]);
     expect(result.current.syncError).toBeNull();
     expect(mocks.resolve).not.toHaveBeenCalled();

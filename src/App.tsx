@@ -166,7 +166,7 @@ function AppDataLayer() {
     refreshRemote();
   }, [refreshRemote]);
 
-  const { presenceUsers, syncConflicts, syncError, setSyncConflicts, handleResolveConflict, handleResolveAllConflicts } = useServerSync(auth, {
+  const { presenceFor, reportPresence, syncConflicts, syncError, setSyncConflicts, handleResolveConflict, handleResolveAllConflicts } = useServerSync(auth, {
     notes: notes.reload,
     tasks: tasks.reload,
     timeline: timeline.reload,
@@ -299,7 +299,8 @@ function AppDataLayer() {
             remoteInvestigations={remoteInvestigations}
             remoteLoading={remoteLoading}
             refreshRemote={refreshRemote}
-            presenceUsers={presenceUsers}
+            presenceFor={presenceFor}
+            reportPresence={reportPresence}
             syncConflicts={syncConflicts}
             setSyncConflicts={setSyncConflicts}
             handleResolveConflict={handleResolveConflict}
@@ -405,7 +406,8 @@ type AppInnerProps = {
   remoteInvestigations: ReturnType<typeof useRemoteInvestigations>['remoteInvestigations'];
   remoteLoading: boolean;
   refreshRemote: ReturnType<typeof useRemoteInvestigations>['refresh'];
-  presenceUsers: ReturnType<typeof useServerSync>['presenceUsers'];
+  presenceFor: ReturnType<typeof useServerSync>['presenceFor'];
+  reportPresence: ReturnType<typeof useServerSync>['reportPresence'];
   syncConflicts: ReturnType<typeof useServerSync>['syncConflicts'];
   setSyncConflicts: ReturnType<typeof useServerSync>['setSyncConflicts'];
   handleResolveConflict: ReturnType<typeof useServerSync>['handleResolveConflict'];
@@ -436,7 +438,7 @@ const AppInner = memo(function AppInner({
   noteTemplatesHook, playbooksHook, integrationsHook,
   activityLog, auth,
   remoteInvestigations: allRemoteInvestigations, remoteLoading,
-  presenceUsers, syncConflicts, setSyncConflicts, handleResolveConflict, handleResolveAllConflicts,
+  presenceFor, reportPresence, syncConflicts, setSyncConflicts, handleResolveConflict, handleResolveAllConflicts,
   reloadAll, syncedFolderIds, isMobile,
 }: AppInnerProps) {
   // ─── Context hooks ────────────────────────────────────────────────
@@ -532,6 +534,11 @@ const AppInner = memo(function AppInner({
     && (investigationMode === 'remote' || !visibility.visibleFolderIds.has(underlyingFolderId));
   const selectedFolderId = selectedContextHidden ? undefined : underlyingFolderId;
   const selectedFolder = folders.find(folder => folder.id === selectedFolderId);
+  // Members of a shared investigation see who else has it open and on which view. Only the view's
+  // name is sent, never a record; nothing is sent for a local-only or hidden investigation.
+  useEffect(() => {
+    reportPresence(selectedFolderId ?? null, showSettings ? 'settings' : activeView);
+  }, [reportPresence, selectedFolderId, showSettings, activeView]);
   const editingFolder = folders.find(folder => folder.id === editingFolderId);
   const timelines = useMemo(() => allTimelines.filter(visibility.isTimelineVisible), [allTimelines, visibility]);
   const tags = useMemo(() => {
@@ -1773,7 +1780,7 @@ const AppInner = memo(function AppInner({
             onQuickLoad={handleQuickLoad}
             onStartTour={() => tour.start(activeView)}
             effectiveClsLevels={effectiveClsLevels}
-            presenceUsers={screenshareMaxLevel ? [] : presenceUsers}
+            presenceUsers={screenshareMaxLevel ? [] : presenceFor(selectedFolderId)}
             addToast={addToast}
           />
           </ErrorBoundary>

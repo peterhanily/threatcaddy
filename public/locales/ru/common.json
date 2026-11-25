@@ -319,5 +319,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "Не найдено на этом устройстве: {{id}}",
   "toolChange.changed": "изменено",
-  "toolChange.private": "личное"
+  "toolChange.private": "личное",
+  "presence.onlineCount": "{{n}} в сети",
+  "presence.title": "Сейчас в этом расследовании"
 }

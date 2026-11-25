@@ -225,9 +225,9 @@ Real-time collaboration is powered by WebSocket connections between the client a
 **Authentication**: The first message on a new connection must contain a valid JWT (5-second timeout to authenticate).
 
 **Message types**:
-- auth -- JWT authentication on connect. Server responds with auth-ok or error.
+- auth -- JWT authentication on connect. Server responds with auth-ok or error. auth-ok carries a connectionId, which the app names in its pushes so that the user's other devices are told of a change and the pushing one is not.
 - subscribe / unsubscribe -- Join or leave folder channels (verified against investigation_members).
-- presence-update -- Report current view and entity being edited. Server broadcasts presence to other subscribers.
+- presence-update -- Report the view the user has open in a subscribed investigation. The app sends it once the subscription holds and every 15 seconds while the page is visible, with the view's name only; the server broadcasts presence to the investigation's subscribers and forgets a user after 30 seconds.
 - entity-change-preview -- Optimistic relay from sender to other subscribers (verified for editor access).
 - entity-change -- Server-authoritative entity changes broadcast after sync push acceptance. An identity change is announced without its record (`data`) or title: subscribers include clients that never receive identities, and clients pull the record instead.
 - ping / pong -- Keep-alive (25-second interval).

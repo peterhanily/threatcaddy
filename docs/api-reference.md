@@ -357,6 +357,8 @@ Push entity changes to the server. Requires `admin` or `analyst`; each change is
 }
 ```
 
+An optional `connection` (the `connectionId` from the WebSocket `auth-ok` message) names the pushing device's connection: the change is then announced to the user's other connections and only that one is skipped. Without it, or when it is not one of the user's connections, none of the user's connections is told.
+
 The UUID above is illustrative; use the generation returned by this server. A batch accepts at most 500 changes and 16 MiB of JSON. Duplicate table/entity pairs and an invalid request shape return bounded `400 VALIDATION_FAILED` errors before writes. A field the server refuses for one change (an identity field of the wrong shape, an unknown IOC type, an invalid evidence preview) comes back in the `200` response as that change's `rejected` result with a `reason`, and the rest of the batch is applied. A change that would leave the row as it is comes back `accepted` with `unchanged: true` and no new revision; an oversized body returns `413 PAYLOAD_TOO_LARGE`. Empty batches remain valid. Structural limits also bound dictionary width, nested collections and traversal; see [verification](development-verification.md#request-validation-resource-regression).
 
 **Supported tables:** `folders`, `notes`, `tasks`, `timelineEvents`, `whiteboards`, `standaloneIOCs`, `chatThreads`, `evidenceItems`, `identities`, `tags`, `timelines` (last two are global, not folder-scoped). Bots receive no events for `identities`.

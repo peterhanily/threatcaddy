@@ -675,6 +675,13 @@ paths:
                   maxItems: 500
                   items:
                     $ref: "#/components/schemas/SyncChange"
+                connection:
+                  type: string
+                  format: uuid
+                  description: >-
+                    Optional. The `connectionId` this device received in the WebSocket `auth-ok` message. The
+                    change is then announced to the user's other connections and only this one is skipped; without
+                    it, or when it is not one of the user's connections, none of the user's connections is told.
               required: [generation, changes]
       responses:
         "200":

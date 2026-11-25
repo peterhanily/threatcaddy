@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { WSContext } from 'hono/ws';
 import { verifyAccessToken } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
@@ -16,6 +17,8 @@ const MSG_RATE_MAX = 30; // max 30 messages per second per connection
 const USER_MSG_RATE_MAX = 50; // max 50 messages per second per user (across all connections)
 
 interface ConnectedClient {
+  /** Told to the client at sign-in; a push names it so its announcement skips only this connection. */
+  id: string;
   ws: WSContext;
   user: AuthUser;
   subscribedFolders: Set<string>;
@@ -61,6 +64,7 @@ function registerClient(ws: WSContext, user: AuthUser, token: string): boolean {
   }
 
   const client: ConnectedClient = {
+    id: randomUUID(),
     ws,
     user,
     subscribedFolders: new Set(),
@@ -91,7 +95,7 @@ function registerClient(ws: WSContext, user: AuthUser, token: string): boolean {
   }
   conns.add(ws);
 
-  sendTo(ws, { type: 'auth-ok' });
+  sendTo(ws, { type: 'auth-ok', connectionId: client.id });
   return true;
 }
 
@@ -309,12 +313,18 @@ async function broadcastPresence(folderId: string) {
 }
 
 // Revalidate each recipient against current database authorization before delivering investigation data.
-export async function broadcastToFolder(folderId: string, msg: unknown, excludeUserId?: string) {
+// `originConnectionId` is the author's own connection, as named by its push: when it is one of
+// `excludeUserId`'s connections, only it is skipped, so the author's other devices hear of the change.
+// Otherwise (an older client, or a name that is not the author's) every connection of the author is skipped.
+export async function broadcastToFolder(folderId: string, msg: unknown, excludeUserId?: string, originConnectionId?: string) {
   const subscribers = [...(folderSubscribers.get(folderId) ?? [])];
   const json = typeof msg === 'string' ? msg : JSON.stringify(msg);
+  const origin = excludeUserId && originConnectionId
+    ? [...(userConnections.get(excludeUserId) ?? [])].find(ws => clients.get(ws)?.id === originConnectionId)
+    : undefined;
   await Promise.all(subscribers.map(async ws => {
     const client = clients.get(ws);
-    if (client && client.user.id !== excludeUserId && client.subscribedFolders.has(folderId)
+    if (client && (origin ? ws !== origin : client.user.id !== excludeUserId) && client.subscribedFolders.has(folderId)
       && await authorizeClient(client, folderId)) sendTo(ws, json);
   }));
 }

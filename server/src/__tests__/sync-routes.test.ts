@@ -144,7 +144,7 @@ describe('sync HTTP write boundary', () => {
   it('delegates current authorization and revisions to the write transaction', async () => {
     expect((await push([put])).status).toBe(200);
     expect(mocks.push).toHaveBeenCalledWith([put], 'user-1', { authorize: true, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', rejectInvalidChanges: true });
-    expect(mocks.broadcast).toHaveBeenCalledWith('folder-1', expect.objectContaining({ type: 'entity-change', data: record }), 'user-1');
+    expect(mocks.broadcast).toHaveBeenCalledWith('folder-1', expect.objectContaining({ type: 'entity-change', data: record }), 'user-1', undefined);
     expect(mocks.audit).toHaveBeenCalledOnce();
   });
 
@@ -171,9 +171,18 @@ describe('sync HTTP write boundary', () => {
   it('sends a removal to the previous folder and confirmed data only to the destination', async () => {
     mocks.push.mockResolvedValue([{ table: 'notes', entityId: 'note-1', status: 'accepted', serverRecord: record, previousFolderId: 'previous-folder' }]);
     await push([put]);
-    expect(mocks.broadcast.mock.calls[0]).toEqual(['previous-folder', { type: 'entity-change', table: 'notes', op: 'delete', entityId: 'note-1', updatedBy: 'user-1' }, 'user-1']);
+    expect(mocks.broadcast.mock.calls[0]).toEqual(['previous-folder', { type: 'entity-change', table: 'notes', op: 'delete', entityId: 'note-1', updatedBy: 'user-1' }, 'user-1', undefined]);
     expect(mocks.broadcast.mock.calls[1][0]).toBe('folder-1');
     expect(mocks.broadcast.mock.calls[1][1].data).toEqual(record);
+  });
+
+  it("names the pushing device's connection in both announcements, and refuses one that is not an id", async () => {
+    const connection = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    const generation = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    mocks.push.mockResolvedValue([{ table: 'notes', entityId: 'note-1', status: 'accepted', serverRecord: record, previousFolderId: 'previous-folder' }]);
+    expect((await pushBody(JSON.stringify({ changes: [put], generation, connection }))).status).toBe(200);
+    expect(mocks.broadcast.mock.calls.map(call => [call[0], call[2], call[3]])).toEqual([['previous-folder', 'user-1', connection], ['folder-1', 'user-1', connection]]);
+    expect((await pushBody(JSON.stringify({ changes: [put], generation, connection: 'laptop' }))).status).toBe(400);
   });
 
   it('broadcasts folder changes to their own subscribers', async () => {

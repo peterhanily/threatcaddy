@@ -26,10 +26,12 @@ vi.mock('../lib/ws-client', () => ({
     on = mockWSOn;
     onStatusChange = mockWSOnStatusChange;
     setSubscriptions = mockWSSetSubscriptions;
+    setPresence = mockWSSetPresence;
   },
 }));
 
 const mockWSSetSubscriptions = vi.fn();
+const mockWSSetPresence = vi.fn();
 const mockServerFolderIds = vi.fn<() => Promise<string[]>>(async () => []);
 const mockSyncStart = vi.fn();
 const mockSyncStop = vi.fn();
@@ -326,7 +328,27 @@ describe('useServerSync', () => {
     const reloadFns = makeReloadFns();
 
     const { result } = renderHook(() => useServerSync(auth, reloadFns));
-    expect(result.current.presenceUsers).toEqual([]);
+    expect(result.current.presenceFor('folder-1')).toEqual([]);
+  });
+
+  it('keeps presence per investigation, without this person, and tells the socket where they are', async () => {
+    const auth = { ...makeAuth(), user: { id: 'me' } };
+    const { result } = renderHook(() => useServerSync(auth, makeReloadFns()));
+    // Reported before the socket exists: handed over when it is created.
+    act(() => result.current.reportPresence('folder-1', 'notes'));
+    await vi.waitFor(() => expect(mockWSSetPresence).toHaveBeenCalledWith('folder-1', 'notes'));
+    const onPresence = mockWSOn.mock.calls.find(call => call[0] === 'presence')?.[1] as (message: unknown) => void;
+    const dana = { id: 'dana', displayName: 'Dana', avatarUrl: null, view: 'timeline' };
+    act(() => {
+      onPresence({ type: 'presence', folderId: 'folder-1', users: [{ id: 'me', displayName: 'Me', avatarUrl: null, view: 'notes' }, dana] });
+      onPresence({ type: 'presence', folderId: 'folder-2', users: [] });
+      onPresence({ type: 'presence', users: [{ id: 'nobody' }] });
+    });
+    expect(result.current.presenceFor('folder-1')).toEqual([dana]);
+    expect(result.current.presenceFor('folder-2')).toEqual([]);
+    expect(result.current.presenceFor(undefined)).toEqual([]);
+    act(() => result.current.reportPresence(null, 'investigations'));
+    expect(mockWSSetPresence).toHaveBeenLastCalledWith(null, 'investigations');
   });
 
   it('keeps sync paused with a translated notice when its safety state cannot be read', async () => {

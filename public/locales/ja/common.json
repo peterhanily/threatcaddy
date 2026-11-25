@@ -319,5 +319,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "このデバイスに見つかりません: {{id}}",
   "toolChange.changed": "変更あり",
-  "toolChange.private": "非公開"
+  "toolChange.private": "非公開",
+  "presence.onlineCount": "{{n}} 人がオンライン",
+  "presence.title": "現在この調査を開いている人"
 }

@@ -319,5 +319,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "Tidak ditemukan di perangkat ini: {{id}}",
   "toolChange.changed": "diubah",
-  "toolChange.private": "pribadi"
+  "toolChange.private": "pribadi",
+  "presence.onlineCount": "{{n}} daring",
+  "presence.title": "Sedang di investigasi ini"
 }

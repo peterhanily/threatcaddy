@@ -78,7 +78,9 @@ export class SyncEngine {
   setConflictHandler(handler: (conflicts: SyncResult[]) => void) { this.onConflict = handler; }
   setRemoteChangeHandler(handler: (changes: Record<string, unknown>[], tables: Set<string>) => void) { this.onRemoteChange = handler; }
   // Retained API: clients no longer send optimistic entity mutations over WS.
-  setWSClient(ws: WSClient | null) { void ws; /* committed notifications trigger a pull */ }
+  /** Only its connection id is read, for pushes; committed notifications trigger a pull. */
+  private wsClient: WSClient | null = null;
+  setWSClient(ws: WSClient | null) { this.wsClient = ws; }
   setReadyHandler(handler: () => void) { this.onReady = handler; }
   setErrorHandler(handler: (message: string | null) => void) { this.onError = handler; }
   setWorkspaceIdentity(serverUrl: string, userId: string) {
@@ -363,7 +365,7 @@ export class SyncEngine {
       // A re-key (passphrase change, enabling encryption) is not a lock, but the
       // queue was read under the previous session: read it again shortly.
       if (isEncryptionEnabled() && session !== getSessionGeneration()) { this.scheduleSync(); return; }
-      const { results } = await syncPush(changes, history);
+      const { results } = await syncPush(changes, history, this.wsClient?.connectionId);
       if (epoch !== this.epoch) return;
       await dynamicDb.transaction('rw', '_syncQueue', '_syncMeta', '_localMigrations', async () => {
         if (epoch !== this.epoch) return;

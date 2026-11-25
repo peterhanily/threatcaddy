@@ -24,7 +24,11 @@ const changeSchema = z.object({
   data: z.record(z.string(), z.unknown()).optional(),
   clientVersion: z.number().int().min(0).max(2147483646).optional(),
 }).refine(change => change.op !== 'put' || change.data !== undefined, 'Put requires entity data');
-const pushSchema = z.object({ generation: z.string().uuid(), changes: z.array(changeSchema).max(MAX_SYNC_CHANGES) }).superRefine(({ changes }, ctx) => {
+const pushSchema = z.object({
+  generation: z.string().uuid(), changes: z.array(changeSchema).max(MAX_SYNC_CHANGES),
+  // The WebSocket connection of the pushing device (from `auth-ok`), so the user's other devices are told.
+  connection: z.string().uuid().optional(),
+}).superRefine(({ changes }, ctx) => {
   const identities = new Set<string>();
   for (const change of changes) {
     const key = JSON.stringify([change.table, change.entityId]);
@@ -73,7 +77,7 @@ app.post('/push', requireRole('admin', 'analyst'), async (c) => {
     if (result.previousFolderId && result.previousFolderId !== folderId) {
       await broadcastToFolder(result.previousFolderId, {
         type: 'entity-change', table: change.table, op: 'delete', entityId: change.entityId, updatedBy: user.id,
-      }, user.id);
+      }, user.id, parsed.data.connection);
     }
     if (folderId) {
       // Subscribers include clients that never receive identities (2.0.4), and no client reads `data`
@@ -81,7 +85,7 @@ app.post('/push', requireRole('admin', 'analyst'), async (c) => {
       await broadcastToFolder(folderId, {
         type: 'entity-change', table: change.table, op: change.op, entityId: change.entityId,
         ...(change.table === 'identities' ? {} : { data: result.serverRecord }), updatedBy: user.id,
-      }, user.id);
+      }, user.id, parsed.data.connection);
     }
     activityEntries.push({
       userId: user.id,

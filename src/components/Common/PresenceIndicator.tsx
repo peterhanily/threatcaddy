@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pencil } from 'lucide-react';
 import type { PresenceUser } from '../../types';
 
@@ -9,6 +10,8 @@ interface PresenceIndicatorProps {
 
 export function PresenceIndicator({ users, maxDisplay = 5 }: PresenceIndicatorProps) {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useTranslation('common');
+  const viewLabel = (view: string) => (VIEW_LABEL_KEYS[view] ? t(VIEW_LABEL_KEYS[view]) : '');
 
   if (users.length === 0) return null;
 
@@ -28,7 +31,7 @@ export function PresenceIndicator({ users, maxDisplay = 5 }: PresenceIndicatorPr
               key={user.id}
               className="w-6 h-6 rounded-full border-2 border-[var(--bg-primary)] flex items-center justify-center text-white text-[9px] font-medium shrink-0 relative"
               style={{ backgroundColor: stringToColor(user.displayName) }}
-              title={`${user.displayName} — ${viewLabel(user.view, user.entityId)}`}
+              title={[user.displayName, viewLabel(user.view)].filter(Boolean).join(' — ')}
             >
               {user.displayName[0]?.toUpperCase() || '?'}
               <div className="absolute w-1.5 h-1.5 bg-green-500 rounded-full -bottom-0 -right-0 border border-[var(--bg-primary)]" />
@@ -43,7 +46,7 @@ export function PresenceIndicator({ users, maxDisplay = 5 }: PresenceIndicatorPr
 
         {/* Activity summary text */}
         <span className="text-xs text-[var(--text-tertiary)] hidden sm:inline">
-          {users.length} online
+          {t('presence.onlineCount', { n: users.length })}
         </span>
       </button>
 
@@ -54,7 +57,7 @@ export function PresenceIndicator({ users, maxDisplay = 5 }: PresenceIndicatorPr
           <div className="absolute right-0 top-full mt-1 z-50 w-72 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg shadow-xl overflow-hidden">
             <div className="px-3 py-2 border-b border-[var(--border)]">
               <span className="text-xs font-medium text-[var(--text-primary)]">
-                {users.length} team member{users.length !== 1 ? 's' : ''} online
+                {t('presence.title')}
               </span>
             </div>
             <div className="max-h-64 overflow-y-auto divide-y divide-[var(--border)]">
@@ -75,7 +78,7 @@ export function PresenceIndicator({ users, maxDisplay = 5 }: PresenceIndicatorPr
                       {user.entityId && isEditingView(user.view) && (
                         <Pencil size={9} className="text-yellow-500 shrink-0" />
                       )}
-                      {viewLabel(user.view, user.entityId)}
+                      {viewLabel(user.view)}
                     </div>
                   </div>
                 </div>
@@ -93,26 +96,14 @@ function isEditingView(view: string): boolean {
   return view === 'editor' || view === 'whiteboard';
 }
 
-function viewLabel(view: string, entityId?: string): string {
-  const labels: Record<string, string> = {
-    notes: 'Viewing notes',
-    editor: 'Editing a note',
-    tasks: 'Managing tasks',
-    timeline: 'On timeline',
-    whiteboard: 'On whiteboard',
-    chat: 'In AI chat',
-    settings: 'In settings',
-    graph: 'Viewing graph',
-    iocs: 'Analyzing IOCs',
-    caddyshack: 'On CaddyShack',
-    dashboard: 'On dashboard',
-  };
-  const base = labels[view] || `Viewing ${view}`;
-  if (entityId && isEditingView(view)) {
-    return `Currently editing`;
-  }
-  return base;
-}
+/** The sidebar's name for the view a teammate reports; an unknown view (a newer client) has none. */
+const VIEW_LABEL_KEYS: Record<string, string> = {
+  dashboard: 'sidebar.dashboard', investigations: 'sidebar.investigations', notes: 'sidebar.notes', editor: 'sidebar.notes',
+  tasks: 'sidebar.tasks', timeline: 'sidebar.timeline', whiteboard: 'sidebar.whiteboards', evidence: 'sidebar.evidence',
+  products: 'sidebar.products', 'ioc-stats': 'sidebar.iocs', iocs: 'sidebar.iocs', identities: 'sidebar.identities',
+  graph: 'sidebar.graph', activity: 'sidebar.activity', chat: 'sidebar.caddyAI', caddyshack: 'sidebar.caddyShack',
+  agent: 'sidebar.agentCaddy', settings: 'sidebar.settings',
+};
 
 function stringToColor(str: string): string {
   let hash = 0;

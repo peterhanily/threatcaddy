@@ -3,6 +3,8 @@ type MessageHandler = (msg: Record<string, unknown>) => void;
 // The server drops messages beyond 30 a second per connection.
 const SUBSCRIPTIONS_PER_BURST = 20;
 const SUBSCRIPTION_BURST_GAP_MS = 1100;
+// The server forgets a person 30 seconds after their last presence update.
+const PRESENCE_INTERVAL_MS = 15_000;
 
 export class WSClient {
   private ws: WebSocket | null = null;
@@ -20,6 +22,13 @@ export class WSClient {
   private subscribed = new Set<string>();
   private authenticated = false;
   private subscriptionTimer: ReturnType<typeof setTimeout> | null = null;
+  /** This connection's id on the server (from `auth-ok`; older servers send none). */
+  private connection: string | null = null;
+  /** The investigation and view this person has open, told to the investigation's other members. */
+  private presence: { folderId: string; view: string } | null = null;
+  /** Investigations whose subscription the server has confirmed: it answers one with their presence. */
+  private presenceReady = new Set<string>();
+  private presenceTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(serverUrl: string, accessToken: string) {
     this.serverUrl = serverUrl;
@@ -70,8 +79,15 @@ export class WSClient {
           this.fireStatusChange(true);
           // A new connection holds no subscriptions: ask for all of them again.
           this.authenticated = true;
+          this.connection = typeof msg.connectionId === 'string' && /^[0-9a-f-]{36}$/.test(msg.connectionId) ? msg.connectionId : null;
+          this.presenceReady.clear();
           this.subscribed.clear();
           this.sendSubscriptions();
+        }
+        // The server accepts a presence update only once the subscription holds, and says so with this message.
+        if (type === 'presence' && typeof msg.folderId === 'string' && !this.presenceReady.has(msg.folderId)) {
+          this.presenceReady.add(msg.folderId);
+          if (this.presence?.folderId === msg.folderId) this.sendPresence();
         }
         const typeHandlers = this.handlers.get(type);
         if (typeHandlers) {
@@ -91,6 +107,7 @@ export class WSClient {
 
     this.ws.onclose = () => {
       this.authenticated = false;
+      this.connection = null;
       if (!this.intentionallyClosed) {
         this.fireStatusChange(false);
         this.scheduleReconnect();
@@ -130,6 +147,7 @@ export class WSClient {
       if (this.wanted.has(folderId)) continue;
       if (!budget--) break;
       this.subscribed.delete(folderId);
+      this.presenceReady.delete(folderId);
       this.send({ type: 'unsubscribe', folderId });
     }
     for (const folderId of this.wanted) {
@@ -145,8 +163,33 @@ export class WSClient {
     }, SUBSCRIPTION_BURST_GAP_MS);
   }
 
-  updatePresence(folderId: string, view: string, entityId?: string) {
-    this.send({ type: 'presence-update', folderId, view, entityId });
+  /** The id a push names so that the server tells this person's other devices, but not this one. */
+  get connectionId(): string | null {
+    return this.connection;
+  }
+
+  /**
+   * The investigation this person has open and the view they are on, or null for none. Sent to the
+   * investigation's other members once the server holds the subscription, and again every 15 seconds
+   * while the page is visible; the server drops a person 30 seconds after the last one.
+   */
+  setPresence(folderId: string | null, view: string) {
+    const changed = this.presence?.folderId !== (folderId ?? undefined) || this.presence?.view !== view;
+    this.presence = folderId ? { folderId, view } : null;
+    if (this.presence && !this.presenceTimer) {
+      this.presenceTimer = setInterval(() => {
+        if (typeof document === 'undefined' || !document.hidden) this.sendPresence();
+      }, PRESENCE_INTERVAL_MS);
+    } else if (!this.presence && this.presenceTimer) {
+      clearInterval(this.presenceTimer);
+      this.presenceTimer = null;
+    }
+    if (changed) this.sendPresence();
+  }
+
+  private sendPresence() {
+    if (!this.presence || !this.authenticated || !this.presenceReady.has(this.presence.folderId)) return;
+    this.send({ type: 'presence-update', folderId: this.presence.folderId, view: this.presence.view });
   }
 
   on(type: string, handler: MessageHandler): () => void {
@@ -182,7 +225,12 @@ export class WSClient {
       clearTimeout(this.subscriptionTimer);
       this.subscriptionTimer = null;
     }
+    if (this.presenceTimer) {
+      clearInterval(this.presenceTimer);
+      this.presenceTimer = null;
+    }
     this.authenticated = false;
+    this.connection = null;
     if (this.ws) {
       this.ws.close();
       this.ws = null;
