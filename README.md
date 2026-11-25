@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/peterhanily/threatcaddy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/version-2.0.4-green.svg" alt="Version 2.0.4" />
+  <img src="https://img.shields.io/badge/version-2.1.0-green.svg" alt="Version 2.1.0" />
   <img src="https://img.shields.io/badge/TypeScript-6%20%2F%207-blue.svg?logo=typescript&logoColor=white" alt="TypeScript 6 (client) / 7 (server)" />
   <img src="https://img.shields.io/badge/React-19-61dafb.svg?logo=react&logoColor=white" alt="React 19" />
   <img src="https://img.shields.io/badge/Vite-7-646cff.svg?logo=vite&logoColor=white" alt="Vite 7" />
@@ -42,7 +42,7 @@ Most investigation tools lock your data in a cloud you don't control, cost per s
 
 **Try it now:** [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loads a sample investigation with a guided walkthrough.
 
-**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, `release-manifest.json` (with the source revision) and `SHA256SUMS`. Client and server 2.0.4 fix what a security review found in the hosted site, the standalone file, the browser extension and the team server image, on top of the AI prompt-injection hardening of 2.0.3. The extension has its own version, currently 1.1.5; ThreatCaddy uses only 1.1.3 or later. Read the [2.0.4 upgrade and channel notes](docs/releases/v2.0.4.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
+**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, `release-manifest.json` (with the source revision) and `SHA256SUMS`. Client and server 2.1.0 add [Identities](#identities): the people, organizations, systems and accounts in an investigation; the team server adds one database migration, and there is no downgrade. The extension has its own version, currently 1.1.5; ThreatCaddy uses only 1.1.3 or later. Read the [2.1.0 upgrade and channel notes](docs/releases/v2.1.0.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
 
 **Self-host the client:**
 
