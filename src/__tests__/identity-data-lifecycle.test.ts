@@ -20,7 +20,7 @@ import { ensureSyncWorkspace } from '../lib/sync-workspace';
 import { evictSyncedFolder } from '../lib/sync-cache';
 import { compactHeldQueue } from '../lib/sync-outgoing';
 import { LEGACY_SYNC_TABLES, revisionKey } from '../lib/sync-state';
-import { clearIgnoredNames, forgetIgnoredNames, ignoreName, keepIgnoredNamesThroughDecryption, rewriteIgnoredNames } from '../lib/ignored-names';
+import { clearIgnoredNames, forgetIgnoredNames, ignoreName, ignoredSnapshot, keepIgnoredNamesThroughDecryption, rewriteIgnoredNames, subscribeIgnored } from '../lib/ignored-names';
 import { decryptField } from '../lib/crypto';
 import { useIgnoredNames } from '../hooks/useIgnoredNames';
 import { foundKey, ignoredHash } from '../lib/identity-model';
@@ -398,20 +398,21 @@ describe('names ignored on this device', () => {
       expect(result.current.isIgnored('f1', 'Jordan Reyes')).toBe(true);
     });
 
-    it('stores a plain list encrypted after a render, without updating other components during it', async () => {
-      // A plain list as a build without encryption left it, read for the first time on this page.
-      localStorage.setItem(KEY, JSON.stringify({ v: 3, folders: { f1: [hash('f1', 'Jordan Reyes')] } }));
+    it('stores a plain list encrypted after the read that finds it, not during it (a snapshot must not notify)', async () => {
+      localStorage.removeItem(KEY);
       setEncryptionMeta({ version: 1, salt: 'fixture-salt', wrappedKey: 'fixture-wrapped', recoverySalt: 'fixture-recovery-salt', recoveryWrappedKey: 'fixture-recovery-key', enabledAt: 1 } as never);
       setSessionKey(key);
-      const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
-      // Two components read the list (the view and the timeline's chips, say).
-      const first = renderHook(() => useIgnoredNames());
-      const second = renderHook(() => useIgnoredNames());
+      const listener = vi.fn();
+      const unsubscribe = subscribeIgnored(listener);
+      ignoredSnapshot();
+      // Another tab, on a build without encryption, writes a plain list; a component reads it while rendering.
+      localStorage.setItem(KEY, JSON.stringify({ v: 3, folders: { f1: [hash('f1', 'Jordan Reyes')] } }));
+      ignoredSnapshot();
+      // React calls the snapshot while rendering: telling subscribers then would update other components mid-render.
+      expect(listener).not.toHaveBeenCalled();
       await waitFor(() => expect(localStorage.getItem(KEY)).toContain('"enc"'));
-      expect(first.result.current.isIgnored('f1', 'Jordan Reyes')).toBe(true);
-      expect(second.result.current.isIgnored('f1', 'Jordan Reyes')).toBe(true);
-      expect(errors.mock.calls.filter(call => String(call[0]).includes('while rendering a different component'))).toEqual([]);
-      errors.mockRestore();
+      expect(listener).toHaveBeenCalled();
+      unsubscribe();
     });
 
     it('stores a plain list encrypted once encryption is turned on', async () => {

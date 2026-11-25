@@ -39,7 +39,7 @@ describe('the private-label rule', () => {
     for (const label of ['Phone (e.g. +44)', 'Date of birth (from passport)', 'Passport number - source HR', 'Home address (from HR)',
       'Mobile (from HR)', 'Health notes (from GP)', 'Phone - to call back', 'Gender (local records)', 'Medical status', 'Disability status',
       'Salary (local currency)', 'Phone/Email', 'Sexual orientation', 'Political opinion', 'Trade union membership', 'Criminal record',
-      'Biometric data', 'Genetic data', 'Religious beliefs']) expect(isPrivateLabel(label), label).toBe(true);
+      'Biometric data', 'Genetic data', 'Religious beliefs', 'Health service number', 'Health insurance card']) expect(isPrivateLabel(label), label).toBe(true);
   });
 
   it('keeps network and mailbox addresses, accounts and work identifiers public', () => {
