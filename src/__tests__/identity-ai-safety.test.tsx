@@ -39,6 +39,23 @@ beforeEach(seedAIWorkspace);
 afterEach(() => cleanup());
 
 describe('AI-2: what reaches the model is bounded', () => {
+  it('shows a mentioned name as stored, though it holds "$\'" or "$&"', async () => {
+    await db.identities.add(make('cash', "Cash$'Co $& Sons"));
+    expect((await resolveMentions('Ask @identity:cash about it', 'S')).displayText).toBe("Ask @Cash$'Co $& Sons about it");
+  });
+
+  it('refuses more details with a message that matches what the agent sees', async () => {
+    const details = (count: number, hidden: boolean) => Array.from({ length: count }, (_, i) => ({ id: `${hidden}-${i}`, label: hidden ? 'Phone' : 'Note', value: `${i}`, ...(hidden ? { private: true } : {}) }));
+    await db.identities.bulkAdd([make('full', 'Full', { details: details(200, false) }), make('hidden', 'Hidden', { details: [...details(50, false), ...details(350, true)] })]);
+    const write = async (id: string) => (await executeTool(call('update_identity', { id, addDetails: [{ label: 'Note', value: 'one more' }] }), 'S', undefined,
+      { surface: 'chat-yolo', allowedTools: ALL_STATIC_TOOLS, signal: new AbortController().signal })).result;
+    expect(await write('full')).toContain('An identity holds at most 200 details.');
+    // 50 public details shown: no number the agent could not reconcile with them.
+    const refused = await write('hidden');
+    expect(refused).toContain('This identity cannot hold more details.');
+    expect(refused).not.toContain('200');
+  });
+
   it('reads a 3,000-person organisation a page at a time, with totals', async () => {
     const staff = Array.from({ length: 3000 }, (_, i) => make(`p${i}`, `Employee Number ${i}`, { connections: [{ targetId: 'acme', label: 'works at' }] }));
     await db.identities.bulkAdd([make('acme', 'Acme Shipping', { type: 'organization' }), ...staff]);
@@ -180,10 +197,18 @@ describe('AI-3: approval cards say what changes, by name', () => {
     expect(JSON.stringify(connect)).not.toMatch(/\u202E|\\u202e/i);
     await db.standaloneIOCs.add({ id: 'f4-ioc2', folderId: 'S', type: 'domain', value: 'bad.example', confidence: 'low', tags: [], trashed: false, archived: false, createdAt: now, updatedAt: now } as never);
     expect((await summarizeToolChange('update_ioc', { id: 'f4-ioc2', type: '', confidence: 'high' }, 'S'))?.fields.map(field => field.field)).toEqual(['confidence']);
+    // Where the tool stores an empty value, the card shows it: the IOC's value and attribution wiped.
+    expect((await summarizeToolChange('update_ioc', { id: 'f4-ioc2', value: '', attribution: '' }, 'S'))?.fields)
+      .toEqual([{ field: 'value', from: 'bad.example', to: '—' }, { field: 'attribution', from: '—', to: '—' }]);
     const action: AgentAction = { id: 'a2', investigationId: 'S', threadId: 't', agentConfigId: 'ap-timeline-builder', toolName: 'update_identity',
       toolInput: { id: 'Xq7_dana', status: 'cleared' }, rationale: 'r', status: 'pending', createdAt: 1 };
     render(<AgentActionCard action={action} onApprove={vi.fn()} onReject={vi.fn()} />);
     expect((await screen.findByTestId('tool-change-summary')).textContent).toContain('Changes Dana Okafor');
+    // The name is isolated in a sentence that follows the interface's direction (a right-to-left name
+    // cannot swap the sides of "X reports to Y").
+    const summary = screen.getByTestId('tool-change-summary');
+    expect(summary.querySelector('p')?.hasAttribute('dir')).toBe(false);
+    expect([...summary.querySelectorAll('p bdi')].map(element => element.textContent)).toEqual(['Dana Okafor']);
     await db.identities.update('Xq7_dana', { name: 'Dana Okafor-Reyes' });
     await waitFor(() => expect(screen.getByTestId('tool-change-summary').textContent).toContain('Changes Dana Okafor-Reyes'));
   });

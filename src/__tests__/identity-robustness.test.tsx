@@ -62,6 +62,16 @@ describe('SEC-1: the Activity scan', () => {
 });
 
 describe('SEC-1: the Activity scan\'s work', () => {
+  it('counts what a search scans even when it finds nothing (500 names found nowhere)', () => {
+    const notes = Array.from({ length: 20 }, (_, i) => note(`n${i}`, 'a'.repeat(450_000), i));
+    const indexOf = vi.spyOn(String.prototype, 'indexOf');
+    const nowhere = activityOf(make('x', 'aab0', { aliases: Array.from({ length: 499 }, (_, i) => `aab${i + 1}`) }), { events: [], notes, iocs: [] });
+    // 50,000,000 at a sixth per character scanned: under 700 scans of a 450 KB note, not 10,000 (about 30 s).
+    expect(indexOf.mock.calls.length).toBeLessThan(1_000);
+    expect(nowhere.partial).toBe(true);
+    indexOf.mockRestore();
+  });
+
   it('counts what each match compares, and skips names longer than linking matches', () => {
     const notes = Array.from({ length: 4 }, (_, i) => note(`a${i}`, 'a'.repeat(450_000), i));
     const indexOf = vi.spyOn(String.prototype, 'indexOf');
@@ -136,6 +146,23 @@ describe('SEC-2: import columns, export width', () => {
     // Nothing is lost: every value is in its own column or in a shared one, with its label.
     for (let i = 0; i < 300; i++) expect(csv).toContain(`v${i}`);
     expect(csv).toMatch(/Label \d+: v\d+/);
+  });
+});
+
+describe('PERF: one identity given thousands of values', () => {
+  it('imports a cell of 8,000 lines in linear work, as details, other names or tags', () => {
+    const cell = Array.from({ length: 8_000 }, (_, i) => `value-${i}`).join('\n');
+    for (const column of ['Workstation', 'Other names', 'Tags']) {
+      const mapping = column === 'Workstation' ? 'identity-detail' : column === 'Other names' ? 'identity-aliases' : 'identity-tags';
+      const original = String.prototype.normalize;
+      let normalised = 0;
+      const normalize = vi.spyOn(String.prototype, 'normalize').mockImplementation(function (this: string, form?: string) { normalised++; return original.call(this, form); });
+      const created = buildIdentities([{ Name: 'Dana Okafor', [column]: cell }], new Map([['Name', 'identity-name'], [column, mapping]]) as never, { folderId: 'case', existing: [], now: 1 }).created[0];
+      normalize.mockRestore();
+      expect(created.details.length + created.aliases.length + created.tags.length, column).toBeGreaterThanOrEqual(8_000);
+      // A few comparisons a value; comparing each with every earlier one was 32 million.
+      expect(normalised, column).toBeLessThan(100_000);
+    }
   });
 });
 

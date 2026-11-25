@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { liveQuery } from 'dexie';
 import { summarizeToolChange, type ChangeField, type ToolChange } from '../../lib/tool-change-summary';
 import { prepareIdentityLabels } from '../../lib/llm-tools-identities';
+import { isolate } from '../Identities/identity-labels';
+import { IsolatedText } from '../Identities/identity-ui';
 
 /** What a proposed write changes, named by what it touches (approval cards, agent and chat). */
 export function ToolChangeSummary({ tool, input, folderId, className = '' }: { tool: string; input: Record<string, unknown>; folderId?: string; className?: string }) {
@@ -23,17 +25,19 @@ export function ToolChangeSummary({ tool, input, folderId, className = '' }: { t
     return () => { current = false; subscription?.unsubscribe(); };
   }, [tool, input, folderId]);
   if (!change) return null;
-  const heading = change.kind === 'connects' ? t('toolChange.connects', { from: change.from, phrase: change.phrase, to: change.to })
-    : change.kind === 'missing' ? t('toolChange.missing', { id: change.id }) : t(`toolChange.${change.kind}`, { name: change.name });
+  // The sentence reads in the interface's direction, each stored name and value isolated: a name written
+  // right to left must not swap the two sides of "X reports to Y", or the two ends of an arrow.
+  const heading = change.kind === 'connects' ? t('toolChange.connects', { from: isolate(change.from), phrase: change.phrase, to: isolate(change.to) })
+    : change.kind === 'missing' ? t('toolChange.missing', { id: isolate(change.id) }) : t(`toolChange.${change.kind}`, { name: isolate(change.name) });
   const value = (field: ChangeField) => field.items
-    ? field.items.map(item => (item.private ? `${item.text} (${t('toolChange.private')})` : item.text)).join(', ')
-    : field.changed ? t('toolChange.changed') : field.from !== undefined ? `${field.from} → ${field.to}` : field.to;
+    ? field.items.map(item => (item.private ? `${isolate(item.text)} (${t('toolChange.private')})` : isolate(item.text))).join(', ')
+    : field.changed ? t('toolChange.changed') : field.from !== undefined ? `${isolate(field.from)} → ${isolate(field.to ?? '')}` : isolate(field.to ?? '');
   return (
     <div className={`text-xs ${className}`} data-testid="tool-change-summary">
-      <p dir="auto" className="font-medium text-text-primary break-words">{heading}</p>
+      <p className="font-medium text-text-primary break-words"><IsolatedText text={heading} /></p>
       {change.fields.length > 0 && (
         <ul className="mt-0.5 space-y-0.5 text-text-secondary">
-          {change.fields.map(field => <li key={field.field} dir="auto" className="break-words"><span dir="ltr" className="font-mono">{field.field}</span>: {value(field)}</li>)}
+          {change.fields.map(field => <li key={field.field} className="break-words"><span dir="ltr" className="font-mono">{field.field}</span>: <IsolatedText text={value(field)} /></li>)}
         </ul>
       )}
     </div>

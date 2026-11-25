@@ -6,7 +6,8 @@
 import type { Folder, Identity } from '../types';
 import { escapeCSVField } from './ioc-export';
 import { isPrivateLabel, organizationOf, sameText, sortedByName } from './identity-model';
-import { identityMappingFor } from './identity-import';
+import { MORE_DETAILS, identityMappingFor } from './identity-import';
+import { sliceText } from './utils';
 
 export const IDENTITY_CSV_COLUMNS = ['Name', 'Type', 'Investigation', 'Status', 'Contact', 'Description', 'Organization', 'Other names'] as const;
 const TRAILING_COLUMNS = ['Tags', 'Connections', 'Classification', 'Created', 'Updated'] as const;
@@ -16,7 +17,6 @@ const MAX_LABEL = 500;
 /** Detail labels with a column of their own, at most; the rest share one column as "label: value"
  * lines, so a file of thousands of distinct labels stays a spreadsheet of a sane width. */
 const MAX_DETAIL_COLUMNS = 200;
-const MORE_DETAILS = 'More details';
 
 export function identitiesToCsv(identities: readonly Identity[], options: {
   byId: ReadonlyMap<string, Identity>;
@@ -44,7 +44,7 @@ export function identitiesToCsv(identities: readonly Identity[], options: {
     if (seen.has(key) || seen.size >= MAX_DETAIL_COLUMNS) continue;
     seen.add(key);
     // Two long labels alike in their first MAX_LABEL characters still get two headers.
-    const cut = detail.label.trim().slice(0, MAX_LABEL).replace(/[\uD800-\uDBFF]$/, '');
+    const cut = sliceText(detail.label.trim(), MAX_LABEL);
     let label = cut;
     for (let n = 2; headings.has(`${detail.private ? 1 : 0}:${sameText(label)}`); n++) label = `${cut} ${n}`;
     headings.add(`${detail.private ? 1 : 0}:${sameText(label)}`);

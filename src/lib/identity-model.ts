@@ -45,42 +45,52 @@ export function labelWords(label: string): string[] {
     .replace(/([\p{Ll}\p{N}])(\p{Lu})/gu, '$1 $2').replace(/(\p{Lu})(\p{Lu}\p{Ll})/gu, '$1 $2')
     .toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 }
-/** Any one of these words makes a label private: phones, street addresses, birth dates, government
- * numbers and special categories of personal data, in English and the main European languages
- * (accents ignored: "Teléfono", "Dirección", "Geburtsdatum"). */
+/** Any one of these words makes a label private: birth dates, government numbers and special categories of
+ * personal data, in English and the main European languages (accents ignored: "Geburtsdatum"). Whatever
+ * else the label says ("Date of birth (from passport)", "Passport number - source HR"). */
 const PRIVATE_WORDS = new Set([
-  'phone', 'phones', 'telephone', 'tel', 'mobile', 'cell', 'cellphone', 'fax', 'sms', 'whatsapp', 'pager', 'landline',
-  'street', 'postcode', 'zip', 'zipcode', 'postal', 'pobox', 'birth', 'birthday', 'birthdate', 'dob',
-  'passport', 'ssn', 'nino', 'nhs', 'medicare', 'aadhaar', 'pps', 'dni', 'nie', 'cpf', 'bsn', 'nir', 'nss',
-  'gender', 'sex', 'ethnicity', 'religion', 'medical', 'health', 'disability', 'salary',
-  // German, Spanish, French, Italian, Portuguese and Dutch
-  'telefon', 'telefonnummer', 'handy', 'handynummer', 'mobil', 'mobilnummer', 'mobiltelefon', 'adresse', 'anschrift', 'geburtsdatum',
-  'geburtstag', 'postleitzahl', 'plz', 'strasse', 'ausweis', 'ausweisnummer', 'steuernummer', 'sozialversicherungsnummer', 'reisepass',
-  'telefono', 'movil', 'celular', 'direccion', 'domicilio', 'calle', 'nacimiento', 'pasaporte',
-  'domicile', 'naissance', 'passeport', 'cellulare', 'indirizzo', 'nascita', 'passaporto', 'residenza',
-  'telefone', 'endereco', 'morada', 'nascimento', 'passaporte', 'telefoon', 'telefoonnummer', 'mobiel', 'adres', 'woonadres',
-  'geboortedatum', 'paspoort',
+  'birth', 'birthday', 'birthdate', 'dob', 'passport', 'ssn', 'nino', 'nhs', 'medicare', 'aadhaar', 'pps', 'dni', 'nie', 'cpf', 'bsn', 'nir', 'nss',
+  'gender', 'sex', 'ethnicity', 'religion', 'disability', 'salary', 'medical', 'biometric', 'biometrics', 'genetic', 'fingerprint', 'fingerprints',
+  'geburtsdatum', 'geburtstag', 'ausweis', 'ausweisnummer', 'steuernummer', 'sozialversicherungsnummer', 'reisepass',
+  'nacimiento', 'pasaporte', 'naissance', 'passeport', 'nascita', 'passaporto', 'nascimento', 'passaporte', 'geboortedatum', 'paspoort',
 ]);
-/** Words that make "address", "mobile", "health" and the like name a mailbox, a network, a system or
- * attacker infrastructure rather than a person ("Email address", "Sender address", "IPv4 address",
- * "C2 address", "Mobile device ID", "Phone model", "Health check URL"): such a label stays public. */
-const NOT_PERSONAL_WORDS = new Set([
+/** Phones are private unless the label names a device or service ("Phone model", "Mobile device ID", "Cell tower"). */
+const PHONE_WORDS = new Set([
+  'phone', 'phones', 'telephone', 'tel', 'mobile', 'cell', 'cellphone', 'fax', 'sms', 'whatsapp', 'pager', 'landline',
+  'telefon', 'telefonnummer', 'handy', 'handynummer', 'mobil', 'mobilnummer', 'mobiltelefon', 'telefono', 'movil', 'celular', 'cellulare',
+  'telefone', 'telefoon', 'telefoonnummer', 'mobiel',
+]);
+const NOT_A_PHONE = new Set(['device', 'app', 'application', 'os', 'platform', 'model', 'brand', 'tower', 'sip', 'service', 'ip', 'ipv4', 'ipv6', 'mac']);
+/** Street addresses are private unless the label names a mailbox, a network or attacker infrastructure
+ * ("Email address", "Sender address", "IPv4 address", "C2 address", "Adresse IP"). */
+const ADDRESS_WORDS = new Set([
+  'address', 'addresses', 'street', 'postcode', 'zip', 'zipcode', 'postal', 'pobox',
+  'adresse', 'anschrift', 'postleitzahl', 'plz', 'strasse', 'direccion', 'domicilio', 'calle', 'domicile', 'indirizzo', 'residenza',
+  'endereco', 'morada', 'adres', 'woonadres',
+]);
+const NOT_AN_ADDRESS = new Set([
   'email', 'mail', 'e', 'smtp', 'proxy', 'sender', 'from', 'reply', 'to', 'cc', 'bcc', 'recipient', 'return', 'sip',
   'correo', 'courriel', 'elettronica', 'electronica', 'electronico', 'eletronico',
   'ip', 'ipv4', 'ipv6', 'mac', 'dns', 'gateway', 'broadcast', 'multicast', 'source', 'destination', 'remote', 'local', 'nat',
   'web', 'url', 'uri', 'wallet', 'bitcoin', 'btc', 'eth', 'crypto', 'server', 'host', 'network', 'ethernet', 'wifi',
   'c2', 'callback', 'beacon', 'listener', 'implant', 'payload',
-  'device', 'app', 'application', 'os', 'platform', 'model', 'brand', 'check', 'endpoint', 'status', 'monitor', 'tower', 'service',
 ]);
+/** Health is private unless the label names a system check ("Health check URL", "Health Status"). */
+const HEALTH_WORDS = new Set(['health']);
+const NOT_HEALTH = new Set(['check', 'endpoint', 'status', 'monitor', 'url', 'service', 'server', 'host', 'device']);
+/** A home or personal address or phone stays private whatever else the label says ("Home address (from HR)"). */
+const PERSONAL_WORDS = new Set(['home', 'personal', 'private', 'residential']);
 /** Whether a detail label starts out private: by its words (from a form, an AI tool or a spreadsheet
  * header such as "MobilePhone", "Street address" or "Telefonnummer"), or as one of `translated`
  * (the interface language's private labels). */
 export function isPrivateLabel(label: string, translated: readonly string[] = []): boolean {
   const words = labelWords(label).map(word => word.normalize('NFKD').replace(/\p{M}/gu, ''));
   const has = (...wanted: string[]) => wanted.some(word => words.includes(word));
-  const personal = !words.some(word => NOT_PERSONAL_WORDS.has(word));
-  if (personal && words.some(word => PRIVATE_WORDS.has(word))) return true;
-  if (personal && has('address', 'addresses')) return true;
+  // A word of one kind counts unless the label also names what makes that kind not personal.
+  const kind = (kindWords: ReadonlySet<string>, notPersonal: ReadonlySet<string>, personalWins = false) => words.some(word => kindWords.has(word))
+    && ((personalWins && words.some(word => PERSONAL_WORDS.has(word))) || !words.some(word => notPersonal.has(word)));
+  if (words.some(word => PRIVATE_WORDS.has(word))) return true;
+  if (kind(PHONE_WORDS, NOT_A_PHONE, true) || kind(ADDRESS_WORDS, NOT_AN_ADDRESS, true) || kind(HEALTH_WORDS, NOT_HEALTH)) return true;
   if (words.join('') === 'dob') return true; // "D.O.B."
   if (has('post') && has('code', 'box')) return true;
   if (has('po') && has('box')) return true;
@@ -98,6 +108,14 @@ export function isPrivateLabel(label: string, translated: readonly string[] = []
   if (has('visa') && has('number', 'no')) return true;
   if (has('driver', 'drivers', 'driving') && has('license', 'licence')) return true;
   if (has('kin') || (has('emergency') && has('contact'))) return true;
+  // A health number, card, insurance or record names a person ("Health service number"), not a system check.
+  if (has('health') && has('number', 'no', 'card', 'insurance', 'record', 'records', 'id')) return true;
+  // The other special categories of personal data.
+  if (has('sexual') && has('orientation', 'life')) return true;
+  if (has('political') && has('opinion', 'opinions', 'affiliation', 'party', 'views')) return true;
+  if (has('trade') && has('union')) return true;
+  if (has('criminal') && has('record', 'records', 'conviction', 'convictions', 'history', 'offences', 'offenses')) return true;
+  if (has('religious', 'philosophical') && has('belief', 'beliefs', 'affiliation')) return true;
   const key = sameText(label);
   return translated.some(text => sameText(text) === key);
 }
@@ -105,7 +123,8 @@ export function isPrivateLabel(label: string, translated: readonly string[] = []
 /** Case folded, single spaces, trimmed: how names and details are compared. Folding goes through upper
  * case, so "IŞIK" is "Işık" and "STRASSE" is "Straße"; Turkish "İ" loses the dot its lower case adds. */
 export const sameText = (text: string) => text.normalize('NFC').toUpperCase().toLowerCase().replace(/i\u0307/g, 'i').replace(/ß/g, 'ss')
-  .replace(/\s+/g, ' ').trim();
+  // Greek final sigma is a sigma (lower case writes ς only at a word's end, which "Κώστας’s" is not).
+  .replace(/ς/g, 'σ').replace(/\s+/g, ' ').trim();
 /** How detail values are compared: also without spaces, so "GB33 BUKB 2020…" matches "GB33BUKB2020…". */
 export const detailKey = (text: string) => sameText(text).replace(/\s/g, '');
 /** Accents: the combining diacritics of Latin, Greek and Cyrillic, and the vowel points of Hebrew and

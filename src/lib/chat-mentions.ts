@@ -12,6 +12,7 @@ export interface MentionSuggestion {
 }
 
 import { mentionCategoryLabel } from './i18n-labels';
+import { sliceText } from './utils';
 
 /** Category options shown when user types just '@' */
 export const MENTION_CATEGORIES = [
@@ -163,7 +164,8 @@ export async function resolveMentions(text: string, homeFolderId: string | undef
       const note = await db.notes.get(m.id);
       if (note && !await isHidden(note, hideLocalOnly)) {
         contextParts.push(`[Referenced Note: "${note.title}"]\n${note.content.slice(0, 4000)}`);
-        displayText = displayText.replace(m.full, `@${note.title}`);
+        // A function, so "$&" or "$'" in a stored name is not read as a replacement pattern.
+        displayText = displayText.replace(m.full, () => `@${note.title}`);
       }
     } else if (m.type === 'ioc') {
       const ioc = await db.standaloneIOCs.get(m.id);
@@ -177,7 +179,7 @@ export async function resolveMentions(text: string, homeFolderId: string | undef
           ioc.iocStatus ? `Status: ${ioc.iocStatus}` : '',
         ].filter(Boolean).join('\n');
         contextParts.push(`[Referenced IOC: ${ioc.type}:${ioc.value}]\n${details}`);
-        displayText = displayText.replace(m.full, `@${ioc.type}:${ioc.value}`);
+        displayText = displayText.replace(m.full, () => `@${ioc.type}:${ioc.value}`);
       }
     } else if (m.type === 'identity') {
       const identity = await db.identities.get(m.id);
@@ -196,9 +198,9 @@ export async function resolveMentions(text: string, homeFolderId: string | undef
           ...identity.details.filter(detail => !detail.private).map(detail => `${detail.label}: ${detail.value}`),
         ].filter(Boolean).join('\n');
         // Capped as a note mention is: an identity can hold thousands of details.
-        const shortName = identity.name.slice(0, 200).replace(/[\uD800-\uDBFF]$/, '');
-        contextParts.push(`[Referenced Identity: "${shortName}"]\n${details.length > 4000 ? `${details.slice(0, 4000).replace(/[\uD800-\uDBFF]$/, '')}…` : details}`);
-        displayText = displayText.replace(m.full, `@${shortName}`);
+        const shortName = sliceText(identity.name, 200);
+        contextParts.push(`[Referenced Identity: "${shortName}"]\n${details.length > 4000 ? `${sliceText(details, 4000)}…` : details}`);
+        displayText = displayText.replace(m.full, () => `@${shortName}`);
       }
     } else if (m.type === 'investigation') {
       const folder = await db.folders.get(m.id);
@@ -217,7 +219,7 @@ export async function resolveMentions(text: string, homeFolderId: string | undef
           `Entities: ${noteCount} notes, ${taskCount} tasks, ${iocCount} IOCs, ${eventCount} timeline events, ${identityCount} identities`,
         ].filter(Boolean).join('\n');
         contextParts.push(`[Referenced Investigation: "${folder.name}"]\n${details}`);
-        displayText = displayText.replace(m.full, `@${folder.name}`);
+        displayText = displayText.replace(m.full, () => `@${folder.name}`);
       }
     }
   }

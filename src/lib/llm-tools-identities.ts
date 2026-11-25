@@ -15,6 +15,7 @@ import {
   withConnection,
 } from './identity-model';
 import { withCreatorTags } from './tool-creator';
+import { sliceText } from './utils';
 
 const STATUSES = IDENTITY_STATUSES;
 const MAX_NAME = 200;
@@ -71,7 +72,7 @@ const SEARCH_OTHER_NAMES = 10;    // other names a search lists
 const PAGE = 50;                  // other names, details, connections and tags per read, at most
 const PAGE_BUDGET = 30_000;       // characters those lists may take in one read
 // Never ending on half a character: providers can reject a lone surrogate.
-const cut = (text: string | undefined, max: number) => (text && text.length > max ? `${text.slice(0, max).replace(/[\uD800-\uDBFF]$/, '')}…` : text);
+const cut = (text: string | undefined, max: number) => (text && text.length > max ? `${sliceText(text, max)}…` : text);
 
 /** The details anyone can see; private ones are never returned. */
 const publicDetails = (identity: Identity) => identity.details.filter(detail => !detail.private)
@@ -96,7 +97,7 @@ function find(rows: readonly Identity[], input: { id?: unknown; name?: unknown }
   if (!name) return 'Give the identity\'s id or name.';
   const matches = rows.filter(identity => [identity.name, ...identity.aliases].some(text => sameText(text) === sameText(name)));
   if (matches.length === 1) return matches[0];
-  if (matches.length > 1) return `"${name}" names ${matches.length} identities (${matches.map(identity => `${identity.id}: ${identity.type}`).join(', ')}); give the id.`;
+  if (matches.length > 1) return `"${name}" names ${matches.length} identities (${matches.slice(0, MAX_ITEMS).map(identity => `${identity.id}: ${cut(identity.type, 100)}`).join(', ')}); give the id.`;
   return `No identity named "${name}" in this investigation; search_identities lists them.`;
 }
 
@@ -121,7 +122,7 @@ export async function executeSearchIdentities(input: Record<string, unknown>, fo
   const matched = rows.filter(identity => !identity.archived && (!type || sameText(identity.type) === type)
     && (!status || identity.status === status) && matches(identity)).sort(byName);
   return JSON.stringify({ count: matched.length, identities: matched.slice(0, limit).map(identity => (options.brief
-    ? { id: identity.id, name: cut(identity.name, MAX_VALUE), type: identity.type, status: identity.status }
+    ? { id: identity.id, name: cut(identity.name, MAX_VALUE), type: cut(identity.type, 100), status: identity.status }
     : summary(identity, byId))) });
 }
 
@@ -179,14 +180,15 @@ function addDetails(identity: Identity, raw: unknown): number | string {
     label: clean((entry as { label?: unknown })?.label, 100),
     value: clean((entry as { value?: unknown })?.value, MAX_TEXT),
   })).filter(entry => entry.label && entry.value);
-  if (identity.details.filter(detail => !detail.private).length + entries.length > MAX_DETAILS
-    || identity.details.length + entries.length > MAX_TOTAL_DETAILS) {
-    return `An identity holds at most ${MAX_DETAILS} details.`;
-  }
+  if (identity.details.filter(detail => !detail.private).length + entries.length > MAX_DETAILS) return `An identity holds at most ${MAX_DETAILS} details.`;
+  // The total counts private details too: said without a number the agent could not reconcile with what it sees.
+  if (identity.details.length + entries.length > MAX_TOTAL_DETAILS) return 'This identity cannot hold more details.';
   for (const { label, value } of entries) {
     const isPrivate = isPrivateLabel(label, privateLabels);
     const key = detailKey(value);
-    if (identity.details.some(detail => !!detail.private === isPrivate && sameText(detail.label) === sameText(label) && detailKey(detail.value) === key)) continue;
+    // A repeat of a public detail is skipped. A private value is always stored: skipping a repeat
+    // would show, through the room left under the total, whether a guess matched a hidden value.
+    if (!isPrivate && identity.details.some(detail => !detail.private && sameText(detail.label) === sameText(label) && detailKey(detail.value) === key)) continue;
     identity.details.push({ id: nanoid(), label, value, ...(isPrivate ? { private: true } : {}) });
   }
   return entries.length;

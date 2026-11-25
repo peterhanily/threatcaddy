@@ -1,6 +1,7 @@
 import type { ToolUseBlock } from '../types';
 import type { HumanApproval } from './human-approval';
 import { isPlanModeTool, type ToolSurface } from './tool-reach';
+import { sliceText } from './utils';
 
 export interface ToolExecutionResult {
   result: string;
@@ -35,7 +36,7 @@ export function truncateToolResult(result: string, maxLen: number): string {
   if (result.length <= maxLen) return result;
   const note = `Showing ${maxLen.toLocaleString()} of ${result.length.toLocaleString()} characters. Use more specific queries, filters or paging to get complete data.`;
   // Never ending on half a character: providers can reject a lone surrogate.
-  if (!/^\s*[[{]/.test(result)) return result.substring(0, maxLen).replace(/[\uD800-\uDBFF]$/, '') + `\n\n[TRUNCATED: ${note}]`;
+  if (!/^\s*[[{]/.test(result)) return sliceText(result, maxLen) + `\n\n[TRUNCATED: ${note}]`;
   // JSON stays JSON: the start of the result as a string, marked truncated. Escaping can lengthen
   // it, so the kept part shrinks by the overshoot (never splitting a surrogate pair).
   let kept = maxLen;

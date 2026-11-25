@@ -2667,6 +2667,15 @@ components:
           type: object
         serverRecord:
           type: object
+        unchanged:
+          type: boolean
+          description: "Accepted without a write, revision or event: the change would leave the row as it is."
+        reason:
+          type: string
+          description: "Why a change was rejected, when a field had a shape the server refuses (at most 200 characters)."
+        previousFolderId:
+          type: string
+          description: "The investigation an accepted change moved the row out of."
       required: [table, entityId, status]
 
     InvestigationSnapshot:

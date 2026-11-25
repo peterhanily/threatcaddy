@@ -30,6 +30,10 @@ const MAX_ERRORS = 200;
 /** A connection phrase (100) and a name (200), with room for spacing. */
 const MAX_CONNECTION_LINE = 400;
 
+/** The column, marked "(detail)" or "(private)", where Identities › Export writes details past its 200
+ * detail columns, as "label: value" lines; import reads them back under their own labels. */
+export const MORE_DETAILS = 'More details';
+
 /** A header as words ("displayName" → "display name", "job_title" → "job title"), for recognising columns. */
 const headerKey = (header: string) => labelWords(header).join(' ');
 
@@ -53,7 +57,8 @@ export function looksLikeIdentities(headers: readonly string[]): boolean {
   const keys = headers.map(headerKey);
   return keys.some(key => /^(name|full name|display name)$/.test(key))
     && keys.some(key => /^(type|organi[sz]ation|organi[sz]ation name|company|company name|other names|aliases|job title|status|contact|connections)$/.test(key))
-    && !keys.some(key => /^(timestamp|time|date|datetime|@timestamp|event time)$/.test(key));
+    // Headers are read as words, so "DateTime" and "TimeStamp" arrive as "date time" and "time stamp".
+    && !keys.some(key => /^(timestamp|time stamp|time|date|datetime|date time|@timestamp|event time)$/.test(key));
 }
 
 /** Columns that, beside a Name column, mark a list of identities: a type, an organisation, other
@@ -196,6 +201,20 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   };
   // The rule the profile, the graph and the AI tools follow: once, never to itself, and "works at" or
   // "belongs to" only toward an organisation. False when refused.
+  // What each identity holds, as keys: a value is checked once, not against every earlier one, so a
+  // crafted cell of thousands of lines for one identity takes linear time.
+  const held = new Map<string, { tags: Set<string>; aliases: Set<string>; details: Map<string, number> }>();
+  const detailKeyOf = (label: string, text: string) => `${sameText(label)}\u0000${detailKey(text)}`;
+  const holding = (identity: Identity) => {
+    let entry = held.get(identity.id);
+    if (!entry) {
+      identity.tags = [...identity.tags]; // the working copy shares its tags with the stored row until now
+      entry = { tags: new Set(identity.tags), aliases: new Set(identity.aliases.map(sameText)),
+        details: new Map(identity.details.map((detail, at) => [detailKeyOf(detail.label, detail.value), at])) };
+      held.set(identity.id, entry);
+    }
+    return entry;
+  };
   const connect = (from: Identity, to: Identity, label: string) => {
     const next = withConnection(from, to, label);
     if (next) from.connections = next;
@@ -211,7 +230,9 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
   // Worked out once per import, not once per row (a header can be long; a file can hold 100,000 rows).
   const aliasColumns = columns('identity-aliases');
   const tagColumns = columns('identity-tags');
+  const ownExport = isIdentityExport([...mappings.keys()]);
   const detailColumns = columns('identity-detail').map(column => ({ column, label: value(withoutSuffix(withoutSuffix(column))),
+    more: COLUMN_SUFFIX.test(column) && sameText(withoutSuffix(withoutSuffix(column))) === sameText(MORE_DETAILS),
     isPrivate: options.privateColumns ? options.privateColumns.has(column) : isPrivateDetailColumn(column, options.isPrivateLabel) }));
   const read = wordReader(options.words, typesInUse);
   const connectionColumns = columns('identity-connection').map(column => ({ column, phrase: read.phrase(column) }));
@@ -233,29 +254,39 @@ export function buildIdentities(rows: readonly Record<string, string>[], mapping
     const description = descriptionColumn ? value(row[descriptionColumn]) : '';
     if (description && !identity.description) identity.description = description;
     // Tags as exported (one per line) are added to those it has; import never removes one.
-    // One tag a line, as exported; a comma or semicolon also separates tags, as other tools write them.
-    for (const column of tagColumns) for (const tag of lines(row[column]).flatMap(line => line.split(/[,;]/)).map(text => value(text).slice(0, 100)).filter(Boolean)) {
-      if (!identity.tags.includes(tag)) identity.tags = [...identity.tags, tag];
+    // One tag a line, as exported (a tag may hold a comma); in other tools' files a comma or semicolon also separates tags.
+    for (const column of tagColumns) for (const tag of lines(row[column]).flatMap(line => (ownExport ? [line] : line.split(/[,;]/))).map(text => value(text).slice(0, 100)).filter(Boolean)) {
+      const { tags } = holding(identity);
+      if (!tags.has(tag)) { tags.add(tag); identity.tags.push(tag); }
     }
+    const nameKey = sameText(identity.name);
     for (const column of aliasColumns) for (const alias of lines(row[column])) {
-      if (sameText(alias) === sameText(identity.name) || identity.aliases.some(known => sameText(known) === sameText(alias))) continue;
+      const { aliases } = holding(identity);
+      const key = sameText(alias);
+      if (key === nameKey || aliases.has(key)) continue;
       // Another identity's name as an other name would make that name ambiguous everywhere.
       if (owners(alias).some(other => other.id !== identity.id)) {
         error(`Row ${index + 2}: “${alias}” is already another identity's name; not added as another name of “${identity.name}”.`);
         continue;
       }
       identity.aliases.push(alias);
+      aliases.add(key);
       remember(alias, identity.id);
     }
     const status = statusColumn ? read.status(value(row[statusColumn])) : undefined;
     if (!identity.status && status) identity.status = status;
     if (contactColumn && read.yes(row[contactColumn] ?? '') && !identity.contact) identity.contact = true;
-    for (const { column, label, isPrivate } of detailColumns) {
-      for (const detail of lines(row[column])) {
-        const known = identity.details.findIndex(other => sameText(other.label) === sameText(label) && detailKey(other.value) === detailKey(detail));
+    for (const { column, label: columnLabel, isPrivate, more } of detailColumns) {
+      for (const line of lines(row[column])) {
+        const at = more ? line.indexOf(': ') : -1;
+        const [label, detail] = at > 0 ? [line.slice(0, at).slice(0, 100), line.slice(at + 2)] : [columnLabel, line];
+        const { details } = holding(identity);
+        const key = detailKeyOf(label, detail);
+        const known = details.get(key);
         // Already held: a column imported as private makes it private (never the reverse: import only
         // fills in, and making something public is a person's choice on the profile).
-        if (known >= 0) { if (isPrivate && !identity.details[known].private) identity.details[known] = { ...identity.details[known], private: true }; continue; }
+        if (known !== undefined) { if (isPrivate && !identity.details[known].private) identity.details[known] = { ...identity.details[known], private: true }; continue; }
+        details.set(key, identity.details.length);
         identity.details.push({ id: nanoid(), label, value: detail, ...(isPrivate ? { private: true } : {}) });
       }
     }

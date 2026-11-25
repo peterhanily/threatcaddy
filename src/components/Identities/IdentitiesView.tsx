@@ -20,6 +20,7 @@ import { IDENTITY_STATUSES } from '../../lib/entity-enums';
 type Filter = 'all' | 'contact' | 'other' | (typeof BUILTIN_TYPES)[number];
 const FILTERS: Filter[] = ['all', 'person', 'contact', 'organization', 'system', 'account', 'other'];
 // A letter heading before the first name that starts with it; accents do not split a letter (Ö goes under O).
+const filterKeyOf = (query: string, filter: string, status: string | undefined) => [query.trim(), filter, status ?? ''].join('\u0000');
 const initialOf = (identity: Identity) => [...looseText(identity.name)][0]?.toUpperCase() ?? '';
 /** Below Tailwind's lg breakpoint the profile sits under the list. */
 const stacked = () => !!window.matchMedia && !window.matchMedia('(min-width: 1024px)').matches;
@@ -81,6 +82,8 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   const screensharing = useScreenshare().maxLevel !== null;
   const [tab, setTab] = useState<'rolodex' | 'org'>('rolodex');
   const [selectedId, setSelectedId] = useState(selectRequest?.id ?? '');
+  // The profile last shown while in the list, and the search and filters it was shown under: see `selected`.
+  const [pinned, setPinned] = useState<{ id: string; key: string }>();
   const [statusFilter, setStatusFilter] = useState<IdentityStatus | undefined>(selectRequest?.status);
   const [organizationId, setOrganizationId] = useState('');
   const [query, setQuery] = useState(selectRequest?.query ?? '');
@@ -96,6 +99,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
     setSeenSelect(selectRequest);
     if (selectRequest) {
       setSelectedId(selectRequest.id ?? ''); setTab('rolodex'); setQuery(selectRequest.query ?? ''); setFilter('all'); setStatusFilter(selectRequest.status);
+      setPinned(selectRequest.id ? { id: selectRequest.id, key: filterKeyOf(selectRequest.query ?? '', 'all', selectRequest.status) } : undefined);
     }
   }
   useEffect(() => { if (selectRequest) onSelectHandled?.(); }, [selectRequest, onSelectHandled]);
@@ -121,10 +125,19 @@ export function IdentitiesView(props: IdentitiesViewProps) {
     && identityMatches(identity, query, labels.typeLabel(identity.type))),
     [live, filter, statusFilter, query, labels]);
   // While a search or filter narrows the list, the profile shown is one in it: none beside "No matches",
-  // and not one the filter leaves out.
+  // and not one a change of search or filter leaves out. An identity changed while shown (marked
+  // contained under the Compromised chip, say) stays, with its focus, until the search or filters change.
   const narrowed = !!query.trim() || filter !== 'all' || !!statusFilter;
-  const selected = narrowed ? rows.find(identity => identity.id === selectedId) ?? rows[0]
-    : live.find(identity => identity.id === selectedId) ?? rows[0] ?? live[0];
+  const filterKey = filterKeyOf(query, filter, statusFilter);
+  const kept = pinned?.key === filterKey ? live.find(identity => identity.id === pinned.id) : undefined;
+  const selected = rows.find(identity => identity.id === selectedId) ?? kept
+    ?? (narrowed ? rows[0] : live.find(identity => identity.id === selectedId) ?? rows[0] ?? live[0]);
+  // Pinned while shown in the list (the first row shown by default too), so acting on it keeps it.
+  if (selected && (pinned?.id !== selected.id || pinned.key !== filterKey) && rows.some(identity => identity.id === selected.id)) {
+    setPinned({ id: selected.id, key: filterKey });
+  }
+  /** Shows an identity, kept while the search and filters stay as they are now (or as given). */
+  const show = (id: string, under = filterKey) => { setSelectedId(id); setPinned({ id, key: under }); };
   const statusCounts = useMemo(() => new Map(IDENTITY_STATUSES.map(status => [status, live.filter(identity => identity.status === status).length])), [live]);
   const statuses = IDENTITY_STATUSES.filter(status => status === statusFilter || (statusCounts.get(status) ?? 0) > 0);
   // Once per render, not once per row: the list's single tab stop falls back to its first row.
@@ -143,12 +156,12 @@ export function IdentitiesView(props: IdentitiesViewProps) {
       : event.key === 'Home' ? 0 : event.key === 'End' ? rows.length - 1 : -1;
     if (next < 0 || !rows.length) return;
     event.preventDefault();
-    setSelectedId(rows[next].id);
+    show(rows[next].id);
     listRef.current?.querySelector<HTMLElement>(`[data-identity-row="${CSS.escape(rows[next].id)}"]`)?.focus();
   };
   /** At narrow widths the profile is below the list, so a chosen identity is brought into view. */
   const choose = (identity: Identity) => {
-    setSelectedId(identity.id);
+    show(identity.id);
     // Smoothly, unless the system asks for reduced motion.
     const behavior = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
     if (stacked()) requestAnimationFrame(() => profileRef.current?.scrollIntoView?.({ block: 'start', behavior }));
@@ -175,9 +188,13 @@ export function IdentitiesView(props: IdentitiesViewProps) {
   });
   const open = useCallback((identity: Identity) => {
     if (folderId && identity.folderId !== folderId) { onOpenElsewhere?.(identity); return; }
-    setSelectedId(identity.id); setTab('rolodex');
-    if (!rows.some(row => row.id === identity.id)) { setQuery(''); setFilter('all'); }
-  }, [folderId, onOpenElsewhere, rows]);
+    setTab('rolodex');
+    // Opened from the profile or an org chart: the list shows it, clearing a search or filter that hides it.
+    setSelectedId(identity.id);
+    if (rows.some(row => row.id === identity.id)) { setPinned({ id: identity.id, key: filterKey }); return; }
+    setQuery(''); setFilter('all'); setStatusFilter(undefined);
+    setPinned({ id: identity.id, key: filterKeyOf('', 'all', undefined) });
+  }, [folderId, onOpenElsewhere, rows, filterKey]);
   const ignore = (name: FoundName) => {
     focusAfter.current = 'found';
     ignoreName(name.folderId, name.text); setPicked(null);
@@ -341,7 +358,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
           }}
           onSaved={(identity, message) => {
             setForm(null);
-            setSelectedId(identity.id);
+            show(identity.id);
             if (message) addToast('success', message);
           }}
         />
@@ -365,7 +382,7 @@ export function IdentitiesView(props: IdentitiesViewProps) {
             const text = picked.text;
             setPicked(null);
             void run(() => onUpdate(identity.id, withOtherName(text)), t('toast.otherNameAdded', { text, name: identity.name })).catch(() => { /* Reported. */ });
-            setSelectedId(identity.id);
+            show(identity.id);
           }}
           onTrackActor={onTrackThreatActor && (() => {
             focusAfter.current = 'found';

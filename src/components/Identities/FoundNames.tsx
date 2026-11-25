@@ -3,8 +3,8 @@ import { Plus } from 'lucide-react';
 import type { Folder, Identity } from '../../types';
 import { Modal } from '../Common/Modal';
 import { byName, type FoundName } from '../../lib/identity-model';
-import { InvestigationPill } from './identity-ui';
-import type { IdentityLabels } from './identity-labels';
+import { InvestigationPill, IsolatedText } from './identity-ui';
+import { isolate, type IdentityLabels } from './identity-labels';
 
 const SHOWN = 10;
 const button = 'rounded-md border border-border-subtle px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50';
@@ -71,7 +71,7 @@ export function FoundNameDialog({ found, folders, identities, labels, onClose, o
         {near ? (
           <>
             <div className="flex flex-wrap items-center gap-2">
-              <button type="button" autoFocus className={primary} onClick={() => onAddAsOtherName(near)}>{t('found.looksLike', { name: near.name })}</button>
+              <button type="button" autoFocus className={primary} onClick={() => onAddAsOtherName(near)}><IsolatedText text={t('found.looksLike', { name: isolate(near.name) })} /></button>
               <span className="text-xs text-text-muted">{t('found.looksLikeHint')}</span>
             </div>
             <p className="text-xs text-text-muted">{t('found.or')}</p>

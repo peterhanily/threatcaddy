@@ -101,7 +101,7 @@ describe('the Edit form', () => {
     const profile = screen.getByRole('article', { name: 'Chief Executive' });
     expect(within(profile).getByText('TLP:RED')).toBeInTheDocument();
     await user.click(within(profile).getByRole('button', { name: 'Edit' }));
-    await user.selectOptions(within(screen.getByRole('dialog')).getByRole('combobox', { name: 'Classification level' }), 'TLP:AMBER');
+    await user.selectOptions(within(screen.getByRole('dialog')).getByRole('combobox', { name: 'Classification' }), 'TLP:AMBER');
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }));
     expect(stored.get('vip')?.clsLevel).toBe('TLP:AMBER');
   });
@@ -284,6 +284,22 @@ describe('the CSV round trip and the sample (PROD-6, PROD-7)', () => {
     expect(back.details[0].private).toBeUndefined();
     const again = buildIdentities(parsed.rows, mappings, { folderId: 'case', existing: [{ ...lee, tags: ['vip'] }], now: 5 });
     expect(again.updated).toEqual([expect.objectContaining({ id: 'lee', changes: expect.objectContaining({ tags: ['vip', 'finance'] }) })]);
+  });
+
+  it('reads back details past the export\'s 200 columns under their own labels, and a tag holding a comma whole', () => {
+    const many = make('many', 'Ana Silva', { tags: ['APT, suspected'], details: [
+      ...Array.from({ length: 205 }, (_, i) => ({ id: `d${i}`, label: `Field ${i}`, value: `value ${i}` })),
+      { id: 'p', label: 'Badge', value: '7777', private: true }] });
+    const csv = identitiesToCsv([many], { byId: new Map([[many.id, many]]), folders, includePrivate: true });
+    const parsed = parseInput(csv.replace(/^\uFEFF/, ''));
+    const mappings = new Map<string, ColumnMapping>(detectSchema(parsed.headers).map(detected => [detected.column, detected.mapping]));
+    // Into the same investigation: nothing changes, however often the file is imported.
+    expect(buildIdentities(parsed.rows, mappings, { folderId: 'case', existing: [many], clsLevel: 'TLP:AMBER', inheritedClsLevel: 'TLP:AMBER', now: 5 }).updated).toEqual([]);
+    // Into another: the same labels, values, privacy and tags.
+    const copy = buildIdentities(parsed.rows, mappings, { folderId: 'other', existing: [], now: 5 }).created[0];
+    expect(copy.details.map(({ label, value, private: hidden }) => [label, value, !!hidden]).sort())
+      .toEqual(many.details.map(({ label, value, private: hidden }) => [label, value, !!hidden]).sort());
+    expect(copy.tags).toEqual(['data-import', 'APT, suspected']);
   });
 
   it('reads back the level an identity inherits as inherited, so an unchanged file changes nothing', () => {

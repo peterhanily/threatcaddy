@@ -28,6 +28,8 @@ let decoding: string | null = null;
 let legacyRemoved: string | null = null;
 /** Changes run one after another, each on the list as the previous one left it. */
 let queue: Promise<void> = Promise.resolve();
+/** The plain-text list being stored encrypted, so it is scheduled once. */
+let reencrypting: string | null = null;
 
 const toMap = (value: unknown): Ignored => {
   const folders = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -65,8 +67,12 @@ export function ignoredSnapshot(): Ignored {
   const stored = parse(raw);
   if (stored.enc === undefined) {
     cache = { key, raw, ignored: toMap(stored.folders) };
-    // Encryption was turned on after the list was written: store it encrypted from now on.
-    if (raw && isEncryptionEnabled() && getSessionKey()) void update(() => {});
+    // Encryption was turned on after the list was written: store it encrypted from now on. After this
+    // render (getSnapshot must not notify other components while React renders), once per stored list.
+    if (raw && isEncryptionEnabled() && getSessionKey() && reencrypting !== raw) {
+      reencrypting = raw;
+      queueMicrotask(() => void update(() => {}).finally(() => { if (reencrypting === raw) reencrypting = null; }));
+    }
     return cache.ignored;
   }
   // Encrypted: decoded once the workspace is unlocked; until then nothing is shown as ignored.

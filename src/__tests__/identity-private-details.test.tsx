@@ -35,6 +35,13 @@ describe('the private-label rule', () => {
     for (const label of privateLabels) expect(isPrivateLabel(label), label).toBe(true);
   });
 
+  it('keeps a personal label private whatever else it says (a word that makes an address or phone public does not unmask the rest)', () => {
+    for (const label of ['Phone (e.g. +44)', 'Date of birth (from passport)', 'Passport number - source HR', 'Home address (from HR)',
+      'Mobile (from HR)', 'Health notes (from GP)', 'Phone - to call back', 'Gender (local records)', 'Medical status', 'Disability status',
+      'Salary (local currency)', 'Phone/Email', 'Sexual orientation', 'Political opinion', 'Trade union membership', 'Criminal record',
+      'Biometric data', 'Genetic data', 'Religious beliefs']) expect(isPrivateLabel(label), label).toBe(true);
+  });
+
   it('keeps network and mailbox addresses, accounts and work identifiers public', () => {
     const publicLabels = ['Email', 'EmailAddress', 'Email address', 'E-mail address', 'mail', 'userPrincipalName', 'IP address', 'MAC address',
       'Hostname', 'Domain', 'Username', 'SamAccountName', 'Handle', 'IBAN', 'Asset tag', 'Website', 'Department', 'Title', 'Hotel booking ref',
@@ -61,6 +68,12 @@ describe('importing a directory export', () => {
   ].join('\n');
   const parsed = parseInput(csv);
   const mappings = new Map<string, ColumnMapping>(detectSchema(parsed.headers).map(detection => [detection.column, detection.mapping]));
+
+  it('does not take a log with a timestamp column for a list of identities, however the column is written', () => {
+    for (const time of ['DateTime', 'TimeStamp', 'timestamp', '@timestamp', '_time', 'EventTime', 'date_time']) {
+      expect(looksLikeIdentities([time, 'Name', 'Type', 'Status']), time).toBe(false);
+    }
+  });
 
   it('recognises an Entra ID list by its displayName column', () => {
     expect(looksLikeIdentities(['displayName', 'jobTitle', 'mail', 'mobilePhone'])).toBe(true);

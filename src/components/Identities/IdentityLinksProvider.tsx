@@ -77,12 +77,14 @@ export function IdentityLinksProvider({ identities, isVisible, threatActors, fol
   }), [index, isIgnored, readOnly, onOpen]);
 
   const live = useMemo(() => [...index.folders.values()].flatMap(folder => folder.identities), [index]);
+  // Names an Add form must not take: archived identities' too (not ones hidden while screensharing).
+  const named = useMemo(() => identities.filter(identity => !identity.trashed && (!isVisible || isVisible(identity))), [identities, isVisible]);
   return (
     <IdentityLinksContext.Provider value={value}>
       {children}
       {picked && (
         <Suspense fallback={null}>
-          <IdentityLinkDialogs found={picked} folders={folders} identities={live} onClose={close}
+          <IdentityLinkDialogs found={picked} folders={folders} identities={live} named={named} onClose={close}
             onIgnore={() => ignore(picked.folderId, picked.text)} onCreate={onCreate} onUpdate={onUpdate} onTrackActor={onTrackThreatActor} />
         </Suspense>
       )}

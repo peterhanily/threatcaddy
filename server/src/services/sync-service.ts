@@ -310,6 +310,8 @@ export async function processPush(
       for (const member of memberships) if (member.role === 'owner' || member.role === 'editor') editorFolders.add(member.folderId);
     }
     const result: SyncResult[] = new Array(changes.length);
+    // Investigations this batch deletes (folders are processed first): their items' deletes complete it.
+    const deletedInBatch = new Set<string>();
     // Creating a folder first makes its ownership available to children in the
     // same batch regardless of their original ordering.
     const ordered = changes.map((change, index) => ({ change, index }))
@@ -407,11 +409,14 @@ export async function processPush(
         // already deleted, or a put equal to the stored row (two devices made the same change, such
         // as the same 30-day purge). Accepted without a write, an event or a new revision.
         if (current && (op === 'delete' ? !!current.deletedAt : !current.deletedAt && sameAsStored(change.table, cleanData, current))) {
+          if (change.table === 'folders' && op === 'delete') deletedInBatch.add(entityId);
           result[index] = { table: change.table, entityId, status: 'accepted', serverVersion, unchanged: true };
           continue;
         }
-        // Deleting an item of a deleted investigation completes that deletion whatever its revision.
-        if (!inDeletedFolder) {
+        // Deleting an item of an investigation this batch deletes completes that deletion whatever its
+        // revision. For one deleted earlier, a stale delete is a conflict like any other: the
+        // investigation can still be restored, with the teammate's newer item.
+        if (!(inDeletedFolder && sourceFolder && deletedInBatch.has(sourceFolder))) {
           result[index] = { table: change.table, entityId, status: 'conflict', serverVersion, serverData: current };
           continue;
         }
@@ -440,6 +445,7 @@ export async function processPush(
           await publishInvestigationVisibility(tx, entityId, op === 'delete');
         }
       }
+      if (change.table === 'folders' && op === 'delete') deletedInBatch.add(entityId);
       result[index] = { table: change.table, entityId, status: 'accepted', serverVersion: record.version as number, serverRecord: record,
         ...(sourceFolder && sourceFolder !== destinationFolder ? { previousFolderId: sourceFolder } : {}) };
       const eventFolder = (record.folderId as string | undefined) ?? (change.table === 'folders' ? entityId : undefined);

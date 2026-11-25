@@ -3,7 +3,8 @@ import { Clock, FileText, Search } from 'lucide-react';
 import type { Identity, Note, StandaloneIOC, TimelineEvent } from '../../types';
 import type { IdentityActivity } from '../../lib/identity-match';
 import { formatDate } from '../../lib/utils';
-import type { IdentityLabels } from './identity-labels';
+import { isolate, type IdentityLabels } from './identity-labels';
+import { IsolatedText } from './identity-ui';
 
 const SHOWN = 8;
 const ICONS = { event: Clock, note: FileText, ioc: Search } as const;
@@ -34,7 +35,7 @@ export function IdentityActivitySection({ identity, activity, labels, onOpenEven
         <h3 id={`${ids}-activity`} className="text-xs font-semibold uppercase tracking-wide text-text-muted">{t('activity.heading', { count: items.length })}</h3>
         {onAddNote && (
           <button type="button" className="text-xs font-medium text-accent hover:underline" onClick={() => onAddNote(identity)}>
-            {t('activity.addNote', { name: identity.name })}
+            <IsolatedText text={t('activity.addNote', { name: isolate(identity.name) })} />
           </button>
         )}
       </div>
@@ -58,7 +59,7 @@ export function IdentityActivitySection({ identity, activity, labels, onOpenEven
             );
           })}
         </ul>
-      ) : <p className="text-xs text-text-muted">{t('activity.none', { name: identity.name })}</p>}
+      ) : <p className="text-xs text-text-muted"><IsolatedText text={t('activity.none', { name: isolate(identity.name) })} /></p>}
       {activity.partial && <p className="text-xs text-text-muted">{t('activity.partial')}</p>}
       {items.length > SHOWN && (
         <button type="button" aria-expanded={all} className="self-start text-xs font-medium text-accent hover:underline" onClick={() => setAll(value => !value)}>

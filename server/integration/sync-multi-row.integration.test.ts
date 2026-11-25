@@ -62,6 +62,16 @@ describe('multi-row changes the server accepts', () => {
     expect((await processPush([{ table: 'notes', entityId: 'n2', op: 'delete', clientVersion: 1 }], 'owner', { authorize: true }))[0].status).toBe('accepted');
   });
 
+  it('treats a stale delete in an investigation deleted earlier as a conflict, so a restore keeps the newer item', async () => {
+    // A teammate edits Dana; the investigation is then deleted on its own.
+    expect((await processPush([{ table: 'identities', entityId: 'dana', op: 'put', clientVersion: 1, data: person('Dana R.') }], 'owner', { authorize: true }))[0].status).toBe('accepted');
+    expect((await processPush([{ table: 'folders', entityId: 'case', op: 'delete', clientVersion: 1 }], 'owner', { authorize: true }))[0].status).toBe('accepted');
+    // A device that never saw the edit deletes Dana: a conflict, not a silent delete.
+    const [stale] = await processPush([{ table: 'identities', entityId: 'dana', op: 'delete', clientVersion: 1 }], 'owner', { authorize: true });
+    expect(stale.status).toBe('conflict');
+    expect((await version('identities', 'dana')).deleted_at).toBeNull();
+  });
+
   it('still lets nothing else write into a deleted investigation, or a viewer delete in it', async () => {
     expect((await processPush([{ table: 'folders', entityId: 'case', op: 'delete', clientVersion: 1 }], 'owner', { authorize: true }))[0].status).toBe('accepted');
     const refused = await processPush([

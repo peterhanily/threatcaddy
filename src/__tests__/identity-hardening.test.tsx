@@ -53,13 +53,23 @@ describe('the detail cap', () => {
 });
 
 describe('the total detail cap', () => {
+  it('stores a guessed private value whether or not it matches, so the room left says nothing', async () => {
+    await seedAIWorkspace();
+    const phone = { id: 'p', label: 'Phone', value: '+44 7700 900123', private: true };
+    await db.identities.bulkAdd([person('lee', { name: 'Lee Park', details: [phone] }), person('kim', { name: 'Kim Lee', details: [phone] })]);
+    await run('update_identity', { id: 'lee', addDetails: [{ label: 'Phone', value: '+44 7700 900123' }] }); // the hidden value
+    await run('update_identity', { id: 'kim', addDetails: [{ label: 'Phone', value: '+44 7700 900999' }] }); // a wrong guess
+    expect((await db.identities.get('lee'))?.details).toHaveLength(2);
+    expect((await db.identities.get('kim'))?.details).toHaveLength(2);
+  });
+
   it('stops an identity growing without end through private details', async () => {
     await seedAIWorkspace();
     const details = Array.from({ length: 395 }, (_, index) => ({ id: `p${index}`, label: 'Phone', value: `+44 7700 9${String(index).padStart(5, '0')}`, private: true }));
     await db.identities.add(person('lee', { name: 'Lee Park', details }));
     expect(await run('update_identity', { id: 'lee', addDetails: [{ label: 'Phone', value: '+1 555 0100' }] })).toMatchObject({ success: true });
     const many = Array.from({ length: 10 }, (_, index) => ({ label: 'Phone', value: `+1 555 01${index}0` }));
-    expect(await run('update_identity', { id: 'lee', addDetails: many })).toMatchObject({ error: expect.stringMatching(/at most/) });
+    expect(await run('update_identity', { id: 'lee', addDetails: many })).toMatchObject({ error: 'This identity cannot hold more details.' });
   });
 });
 

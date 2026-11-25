@@ -163,12 +163,12 @@ const WORD = /[\p{L}\p{M}\p{N}_]/u;
 /** Scripts written without spaces between words: their word boundaries come from `Intl.Segmenter`. */
 const UNSPACED = /[\p{scx=Han}\p{scx=Hiragana}\p{scx=Katakana}\p{scx=Thai}\p{scx=Lao}\p{scx=Khmer}\p{scx=Myanmar}]/u;
 const HANGUL = /\p{scx=Hangul}/u;
-/** Korean writes particles straight after a name (김철수가, 김철수에게는, 김철수님이): the name ends there when
- * the rest of the word is one or two particles, so 김민 is not found in 김민아 or 서울 in 서울도시가스. */
+/** Korean writes particles straight after a name (김철수가, 김철수에게는, 김철수님께서는): the name ends there when
+ * the rest of the word is one to three particles, so 김민 is not found in 김민아 or 서울 in 서울도시가스. */
 // Particles, the copula (김철수입니다, 김철수였다) and job titles written onto a name (김철수부장).
 const KOREAN_PARTICLES = '(?:이|가|은|는|을|를|의|에게서|에게|에서|에|께서|께|한테서|한테|와|과|이랑|랑|하고|도|만|으로|로|부터|까지|보다|처럼|이나|나|님|씨'
   + '|입니다|이다|였다|이었다|이고|이며|이라고|라고|부장|차장|과장|대리|사장|팀장|실장|대표)';
-const KOREAN_PARTICLE = new RegExp(`^${KOREAN_PARTICLES}{1,2}$`, 'u');
+const KOREAN_PARTICLE = new RegExp(`^${KOREAN_PARTICLES}{1,3}$`, 'u');
 const HANGUL_RUN = /^\p{scx=Hangul}+/u;
 /** Longer than any one or two particles: the rest of the word is read from at most this many characters. */
 const PARTICLE_WINDOW = 8;
@@ -272,9 +272,15 @@ export function findMentions(text: string, folder: FolderIndex | undefined,
  * examined spends what finding it compared from `budget` (the needle, and any text segmented around it);
  * false once spent. */
 function containsWords(haystack: string, needle: string, budget: { left: number }): boolean {
-  for (let at = haystack.indexOf(needle); at !== -1; at = haystack.indexOf(needle, at + 1)) {
-    budget.left -= needle.length;
+  for (let from = 0; ;) {
+    // Spent: no further scan (each remaining name would otherwise still read the whole note once).
     if (budget.left < 0) return false;
+    const at = haystack.indexOf(needle, from);
+    // What finding it scanned, whether or not it matches (a name found nowhere still reads every note),
+    // at SCAN_WEIGHT, plus the needle compared at a match.
+    budget.left -= ((at === -1 ? haystack.length : at) - from) * SCAN_WEIGHT + (at === -1 ? 0 : needle.length);
+    if (budget.left < 0 || at === -1) return false;
+    from = at + 1;
     let segmented: Set<number> | undefined;
     const boundaries = () => {
       if (segmented) return segmented;
@@ -285,7 +291,6 @@ function containsWords(haystack: string, needle: string, budget: { left: number 
     };
     if (wordBoundary(haystack, at, false, boundaries) && wordBoundary(haystack, at + needle.length, true, boundaries)) return true;
   }
-  return false;
 }
 
 /** A note's title and text as matching sees them, computed once per note for `activityOf`. */
@@ -305,6 +310,10 @@ export interface IdentityActivity {
  * cannot stall the render that shows its profile. */
 const MAX_ACTIVITY_WORDS = 500;
 const MAX_ACTIVITY_WORK = 50_000_000;
+/** A character scanned by `indexOf` costs about a sixth of one compared at a match (3.3 ns on crafted
+ * near-misses, 0.3 ns on prose): crafted notes spend the budget in about a second either way, while real
+ * notes would need about 300 million characters to. */
+const SCAN_WEIGHT = 1 / 6;
 
 /**
  * Where an identity appears in its investigation: events whose Actor or Assets name it,

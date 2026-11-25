@@ -3,8 +3,8 @@ import { Star } from 'lucide-react';
 import type { Folder, Identity } from '../../types';
 import { chartableOrganizations, orgChart, type OrgChart } from '../../lib/identity-model';
 import { cn } from '../../lib/utils';
-import { IdentityAvatar } from './identity-ui';
-import type { IdentityLabels } from './identity-labels';
+import { IdentityAvatar, IsolatedText } from './identity-ui';
+import { isolate, type IdentityLabels } from './identity-labels';
 
 /** Levels of a team shown under one another (each indents further, so more would leave no width for
  * the cards); a deeper chain shows a note instead. */
@@ -86,7 +86,7 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
             ))}
           </select>
         </label>
-        <p className="min-w-[16rem] flex-1 text-xs text-text-muted">{t('org.desc', { name: organization.name })}</p>
+        <p className="min-w-[16rem] flex-1 text-xs text-text-muted"><IsolatedText text={t('org.desc', { name: isolate(organization.name) })} /></p>
       </div>
       {chart.roots.map(root => (
         <div key={root.id} className="flex flex-col gap-3">
@@ -103,10 +103,10 @@ export function OrgCharts({ identities, folders, showInvestigation, selectedOrga
         </div>
       ))}
       {chart.unplaced.length > 0 && (chart.roots.length
-        ? <p className="text-xs text-text-muted">{t('org.noManager', { names: labels.list(chart.unplaced.map(person => person.name)) })}</p>
+        ? <p className="text-xs text-text-muted"><IsolatedText text={t('org.noManager', { names: labels.list(chart.unplaced.map(person => isolate(person.name))) })} /></p>
         : (
           <section aria-label={organization.name} className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-bg-surface p-2">
-            <p className="text-xs text-text-muted">{t('org.nobodyManaged', { name: organization.name })}</p>
+            <p className="text-xs text-text-muted"><IsolatedText text={t('org.nobodyManaged', { name: isolate(organization.name) })} /></p>
             {chart.unplaced.map(person => <div key={person.id}>{card(person)}</div>)}
           </section>
         ))}

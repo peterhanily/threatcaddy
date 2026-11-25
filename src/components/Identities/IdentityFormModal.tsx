@@ -181,7 +181,7 @@ export function IdentityFormModal({ editing, prefill, clsLevels, named, folders,
           )}
           {editing && (
             <label className={label}>{t('form.classification')}
-              <ClsSelect value={clsLevel} onChange={value => setClsLevel(value ?? '')} clsLevels={clsLevels} className="self-start" />
+              <ClsSelect labelled value={clsLevel} onChange={value => setClsLevel(value ?? '')} clsLevels={clsLevels} className="self-start" />
             </label>
           )}
           {error && <p id={`${ids}-error`} role="alert" className="text-sm text-red-400">{error}</p>}

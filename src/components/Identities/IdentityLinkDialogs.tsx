@@ -9,8 +9,10 @@ import { prefillFromFound, useIdentityLabels, withOtherName, type IdentityChange
 const nothing = async () => {};
 
 /** The "not yet in Identities" dialog, and the Add form it can open, for a name outside the Identities view. */
-export function IdentityLinkDialogs({ found, folders, identities, onClose, onIgnore, onCreate, onUpdate, onTrackActor }: {
+export function IdentityLinkDialogs({ found, folders, identities, named, onClose, onIgnore, onCreate, onUpdate, onTrackActor }: {
   found: FoundName; folders: Folder[]; identities: Identity[];
+  /** Every identity whose names are taken (archived ones too), for the Add form's duplicate check. */
+  named?: Identity[];
   onClose: () => void; onIgnore: () => void; onTrackActor?: (name: string) => void;
   onCreate: (partial: Partial<Identity>) => Promise<Identity>;
   onUpdate: (id: string, change: IdentityChange) => Promise<void>;
@@ -24,7 +26,7 @@ export function IdentityLinkDialogs({ found, folders, identities, onClose, onIgn
 
   if (prefill) {
     return (
-      <IdentityFormModal prefill={prefill} folders={folders} defaultFolderId={found.folderId} identities={identities} byId={byId} labels={labels}
+      <IdentityFormModal prefill={prefill} folders={folders} defaultFolderId={found.folderId} identities={identities} named={named} byId={byId} labels={labels}
         onClose={onClose} onCreate={onCreate} onUpdate={onUpdate} onMerge={nothing} onTrash={nothing}
         onSaved={(_identity, message) => { onClose(); if (message) addToast('success', message); }} />
     );

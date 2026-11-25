@@ -191,11 +191,11 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                 <li key={person.id} className="flex min-w-0 flex-wrap items-center gap-2">
                   {chip(person)}
                   {person.contact && <span className="inline-flex items-center gap-1 text-[11px] text-amber-400"><Star size={11} className="fill-current" />{t('profile.contact')}</span>}
-                  {person.description && <span className="truncate text-xs text-text-muted">{person.description}</span>}
+                  {person.description && <span dir="auto" className="truncate text-xs text-text-muted">{person.description}</span>}
                 </li>
               ))}
             </ul>
-          ) : <p className="text-xs text-text-muted">{t('people.none', { name: identity.name })}</p>}
+          ) : <p className="text-xs text-text-muted"><IsolatedText text={t('people.none', { name: isolate(identity.name) })} /></p>}
           {members.people.length > 8 && <p className="text-xs text-text-muted">{t('people.more', { count: members.people.length - 8 })}</p>}
           {members.things.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5"><span className="text-xs text-text-muted">{t('people.things')}</span>{(allThings ? members.things : members.things.slice(0, LIST_LIMIT)).map(thing => <span key={thing.id}>{chip(thing)}</span>)}
@@ -294,7 +294,7 @@ export function IdentityProfile({ identity, byId, sameInvestigation, everywhere,
                 {connection.outgoing || Object.hasOwn(CONNECTION_PHRASES, connection.label) ? (
                   <><span className="text-text-secondary">{labels.phrase(connection.label, connection.outgoing)}</span>{chip(connection.other)}</>
                 ) : (
-                  <>{chip(connection.other)}<span className="text-text-secondary">{t('connections.incomingCustom', { label: connection.label, name: identity.name })}</span></>
+                  <>{chip(connection.other)}<span className="text-text-secondary"><IsolatedText text={t('connections.incomingCustom', { label: isolate(connection.label), name: isolate(identity.name) })} /></span></>
                 )}
                 {!readOnly && <button type="button" aria-label={t('connections.removeAria', { phrase: labels.phrase(connection.label, connection.outgoing), name: connection.other.name })} className="ms-auto inline-flex h-6 w-6 items-center justify-center rounded text-text-muted hover:text-text-primary"
                   onClick={() => void removeConnection(connection.ownerId, { targetId: connection.outgoing ? connection.other.id : identity.id, label: connection.label })}><X size={13} /></button>}

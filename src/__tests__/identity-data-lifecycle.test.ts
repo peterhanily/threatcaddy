@@ -398,6 +398,22 @@ describe('names ignored on this device', () => {
       expect(result.current.isIgnored('f1', 'Jordan Reyes')).toBe(true);
     });
 
+    it('stores a plain list encrypted after a render, without updating other components during it', async () => {
+      // A plain list as a build without encryption left it, read for the first time on this page.
+      localStorage.setItem(KEY, JSON.stringify({ v: 3, folders: { f1: [hash('f1', 'Jordan Reyes')] } }));
+      setEncryptionMeta({ version: 1, salt: 'fixture-salt', wrappedKey: 'fixture-wrapped', recoverySalt: 'fixture-recovery-salt', recoveryWrappedKey: 'fixture-recovery-key', enabledAt: 1 } as never);
+      setSessionKey(key);
+      const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+      // Two components read the list (the view and the timeline's chips, say).
+      const first = renderHook(() => useIgnoredNames());
+      const second = renderHook(() => useIgnoredNames());
+      await waitFor(() => expect(localStorage.getItem(KEY)).toContain('"enc"'));
+      expect(first.result.current.isIgnored('f1', 'Jordan Reyes')).toBe(true);
+      expect(second.result.current.isIgnored('f1', 'Jordan Reyes')).toBe(true);
+      expect(errors.mock.calls.filter(call => String(call[0]).includes('while rendering a different component'))).toEqual([]);
+      errors.mockRestore();
+    });
+
     it('stores a plain list encrypted once encryption is turned on', async () => {
       await keepIgnoredNamesThroughDecryption(async () => { clearEncryptionMeta(); setSessionKey(null); });
       setEncryptionMeta({ version: 1, salt: 'fixture-salt', wrappedKey: 'fixture-wrapped', recoverySalt: 'fixture-recovery-salt', recoveryWrappedKey: 'fixture-recovery-key', enabledAt: 1 } as never);

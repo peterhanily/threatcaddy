@@ -44,6 +44,10 @@ describe('Activity finds names in text written without spaces (A11Y-2)', () => {
     // The copula and a job title written onto the name.
     expect(named(make('김철수'), '담당자는 김철수입니다.')).toBe(true);
     expect(named(make('김철수'), '김철수부장이 승인했다.')).toBe(true);
+    // Three parts: honorific, particle and topic.
+    expect(named(make('김철수'), '김철수님께서는 승인했다.')).toBe(true);
+    expect(named(make('김철수'), '김철수부장님께서 승인했다.')).toBe(true);
+    expect(named(make('김철수'), '김철수씨에게는 알렸다.')).toBe(true);
   });
 
   it('spends the budget on segmenting as on comparing, so crafted Chinese text cannot stall a profile', () => {
@@ -132,6 +136,9 @@ describe('case folding', () => {
     expect(sameText('İSTANBUL')).toBe(sameText('istanbul'));
     expect(sameText('JANA STRAUSS')).toBe(sameText('Jana Strauß'));
     expect(sameText('STRAẞE')).toBe(sameText('Straße'));
+    // Greek final sigma is a sigma, wherever upper case puts it back.
+    expect(named(make('Κώστας'), "Κώστας's report")).toBe(true);
+    expect(named(make('Κώστας'), 'ΚΏΣΤΑΣ ενέκρινε')).toBe(true);
     const index = buildIdentityIndex([make('Işık Yılmaz'), make('Jana Strauß')]);
     expect(linkFor(index, 'case', 'IŞIK YILMAZ').state).toBe('linked');
     expect(linkFor(index, 'case', 'JANA STRAUSS').state).toBe('linked');

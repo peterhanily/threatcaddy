@@ -99,7 +99,7 @@
       <li>You may optionally connect to a self-hosted team server for real-time sync and collaboration. This is entirely opt-in — no data is sent until you configure a server URL and sign in.</li>
       <li>When connected, notes, tasks, timelines, IOCs, and other investigation entities are transmitted to the server you configure. A CaddyAI conversation in an investigation that is not local-only is transmitted too; conversations outside any investigation and in local-only investigations are not synced. Authentication tokens are stored in your browser.</li>
       <li>Local workspace encryption protects covered browser fields at rest; it is not end-to-end encryption for team sync. The server receives readable entity values and may retain historical records. Removing a server record does not erase offline copies or exported files.</li>
-      <li>Identities sync to a server that supports them, details marked private included. The server keeps earlier revisions in its history, records identity changes in its activity log without names, and does not give identities to its bots.</li>
+      <li>Identities sync to a server that supports them, details marked private included. The server keeps earlier revisions in its history, records identity changes in its activity log without names, and does not give identity records to its bots. A chat or agent conversation that quotes identity tool results (names and public details) syncs like any other conversation, and bots that read conversations see it.</li>
       <li>The team server is open-source and self-hosted. This project does not provide a hosted team-server service; access and retention depend on the server operator you choose.</li>
     </ul>
 

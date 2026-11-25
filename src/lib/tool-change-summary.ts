@@ -1,5 +1,6 @@
 import { db } from '../db';
 import { detailsToAdd, findIdentity, identitiesBeside, identityScope, otherNamesToAdd, prepareIdentityLabels, toolItems } from './llm-tools-identities';
+import { sliceText } from './utils';
 
 /**
  * What a proposed write changes, by the stored names of what it touches, for an approval card: the
@@ -16,14 +17,15 @@ const MAX = 80;
 const BIDI_CONTROLS = /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/g;
 const text = (value: unknown) => {
   const shown = value == null || value === '' ? '—' : String(value).replace(BIDI_CONTROLS, '').replace(/\s+/g, ' ').trim();
-  return shown.length > MAX ? `${shown.slice(0, MAX).replace(/[\uD800-\uDBFF]$/, '')}…` : shown;
+  return shown.length > MAX ? `${sliceText(shown, MAX)}…` : shown;
 };
 const has = (input: Record<string, unknown>, key: string) => Object.hasOwn(input, key) && input[key] !== undefined;
 const list = (value: unknown) => (Array.isArray(value) ? value : value == null || value === '' ? [] : [value]);
-/** `from → to` for each field the input names. */
-// An empty value is not a change these tools make.
-const fieldsOf = (input: Record<string, unknown>, stored: Record<string, unknown> | undefined, keys: readonly string[]) =>
-  keys.filter(key => has(input, key) && String(input[key]).trim() !== '').map(key => ({ field: key, from: text(stored?.[key]), to: text(input[key]) }));
+/** `from → to` for each field the input names. An empty value is a change too where the tool stores it
+ * (a cleared title, an unassigned task), shown as "—"; not for `ignoresEmpty`, which the tool skips. */
+const fieldsOf = (input: Record<string, unknown>, stored: Record<string, unknown> | undefined, keys: readonly string[], ignoresEmpty: readonly string[] = []) =>
+  keys.filter(key => has(input, key) && !(ignoresEmpty.includes(key) && String(input[key]).trim() === ''))
+    .map(key => ({ field: key, from: text(stored?.[key]), to: text(input[key]) }));
 const changed = (input: Record<string, unknown>, keys: readonly string[]): ChangeField[] => keys.filter(key => has(input, key)).map(field => ({ field, changed: true }));
 const nameItems = (value: unknown) => list(value).flatMap(name => (typeof name === 'string' && name.trim() ? [{ text: text(name) }] : []));
 const id = (value: unknown) => String(value || '');
@@ -81,13 +83,13 @@ export async function summarizeToolChange(tool: string, input: Record<string, un
       const stored = await db.tasks.get(id(input.id));
       if (!stored) return { kind: 'missing', id: text(input.id), fields: [] };
       return { kind: 'changes', name: text(stored.title), fields: [
-        ...fieldsOf(input, stored as unknown as Record<string, unknown>, ['title', 'status', 'priority', 'assigneeId']), ...changed(input, ['description'])] };
+        ...fieldsOf(input, stored as unknown as Record<string, unknown>, ['title', 'status', 'priority', 'assigneeId'], ['status', 'priority']), ...changed(input, ['description'])] };
     }
     case 'update_ioc': {
       const stored = await db.standaloneIOCs.get(id(input.id));
       if (!stored) return { kind: 'missing', id: text(input.id), fields: [] };
       return { kind: 'changes', name: text(`${stored.type}: ${stored.value}`), fields: [
-        ...fieldsOf(input, stored as unknown as Record<string, unknown>, ['type', 'value', 'confidence', 'iocStatus', 'iocSubtype', 'attribution']), ...changed(input, ['analystNotes'])] };
+        ...fieldsOf(input, stored as unknown as Record<string, unknown>, ['type', 'value', 'confidence', 'iocStatus', 'iocSubtype', 'attribution'], ['type', 'confidence']), ...changed(input, ['analystNotes'])] };
     }
     default: return null;
   }

@@ -9,6 +9,10 @@ import { ToastContainer } from '../components/Common/Toast';
 import { ScreenshareContext } from '../hooks/ScreenshareContext';
 import type { Folder, Identity, TimelineEvent } from '../types';
 
+/** The element whose whole text is `text`, though names in it are isolated in their own <bdi>. */
+const wholeText = (text: string) => (_content: string, element: Element | null) =>
+  !!element && element.textContent === text && [...element.children].every(child => child.textContent !== text);
+
 const folders: Folder[] = [{ id: 'case', name: 'Halvorsen BEC', order: 0, createdAt: 1 }, { id: 'other', name: 'Other case', order: 1, createdAt: 1 }];
 const make = (id: string, name: string, extra: Partial<Identity> = {}): Identity => ({ id, folderId: 'case', type: 'person', name, aliases: [],
   details: [], connections: [], tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1, ...extra });
@@ -129,7 +133,7 @@ describe('an identity\'s profile', () => {
     expect(within(leeCard).getByText('works at')).toBeInTheDocument();
     expect(within(leeCard).getByText('manages')).toBeInTheDocument();
     await user.click(within(list()).getByRole('button', { name: /WS-0231/ }));
-    expect(within(profile('WS-0231')).getByText('approved payments to WS-0231')).toBeInTheDocument();
+    expect(within(profile('WS-0231')).getByText(wholeText('approved payments to WS-0231'))).toBeInTheDocument();
     await user.click(within(list()).getByRole('button', { name: /^Halvorsen Shipping/ }));
     const orgCard = profile('Halvorsen Shipping');
     expect(within(orgCard).getByText('People (2)')).toBeInTheDocument();
@@ -386,7 +390,7 @@ describe('read only and org charts', () => {
 
   it('offers no new note about an identity in a remote investigation', () => {
     setup({ selectRequest: { id: 'lee', request: 1 }, readOnly: true, onAddNote: vi.fn() });
-    expect(within(profile('Lee Park')).getByText('Nothing on the timeline, in notes or in IOCs names Lee Park yet.')).toBeInTheDocument();
+    expect(within(profile('Lee Park')).getByText(wholeText('Nothing on the timeline, in notes or in IOCs names Lee Park yet.'))).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Add a note about/ })).not.toBeInTheDocument();
   });
 

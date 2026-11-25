@@ -96,11 +96,12 @@ describe('private details never reach a model', () => {
     const byEmail = (value: string) => run('update_identity', { id: 'lee', addDetails: [{ label: 'Email', value }] });
     await byEmail(SECRET_HOME); // A private value of Dana's, given as Lee's public email: stored publicly, like any other.
     expect((await run('read_identity', { id: 'lee' })).details).toEqual([{ label: 'Email', value: SECRET_HOME }]);
-    // Labels private by default, including common variants, are stored as private; repeats are not stored twice.
+    // Labels private by default, including common variants, are stored as private. A private value is
+    // stored even when it repeats one held: skipping it would show, by the room left, that it matched.
     for (const label of ['Phone', 'Phone number', 'Mobile']) await run('update_identity', { id: 'lee', addDetails: [{ label, value: '+1 555 0100' }] });
     await run('update_identity', { id: 'lee', addDetails: [{ label: 'Phone', value: '+1 555 0100' }] });
     expect((await stored('lee')).details.map(({ label, private: hidden }) => [label, !!hidden])).toEqual([
-      ['Email', false], ['Phone', true], ['Phone number', true], ['Mobile', true]]);
+      ['Email', false], ['Phone', true], ['Phone number', true], ['Mobile', true], ['Phone', true]]);
     expect(JSON.stringify(await run('read_identity', { id: 'lee' }))).not.toContain('555 0100');
   });
 

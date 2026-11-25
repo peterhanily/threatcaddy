@@ -11,6 +11,8 @@ import { isSyncTable, suppressSyncInCurrentTransaction } from './sync-state';
 import { isSyncWorkspaceIdentity, markRestoredSyncHistory, SYNC_WORKSPACE_KEY } from './sync-capture-policy';
 import { queuedPuts, syncItemLabels } from './sync-outgoing';
 import i18n from '../i18n';
+import { deleteCheckpointsFor } from './checkpoints';
+import { forgetIgnoredNames } from './ignored-names';
 
 type Row = Record<string, unknown> & { id: string };
 type Mode = 'replace' | 'merge';
@@ -278,8 +280,10 @@ async function restore(payload: BackupPayload, mode: Mode, expected?: RestorePre
   const snapshot = structuredClone(payload);
   const base = parent && structuredClone(parent);
   try {
-    return await withEntityDraftBarrier(() => db.transaction('rw', [...BACKUP_TABLES, '_syncMeta', '_syncQueue', '_localMigrations'].map(name => db.table(name)), async () => {
+    let removed = new Map<string, ReadonlySet<string>>();
+    const result = await withEntityDraftBarrier(() => db.transaction('rw', [...BACKUP_TABLES, '_syncMeta', '_syncQueue', '_localMigrations'].map(name => db.table(name)), async () => {
       const plan = await prepare(snapshot, mode, base);
+      removed = new Map(plan.operations.filter(operation => operation.deletes.length).map(operation => [operation.table, new Set(operation.deletes)]));
       if (expected && previewSnapshots.get(expected) !== plan.basis) throw new Error('Data changed after the restore preview. Review a fresh preview before restoring.');
       // A restore is local history, not a team edit. In a bound workspace it must
       // never reach the outbox as deletes or rollbacks at current revisions: sync
@@ -307,6 +311,14 @@ async function restore(payload: BackupPayload, mode: Mode, expected?: RestorePre
       }
       return { added: plan.preview.added, updated: plan.preview.updated, deleted: plan.preview.deleted, tables: plan.preview.tables };
     }));
+    // Rows the restore removed take their AI undo copies and their investigations' ignored names with
+    // them, as deleting them does (checkpoints are not part of a backup, so after it commits).
+    if (removed.size) {
+      await deleteCheckpointsFor(removed);
+      const folders = removed.get('folders');
+      if (folders?.size) await forgetIgnoredNames([...folders]);
+    }
+    return result;
   } catch (error) {
     if ((error instanceof DOMException && error.name === 'QuotaExceededError') || /QuotaExceeded|storage quota/.test(String(error))) {
       throw new Error('Storage quota exceeded. Free up space and retry; this restore was rolled back.');

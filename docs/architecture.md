@@ -77,7 +77,7 @@ docs/                   Documentation
 
 - **ChatThread** -- LLM conversation threads with tool-use support, enabling AI-assisted analysis within investigations.
 
-- **Identity** -- A person, organization, system or account in one investigation (custom types are allowed). It holds other names, labelled details (some marked private), connections to other identities in the same investigation with a phrase such as "works at" or "reports to", a status (compromised, suspicious, cleared) and a contact flag. Other entities never store identity IDs: timeline actors and assets, note mentions and IOC values are matched to identities by text when shown (`src/lib/identity-match.ts`), so no existing table, backup field or server column changed. Private details are masked in the UI, never sent to AI, and left out of the Identities CSV export unless chosen.
+- **Identity** -- A person, organization, system or account in one investigation (custom types are allowed). It holds other names, labelled details (some marked private), connections to other identities in the same investigation with a phrase such as "works at" or "reports to", a status (compromised, contained, suspicious, cleared), a classification and a contact flag. Other entities never store identity IDs: timeline actors and assets, note mentions and IOC values are matched to identities by text when shown (`src/lib/identity-match.ts`), so no existing table, backup field or server column changed. Private details are masked in the UI, never sent to AI, and left out of the Identities CSV export unless chosen.
 
 ### 3.2 Entity Relationships
 
@@ -128,7 +128,7 @@ The server's change log keeps every revision of every synced record, and history
 
 ### 4.4 Conflict Resolution
 
-Updates use compare-and-swap, not last-writer-wins: an existing entity's `clientVersion` must equal its current server version. An accepted write advances that version; a stale or missing baseline returns the current server row as a conflict. A new put accepts an absent or zero baseline. Choosing "mine" retries against the reviewed version, so another intervening server edit can conflict again. Choosing "theirs" applies the reviewed server state with local pending-work checks.
+Updates use compare-and-swap, not last-writer-wins: an existing entity's `clientVersion` must equal its current server version. An accepted write advances that version; a stale or missing baseline returns the current server row as a conflict. Two exceptions are accepted whatever the baseline: a change that would leave the row as it is (deleting a row already deleted, or a put equal to the stored row) is accepted as `unchanged`, with no write, revision, event or activity entry; and an item's delete sent in the same batch as its investigation's delete completes that deletion. A new put accepts an absent or zero baseline. Choosing "mine" retries against the reviewed version, so another intervening server edit can conflict again. Choosing "theirs" applies the reviewed server state with local pending-work checks.
 
 Server-managed fields (id, createdBy, updatedBy, version, createdAt, updatedAt, deletedAt) are stripped from client payloads and never trusted from the client. Delete operations use soft-delete (setting `deletedAt` and bumping the version) so other clients discover deletions on their next pull.
 
@@ -141,7 +141,7 @@ Committed writes wake the sync engine, with periodic retries as a safety net. Pu
 ### 4.6 Authorization on Push
 
 - All public pushes require a current active admin or analyst account and valid data/version baselines. Global tables (tags, timelines) do not require investigation membership, but do not bypass those checks.
-- Folder-scoped writes require current editor access to live source and destination investigations. Ordinary folder deletion and restoration require an eligible owner; a separate confirmed admin purge is a physical deletion, not device erasure.
+- Folder-scoped writes require current editor access to live source and destination investigations. The exception is an item's delete in an investigation that is deleted (in the same batch, or earlier when the item's version matches): it is accepted, and restoring the investigation does not bring that item back. Ordinary folder deletion and restoration require an eligible owner; a separate confirmed admin purge is a physical deletion, not device erasure.
 - New folders auto-create an owner membership for the creating user.
 - Folders marked `localOnly` (and their scoped entities) are excluded from capture. This setting does not erase copies previously shared with other devices or exported.
 
@@ -426,7 +426,7 @@ A cleanup service runs on startup and every 6 hours to enforce retention policie
 |---|---|---|
 | Notifications | 90 days | Yes (server setting) |
 | Audit log entries | 365 days | Yes (server setting) |
-| Soft-deleted entities (tombstones) | 90 days | Yes (server setting) |
+| Soft-deleted entities (tombstones) | 90 days | No (the `tombstone_retention_days` server setting is read, but no admin screen or API sets it) |
 | Sync history (`sync_changes`), including purged investigations | Not pruned | No |
 | Orphaned investigation memberships | Immediate | No |
 | Bot run history | 90 days | No |

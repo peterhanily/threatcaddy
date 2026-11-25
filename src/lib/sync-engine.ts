@@ -477,8 +477,10 @@ export class SyncEngine {
       for (const row of pointing) {
         await dynamicDb.table('identities').put({ ...row, connections: distinctConnections(retarget(row.connections, goneId, fold.keepId), row.id), updatedAt: now });
       }
+      // Its delete now answers the teammate's revision; "Theirs" on the kept identity brings it back as
+      // the teammate has it (their edit included), not as this device had it before the merge.
       for (const entry of await dynamicDb.table('_syncQueue').where('entityId').equals(goneId).toArray() as SyncQueueEntry[]) {
-        if (entry.table === 'identities') await dynamicDb.table('_syncQueue').put({ ...entry, clientVersion: fold.serverVersion });
+        if (entry.table === 'identities') await dynamicDb.table('_syncQueue').put({ ...entry, clientVersion: fold.serverVersion, ...(entry.restore !== undefined ? { restore: theirs } : {}) });
       }
       return true;
     });
