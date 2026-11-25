@@ -563,6 +563,8 @@ test('privileged jobs preserve source, checksum, latest-main and platform gates 
   const stage = pages.jobs.publish.steps.find(step => step.uses?.startsWith('actions/upload-pages-artifact@'));
   const deploy = pages.jobs.publish.steps.find(step => step.uses?.startsWith('actions/deploy-pages@'));
   assert.equal(stage.with.name, deploy.with.artifact_name);
+  // A re-run uploads again: without the attempt in the name, deploy-pages finds two artifacts and fails.
+  assert.equal(stage.with.name, 'github-pages-${{ github.sha }}-${{ github.run_attempt }}');
   assert.equal(stage.with.path, 'verified-client/site');
   assert.equal(stage.with['include-hidden-files'], true);
   const serverRun = commands(server.jobs.publish);

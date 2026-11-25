@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **CI:** the Pages publish job names its artifact per attempt and pauses before deploying, so a re-run no longer finds two artifacts and a first run no longer misses the one just uploaded. The post-publication check waits until every published file is served with its exact bytes, and asks again, twice at most, when the host answers 5xx for a static file; the status and bytes of the answer it uses are still checked.
+
 ## v2.1.1 — 2026-11-25
 
 - **Live team updates.** The app now subscribes to its shared investigations on the team server's WebSocket, so a teammate's change arrives within about a second instead of with the next 30-second pull. No released version sent the subscription, so the server's change announcements reached no app. The subscriptions are sent again after a reconnect, and only for investigations the server holds. Presence is unchanged.
