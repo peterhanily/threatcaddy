@@ -23,7 +23,7 @@ vi.mock('../contexts/AuthContext', async importOriginal => {
       : auth;
   } };
 });
-vi.mock('../hooks/useServerSync', () => ({ useServerSync: () => ({ presenceUsers: [], syncConflicts: [], syncError: null,
+vi.mock('../hooks/useServerSync', () => ({ useServerSync: () => ({ presenceFor: () => [], reportPresence: () => {}, syncConflicts: [], syncError: null,
   setSyncConflicts: () => {}, handleResolveConflict: () => {}, handleResolveAllConflicts: () => {} }) }));
 vi.mock('../hooks/useRemoteInvestigations', () => ({ useRemoteInvestigations: () => ({ remoteInvestigations: [], loading: false, refresh: async () => {} }) }));
 

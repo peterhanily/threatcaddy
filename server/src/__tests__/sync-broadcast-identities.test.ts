@@ -41,14 +41,14 @@ describe('push broadcasts', () => {
       details: [{ id: 'd', label: 'Phone', value: SECRET, private: true }] };
     expect((await push('identities', record)).status).toBe(200);
     expect(mocks.broadcast).toHaveBeenCalledWith('folder-1',
-      { type: 'entity-change', table: 'identities', op: 'put', entityId: 'id-1', updatedBy: 'user-1' }, 'user-1');
+      { type: 'entity-change', table: 'identities', op: 'put', entityId: 'id-1', updatedBy: 'user-1' }, 'user-1', undefined);
     expect(JSON.stringify(mocks.broadcast.mock.calls)).not.toContain(SECRET);
   });
 
   it('keep the record on other tables, as before', async () => {
     const record = { id: 'id-1', folderId: 'folder-1', title: 'x', version: 2 };
     expect((await push('notes', record)).status).toBe(200);
-    expect(mocks.broadcast).toHaveBeenCalledWith('folder-1', expect.objectContaining({ table: 'notes', data: record }), 'user-1');
+    expect(mocks.broadcast).toHaveBeenCalledWith('folder-1', expect.objectContaining({ table: 'notes', data: record }), 'user-1', undefined);
   });
 
   it('log an identity change without the person\'s name (the activity log is read by every member and outlives a deletion)', async () => {

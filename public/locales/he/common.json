@@ -319,5 +319,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "לא נמצא במכשיר זה: {{id}}",
   "toolChange.changed": "שונה",
-  "toolChange.private": "פרטי"
+  "toolChange.private": "פרטי",
+  "presence.onlineCount": "{{n}} מחוברים",
+  "presence.title": "בחקירה הזו עכשיו"
 }

@@ -319,5 +319,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "Niet gevonden op dit apparaat: {{id}}",
   "toolChange.changed": "gewijzigd",
-  "toolChange.private": "privé"
+  "toolChange.private": "privé",
+  "presence.onlineCount": "{{n}} online",
+  "presence.title": "Nu in dit onderzoek"
 }

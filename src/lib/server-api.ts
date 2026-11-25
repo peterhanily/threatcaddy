@@ -223,10 +223,11 @@ export interface SyncResult {
   mergedFrom?: string[];
 }
 
-export async function syncPush(changes: SyncChange[], generation: string): Promise<{ results: SyncResult[] }> {
+/** `connection` is this device's WebSocket connection id: the server then tells the person's other devices too. */
+export async function syncPush(changes: SyncChange[], generation: string, connection?: string | null): Promise<{ results: SyncResult[] }> {
   const resp = await apiFetch('/api/sync/push', {
     method: 'POST',
-    body: JSON.stringify({ changes, generation }),
+    body: JSON.stringify({ changes, generation, ...(connection ? { connection } : {}) }),
   });
   if (!resp.ok) throw await apiError(resp, 'Sync push failed');
   return resp.json();

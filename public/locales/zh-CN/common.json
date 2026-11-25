@@ -319,5 +319,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "此设备上未找到：{{id}}",
   "toolChange.changed": "已更改",
-  "toolChange.private": "私密"
+  "toolChange.private": "私密",
+  "presence.onlineCount": "{{n}} 人在线",
+  "presence.title": "当前在此调查中"
 }

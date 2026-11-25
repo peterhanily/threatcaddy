@@ -319,5 +319,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "Non trovato su questo dispositivo: {{id}}",
   "toolChange.changed": "modificato",
-  "toolChange.private": "privato"
+  "toolChange.private": "privato",
+  "presence.onlineCount": "{{n}} online",
+  "presence.title": "In questa indagine adesso"
 }

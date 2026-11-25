@@ -26,10 +26,12 @@ vi.mock('../lib/ws-client', () => ({
     on = mockWSOn;
     onStatusChange = mockWSOnStatusChange;
     setSubscriptions = mockWSSetSubscriptions;
+    setPresence = mockWSSetPresence;
   },
 }));
 
 const mockWSSetSubscriptions = vi.fn();
+const mockWSSetPresence = vi.fn();
 const mockServerFolderIds = vi.fn<() => Promise<string[]>>(async () => []);
 const mockSyncStart = vi.fn();
 const mockSyncStop = vi.fn();
@@ -326,7 +328,52 @@ describe('useServerSync', () => {
     const reloadFns = makeReloadFns();
 
     const { result } = renderHook(() => useServerSync(auth, reloadFns));
-    expect(result.current.presenceUsers).toEqual([]);
+    expect(result.current.presenceFor('folder-1')).toEqual([]);
+  });
+
+  it('keeps presence per investigation, without this person, and tells the socket where they are', async () => {
+    const auth = { ...makeAuth(), user: { id: 'me' } };
+    const { result } = renderHook(() => useServerSync(auth, makeReloadFns()));
+    // Reported before the socket exists: handed over when it is created.
+    act(() => result.current.reportPresence('folder-1', 'notes'));
+    await vi.waitFor(() => expect(mockWSSetPresence).toHaveBeenCalledWith('folder-1', 'notes'));
+    const onPresence = mockWSOn.mock.calls.find(call => call[0] === 'presence')?.[1] as (message: unknown) => void;
+    const dana = { id: 'dana', displayName: 'Dana', avatarUrl: null, view: 'timeline' };
+    act(() => {
+      onPresence({ type: 'presence', folderId: 'folder-1', users: [{ id: 'me', displayName: 'Me', avatarUrl: null, view: 'notes' }, dana] });
+      onPresence({ type: 'presence', folderId: 'folder-2', users: [] });
+      onPresence({ type: 'presence', users: [{ id: 'nobody' }] });
+    });
+    expect(result.current.presenceFor('folder-1')).toEqual([dana]);
+    expect(result.current.presenceFor('folder-2')).toEqual([]);
+    expect(result.current.presenceFor(undefined)).toEqual([]);
+    act(() => result.current.reportPresence(null, 'investigations'));
+    expect(mockWSSetPresence).toHaveBeenLastCalledWith(null, 'investigations');
+    // The server repeats an unchanged list at every member's update: the list handed out stays the same one.
+    const before = result.current.presenceFor;
+    act(() => onPresence({ type: 'presence', folderId: 'folder-1', users: [{ id: 'me', displayName: 'Me', avatarUrl: null, view: 'notes' }, dana] }));
+    expect(result.current.presenceFor).toBe(before);
+  });
+
+  it("waits before syncing on this person's own change from another device or tab", async () => {
+    const auth = { ...makeAuth(), user: { id: 'me' } };
+    renderHook(() => useServerSync(auth, makeReloadFns()));
+    await vi.waitFor(() => expect(mockWSOn.mock.calls.some(call => call[0] === 'entity-change')).toBe(true));
+    const onChange = mockWSOn.mock.calls.find(call => call[0] === 'entity-change')?.[1] as (message: unknown) => void;
+    vi.useFakeTimers();
+    try {
+      mockSync.mockClear(); mockApplyRemoteChange.mockClear();
+      mockApplyRemoteChange.mockResolvedValue(undefined);
+      onChange({ type: 'entity-change', table: 'notes', op: 'put', entityId: 'n1', updatedBy: 'me' });
+      // A tab of the same browser shares the outgoing queue with the one that is still pushing.
+      expect(mockApplyRemoteChange).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1499);
+      expect(mockSync).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(mockSync).toHaveBeenCalledTimes(1);
+      onChange({ type: 'entity-change', table: 'notes', op: 'put', entityId: 'n2', updatedBy: 'dana' });
+      expect(mockApplyRemoteChange).toHaveBeenCalledWith('notes', 'put', 'n2', undefined);
+    } finally { vi.useRealTimers(); }
   });
 
   it('keeps sync paused with a translated notice when its safety state cannot be read', async () => {

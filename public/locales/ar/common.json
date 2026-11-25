@@ -319,5 +319,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "غير موجود على هذا الجهاز: {{id}}",
   "toolChange.changed": "تم التغيير",
-  "toolChange.private": "خاص"
+  "toolChange.private": "خاص",
+  "presence.onlineCount": "{{n}} متصل",
+  "presence.title": "في هذا التحقيق الآن"
 }

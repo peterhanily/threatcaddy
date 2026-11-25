@@ -39,6 +39,8 @@ interface ReloadFns {
   onSyncPullComplete?: () => void;
 }
 
+const OWN_CHANGE_DELAY_MS = 1500;
+
 /**
  * Manages server sync engine, WebSocket connection, presence, and conflict state.
  * Extracted from App.tsx to isolate sync concerns.
@@ -49,7 +51,8 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
   const activeScope = useRef<typeof scope | null>(null);
   const callbacks = useRef({ auth, reloadFns, onFolderInvite });
   const [stateScope, setStateScope] = useState(scope);
-  const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([]);
+  const [presenceByFolder, setPresenceByFolder] = useState<Record<string, PresenceUser[]>>({});
+  const presenceTarget = useRef<{ folderId: string | null; view: string }>({ folderId: null, view: '' });
   const [syncConflicts, setSyncConflicts] = useState<SyncResult[]>([]);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [durablePause, setDurablePause] = useState<SyncPauseReason | 'unreadable' | null>(null);
@@ -76,9 +79,10 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
     const current = () => active && activeScope.current === scope;
     const { serverUrl, connected, userId } = scope;
     let stopFolderWatch: (() => void) | null = null;
+    const ownChangeTimers = new Set<ReturnType<typeof setTimeout>>();
     const currentAuth = callbacks.current.auth;
     setStateScope(scope);
-    setPresenceUsers([]);
+    setPresenceByFolder({});
     setSyncConflicts([]);
     setSyncError(null);
 
@@ -125,7 +129,14 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
           syncEngine.setWSClient(ws);
           ws.on('entity-change', (msg) => {
             if (!current()) return;
-            const { table, op, entityId, data } = msg as { table: string; op: 'put' | 'delete'; entityId: string; data?: Record<string, unknown> };
+            const { table, op, entityId, data, updatedBy } = msg as { table: string; op: 'put' | 'delete'; entityId: string; data?: Record<string, unknown>; updatedBy?: string };
+            if (updatedBy && updatedBy === userId) {
+              // This person's change from another device or tab. A tab of the same browser shares the
+              // outgoing queue, and the server announces before the pushing tab has its answer: wait
+              // until that tab has cleared the queue, so this one does not send the same rows again.
+              ownChangeTimers.add(setTimeout(() => { if (current()) void syncEngine.sync(); }, OWN_CHANGE_DELAY_MS));
+              return;
+            }
             if (table && op && entityId) {
               syncEngine.applyRemoteChange(table, op, entityId, data).catch(() => {
                 if (current()) syncEngine.sync();
@@ -135,8 +146,13 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
             }
           });
           ws.on('presence', (msg) => {
-            if (current()) setPresenceUsers((msg.users as PresenceUser[]) || []);
+            const { folderId, users } = msg as { folderId?: unknown; users?: unknown };
+            if (!current() || typeof folderId !== 'string') return;
+            const list = Array.isArray(users) ? users as PresenceUser[] : [];
+            // The server repeats the list at every member's 15-second update: keep the state when nothing changed.
+            setPresenceByFolder(previous => (JSON.stringify(previous[folderId] ?? []) === JSON.stringify(list) ? previous : { ...previous, [folderId]: list }));
           });
+          ws.setPresence(presenceTarget.current.folderId, presenceTarget.current.view);
           ws.on('notification', () => {
             if (current()) window.dispatchEvent(new CustomEvent('ws-notification'));
           });
@@ -179,6 +195,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
     return () => {
       active = false;
       stopFolderWatch?.();
+      for (const timer of ownChangeTimers) clearTimeout(timer);
       syncEngine.stop();
       syncEngine.setWSClient(null);
       if (wsClientRef.current) {
@@ -207,8 +224,20 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
     if (activeScope.current === scope) setSyncConflicts(previous => previous.filter(c => !resolvable.includes(c)));
   }, [syncConflicts, scope, stateScope]);
 
+  /** Tells the open investigation's other members that this person is there, and on which view. */
+  const reportPresence = useCallback((folderId: string | null, view: string) => {
+    presenceTarget.current = { folderId, view };
+    wsClientRef.current?.setPresence(folderId, view);
+  }, []);
+  /** The other people who have this investigation open now. */
+  const presenceFor = useCallback((folderId: string | undefined): PresenceUser[] => {
+    if (!folderId || stateScope !== scope) return [];
+    return (presenceByFolder[folderId] ?? []).filter(user => user.id !== scope.userId);
+  }, [presenceByFolder, scope, stateScope]);
+
   return {
-    presenceUsers: stateScope === scope ? presenceUsers : [],
+    presenceFor,
+    reportPresence,
     syncConflicts: stateScope === scope ? syncConflicts : [],
     syncError: durablePause ? t(PAUSE_NOTICES[durablePause]) : (stateScope === scope ? syncError : null),
     setSyncConflicts,

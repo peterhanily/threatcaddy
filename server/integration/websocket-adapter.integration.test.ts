@@ -54,7 +54,7 @@ it('packaged HTTP/WebSocket adapters authenticate, subscribe, deliver committed 
         const socket = await connect();
         const authenticated = message(socket);
         socket.send(JSON.stringify({ type: 'auth', token: readerToken }));
-        expect(await authenticated).toEqual({ type: 'auth-ok' });
+        expect(await authenticated).toEqual({ type: 'auth-ok', connectionId: expect.stringMatching(/^[0-9a-f-]{36}$/) });
         const denied = message(socket);
         socket.send(JSON.stringify({ type: 'subscribe', folderId: 'unrelated-folder' }));
         expect(await denied).toMatchObject({ type: 'error', message: 'No access to this investigation' });

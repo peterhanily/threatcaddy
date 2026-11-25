@@ -319,5 +319,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "در این دستگاه پیدا نشد: {{id}}",
   "toolChange.changed": "تغییر کرد",
-  "toolChange.private": "خصوصی"
+  "toolChange.private": "خصوصی",
+  "presence.onlineCount": "{{n}} آنلاین",
+  "presence.title": "اکنون در این بررسی"
 }

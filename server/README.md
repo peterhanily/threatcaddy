@@ -274,8 +274,8 @@ Token-based auth — send `{ type: "auth", token: "..." }` as the first message.
 | `auth` | Client → Server | Authenticate connection |
 | `subscribe` | Client → Server | Subscribe to folder updates |
 | `unsubscribe` | Client → Server | Unsubscribe from folder |
-| `presence-update` | Client → Server | Update user presence |
-| `auth-ok` | Server → Client | Authentication successful |
+| `presence-update` | Client → Server | Report the view the user has open in a subscribed investigation (`folderId`, `view`); forgotten 30 seconds after the last one |
+| `auth-ok` | Server → Client | Authentication successful; `connectionId` identifies this connection for `POST /api/sync/push` |
 | `presence` | Server → Client | Presence state for folder |
 | `ping` / `pong` | Both | Keep-alive heartbeat |
 

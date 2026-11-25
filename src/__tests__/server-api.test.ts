@@ -274,6 +274,16 @@ describe('server-api', () => {
       expect(result.results[0].status).toBe('accepted');
     });
 
+    it("syncPush names this device's connection when it has one, so the server tells the other devices", async () => {
+      const changes = [{ table: 'notes', op: 'put' as const, entityId: 'e1', data: {} }];
+      const generation = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+      const connection = '11111111-1111-4111-8111-111111111111';
+      mockFetch.mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({ results: [] }) });
+      await syncPush(changes, generation, connection);
+      await syncPush(changes, generation, null);
+      expect(mockFetch.mock.calls.map(call => JSON.parse(call[1].body))).toEqual([{ changes, generation, connection }, { changes, generation }]);
+    });
+
     it('syncPull calls GET /api/sync/pull with query params', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,

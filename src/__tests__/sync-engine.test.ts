@@ -189,6 +189,20 @@ describe('sync engine persistence contract', () => {
     expect(await db.table('_syncQueue').count()).toBe(2);
     expect(await db.table('_syncMeta').get(revisionKey('notes', 'n1'))).toBeUndefined();
   });
+  it("names the socket's connection in a push, so the server tells this person's other devices", async () => {
+    await seedNote(note('n1'));
+    await db.notes.update('n1', { title: 'First' });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 1 }] });
+    engine.setWSClient({ connectionId: '11111111-1111-4111-8111-111111111111' } as never);
+    await engine.sync();
+    expect(api.push.mock.calls[0][2]).toBe('11111111-1111-4111-8111-111111111111');
+    // Without a socket (or with an older server, which gives no id) the push names none.
+    engine.setWSClient(null);
+    await db.notes.update('n1', { title: 'Second' });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 2 }] });
+    await engine.sync();
+    expect(api.push.mock.calls.at(-1)?.[2]).toBeUndefined();
+  });
   it('sends the acknowledged baseline and coalesces edits for each entity', async () => {
     await seedNote(note('n1'));
     await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 4 });

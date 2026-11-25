@@ -319,5 +319,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "इस डिवाइस पर नहीं मिला: {{id}}",
   "toolChange.changed": "बदला गया",
-  "toolChange.private": "निजी"
+  "toolChange.private": "निजी",
+  "presence.onlineCount": "{{n}} ऑनलाइन",
+  "presence.title": "अभी इस जाँच में"
 }

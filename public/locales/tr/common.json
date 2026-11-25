@@ -319,5 +319,7 @@
   "toolChange.connects": "{{from}} {{phrase}} {{to}}",
   "toolChange.missing": "Bu cihazda bulunamadı: {{id}}",
   "toolChange.changed": "değişti",
-  "toolChange.private": "özel"
+  "toolChange.private": "özel",
+  "presence.onlineCount": "{{n}} çevrimiçi",
+  "presence.title": "Şu anda bu soruşturmada"
 }

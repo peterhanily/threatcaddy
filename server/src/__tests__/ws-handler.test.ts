@@ -297,6 +297,63 @@ describe('WebSocket Handler', () => {
     });
   });
 
+  describe("The author's other devices", () => {
+    async function connect(user: typeof TEST_USER) {
+      // Every delivery verifies the recipient's token again, so the token decides the user.
+      mockVerifyAccessToken.mockImplementation(async (token: string) => ({ ...TEST_USER, id: token }));
+      mockCheckInvestigationAccess.mockResolvedValue(true);
+      const ws = createMockWS();
+      handleWSConnection(ws);
+      await handleWSMessage(ws, JSON.stringify({ type: 'auth', token: user.id }));
+      await handleWSMessage(ws, JSON.stringify({ type: 'subscribe', folderId: 'folder-1' }));
+      const authOk = (ws.send as ReturnType<typeof vi.fn>).mock.calls.map(([message]) => JSON.parse(String(message))).find(message => message.type === 'auth-ok');
+      return { ws, connectionId: authOk.connectionId as string };
+    }
+    const got = (ws: import('hono/ws').WSContext, message: unknown) =>
+      (ws.send as ReturnType<typeof vi.fn>).mock.calls.some(([sent]) => sent === JSON.stringify(message));
+
+    it('forgets a person who says they left, and tells the others at once', async () => {
+      const dana = await connect({ ...TEST_USER, id: 'dana' });
+      const omar = await connect({ ...TEST_USER, id: 'omar' });
+      const broadcasts = (ws: import('hono/ws').WSContext) => (ws.send as ReturnType<typeof vi.fn>).mock.calls
+        .filter(([message]) => JSON.parse(String(message)).type === 'presence').length;
+      mockRemovePresence.mockClear();
+      // Not for an investigation this connection is not subscribed to.
+      await handleWSMessage(dana.ws, JSON.stringify({ type: 'presence-leave', folderId: 'folder-2' }));
+      expect(mockRemovePresence).not.toHaveBeenCalled();
+      const before = broadcasts(omar.ws);
+      await handleWSMessage(dana.ws, JSON.stringify({ type: 'presence-leave', folderId: 'folder-1' }));
+      expect(mockRemovePresence).toHaveBeenCalledWith('folder-1', 'dana');
+      expect(broadcasts(omar.ws)).toBe(before + 1);
+      for (const { ws } of [dana, omar]) handleWSClose(ws);
+    });
+
+    it('skips only the pushing connection when the push names it, and the whole author otherwise', async () => {
+      const laptop = await connect(TEST_USER);
+      const phone = await connect(TEST_USER);
+      const teammate = await connect({ ...TEST_USER, id: 'user-2' });
+      expect(laptop.connectionId).toMatch(/^[0-9a-f-]{36}$/);
+      expect(phone.connectionId).not.toBe(laptop.connectionId);
+
+      const named = { type: 'entity-change', table: 'notes', entityId: 'named' };
+      await broadcastToFolder('folder-1', named, TEST_USER.id, laptop.connectionId);
+      expect([got(laptop.ws, named), got(phone.ws, named), got(teammate.ws, named)]).toEqual([false, true, true]);
+
+      // An older client names no connection: no device of the author is told, as before.
+      const unnamed = { type: 'entity-change', table: 'notes', entityId: 'unnamed' };
+      await broadcastToFolder('folder-1', unnamed, TEST_USER.id);
+      expect([got(laptop.ws, unnamed), got(phone.ws, unnamed), got(teammate.ws, unnamed)]).toEqual([false, false, true]);
+
+      // A connection that is not the author's (a teammate's, or one that is gone) changes nothing.
+      for (const [entityId, connection] of [['foreign', teammate.connectionId], ['gone', '00000000-0000-4000-8000-000000000000']]) {
+        const message = { type: 'entity-change', table: 'notes', entityId };
+        await broadcastToFolder('folder-1', message, TEST_USER.id, connection);
+        expect([got(laptop.ws, message), got(phone.ws, message), got(teammate.ws, message)]).toEqual([false, false, true]);
+      }
+      for (const { ws } of [laptop, phone, teammate]) handleWSClose(ws);
+    });
+  });
+
   describe('Invalid message handling', () => {
     it('handles invalid JSON gracefully', async () => {
       const ws = createMockWS();
