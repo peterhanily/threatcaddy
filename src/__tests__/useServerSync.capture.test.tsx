@@ -15,9 +15,9 @@ const mocks = vi.hoisted(() => ({ start: vi.fn(), stop: vi.fn(), configure: vi.f
 vi.mock('../lib/server-api', () => ({ configureServerApi: mocks.configure }));
 vi.mock('../lib/sync-engine', () => ({ syncEngine: {
   start: mocks.start, stop: mocks.stop, setWSClient: vi.fn(), setWorkspaceIdentity: vi.fn(), setErrorHandler: vi.fn(),
-  setConflictHandler: vi.fn(), setReadyHandler: vi.fn(), setRemoteChangeHandler: vi.fn(),
+  setConflictHandler: vi.fn(), setReadyHandler: vi.fn(), setRemoteChangeHandler: vi.fn(), serverFolderIds: async () => [],
 } }));
-vi.mock('../lib/ws-client', () => ({ WSClient: class { connect() {} disconnect() {} on() {} onStatusChange() {} } }));
+vi.mock('../lib/ws-client', () => ({ WSClient: class { connect() {} disconnect() {} on() {} onStatusChange() {} setSubscriptions() {} } }));
 const note = { id: 'n', folderId: 'f', title: 'Retained', content: 'Harmless synthetic note', tags: [], pinned: false, trashed: false, archived: false, createdAt: 1, updatedAt: 1 };
 const reloads = { notes: vi.fn(), tasks: vi.fn(), timeline: vi.fn(), timelines: vi.fn(), whiteboards: vi.fn(), standaloneIOCs: vi.fn(), identities: vi.fn(), chats: vi.fn(), folders: vi.fn(), tags: vi.fn() };
 const auth = { user: { id: 'alice' } as { id: string } | null, serverUrl: 'https://test.invalid' as string | null, connected: true, getAccessToken: async () => null, setReachable: vi.fn() };

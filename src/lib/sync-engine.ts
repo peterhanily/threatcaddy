@@ -693,6 +693,13 @@ export class SyncEngine {
   }
 
   /** WS messages are invalidations, never a source of durable entity data. */
+  /** Investigations the server holds a revision of: the ones whose changes it can announce to this device. */
+  async serverFolderIds(): Promise<string[]> {
+    const folders = (await dynamicDb.table('folders').toArray()).filter(folder => !folder.localOnly);
+    const revisions = await dynamicDb.table('_syncMeta').bulkGet(folders.map(folder => revisionKey('folders', folder.id)));
+    return folders.filter((_, index) => revisions[index]?.value).map(folder => folder.id);
+  }
+
   async applyRemoteChange(table: string, op: 'put' | 'delete', id: string, data?: Record<string, unknown>) {
     void op; void id; void data;
     if (!isSyncTable(table)) return;

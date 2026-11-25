@@ -292,29 +292,66 @@ describe('WSClient', () => {
   // ─── Subscription management ──────────────────────────────────
 
   describe('subscription management', () => {
-    it('sends subscribe message', () => {
+    function connected() {
       const client = new WSClient('http://localhost:3000', 'token');
       client.connect();
       const ws = getLastMockWS();
       ws.simulateOpen();
+      ws.simulateMessage({ type: 'auth-ok' });
       ws.sentMessages = [];
-      client.subscribe('folder-123');
-      const messages = parseSent(ws);
-      expect(messages).toHaveLength(1);
-      expect(messages[0]).toEqual({ type: 'subscribe', folderId: 'folder-123' });
+      return { client, ws };
+    }
+
+    it('subscribes to the wanted investigations and sends only the difference afterwards', () => {
+      const { client, ws } = connected();
+      client.setSubscriptions(['folder-1', 'folder-2']);
+      expect(parseSent(ws)).toEqual([{ type: 'subscribe', folderId: 'folder-1' }, { type: 'subscribe', folderId: 'folder-2' }]);
+      ws.sentMessages = [];
+      client.setSubscriptions(['folder-2', 'folder-3']);
+      expect(parseSent(ws)).toEqual([{ type: 'unsubscribe', folderId: 'folder-1' }, { type: 'subscribe', folderId: 'folder-3' }]);
+      ws.sentMessages = [];
+      client.setSubscriptions(['folder-2', 'folder-3']);
+      expect(parseSent(ws)).toEqual([]);
       client.disconnect();
     });
 
-    it('sends unsubscribe message', () => {
+    it('waits for auth-ok: the server ignores a subscribe sent before it', () => {
       const client = new WSClient('http://localhost:3000', 'token');
       client.connect();
       const ws = getLastMockWS();
+      client.setSubscriptions(['folder-1']);
       ws.simulateOpen();
-      ws.sentMessages = [];
-      client.unsubscribe('folder-123');
-      const messages = parseSent(ws);
-      expect(messages).toHaveLength(1);
-      expect(messages[0]).toEqual({ type: 'unsubscribe', folderId: 'folder-123' });
+      expect(parseSent(ws)).toEqual([{ type: 'auth', token: 'token' }]);
+      ws.simulateMessage({ type: 'auth-ok' });
+      expect(parseSent(ws)[1]).toEqual({ type: 'subscribe', folderId: 'folder-1' });
+      client.disconnect();
+    });
+
+    it('subscribes again after a reconnect', () => {
+      const { client, ws } = connected();
+      client.setSubscriptions(['folder-1']);
+      ws.simulateClose();
+      vi.advanceTimersByTime(1000);
+      const next = getLastMockWS();
+      expect(next).not.toBe(ws);
+      next.simulateOpen();
+      next.simulateMessage({ type: 'auth-ok' });
+      expect(parseSent(next)).toEqual([{ type: 'auth', token: 'token' }, { type: 'subscribe', folderId: 'folder-1' }]);
+      client.disconnect();
+    });
+
+    it('stays under the server rate limit of 30 messages a second', () => {
+      const { client, ws } = connected();
+      client.setSubscriptions(Array.from({ length: 45 }, (_, index) => `folder-${index}`));
+      expect(ws.sentMessages).toHaveLength(20);
+      vi.advanceTimersByTime(1000);
+      expect(ws.sentMessages).toHaveLength(20);
+      vi.advanceTimersByTime(100);
+      expect(ws.sentMessages).toHaveLength(40);
+      vi.advanceTimersByTime(1100);
+      expect(new Set(parseSent(ws).map(message => message.folderId)).size).toBe(45);
+      vi.advanceTimersByTime(5000);
+      expect(ws.sentMessages).toHaveLength(45);
       client.disconnect();
     });
 

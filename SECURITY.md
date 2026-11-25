@@ -6,11 +6,11 @@ Report suspected security problems privately. Do not include credentials, invest
 
 | Component | Supported | Not supported |
 |---|---|---|
-| Client: threatcaddy.com and the standalone file | 2.1.0 | Earlier versions |
-| Team server | 2.1.0 | Earlier versions |
+| Client: threatcaddy.com and the standalone file | 2.1.1 | Earlier versions |
+| Team server | 2.1.1 | Earlier versions |
 | Browser extension | 1.1.5, from the [GitHub release](https://github.com/peterhanily/threatcaddy/releases/latest) | Earlier versions, including the Chrome Web Store's 1.1.1 |
 
-Security fixes target the current `main` branch and ship in the next release; backports are not guaranteed. ThreatCaddy 2.1.0 still works with extension 1.1.3 and 1.1.4, but fixes go only into the newest extension. The Chrome Web Store's 1.1.1 has no app pairing, and its web fetch follows redirects and accepts private addresses; ThreatCaddy 2.1.0 uses none of its features. Forks and independently hosted deployments may not contain the same fixes; compare their source and version before relying on a fix.
+Security fixes target the current `main` branch and ship in the next release; backports are not guaranteed. ThreatCaddy 2.1.1 still works with extension 1.1.3 and 1.1.4, but fixes go only into the newest extension. The Chrome Web Store's 1.1.1 has no app pairing, and its web fetch follows redirects and accepts private addresses; ThreatCaddy 2.1.0 uses none of its features. Forks and independently hosted deployments may not contain the same fixes; compare their source and version before relying on a fix.
 
 ## Reporting a vulnerability
 
