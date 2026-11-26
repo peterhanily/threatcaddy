@@ -675,6 +675,12 @@ paths:
                   maxItems: 500
                   items:
                     $ref: "#/components/schemas/SyncChange"
+                merge:
+                  type: boolean
+                  description: >-
+                    Optional. The client handles `merged: true` in a result: a stale put that changed other fields
+                    than the newer revisions is accepted and merged by field. The client keeps its `clientVersion`
+                    until it has pulled the merged record.
                 connection:
                   type: string
                   format: uuid

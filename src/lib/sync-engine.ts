@@ -387,6 +387,14 @@ export class SyncEngine {
           if (!validVersion(result.serverVersion)) continue; // do not lose work on malformed acknowledgements
           const sentSeqs = batch[i].map(e => e.seq).filter((seq): seq is number => seq !== undefined);
           await dynamicDb.table('_syncQueue').bulkDelete(sentSeqs);
+          // The server merged this change with a teammate's changes to other fields, which this device
+          // has not seen. Its baseline stays the revision it edited, so a later edit is merged the same
+          // way instead of overwriting those fields with the values held here; the pull brings the
+          // merged record and its revision.
+          if (result.merged) {
+            if (waitedOn.has(entityKey(sent.table, sent.entityId))) released = true;
+            continue;
+          }
           await dynamicDb.table('_syncMeta').put({ key: revisionKey(sent.table, sent.entityId), value: result.serverVersion });
           // Edits made while this request was in flight continue from our own
           // accepted revision, never from a concurrent peer's unreviewed version.

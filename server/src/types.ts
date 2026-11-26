@@ -38,6 +38,9 @@ export interface SyncResult {
   reason?: string;
   /** Accepted without a write: the row already was as the change asked (nothing to announce or log). */
   unchanged?: boolean;
+  /** A stale put accepted because it and the newer revisions changed different fields. The stored row
+   *  holds changes the client has not seen, so the client keeps its earlier baseline until it pulls. */
+  merged?: boolean;
 }
 
 // WebSocket message types

@@ -203,6 +203,27 @@ describe('sync engine persistence contract', () => {
     await engine.sync();
     expect(api.push.mock.calls.at(-1)?.[2]).toBeUndefined();
   });
+  it('keeps its baseline after a merged acceptance, so the next edit is merged too', async () => {
+    await seedNote(note('n1'));
+    await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 4 });
+    await db.notes.update('n1', { title: 'Mine' });
+    // The server kept a teammate's change to another field: revision 6 holds more than this device has.
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 6, merged: true }] });
+    await engine.sync();
+    expect(await db.table('_syncQueue').count()).toBe(0);
+    expect((await db.table('_syncMeta').get(revisionKey('notes', 'n1')))?.value).toBe(4);
+    // A later edit is still sent against revision 4: the server merges it instead of taking this
+    // device's stale values for the teammate's fields.
+    await db.notes.update('n1', { title: 'Mine again' });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 7, merged: true }] });
+    await engine.sync();
+    expect(api.push.mock.calls.at(-1)?.[0]).toEqual([expect.objectContaining({ entityId: 'n1', clientVersion: 4 })]);
+    // An ordinary acceptance records the revision, as before.
+    await db.notes.update('n1', { title: 'Third' });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 8 }] });
+    await engine.sync();
+    expect((await db.table('_syncMeta').get(revisionKey('notes', 'n1')))?.value).toBe(8);
+  });
   it('sends the acknowledged baseline and coalesces edits for each entity', async () => {
     await seedNote(note('n1'));
     await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 4 });

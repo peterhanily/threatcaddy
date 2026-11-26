@@ -185,6 +185,15 @@ describe('sync HTTP write boundary', () => {
     expect((await pushBody(JSON.stringify({ changes: [put], generation, connection: 'laptop' }))).status).toBe(400);
   });
 
+  it('lets the service merge by field only for a client that says it handles a merged result', async () => {
+    const generation = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    await pushBody(JSON.stringify({ changes: [put], generation, merge: true }));
+    expect(mocks.push).toHaveBeenLastCalledWith([put], 'user-1', { authorize: true, generation, rejectInvalidChanges: true, fieldMerge: true });
+    await pushBody(JSON.stringify({ changes: [put], generation }));
+    expect(mocks.push).toHaveBeenLastCalledWith([put], 'user-1', { authorize: true, generation, rejectInvalidChanges: true });
+    expect((await pushBody(JSON.stringify({ changes: [put], generation, merge: 'yes' }))).status).toBe(400);
+  });
+
   it('broadcasts folder changes to their own subscribers', async () => {
     mocks.push.mockResolvedValue([{ table: 'folders', entityId: 'folder-1', status: 'accepted', serverRecord: { id: 'folder-1', version: 2 } }]);
     await push([{ table: 'folders', entityId: 'folder-1', op: 'put', clientVersion: 1, data: { name: 'Renamed' } }]);
