@@ -16,7 +16,19 @@ vi.mock('../lib/server-api', () => ({
 const note = (id: string, title = 'Local') => ({ id, title, content: 'body', folderId: 'f1', tags: [], pinned: false, archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
 const seedNote = (row: Parameters<typeof db.notes.add>[0]) => db.transaction('rw', db.notes, async () => { suppressSyncInCurrentTransaction(); return db.notes.add(row); });
 let engine: SyncEngine;
+/** A stand-in for the browser's Web Locks: one holder of a name at a time, in order. */
+function installLocks() {
+  const tails = new Map<string, Promise<unknown>>();
+  Object.defineProperty(navigator, 'locks', { configurable: true, value: {
+    request: (name: string, run: () => Promise<unknown>) => {
+      const next = (tails.get(name) ?? Promise.resolve()).then(run);
+      tails.set(name, next.catch(() => {}));
+      return next;
+    },
+  } });
+}
 beforeEach(async () => {
+  installLocks();
   disableSync();
   setSessionKey(null);
   await db.transaction('rw', db.tables, async () => { for (const table of db.tables) await table.clear(); });
@@ -202,6 +214,166 @@ describe('sync engine persistence contract', () => {
     api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 2 }] });
     await engine.sync();
     expect(api.push.mock.calls.at(-1)?.[2]).toBeUndefined();
+  });
+  it('takes in the merged record after a merged acceptance, and asks for a merge only when it is up to date', async () => {
+    await seedNote(note('n1'));
+    await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 4 });
+    await db.notes.update('n1', { title: 'Mine' });
+    // The server kept a teammate's change to the content: revision 6 holds more than this device has.
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 6, merged: true,
+      serverRecord: { ...note('n1'), title: 'Mine', content: 'Theirs', version: 6 } }] });
+    await engine.sync();
+    expect(api.push.mock.calls[0][0]).toEqual([expect.objectContaining({ entityId: 'n1', clientVersion: 4, merge: true })]);
+    expect(await db.table('_syncQueue').count()).toBe(0);
+    expect(await db.notes.get('n1')).toMatchObject({ title: 'Mine', content: 'Theirs' });
+    expect((await db.table('_syncMeta').get(revisionKey('notes', 'n1')))?.value).toBe(6);
+    // Up to date again: the next edit goes from revision 6 and may be merged.
+    await db.notes.update('n1', { title: 'Mine again' });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 7 }] });
+    await engine.sync();
+    expect(api.push.mock.calls.at(-1)?.[0]).toEqual([expect.objectContaining({ entityId: 'n1', clientVersion: 6, merge: true })]);
+  });
+  it('holds a record whose merged result it could not take in: its next put gets the ordinary conflict', async () => {
+    await seedNote(note('n1'));
+    await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 4 });
+    await db.notes.update('n1', { title: 'Mine' });
+    // While the push is in flight the user edits again; the merged row cannot replace that edit.
+    api.push.mockImplementationOnce(async () => {
+      await db.notes.update('n1', { title: 'Mine, edited in flight' });
+      return { results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 6, merged: true,
+        serverRecord: { ...note('n1'), title: 'Mine', content: 'Theirs', version: 6 } }] };
+    });
+    const conflicts: unknown[] = [];
+    engine.setConflictHandler(found => { conflicts.push(...found); });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'conflict', serverVersion: 6, serverData: { ...note('n1'), title: 'Mine', content: 'Theirs', version: 6 } }] });
+    await engine.sync();
+    await engine.sync();
+    // Local work is kept, the revision is not advanced, and the second put asked for no merge.
+    expect(await db.notes.get('n1')).toMatchObject({ title: 'Mine, edited in flight' });
+    expect((await db.table('_syncMeta').get(revisionKey('notes', 'n1')))?.value).toBe(4);
+    const second = api.push.mock.calls.at(-1)?.[0] as Array<Record<string, unknown>>;
+    expect(second).toEqual([expect.objectContaining({ entityId: 'n1', clientVersion: 4, data: expect.objectContaining({ title: 'Mine, edited in flight' }) })]);
+    expect(second[0].merge).toBeUndefined();
+    expect(conflicts).toEqual([expect.objectContaining({ entityId: 'n1', status: 'conflict' })]);
+  });
+  it('does not ask for a merge again after a push whose answer never arrived', async () => {
+    await seedNote(note('n1'));
+    await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 4 });
+    await db.notes.update('n1', { title: 'Changed' });
+    // The server may have stored the change; this device cannot know.
+    api.push.mockRejectedValueOnce(new Error('network down'));
+    await engine.sync().catch(() => {});
+    expect((api.push.mock.calls[0][0] as Array<Record<string, unknown>>)[0].merge).toBe(true);
+    // The user changes it back. Compared with revision 4 that put would look unchanged and be
+    // answered "merged" with the stored 'Changed'; without the flag it meets the ordinary conflict.
+    await db.notes.update('n1', { title: note('n1').title });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'conflict', serverVersion: 5, serverData: { ...note('n1'), title: 'Changed', version: 5 } }] });
+    await engine.sync();
+    const retry = api.push.mock.calls.at(-1)?.[0] as Array<Record<string, unknown>>;
+    expect(retry).toEqual([expect.objectContaining({ entityId: 'n1', clientVersion: 4 })]);
+    expect(retry[0].merge).toBeUndefined();
+    expect(await db.notes.get('n1')).toMatchObject({ title: note('n1').title });
+  });
+  it('asks for a merge again once the record is up to date: after an ordinary acceptance and after a conflict is resolved', async () => {
+    await seedNote(note('n1'));
+    await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 4 });
+    const lastPut = () => (api.push.mock.calls.at(-1)?.[0] as Array<Record<string, unknown>>)[0];
+    await db.notes.update('n1', { title: 'One' });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 5 }] });
+    await engine.sync();
+    await db.notes.update('n1', { title: 'Two' });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'conflict', serverVersion: 7, serverData: { ...note('n1'), title: 'Theirs', version: 7 } }] });
+    await engine.sync();
+    expect(lastPut()).toMatchObject({ clientVersion: 5, merge: true });
+    // Still in conflict: held, so a retry asks for no merge.
+    await engine.sync();
+    expect(lastPut().merge).toBeUndefined();
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 8 }] });
+    await engine.resolveConflicts([{ table: 'notes', entityId: 'n1', serverVersion: 7, serverData: { ...note('n1'), title: 'Theirs', version: 7 } }], 'mine');
+    await engine.sync();
+    await db.notes.update('n1', { title: 'Three' });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 9 }] });
+    await engine.sync();
+    expect(lastPut()).toMatchObject({ clientVersion: 8, merge: true });
+  });
+  it('asks for a merge again after the user takes the teammate\'s version in a conflict', async () => {
+    await seedNote(note('n1'));
+    await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 4 });
+    await db.notes.update('n1', { title: 'Mine' });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'conflict', serverVersion: 7, serverData: { ...note('n1'), title: 'Theirs', version: 7 } }] });
+    await engine.sync();
+    await engine.resolveConflicts([{ table: 'notes', entityId: 'n1', serverVersion: 7, serverData: { ...note('n1'), title: 'Theirs', version: 7 } }], 'theirs');
+    await db.notes.update('n1', { title: 'Mine, after theirs' });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 8 }] });
+    await engine.sync();
+    expect((api.push.mock.calls.at(-1)?.[0] as Array<Record<string, unknown>>)[0]).toMatchObject({ clientVersion: 7, merge: true });
+  });
+  it('asks for no merge in a browser without Web Locks, where two tabs could push the same queue at once', async () => {
+    Object.defineProperty(navigator, 'locks', { configurable: true, value: undefined });
+    await seedNote(note('n1'));
+    await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 4 });
+    await db.notes.update('n1', { title: 'Mine' });
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 5 }] });
+    await engine.sync();
+    expect((api.push.mock.calls[0][0] as Array<Record<string, unknown>>)[0].merge).toBeUndefined();
+  });
+  it('lets one tab push at a time: a second tab reads the queue only after the first has finished', async () => {
+    await seedNote(note('n1'));
+    await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 4 });
+    await db.notes.update('n1', { title: 'Mine' });
+    const second = new SyncEngine();
+    second.setWorkspaceIdentity('https://test.invalid', 'u1');
+    let release: (value: unknown) => void = () => {};
+    // The first tab's request stays in flight.
+    api.push.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+    const first = engine.sync();
+    await vi.waitFor(() => expect(api.push).toHaveBeenCalledTimes(1));
+    const other = second.sync();
+    await new Promise(resolve => setTimeout(resolve, 150));
+    // Without the lock the second tab would have sent the same queued put by now.
+    expect(api.push).toHaveBeenCalledTimes(1);
+    release({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 5 }] });
+    await Promise.all([first, other]);
+    // The entry was acknowledged before the second tab read the queue: nothing is sent twice.
+    expect(api.push).toHaveBeenCalledTimes(1);
+    second.stop();
+  });
+  it('replays the log for a held record with nothing queued, so an acknowledged merge it never took in arrives', async () => {
+    await seedNote(note('n1'));
+    await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 4 });
+    // The app stopped after the queue entry was removed and before the merged row was applied.
+    await db.table('_syncMeta').put({ key: JSON.stringify(['mergeHold', 'notes', 'n1']), value: true });
+    await db.table('_syncMeta').put({ key: 'syncCursorV2', value: '9' });
+    const cursors: unknown[] = [];
+    api.pull.mockImplementation(async (_since: unknown, _folder: unknown, cursor: string) => {
+      cursors.push(cursor);
+      return cursor === '0'
+        ? { changes: [{ table: 'notes', op: 'put', ...note('n1'), content: 'Theirs', version: 6 }], cursor: '9', hasMore: false }
+        : { changes: [], cursor, hasMore: false };
+    });
+    await engine.sync();
+    expect(cursors).toContain('0');
+    expect(await db.notes.get('n1')).toMatchObject({ content: 'Theirs' });
+    expect((await db.table('_syncMeta').get(revisionKey('notes', 'n1')))?.value).toBe(6);
+    expect(await db.table('_syncMeta').get(JSON.stringify(['mergeHold', 'notes', 'n1']))).toBeUndefined();
+    // Once per session: a hold that stays does not replay the log on every sync.
+    await db.table('_syncMeta').put({ key: JSON.stringify(['mergeHold', 'notes', 'n1']), value: true });
+    cursors.length = 0;
+    await engine.sync();
+    expect(cursors).not.toContain('0');
+  });
+  it('keeps a record held when a conflict is resolved from a dialog older than the recorded revision', async () => {
+    await seedNote(note('n1'));
+    await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 8 });
+    await db.table('_syncMeta').put({ key: JSON.stringify(['mergeHold', 'notes', 'n1']), value: true });
+    await db.notes.update('n1', { title: 'Mine' });
+    // Another tab still shows the conflict at revision 7.
+    await engine.resolveConflicts([{ table: 'notes', entityId: 'n1', serverVersion: 7, serverData: { ...note('n1'), title: 'Theirs', version: 7 } }], 'mine');
+    api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'conflict', serverVersion: 8, serverData: { ...note('n1'), version: 8 } }] });
+    await engine.sync();
+    const sent = (api.push.mock.calls.at(-1)?.[0] as Array<Record<string, unknown>>)[0];
+    expect(sent).toMatchObject({ entityId: 'n1', clientVersion: 7 });
+    expect(sent.merge).toBeUndefined();
   });
   it('sends the acknowledged baseline and coalesces edits for each entity', async () => {
     await seedNote(note('n1'));

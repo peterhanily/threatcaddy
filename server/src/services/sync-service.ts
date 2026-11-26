@@ -1,4 +1,4 @@
-import { eq, and, gt, lte, inArray, isNull, count, or, sql, getTableColumns } from 'drizzle-orm';
+import { eq, and, gt, lte, inArray, isNull, count, or, sql, desc, getTableColumns } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import type { PgTable } from 'drizzle-orm/pg-core';
 import { db } from '../db/index.js';
@@ -162,6 +162,45 @@ function canonicalJson(value: unknown): string {
   return JSON.stringify(value instanceof Date ? value.getTime() : value ?? null);
 }
 
+/** Tables whose stale puts may be merged by field. Not investigations (their fields decide who sees
+ *  what) and not evidence (its preview is validated against the stored row as a whole). */
+const FIELD_MERGE_TABLES = new Set(['notes', 'tasks', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'identities', 'tags']);
+
+/** Fields that say what or where a record is. When either side changed one, the other side's change
+ *  was made about a different record (an edit to a task a teammate trashed, a note about an indicator
+ *  whose value was replaced, an end time for an event whose start moved, a phone number for a person
+ *  who was turned into a system), so nothing is merged. */
+const FIELD_MERGE_ANCHORS: Record<string, readonly string[]> = {
+  '*': ['folderId', 'trashed', 'trashedAt', 'archived'],
+  standaloneIOCs: ['type', 'value'],
+  identities: ['type', 'name'],
+  timelineEvents: ['timestamp', 'timestampEnd'],
+};
+
+/** A stale put that changed other fields than the newer revisions did: the fields to write, or null
+ *  when it must stay a conflict. `base` is the revision the client edited (from the change log, in
+ *  column names), `current` the stored row and `clean` what the client sent.
+ *  - A field counts as changed by the client when the put names it and it differs from the base.
+ *  - A field both sides changed is a conflict unless they changed it to the same value.
+ *  - A change by either side to an anchor field (FIELD_MERGE_ANCHORS) is never merged. */
+export function mergeStalePut(tableName: string, clean: Record<string, unknown>, base: Record<string, unknown>, current: Record<string, unknown>): Record<string, unknown> | null {
+  const anchors = new Set([...FIELD_MERGE_ANCHORS['*'], ...(FIELD_MERGE_ANCHORS[tableName] ?? [])]);
+  const merged: Record<string, unknown> = {};
+  for (const [key, column] of Object.entries(getTableColumns(getTable(tableName)))) {
+    if (SERVER_MANAGED_FIELDS.has(key)) continue;
+    const stored = base[(column as { name: string }).name];
+    // The change log holds a timestamp as text; the stored row and the put hold a Date.
+    const before = canonicalJson((column as { dataType?: string }).dataType === 'date' && typeof stored === 'string' ? new Date(stored) : stored);
+    const theirs = canonicalJson(current[key]);
+    const mine = clean[key] === undefined ? before : canonicalJson(clean[key]);
+    if (anchors.has(key) && (mine !== before || theirs !== before)) return null;
+    if (mine === before || mine === theirs) continue;
+    if (theirs !== before) return null;
+    merged[key] = clean[key];
+  }
+  return merged;
+}
+
 /** Whether the stored row is exactly the row this put describes: every column the client owns, a
  * field it left out counting as empty. So the client may take the stored revision as its own. */
 function sameAsStored(tableName: string, clean: Record<string, unknown>, stored: Record<string, unknown>): boolean {
@@ -278,7 +317,9 @@ export async function processPush(
   userId: string,
   options: { authorize?: boolean; trustedInternal?: boolean; generation?: string; authorizeMutation?: SyncMutationAuthorizer; beforeCommit?: () => void | Promise<void>;
     /** Report a change that fails validation as rejected, so the rest of the batch still commits. */
-    rejectInvalidChanges?: boolean } = {},
+    rejectInvalidChanges?: boolean;
+    /** Stale puts marked `merge` by the client may be merged by field. Internal callers leave this off. */
+    fieldMerge?: boolean } = {},
 ): Promise<SyncResult[]> {
   if (!syncDataWithinBudget(changes)) throw new SyncWriteValidationError('Sync data exceeds the supported structure limits');
   const identities = new Set<string>();
@@ -387,6 +428,7 @@ export async function processPush(
         result[index] = { table: change.table, entityId, status: 'rejected', reason: error.message.slice(0, 200) };
       };
       let cleanData: Record<string, unknown>;
+      let mergedPut = false;
       try { cleanData = stripServerFields(change.data, change.table); } catch (error) { rejectInvalid(error); continue; }
       // assignee_id references users. Any other id (such as a client's agent deployment) would fail the whole batch.
       if (op === 'put' && (change.table === 'tasks' || change.table === 'standaloneIOCs') && typeof cleanData.assigneeId === 'string') {
@@ -417,8 +459,28 @@ export async function processPush(
         // revision. For one deleted earlier, a stale delete is a conflict like any other: the
         // investigation can still be restored, with the teammate's newer item.
         if (!(inDeletedFolder && sourceFolder && deletedInBatch.has(sourceFolder))) {
-          result[index] = { table: change.table, entityId, status: 'conflict', serverVersion, serverData: current };
-          continue;
+          // Two people changed different fields of one record: keep both. The base is the revision this
+          // client edited; once the change log no longer holds it, the put is a conflict as before.
+          let mergedFields: Record<string, unknown> | null = null;
+          if (options.fieldMerge && change.merge === true && op === 'put' && current && !current.deletedAt && typeof baseline === 'number' && baseline > 0
+            && baseline < serverVersion && FIELD_MERGE_TABLES.has(change.table)) {
+            const [base] = await tx.select({ record: schema.syncChanges.record }).from(schema.syncChanges)
+              .where(and(eq(schema.syncChanges.tableName, change.table), eq(schema.syncChanges.entityId, entityId),
+                eq(schema.syncChanges.op, 'put'), sql`(${schema.syncChanges.record}->>'version')::integer = ${baseline}`))
+              .orderBy(desc(schema.syncChanges.cursor)).limit(1);
+            if (base) mergedFields = mergeStalePut(change.table, cleanData, base.record as Record<string, unknown>, current);
+          }
+          if (!mergedFields) {
+            result[index] = { table: change.table, entityId, status: 'conflict', serverVersion, serverData: current };
+            continue;
+          }
+          if (!Object.keys(mergedFields).length) {
+            // Everything this put changed is already stored; the row also holds changes it has not seen.
+            result[index] = { table: change.table, entityId, status: 'accepted', serverVersion, serverRecord: current, unchanged: true, merged: true };
+            continue;
+          }
+          cleanData = mergedFields;
+          mergedPut = true;
         }
       }
       if (change.table === 'evidenceItems' && op === 'put') {
@@ -446,7 +508,7 @@ export async function processPush(
         }
       }
       if (change.table === 'folders' && op === 'delete') deletedInBatch.add(entityId);
-      result[index] = { table: change.table, entityId, status: 'accepted', serverVersion: record.version as number, serverRecord: record,
+      result[index] = { table: change.table, entityId, status: 'accepted', serverVersion: record.version as number, serverRecord: record, ...(mergedPut ? { merged: true } : {}),
         ...(sourceFolder && sourceFolder !== destinationFolder ? { previousFolderId: sourceFolder } : {}) };
       const eventFolder = (record.folderId as string | undefined) ?? (change.table === 'folders' ? entityId : undefined);
       if (!BOT_HIDDEN_TABLES.has(change.table)) {

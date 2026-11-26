@@ -206,6 +206,8 @@ export interface SyncChange {
   entityId: string;
   data?: Record<string, unknown>;
   clientVersion?: number;
+  /** This device can take a merged result for this record (set when the change is sent). */
+  merge?: boolean;
 }
 
 export interface SyncResult {
@@ -219,6 +221,9 @@ export interface SyncResult {
   reason?: string;
   /** Accepted without a write: the row already was as the change asked. */
   unchanged?: boolean;
+  /** Accepted by merging: `serverRecord`, the stored row, also holds a teammate's changes this device has not seen. */
+  merged?: boolean;
+  serverRecord?: Record<string, unknown>;
   /** On this device only: the names of identities merged into this one, whose changes wait for it. */
   mergedFrom?: string[];
 }

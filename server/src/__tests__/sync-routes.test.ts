@@ -143,14 +143,14 @@ describe('sync HTTP write boundary', () => {
 
   it('delegates current authorization and revisions to the write transaction', async () => {
     expect((await push([put])).status).toBe(200);
-    expect(mocks.push).toHaveBeenCalledWith([put], 'user-1', { authorize: true, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', rejectInvalidChanges: true });
+    expect(mocks.push).toHaveBeenCalledWith([put], 'user-1', { authorize: true, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', rejectInvalidChanges: true, fieldMerge: true });
     expect(mocks.broadcast).toHaveBeenCalledWith('folder-1', expect.objectContaining({ type: 'entity-change', data: record }), 'user-1', undefined);
     expect(mocks.audit).toHaveBeenCalledOnce();
   });
 
   it('does not enable internal trust from request fields', async () => {
     await push([{ ...put, trustedInternal: true }]);
-    expect(mocks.push).toHaveBeenCalledWith([put], 'user-1', { authorize: true, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', rejectInvalidChanges: true });
+    expect(mocks.push).toHaveBeenCalledWith([put], 'user-1', { authorize: true, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', rejectInvalidChanges: true, fieldMerge: true });
   });
 
   it('returns a clear validation failure when a field exceeds sync limits', async () => {
@@ -183,6 +183,13 @@ describe('sync HTTP write boundary', () => {
     expect((await pushBody(JSON.stringify({ changes: [put], generation, connection }))).status).toBe(200);
     expect(mocks.broadcast.mock.calls.map(call => [call[0], call[2], call[3]])).toEqual([['previous-folder', 'user-1', connection], ['folder-1', 'user-1', connection]]);
     expect((await pushBody(JSON.stringify({ changes: [put], generation, connection: 'laptop' }))).status).toBe(400);
+  });
+
+  it('passes the per-record merge flag to the service, and refuses one that is not a boolean', async () => {
+    const generation = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    await pushBody(JSON.stringify({ changes: [{ ...put, merge: true }], generation }));
+    expect(mocks.push).toHaveBeenLastCalledWith([{ ...put, merge: true }], 'user-1', { authorize: true, generation, rejectInvalidChanges: true, fieldMerge: true });
+    expect((await pushBody(JSON.stringify({ changes: [{ ...put, merge: 'yes' }], generation }))).status).toBe(400);
   });
 
   it('broadcasts folder changes to their own subscribers', async () => {

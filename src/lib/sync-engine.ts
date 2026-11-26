@@ -36,6 +36,13 @@ const mergedNames = (queue: SyncQueueEntry[], table: string, entityId: string) =
 /** Server rows this client could not read: { version, folderId } only, never their content. */
 const skippedKey = (table: string, id: string) => JSON.stringify(['syncSkipped', table, id]);
 const SKIPPED_PREFIX = '["syncSkipped",';
+/** A record with a put sent for merging whose outcome this device has not taken in: the answer was
+ *  lost, or the merged row could not replace a newer local edit. The server may hold this device's
+ *  change already, so a later put compared with the old base could drop the user's own revert or
+ *  write back a value a teammate reverted. While held, its puts ask for no merge (a stale one is an
+ *  ordinary conflict). Set before the request is sent; cleared where the record's revision is recorded. */
+const MERGE_HOLD_PREFIX = '["mergeHold",';
+const mergeHoldKey = (table: string, id: string) => JSON.stringify(['mergeHold', table, id]);
 const HELD_NOTICES: Readonly<Record<Exclude<HeldReason, 'oversized'>, string>> = {
   limits: 'syncStatus.oversizedOutgoing', unreadable: 'syncStatus.unreadableOutgoing', previewType: 'syncStatus.previewTypeOutgoing',
   unsupported: 'syncStatus.unsupportedOutgoing',
@@ -176,7 +183,7 @@ export class SyncEngine {
           const deferred = takeDeferredTrashPurges();
           if (deferred.size) this.onRemoteChange?.([], deferred);
         }
-        await this.push(epoch);
+        await this.withPushLock(mayMerge => this.push(epoch, mayMerge));
         if (epoch === this.epoch) await this.pull(epoch);
       } catch (error) {
         if (epoch === this.epoch && (error as { code?: string }).code === 'SYNC_CURSOR_RESET') {
@@ -222,7 +229,20 @@ export class SyncEngine {
     });
   }
 
-  private async push(epoch: number) {
+  /** One push at a time across the tabs of this browser, which share the queue. Without it a tab
+   *  that stalls could send a put it read earlier after another tab had synced newer edits of the
+   *  same record, and with `merge` that stale put would be written over them without a conflict.
+   *  Where the browser has no Web Locks, pushes run as before and ask for no merge. */
+  private async withPushLock(run: (mayMerge: boolean) => Promise<void>): Promise<void> {
+    const locks = typeof navigator === 'undefined' ? undefined : navigator.locks;
+    if (!locks?.request) return run(false);
+    await locks.request('threatcaddy-sync-push', () => run(true));
+  }
+
+  /** Records whose merged row this session has already asked the server to send again. */
+  private replayedHolds = new Set<string>();
+
+  private async push(epoch: number, mayMerge = false) {
     // While locked, queued rows read back as ciphertext envelopes and an
     // accepted push could not be acknowledged, so nothing is sent. A real lock
     // stops the engine; enabling encryption stores metadata before the key, so
@@ -241,6 +261,16 @@ export class SyncEngine {
     });
     const queue: SyncQueueEntry[] = await dynamicDb.table('_syncQueue').toArray();
     if (epoch !== this.epoch) return;
+    // A held record with nothing queued: its merged answer was acknowledged, but the app stopped
+    // before the merged row was taken in, and an answer that wrote nothing left no log entry for a
+    // pull to bring. Replay the log once, which takes the row in and ends the hold.
+    const queuedRecords = new Set(queue.map(entry => mergeHoldKey(entry.table, entry.entityId)));
+    const orphaned = (await dynamicDb.table('_syncMeta').where('key').startsWith(MERGE_HOLD_PREFIX).primaryKeys() as string[])
+      .filter(key => !queuedRecords.has(key) && !this.replayedHolds.has(key));
+    if (orphaned.length) {
+      for (const key of orphaned) this.replayedHolds.add(key);
+      await dynamicDb.table('_syncMeta').put({ key: CURSOR_KEY, value: '0' });
+    }
     const groups = new Map<string, SyncQueueEntry[]>();
     const samples: SyncQueueEntry[] = [];
     // Held entries are checked once per investigation, not once per entry.
@@ -359,14 +389,27 @@ export class SyncEngine {
       }
       if (!deliverable.length) continue;
       const batch = deliverable.map(item => item.entries);
-      const changes = deliverable.map(item => item.change);
+      // A put may be merged with a teammate's change to other fields, except for a record whose
+      // last merged result this device could not take in (it then gets the ordinary conflict).
+      const held = new Set(await dynamicDb.table('_syncMeta').where('key').startsWith(MERGE_HOLD_PREFIX).primaryKeys());
+      const changes = deliverable.map(item => (mayMerge && item.change.op === 'put' && !held.has(mergeHoldKey(item.change.table, item.change.entityId))
+        ? { ...item.change, merge: true } : item.change));
       await this.assertCurrentWorkspace(epoch);
       if (locked()) return;
       // A re-key (passphrase change, enabling encryption) is not a lock, but the
       // queue was read under the previous session: read it again shortly.
       if (isEncryptionEnabled() && session !== getSessionGeneration()) { this.scheduleSync(); return; }
+      // Held before the request: an answer that never arrives must not leave the record mergeable.
+      const merging = changes.filter(change => change.merge);
+      if (merging.length) {
+        await dynamicDb.transaction('rw', '_syncMeta', '_localMigrations', async () => {
+          await this.assertCurrentWorkspace(epoch);
+          await dynamicDb.table('_syncMeta').bulkPut(merging.map(change => ({ key: mergeHoldKey(change.table, change.entityId), value: true })));
+        });
+      }
       const { results } = await syncPush(changes, history, this.wsClient?.connectionId);
       if (epoch !== this.epoch) return;
+      const adopted: RemoteChange[] = [];
       await dynamicDb.transaction('rw', '_syncQueue', '_syncMeta', '_localMigrations', async () => {
         if (epoch !== this.epoch) return;
         await this.assertCurrentWorkspace(epoch);
@@ -387,6 +430,15 @@ export class SyncEngine {
           if (!validVersion(result.serverVersion)) continue; // do not lose work on malformed acknowledgements
           const sentSeqs = batch[i].map(e => e.seq).filter((seq): seq is number => seq !== undefined);
           await dynamicDb.table('_syncQueue').bulkDelete(sentSeqs);
+          // The server merged this change with a teammate's changes to other fields. The merged row
+          // is taken in below like a pulled one, which records its revision and ends the hold. If an
+          // edit is made meanwhile it is not taken in, and the hold stays.
+          if (result.merged) {
+            if (isRecord(result.serverRecord)) adopted.push({ ...result.serverRecord, table: sent.table, op: 'put', id: sent.entityId } as RemoteChange);
+            if (waitedOn.has(entityKey(sent.table, sent.entityId))) released = true;
+            continue;
+          }
+          await dynamicDb.table('_syncMeta').delete(mergeHoldKey(sent.table, sent.entityId));
           await dynamicDb.table('_syncMeta').put({ key: revisionKey(sent.table, sent.entityId), value: result.serverVersion });
           // Edits made while this request was in flight continue from our own
           // accepted revision, never from a concurrent peer's unreviewed version.
@@ -404,6 +456,8 @@ export class SyncEngine {
         }
         await this.assertCurrentWorkspace(epoch);
       });
+      // Skipped for a record that has edits queued again; its hold then stays.
+      if (adopted.length && epoch === this.epoch) await this.applyChanges(adopted, epoch);
     }
     for (const fold of folds) {
       if (epoch !== this.epoch) return;
@@ -637,6 +691,7 @@ export class SyncEngine {
           await dynamicDb.table(table).put(await this.withLocalFields(table, change, record, id, agents));
         }
         await dynamicDb.table('_syncMeta').put({ key: revisionKey(table, id), value: version });
+        await dynamicDb.table('_syncMeta').delete(mergeHoldKey(table, id));
         // A replay that brings the unreadable version back skips it again.
         if (skipped.has(skipKey)) {
           await dynamicDb.table('_syncMeta').delete(skipKey);
@@ -772,7 +827,11 @@ export class SyncEngine {
           await dynamicDb.table('_syncMeta').put({ key: CURSOR_KEY, value: '0' });
           affected.add(table);
         }
+        // A dialog left open in another tab can be older than the revision recorded since: the record
+        // then stays held, so its next put still meets the ordinary conflict.
+        const recorded = (await dynamicDb.table('_syncMeta').get(revisionKey(table, conflict.entityId)))?.value ?? 0;
         await dynamicDb.table('_syncMeta').put({ key: revisionKey(table, conflict.entityId), value: version });
+        if (version >= recorded) await dynamicDb.table('_syncMeta').delete(mergeHoldKey(table, conflict.entityId));
       }
       await this.assertCurrentWorkspace(epoch);
       if (replaced.size) await deleteCheckpointsFor(replaced);

@@ -357,6 +357,13 @@ Push entity changes to the server. Requires `admin` or `analyst`; each change is
 }
 ```
 
+A change may carry `merge: true`: the client can take a merged result for that record. A put whose `clientVersion` is behind the stored row is then accepted, with `merged: true` and the stored row as `serverRecord`, when it and the newer revisions changed different fields (or one field to the same value). Only the fields the put changed are written. A client must not send `merge: true` for a record while the outcome of an earlier merge request for it is unknown or not taken in: after a request with no answer, or when the merged row could not replace a newer local edit. It sends the next put without `merge` and gets the ordinary conflict. Otherwise the server may already hold its change, and a comparison with the old base could drop the user's own revert or write back a value a teammate reverted. The result is a conflict as before:
+- without `merge`;
+- when both changed one field to different values;
+- when either side changed a field that says what or where the record is: its investigation, `trashed`, `archived`, an indicator's `type` or `value`, an identity's `type` or `name`, a timeline event's `timestamp` or `timestampEnd`;
+- for investigations and evidence;
+- once the revision the client edited has been compacted out of the change log.
+
 An optional `connection` (the `connectionId` from the WebSocket `auth-ok` message) names the pushing device's connection: the change is then announced to the user's other connections and only that one is skipped. Without it, or when it is not one of the user's connections, none of the user's connections is told.
 
 The UUID above is illustrative; use the generation returned by this server. A batch accepts at most 500 changes and 16 MiB of JSON. Duplicate table/entity pairs and an invalid request shape return bounded `400 VALIDATION_FAILED` errors before writes. A field the server refuses for one change (an identity field of the wrong shape, an unknown IOC type, an invalid evidence preview) comes back in the `200` response as that change's `rejected` result with a `reason`, and the rest of the batch is applied. A change that would leave the row as it is comes back `accepted` with `unchanged: true` and no new revision; an oversized body returns `413 PAYLOAD_TOO_LARGE`. Empty batches remain valid. Structural limits also bound dictionary width, nested collections and traversal; see [verification](development-verification.md#request-validation-resource-regression).

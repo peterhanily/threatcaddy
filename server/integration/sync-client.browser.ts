@@ -202,7 +202,8 @@ try {
       await put(first, 'identities', person('merge-other', 'Lee Park', { connections: [{ targetId: 'merge-gone', label: 'reports to' }] }));
       assert.deepEqual(await invoke(first, 'sync'), []);
       assert.deepEqual(await invoke(second, 'sync'), []);
-      await put(second, 'identities', { ...await get(second, 'identities', 'merge-keep'), description: 'Finance lead', updatedAt: Date.now() });
+      // The teammate changes a field the merge also changes (the other names), so the two cannot be combined.
+      await put(second, 'identities', { ...await get(second, 'identities', 'merge-keep'), aliases: ['Dana O.'], updatedAt: Date.now() });
       assert.deepEqual(await invoke(second, 'sync'), []);
       await invoke(first, 'merge', { keepId: 'merge-keep', goneId: 'merge-gone' });
       const mergeConflicts = await invoke<Row[]>(first, 'sync');
@@ -212,7 +213,7 @@ try {
       assert.deepEqual(await invoke(first, 'sync'), []);
       assert.deepEqual(await invoke(second, 'sync'), []);
       for (const device of [first, second]) {
-        assert.equal((await get(device, 'identities', 'merge-keep'))?.description, 'Finance lead');
+        assert.deepEqual((await get(device, 'identities', 'merge-keep'))?.aliases, ['Dana O.']);
         assert.deepEqual(((await get(device, 'identities', 'merge-gone'))?.details as Row[]).map(detail => detail.value), ['+1 555 0142']);
         assert.deepEqual((await get(device, 'identities', 'merge-other'))?.connections, [{ targetId: 'merge-gone', label: 'reports to' }]);
       }
@@ -222,6 +223,8 @@ try {
 
       await put(second, 'identities', { ...await get(second, 'identities', 'merge-gone'), updatedAt: Date.now(),
         details: [{ id: 'merge-phone', label: 'Phone', value: '+1 555 0142', private: true }, { id: 'merge-email', label: 'Email', value: 'dokafor@example.invalid' }] });
+      // The teammate also changes the kept identity, in a field the merge leaves alone: the server keeps both.
+      await put(second, 'identities', { ...await get(second, 'identities', 'merge-keep'), description: 'Finance lead', updatedAt: Date.now() });
       assert.deepEqual(await invoke(second, 'sync'), []);
       await invoke(first, 'merge', { keepId: 'merge-keep', goneId: 'merge-gone' });
       for (let cycle = 0; cycle < 4; cycle++) assert.deepEqual(await invoke(first, 'sync'), []);
@@ -232,10 +235,11 @@ try {
         assert.equal(await get(device, 'identities', 'merge-gone'), null);
         const kept = await get(device, 'identities', 'merge-keep');
         assert.deepEqual((kept?.details as Row[]).map(detail => detail.value).sort(), ['+1 555 0142', 'dokafor@example.invalid']);
-        assert.deepEqual(kept?.aliases, ['D. Okafor-Reyes', 'dokafor']);
+        assert.deepEqual([...(kept?.aliases as string[])].sort(), ['D. Okafor-Reyes', 'Dana O.', 'dokafor']);
+        assert.equal(kept?.description, 'Finance lead');
         assert.deepEqual((await get(device, 'identities', 'merge-other'))?.connections, [{ targetId: 'merge-keep', label: 'reports to' }]);
       }
-      check('a teammate\'s change to the merged-away identity is merged too, with no conflict and no duplicate name');
+      check('a teammate\'s change to the merged-away identity is merged too, and one to another field of the kept identity is kept, with no conflict and no duplicate name');
 
       // Deleting an investigation with its identities uploads its delete; the items need nothing more (DATA-3).
       await put(first, 'folders', { id: 'sync-drop', name: 'Synthetic dropped case', order: 1, createdAt: now, updatedAt: now });
