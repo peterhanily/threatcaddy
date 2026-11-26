@@ -137,5 +137,6 @@
   "firstRun.description": "Maak een onderzoek, importeer toegestane bronbestanden of verken een fictief e-mailincident. AI instellen is niet nodig.",
   "firstRun.import": "Bronbestanden importeren",
   "firstRun.demo": "Realistische demo proberen",
+  "firstRun.tour": "Korte rondleiding volgen",
   "firstRun.report": "Beoordeel bewijs, maak een tijdlijn en schrijf een rapportnotitie. Download die als Markdown; bewaar de volledige werkruimte apart met Back-up opslaan."
 }

@@ -9,8 +9,9 @@ import { nanoid } from 'nanoid';
 import type { AgentDeployment, AgentMeeting, AgentProfile, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider, MeetingPurpose, MeetingStructuredOutput } from '../types';
 import { TOOL_DEFINITIONS } from './llm-tool-defs';
 import { buildSystemPrompt } from './llm-tools';
-import { agentRefusal, hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, unavailableRouteError } from './llm-router';
+import { agentRefusal, hasServerSession, resolveRoute, sendDirectToLocal, sendViaExtension, sendViaServer, unavailableRouteError, usesTextToolCalls } from './llm-router';
 import { resolveAgentProfile } from './agent-profile-resolver';
+import { DEFAULT_MODEL } from './models';
 
 export interface AgentMeetingResult {
   meetingId: string;
@@ -205,7 +206,7 @@ export async function runAgentMeeting(
   // Resolve provider (same fallback as agent cycle) and route (local endpoint first, strict explicit modes)
   const routeEnv = { extensionAvailable, serverSession: hasServerSession() };
   let provider = (settings.llmDefaultProvider || 'anthropic') as LLMProvider;
-  let model = settings.llmDefaultModel || 'claude-sonnet-4-6';
+  let model = settings.llmDefaultModel || DEFAULT_MODEL;
 
   // Fallback to first provider with a key
   if (resolveRoute(settings, { ...routeEnv, provider }).route !== 'server' && !getApiKeyForProvider(provider, settings)) {
@@ -214,7 +215,7 @@ export async function runAgentMeeting(
       { p: 'gemini', key: 'llmGeminiApiKey' }, { p: 'mistral', key: 'llmMistralApiKey' },
     ];
     for (const { p, key } of providers) {
-      if ((settings[key] as string | undefined)?.trim()) { provider = p; model = settings.llmDefaultModel || 'claude-sonnet-4-6'; break; }
+      if ((settings[key] as string | undefined)?.trim()) { provider = p; model = settings.llmDefaultModel || DEFAULT_MODEL; break; }
     }
     if (settings.llmLocalEndpoint?.trim()) { provider = 'local'; model = settings.llmLocalModelName || 'llama3'; }
   }
@@ -280,7 +281,7 @@ export async function runAgentMeeting(
   };
   await db.agentMeetings.add(meeting);
 
-  const baseContext = await buildSystemPrompt(folder, settings.llmSystemPrompt, provider);
+  const baseContext = await buildSystemPrompt(folder, settings.llmSystemPrompt, provider, usesTextToolCalls(settings, provider));
 
   try {
     // Build conversation in the shared thread

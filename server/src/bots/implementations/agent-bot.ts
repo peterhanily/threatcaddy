@@ -61,7 +61,7 @@ export class AgentBot extends GenericBot {
     const agentConfig = execCtx.getConfig();
 
     const provider = (agentConfig.llmProvider as string) || 'anthropic';
-    const model = (agentConfig.llmModel as string) || 'claude-sonnet-4-20250514';
+    const model = (agentConfig.llmModel as string) || 'claude-sonnet-4-6';
     const customSystemPrompt = (agentConfig.systemPrompt as string) || '';
     const rawIterations = Number(agentConfig.maxIterations);
     const maxIterations = Math.min(

@@ -137,5 +137,6 @@
   "firstRun.description": "Buat kasus, impor berkas sumber yang diizinkan, atau jelajahi insiden surel fiktif. Pengaturan AI tidak diperlukan.",
   "firstRun.import": "Impor berkas sumber",
   "firstRun.demo": "Coba demo realistis",
+  "firstRun.tour": "Ikuti tur singkat",
   "firstRun.report": "Tinjau bukti, buat lini masa, dan tulis catatan laporan. Unduh sebagai Markdown; gunakan Simpan Cadangan secara terpisah untuk menyimpan seluruh ruang kerja."
 }

@@ -569,7 +569,7 @@ ${adminStyles()}
       </div>
       <div class="form-group">
         <label>LLM Model</label>
-        <input type="text" id="newBotLlmModel" placeholder="e.g. claude-sonnet-4-20250514">
+        <input type="text" id="newBotLlmModel" placeholder="e.g. claude-sonnet-5-5">
       </div>
       <div class="form-group">
         <label>System Prompt</label>

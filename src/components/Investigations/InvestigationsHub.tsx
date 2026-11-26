@@ -22,6 +22,7 @@ export interface InvestigationsHubProps {
   onCreateInvestigation: () => void;
   onImportInvestigation?: () => void;
   onLoadDemo?: () => void;
+  onStartTour?: () => void;
   showFirstRunGuide?: boolean;
   onEditInvestigation?: (folderId: string) => void;
   onArchiveInvestigation?: (folderId: string) => void;
@@ -110,6 +111,7 @@ export function InvestigationsHub({
   onCreateInvestigation,
   onImportInvestigation,
   onLoadDemo,
+  onStartTour,
   showFirstRunGuide = true,
   onEditInvestigation,
   onArchiveInvestigation,
@@ -184,7 +186,7 @@ export function InvestigationsHub({
         </div>
 
         {showFirstRunGuide && !localLoading && !remoteLoading && localFolders.length === 0 && remoteInvestigations.length === 0 && (onImportInvestigation || onLoadDemo) && (
-          <FirstRunGuide onCreate={onCreateInvestigation} onImport={onImportInvestigation} onLoadDemo={onLoadDemo} />
+          <FirstRunGuide onCreate={onCreateInvestigation} onImport={onImportInvestigation} onLoadDemo={onLoadDemo} onStartTour={onStartTour} />
         )}
 
         {/* Search & Filter Bar */}

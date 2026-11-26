@@ -12,7 +12,7 @@ import { ChatApprovalCard, ChatApprovalStatus } from './ChatApprovalCard';
 import { AgentCycleSummaryCard } from '../Agent/AgentCycleSummaryCard';
 import { ChatInput } from './ChatInput';
 import { useLLM } from '../../hooks/useLLM';
-import { DEFAULT_MODEL_PER_PROVIDER } from '../../lib/models';
+import { DEFAULT_MODEL_PER_PROVIDER, DEFAULT_MODEL } from '../../lib/models';
 import { cn, formatDate } from '../../lib/utils';
 import { EXTENSION_INSTALL_STEPS_URL, EXTENSION_RELEASES_URL } from '../../lib/extension-bridge';
 import { nanoid } from 'nanoid';
@@ -34,7 +34,7 @@ import { executeCheckpointedTool, restoreCheckpoint } from '../../lib/checkpoint
 import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCustomSlashCommands';
 import { useToast } from '../../contexts/ToastContext';
 import { supportsVision, describeImage } from '../../lib/image-ocr';
-import { hasServerSession, resolveRoute, unavailableRouteError } from '../../lib/llm-router';
+import { hasServerSession, resolveRoute, unavailableRouteError, usesTextToolCalls } from '../../lib/llm-router';
 import { chatThreadGroups } from '../../lib/folder-tree';
 import { useImageAttachments } from '../../hooks/useImageAttachments';
 import { hasComposerDrafts, subscribeComposerDrafts, discardAllComposerDrafts } from '../../lib/chat-composer-drafts';
@@ -219,7 +219,7 @@ export function ChatView({
         return;
       }
 
-      let defaultModel = settings.llmDefaultModel || 'claude-sonnet-4-6';
+      let defaultModel = settings.llmDefaultModel || DEFAULT_MODEL;
       let defaultProvider: LLMProvider = (settings.llmDefaultProvider as LLMProvider) || 'anthropic';
       // If the default provider has no API key, pick the first configured provider
       if (cloudRoute !== 'server' && configuredProviders.size > 0 && !configuredProviders.has(defaultProvider)) {
@@ -428,7 +428,7 @@ export function ChatView({
         model: activeThread.model,
         provider: activeThread.provider,
         apiKey: apiKey!,
-        systemPrompt: await buildSystemPrompt(homeFolder, settings.llmSystemPrompt, activeThread.provider),
+        systemPrompt: await buildSystemPrompt(homeFolder, settings.llmSystemPrompt, activeThread.provider, usesTextToolCalls(settings, activeThread.provider)),
         endpoint: activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined,
         useServerProxy,
         transport: () => resolveTransportRef.current(provider),
@@ -495,7 +495,7 @@ export function ChatView({
 
     // Build for this submission's scope. A shared async cache can complete out
     // of order after an investigation switch and attach another case's context.
-    const systemPrompt = await buildSystemPrompt(homeFolder, settings.llmSystemPrompt, activeThread.provider);
+    const systemPrompt = await buildSystemPrompt(homeFolder, settings.llmSystemPrompt, activeThread.provider, usesTextToolCalls(settings, activeThread.provider));
 
     // Build text-only messages for truncation, then overlay multimodal content
     const allMessages = [...activeThread.messages, userMsg];

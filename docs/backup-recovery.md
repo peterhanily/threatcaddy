@@ -364,12 +364,12 @@ Backup blobs are stored on disk at `${FILE_STORAGE_PATH}/backups/<id>.enc`. The 
 Protect the database, its dumps and its volume snapshots as you would the investigations themselves. Everything a team syncs is stored readable in PostgreSQL: local workspace encryption protects the browser's copy only. For identities this includes details marked private, such as phone numbers and home addresses:
 
 - **Current records:** in the `identities` table.
-- **History:** in every revision of a record that the sync change log (`sync_changes`) keeps. History rotation does not compact it, so a detail later removed or made private is still in earlier revisions.
+- **History:** in every revision of a record that the sync change log (`sync_changes`) keeps. The daily cleanup removes a revision 90 days after a later revision of the same record replaced it, so a detail removed or made private stays in earlier revisions for up to that long. The newest revision of each record, each move between investigations and the last revision a record had in an investigation it left are always kept. History rotation itself does not compact the log.
 - **Deleted identities:** kept as tombstones with their details for the tombstone retention period (90 days by default).
 - **Rows removed for good:** when retention or an investigation's purge removes a row, the change log records a final copy of the whole row.
 - **Activity log:** it records identity changes by id and action, without names, and is kept for the audit log retention period (365 days by default).
 
-The audit log retention period can be changed in the admin settings. The tombstone period cannot be changed there: the server reads `tombstone_retention_days` from its settings table, but no admin screen or API sets it. A dump or volume snapshot holds all of the above, so keep it private and encrypt off-device copies.
+The audit log retention period can be changed in the admin settings. The tombstone period and the history period cannot be changed there: the server reads `tombstone_retention_days` and `sync_history_retention_days` from its settings table (`server_settings`), but no admin screen or API sets them. A history period of `0` keeps every revision. A dump or volume snapshot holds all of the above, so keep it private and encrypt off-device copies.
 
 ### Docker Compose Setup
 

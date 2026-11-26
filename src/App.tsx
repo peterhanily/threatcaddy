@@ -1903,6 +1903,7 @@ const AppInner = memo(function AppInner({
             onCreateInvestigation={() => setShowCreateInvestigationModal(true)}
             onImportInvestigation={() => setShowDataImport(true)}
             onLoadDemo={() => { void handleLoadSample(); }}
+            onStartTour={settings.tourCompleted ? undefined : () => tour.start(activeView)}
             allWhiteboards={screensafeWhiteboards}
             links={settings.quickLinks ?? DEFAULT_QUICK_LINKS}
             onUpdateLinks={(links) => updateSettings({ quickLinks: links })}
@@ -2075,6 +2076,7 @@ const AppInner = memo(function AppInner({
             showFirstRunGuide={!screenshareMaxLevel && privacyDataReady}
             onImportInvestigation={() => setShowDataImport(true)}
             onLoadDemo={() => { void handleLoadSample(); }}
+            onStartTour={settings.tourCompleted ? undefined : () => tour.start(activeView)}
             localFolders={folders}
             remoteInvestigations={remoteInvestigations}
             syncedFolderIds={syncedFolderIds}

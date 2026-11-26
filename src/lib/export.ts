@@ -17,6 +17,7 @@ import { nextTimelineOrder } from './sync-capture-policy';
 import { findSupervisorFolder, supervisorProposalRationale } from './caddy-agent-supervisor';
 import { SUPERVISOR_ACTION_PROFILE } from './supervisor-tool-policy';
 import { IDENTITY_STATUSES } from './entity-enums';
+import { DEFAULT_MODEL } from './models';
 
 export async function exportJSON(): Promise<string> {
   const json = JSON.stringify(await portableSnapshot(false), null, 2);
@@ -982,7 +983,7 @@ export function sanitizeChatThread(raw: unknown): ChatThread | null {
     messages: Array.isArray(r.messages)
       ? (r.messages as unknown[]).map(sanitizeChatMessage).filter((m): m is ChatMessage => m !== null)
       : [],
-    model: str(r.model, 'claude-sonnet-4-6'),
+    model: str(r.model, DEFAULT_MODEL),
     provider: (VALID_LLM_PROVIDERS.includes(provider) ? provider : 'anthropic') as LLMProvider,
     folderId: r.folderId != null ? str(r.folderId) : undefined,
     tags: strArr(r.tags),
