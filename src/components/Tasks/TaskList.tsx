@@ -29,6 +29,9 @@ interface TaskListProps {
   scopeLabel?: string;
   members?: InvestigationMember[];
   currentUserId?: string;
+  /** Opens one task, for example from the investigation's Overview; `onOpenTaskHandled` clears it. */
+  openTaskRequest?: { id: string; request: number };
+  onOpenTaskHandled?: () => void;
 }
 
 export function TaskListView({
@@ -49,11 +52,21 @@ export function TaskListView({
   scopeLabel,
   members,
   currentUserId,
+  openTaskRequest,
+  onOpenTaskHandled,
 }: TaskListProps) {
   const { taskViewMode: viewMode, setTaskViewMode: onViewModeChange, pendingNewTask: openNewForm, setPendingNewTask } = useNavigation();
   const { selectedFolderId } = useInvestigation();
   const { t } = useTranslation('tasks');
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(() => tasks.find((task) => task.id === openTaskRequest?.id) ?? null);
+  // A request from outside is applied once, while rendering.
+  const [seenTaskRequest, setSeenTaskRequest] = useState(openTaskRequest?.request);
+  if (openTaskRequest && openTaskRequest.request !== seenTaskRequest) {
+    setSeenTaskRequest(openTaskRequest.request);
+    const requested = tasks.find((task) => task.id === openTaskRequest.id);
+    if (requested) setEditingTask(requested);
+  }
+  useEffect(() => { if (openTaskRequest) onOpenTaskHandled?.(); }, [openTaskRequest, onOpenTaskHandled]);
   const [showNewTask, setShowNewTask] = useState(false);
 
   // Open creation form when triggered externally (e.g. from header "+ New" dropdown)

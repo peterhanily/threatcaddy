@@ -99,9 +99,13 @@ claim that future advisories cannot affect the lockfiles.
 ## Compatibility
 
 - Root/server Vitest and root coverage use exactly 5.0.5 to keep tested tooling
-  aligned. Lucide 1.61.0 and i18next-http-backend 4.0.6 are mature reviewed
-  releases; newer versions had not passed the local seven-day release policy.
-  Dependabot can propose later updates. Lucide's retired brand icons use
+  aligned. Lucide 1.75.0 and i18next-http-backend 4.0.10 are the reviewed
+  releases since 26 November 2026, both proposed by Dependabot after its
+  seven-day cooldown. i18next-http-backend 4.0.10 is a security release
+  (GHSA-qh2f-jh77-hfwf: a request URL whose scheme or host differs from the
+  `loadPath` template is refused); it has no dependencies and no install
+  scripts, and the build pins the version that is bundled
+  (`build/dependency-provenance.ts`). Lucide's retired brand icons use
   supported replacements with the same labels and destinations.
 - `@hono/node-ws@1.3.1` still declares a node-server 1.x peer despite importing
   no node-server runtime internals. Its narrowly scoped npm peer override uses
