@@ -22,6 +22,30 @@ describe('merging a stale put by field', () => {
     expect(mergeStalePut('tasks', put({ title: 'Collect all logs' }), base, stored({ priority: 'high' }))).toEqual({ title: 'Collect all logs' });
   });
 
+  it('reads a timestamp in the log as the time it is, whichever side changed it', () => {
+    const later = new Date('2026-11-02T08:00:00Z');
+    // Only the put changes it: written. (Without the conversion the unchanged case below would look changed.)
+    expect(mergeStalePut('tasks', put({ completedAt: later }), base, stored({ priority: 'high' }))).toEqual({ completedAt: later });
+    // Only the stored row changed it: kept, and the put's other change is written.
+    expect(mergeStalePut('tasks', put({ title: 'New title' }), base, stored({ completedAt: later }))).toEqual({ title: 'New title' });
+    // Both changed it to different times: a conflict.
+    expect(mergeStalePut('tasks', put({ completedAt: later }), base, stored({ completedAt: new Date('2026-11-03T08:00:00Z') }))).toBeNull();
+  });
+
+  it('never merges when either side changed what or where the record is', () => {
+    // An edit is not merged into a task a teammate trashed or archived, or the other way round.
+    expect(mergeStalePut('tasks', put({ title: 'New title' }), base, stored({ trashed: true, trashedAt: new Date() }))).toBeNull();
+    expect(mergeStalePut('tasks', put({ archived: true }), base, stored({ priority: 'high' }))).toBeNull();
+    // A note about an indicator is not merged onto a replaced indicator.
+    const ioc = { id: 'i1', type: 'ipv4', value: '10.0.0.5', folder_id: 'case', analyst_notes: null, confidence: 'low', trashed: false, archived: false, version: 1 };
+    const iocRow = (changes: Record<string, unknown> = {}) => ({ id: 'i1', type: 'ipv4', value: '10.0.0.5', folderId: 'case', analystNotes: null, confidence: 'low', trashed: false, archived: false, version: 2, ...changes });
+    expect(mergeStalePut('standaloneIOCs', { analystNotes: 'internal host, benign', confidence: 'high' }, ioc, iocRow({ type: 'domain', value: 'evil.example' }))).toBeNull();
+    expect(mergeStalePut('standaloneIOCs', { analystNotes: 'internal host, benign' }, ioc, iocRow({ confidence: 'high' }))).toEqual({ analystNotes: 'internal host, benign' });
+    // An end time is not merged onto an event whose start moved.
+    const event = { id: 'e1', title: 'Login', timestamp: 1000, timestamp_end: null, folder_id: 'case', trashed: false, archived: false, version: 1 };
+    expect(mergeStalePut('timelineEvents', { timestampEnd: 5000 }, event, { id: 'e1', title: 'Login', timestamp: 9000, timestampEnd: null, folderId: 'case', trashed: false, archived: false, version: 2 })).toBeNull();
+  });
+
   it('is a conflict when both changed one field to different values, and not when to the same value', () => {
     expect(mergeStalePut('tasks', put({ status: 'done' }), base, stored({ status: 'in-progress' }))).toBeNull();
     expect(mergeStalePut('tasks', put({ status: 'done', title: 'New title' }), base, stored({ status: 'done' }))).toEqual({ title: 'New title' });

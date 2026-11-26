@@ -17,7 +17,7 @@ testDatabaseUrl(process.env.TEST_DATABASE_URL);
 
 const task = (changes: Record<string, unknown> = {}) => ({ folderId: 'case', title: 'Collect logs', completed: false, priority: 'none', status: 'todo',
   order: 0, tags: [], trashed: false, archived: false, ...changes });
-const put = (data: Record<string, unknown>, clientVersion: number) => [{ table: 'tasks', entityId: 't1', op: 'put' as const, clientVersion, data }];
+const put = (data: Record<string, unknown>, clientVersion: number, merge: boolean) => [{ table: 'tasks', entityId: 't1', op: 'put' as const, clientVersion, data, ...(merge ? { merge: true } : {}) }];
 
 describe('merging two people\'s changes to one record in PostgreSQL', () => {
   let database: ScratchDatabase;
@@ -34,8 +34,8 @@ describe('merging two people\'s changes to one record in PostgreSQL', () => {
   });
   afterEach(async () => { await database?.close(); });
 
-  const push = (user: string, data: Record<string, unknown>, clientVersion: number, fieldMerge = true) =>
-    processPush(put(data, clientVersion), user, { authorize: true, generation, rejectInvalidChanges: true, ...(fieldMerge ? { fieldMerge: true } : {}) });
+  const push = (user: string, data: Record<string, unknown>, clientVersion: number, merge = true) =>
+    processPush(put(data, clientVersion, merge), user, { authorize: true, generation, rejectInvalidChanges: true, fieldMerge: true });
   const row = async () => (await database.sql`SELECT title, priority, status, version FROM tasks WHERE id = 't1'`)[0];
 
   it('keeps both changes when they are to different fields, and conflicts as before otherwise', async () => {
@@ -58,6 +58,8 @@ describe('merging two people\'s changes to one record in PostgreSQL', () => {
     // Nothing new in the put: accepted without a write, still marked merged.
     const [nothing] = await push('omar', task({ status: 'in-progress', title: 'Collect all logs' }), 1);
     expect(nothing).toMatchObject({ status: 'accepted', serverVersion: 4, unchanged: true, merged: true });
+    // The row comes back with it, so the client can take in what it has not seen.
+    expect(nothing.serverRecord).toMatchObject({ priority: 'high', title: 'Collect all logs' });
 
     // The same field, changed to different values: a conflict, with the stored row to compare.
     const [conflict] = await push('omar', task({ priority: 'low' }), 1);
@@ -66,10 +68,30 @@ describe('merging two people\'s changes to one record in PostgreSQL', () => {
     expect((await row()).version).toBe(4);
   });
 
+  it('does not write back a value a teammate deliberately reverted', async () => {
+    await push('dana', task(), 0);
+    await push('dana', task({ priority: 'high' }), 1);
+    // Omar's status change is merged (revision 3). His app takes the merged row in, so he is on 3.
+    expect((await push('omar', task({ status: 'in-progress' }), 1))[0]).toMatchObject({ merged: true, serverVersion: 3 });
+    // Dana, who has seen it, sets the status back (revision 4).
+    expect((await push('dana', task({ priority: 'high', status: 'todo' }), 3))[0]).toMatchObject({ status: 'accepted', serverVersion: 4 });
+    // Omar changes the title from revision 3; his put still says in-progress, which is what he last saw.
+    const [result] = await push('omar', task({ priority: 'high', status: 'in-progress', title: 'Collect all logs' }), 3);
+    expect(result).toMatchObject({ status: 'accepted', merged: true, serverVersion: 5 });
+    expect({ ...(await row()) }).toEqual({ title: 'Collect all logs', priority: 'high', status: 'todo', version: 5 });
+  });
+
+  it('does not merge an edit into a record a teammate trashed', async () => {
+    await push('dana', task(), 0);
+    await push('dana', task({ trashed: true, trashedAt: new Date().toISOString() }), 1);
+    expect((await push('omar', task({ title: 'Collect all logs' }), 1))[0]).toMatchObject({ status: 'conflict', serverVersion: 2 });
+    expect((await row()).title).toBe('Collect logs');
+  });
+
   it('does not merge for a client that did not ask, for a move, for a deleted record or once the base is gone', async () => {
     await push('dana', task(), 0);
     await push('dana', task({ priority: 'high' }), 1);
-    // An older client sends no `merge`: it could not keep its baseline, so it gets the conflict.
+    // An older client, or a record this device holds back, sends no `merge`: an ordinary conflict.
     expect((await push('omar', task({ status: 'in-progress' }), 1, false))[0]).toMatchObject({ status: 'conflict', serverVersion: 2 });
 
     await database.sql`INSERT INTO folders (id,name,created_at,updated_at) VALUES ('other','Other',now(),now())`;

@@ -270,7 +270,7 @@ describe('server-api', () => {
       const [url, opts] = mockFetch.mock.calls[0];
       expect(url).toBe('http://test-server/api/sync/push');
       expect(opts.method).toBe('POST');
-      expect(JSON.parse(opts.body)).toEqual({ changes, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', merge: true });
+      expect(JSON.parse(opts.body)).toEqual({ changes, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' });
       expect(result.results[0].status).toBe('accepted');
     });
 
@@ -281,7 +281,7 @@ describe('server-api', () => {
       mockFetch.mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({ results: [] }) });
       await syncPush(changes, generation, connection);
       await syncPush(changes, generation, null);
-      expect(mockFetch.mock.calls.map(call => JSON.parse(call[1].body))).toEqual([{ changes, generation, merge: true, connection }, { changes, generation, merge: true }]);
+      expect(mockFetch.mock.calls.map(call => JSON.parse(call[1].body))).toEqual([{ changes, generation, connection }, { changes, generation }]);
     });
 
     it('syncPull calls GET /api/sync/pull with query params', async () => {

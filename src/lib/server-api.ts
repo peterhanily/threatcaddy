@@ -206,6 +206,8 @@ export interface SyncChange {
   entityId: string;
   data?: Record<string, unknown>;
   clientVersion?: number;
+  /** This device can take a merged result for this record (set when the change is sent). */
+  merge?: boolean;
 }
 
 export interface SyncResult {
@@ -219,8 +221,9 @@ export interface SyncResult {
   reason?: string;
   /** Accepted without a write: the row already was as the change asked. */
   unchanged?: boolean;
-  /** Accepted by merging: the stored row also holds a teammate's changes this device has not seen. */
+  /** Accepted by merging: `serverRecord`, the stored row, also holds a teammate's changes this device has not seen. */
   merged?: boolean;
+  serverRecord?: Record<string, unknown>;
   /** On this device only: the names of identities merged into this one, whose changes wait for it. */
   mergedFrom?: string[];
 }
@@ -229,8 +232,7 @@ export interface SyncResult {
 export async function syncPush(changes: SyncChange[], generation: string, connection?: string | null): Promise<{ results: SyncResult[] }> {
   const resp = await apiFetch('/api/sync/push', {
     method: 'POST',
-    // `merge`: this client keeps its earlier baseline after a merged acceptance (see sync-engine).
-    body: JSON.stringify({ changes, generation, merge: true, ...(connection ? { connection } : {}) }),
+    body: JSON.stringify({ changes, generation, ...(connection ? { connection } : {}) }),
   });
   if (!resp.ok) throw await apiError(resp, 'Sync push failed');
   return resp.json();

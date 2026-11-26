@@ -24,6 +24,8 @@ export interface SyncChange {
   entityId: string;
   data?: Record<string, unknown>;
   clientVersion?: number;
+  /** The client can take a merged result for this record (see `merged` on SyncResult). */
+  merge?: boolean;
 }
 
 export interface SyncResult {
@@ -38,8 +40,9 @@ export interface SyncResult {
   reason?: string;
   /** Accepted without a write: the row already was as the change asked (nothing to announce or log). */
   unchanged?: boolean;
-  /** A stale put accepted because it and the newer revisions changed different fields. The stored row
-   *  holds changes the client has not seen, so the client keeps its earlier baseline until it pulls. */
+  /** A stale put accepted because it and the newer revisions changed different fields. `serverRecord`
+   *  is the merged row, which holds changes the client has not seen: the client takes it as it would
+   *  a pulled row. */
   merged?: boolean;
 }
 

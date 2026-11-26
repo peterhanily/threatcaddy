@@ -23,13 +23,13 @@ const changeSchema = z.object({
   entityId: z.string().min(1).max(128),
   data: z.record(z.string(), z.unknown()).optional(),
   clientVersion: z.number().int().min(0).max(2147483646).optional(),
+  // The client can take a merged result for this record: a stale put that changed other fields may be merged.
+  merge: z.boolean().optional(),
 }).refine(change => change.op !== 'put' || change.data !== undefined, 'Put requires entity data');
 const pushSchema = z.object({
   generation: z.string().uuid(), changes: z.array(changeSchema).max(MAX_SYNC_CHANGES),
   // The WebSocket connection of the pushing device (from `auth-ok`), so the user's other devices are told.
   connection: z.string().uuid().optional(),
-  // The client handles `merged` in a result: a stale put that changed other fields may be merged.
-  merge: z.boolean().optional(),
 }).superRefine(({ changes }, ctx) => {
   const identities = new Set<string>();
   for (const change of changes) {
@@ -64,7 +64,7 @@ app.post('/push', requireRole('admin', 'analyst'), async (c) => {
   // holding the same transaction used for revision checks and writes.
   let results;
   try {
-    results = await processPush(changes, user.id, { authorize: true, generation: parsed.data.generation, rejectInvalidChanges: true, ...(parsed.data.merge ? { fieldMerge: true } : {}) });
+    results = await processPush(changes, user.id, { authorize: true, generation: parsed.data.generation, rejectInvalidChanges: true, fieldMerge: true });
   } catch (error) {
     if (error instanceof SyncWriteValidationError) return c.json({ error: error.message.slice(0, 200), code: ErrorCodes.VALIDATION_FAILED }, 400);
     if (error instanceof SyncReadError) return c.json({ error: error.message, code: 'SYNC_CURSOR_RESET', resetRequired: true }, error.status);

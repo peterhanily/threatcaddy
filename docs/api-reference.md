@@ -357,7 +357,12 @@ Push entity changes to the server. Requires `admin` or `analyst`; each change is
 }
 ```
 
-An optional `merge: true` says the client handles a merged result. A put whose `clientVersion` is behind the stored row is then accepted, with `merged: true` in its result, when it and the newer revisions changed different fields (or the same field to the same value) and neither moved the record to another investigation; only the fields the put changed are written. The client must keep `clientVersion` at the revision it edited until it has pulled the merged record. Without `merge`, when both changed one field, for investigations and evidence, or once the revision the client edited has been compacted out of the change log, the result is a conflict as before.
+A change may carry `merge: true`: the client can take a merged result for that record. A put whose `clientVersion` is behind the stored row is then accepted, with `merged: true` and the stored row as `serverRecord`, when it and the newer revisions changed different fields (or one field to the same value). Only the fields the put changed are written. The client must take `serverRecord` in as it would a pulled row before it sends `merge: true` for that record again; if it cannot (the user edited the record meanwhile), it sends the next put without `merge` and gets the ordinary conflict. The result is a conflict as before:
+- without `merge`;
+- when both changed one field to different values;
+- when either side changed a field that says what or where the record is: its investigation, `trashed`, `archived`, an indicator's `type` or `value`, a timeline event's `timestamp` or `timestampEnd`;
+- for investigations and evidence;
+- once the revision the client edited has been compacted out of the change log.
 
 An optional `connection` (the `connectionId` from the WebSocket `auth-ok` message) names the pushing device's connection: the change is then announced to the user's other connections and only that one is skipped. Without it, or when it is not one of the user's connections, none of the user's connections is told.
 
