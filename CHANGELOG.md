@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Dependencies.** Routine minor and patch updates for the app and the team server, and `pnpm/action-setup` 6.1.1 in CI. `i18next-http-backend` moves to 4.0.10, a security release (GHSA-qh2f-jh77-hfwf), and the build's reviewed pin moves with it. The server's Vitest stays on the version the app uses.
+- **CI:** the WebKit whiteboard drag test draws again, at most three times, when the browser loses the drag, and no longer depends on how many of the last pointer moves arrive. It failed three unrelated runs on 25 November.
+
 ## v2.1.2 — 2026-11-25
 
 - **Presence.** In a shared investigation the header shows who else has it open and which view they are on. The app sends the view's name only, once the server holds the subscription and every 15 seconds while the page is visible; the server keeps it in memory and forgets a person after 30 seconds. Nothing is sent for a local-only investigation, and the indicator is hidden while screensharing. No earlier version sent presence, so the indicator was always empty. The app says when you leave an investigation; a server older than this version forgets you after 30 seconds instead. Presence is kept per person, so with two devices in one investigation the others see the view reported last. A teammate still on 2.1.1 sees one list for all their shared investigations, themselves included, because that version does not tell investigations apart.
