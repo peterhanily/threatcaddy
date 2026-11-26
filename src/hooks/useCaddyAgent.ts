@@ -44,8 +44,6 @@ interface UseCaddyAgentResult {
   agentStatus: AgentStatus | undefined;
 }
 
-/** Max character length for working memory to prevent unbounded growth. */
-const MAX_WORKING_MEMORY_CHARS = 10_000;
 /** After an error, wait this many ms before retrying (doubles each retry, max 3 retries). */
 const ERROR_RETRY_BASE_MS = 60_000;
 const MAX_ERROR_RETRIES = 3;
@@ -184,14 +182,6 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged, onSuperviso
           errorRetryCount.current = 0;
           updateAgentStatus(anyWaiting ? 'waiting' : 'idle');
         }
-
-        // Update working memory for each deployment that had activity
-        for (const [, result] of multiResult.deploymentResults) {
-          if (!current()) return;
-          if ((result.autoExecuted.length > 0 || result.proposed.length > 0) && result.threadId) {
-            await updateWorkingMemory(result.threadId, result.autoExecuted.length, result.proposed.length, controller.signal);
-          }
-        }
       } else {
         // On the timer, legacy single-agent mode pauses only for its own
         // proposals: rows without an agent profile (deployed agents and the
@@ -224,10 +214,6 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged, onSuperviso
           } else {
             updateAgentStatus('idle');
           }
-        }
-
-        if (result.autoExecuted.length > 0 || result.proposed.length > 0) {
-          await updateWorkingMemory(result.threadId, result.autoExecuted.length, result.proposed.length, controller.signal);
         }
       }
 
@@ -429,30 +415,4 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged, onSuperviso
     toggleAgent,
     agentStatus,
   };
-}
-
-/**
- * Update the working memory on the agent's audit trail thread.
- * Stores a brief summary of the cycle's activity, capped to prevent unbounded growth.
- */
-async function updateWorkingMemory(threadId: string, executed: number, proposed: number, signal: AbortSignal): Promise<void> {
-  const now = new Date().toISOString();
-  const summary = `[Cycle ${now}] Executed: ${executed} actions, Proposed: ${proposed} actions for review.`;
-
-  try {
-    await db.chatThreads.where('id').equals(threadId).modify((thread: { contextSummary?: string }) => {
-      signal.throwIfAborted();
-      const existing = thread.contextSummary || '';
-      // Keep last 5 cycle summaries and cap total length
-      const lines = existing.split('\n').filter(Boolean);
-      lines.push(summary);
-      let result = lines.slice(-5).join('\n');
-      if (result.length > MAX_WORKING_MEMORY_CHARS) {
-        result = result.slice(-MAX_WORKING_MEMORY_CHARS);
-      }
-      thread.contextSummary = result;
-    });
-  } catch (err) {
-    if (!signal.aborted) console.error('Failed to update working memory:', err);
-  }
 }

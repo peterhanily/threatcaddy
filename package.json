@@ -20,6 +20,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "eval:agents": "vitest run --config vitest.eval.config.ts",
     "test:extension": "npm --prefix extension test",
     "test:server": "npm --prefix server test",
     "test:integration": "npm --prefix server run test:integration",

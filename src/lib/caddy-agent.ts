@@ -30,6 +30,7 @@ import { getHostToolDefinitions, isHttpsOrLoopback } from './agent-hosts';
 import { calculateCost, tokenCount } from './model-pricing';
 import { cancellableRequest } from './request-cancellation';
 import { getToolBinding } from './tool-binding';
+import { buildAgentMemory } from './agent-memory';
 
 // ── Tool Timeouts ─────────────────────────────────────────────────────
 
@@ -282,7 +283,7 @@ Score: ${soul.lifetimeMetrics.performanceScore}/100 across ${soul.lifetimeMetric
 ${profile.systemPrompt}
 ${taskInstructions}${compInstructions}${personalityBlock}${readOnlyNote}${playbookInstructions}${hostBlock}${soulBlock}
 
-Be PROACTIVE. Always produce output. ${MAX_AGENT_TURNS} turns max.${profile.role === 'executive' ? ' Use delegate_task, dismiss_agent, spawn_agent. Review completed tasks. Manage agent team performance.' : profile.role === 'lead' ? ' Use delegate_task and list_agent_activity. Review completed tasks for quality.' : ''}${focusAreas}`;
+Be proactive. Nothing to do? Say so in one sentence and stop. ${MAX_AGENT_TURNS} turns max.${profile.role === 'executive' ? ' Use delegate_task, dismiss_agent, spawn_agent. Review completed tasks. Manage agent team performance.' : profile.role === 'lead' ? ' Use delegate_task and list_agent_activity. Review completed tasks for quality.' : ''}${focusAreas}`;
   }
 
   return `${context}
@@ -294,7 +295,7 @@ Autonomous threat analyst. Be PROACTIVE:
 - get_investigation_summary first, then ACT.
 - Empty case? Research reference sources (NVD, MITRE ATT&CK, CISA) via fetch_url.
 - Has data? Enrich IOCs with enrich_ioc.
-- Every cycle MUST produce output. Never just read and report.
+- When nothing needs doing, say so in one sentence and stop. Never write filler.
 - enrich_ioc for vendor lookups; fetch_url only for reference research.${playbookInstructions}${hostBlock}${focusAreas}`;
 }
 
@@ -364,7 +365,7 @@ function callLLM(opts: {
 
 // ── Main Cycle ──────────────────────────────────────────────────────────
 
-const MAX_AGENT_TURNS = 6;
+const MAX_AGENT_TURNS = 10;
 
 /** Recursively serialize a value to JSON with deterministic key order so that
  *  `{a:1,b:2}` and `{b:2,a:1}` hash identically. The LLM can legitimately
@@ -639,20 +640,14 @@ async function _runAgentCycleInner(
 
   const systemPrompt = await buildAgentSystemPrompt(folder, settings, effectiveAllowedTools, provider, profile, deployment);
 
-  // Load working memory from previous cycles
-  let workingMemoryContext = '';
-  if (threadId) {
-    const thread = await db.chatThreads.get(threadId);
-    if (thread?.contextSummary) {
-      workingMemoryContext = `\n\n## Working Memory (from previous cycles)\n${thread.contextSummary}`;
-    }
-  }
+  // What this agent did in its last cycles and what became of its proposals (agent-memory.ts)
+  const memory = await buildAgentMemory(threadId);
 
   const desc = folder.description ? ` — ${folder.description.substring(0, 2000)}` : '';
 
-  const userPrompt = workingMemoryContext
-    ? `Cycle for "${folder.name}"${desc}. Memory:${workingMemoryContext}\n\nContinue — make new progress, don't repeat.`
-    : `Cycle for "${folder.name}"${desc}. Start with get_investigation_summary, then act immediately.`;
+  const userPrompt = memory
+    ? `Cycle for "${folder.name}"${desc}.\n\n${memory}\n\nContinue from there: make new progress, and do not repeat finished work or propose again what was rejected.`
+    : `Cycle for "${folder.name}"${desc}. Start with get_investigation_summary, then act on what needs doing.`;
 
   const messages: { role: 'user' | 'assistant'; content: string | ContentBlock[] }[] = [
     { role: 'user', content: userPrompt },
