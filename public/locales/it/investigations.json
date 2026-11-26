@@ -145,5 +145,6 @@
   "firstRun.description": "Crea un caso, importa fonti autorizzate o esplora un incidente fittizio di posta. Non serve configurare l’IA.",
   "firstRun.import": "Importa file sorgente",
   "firstRun.demo": "Prova la demo realistica",
+  "firstRun.tour": "Fai un tour rapido",
   "firstRun.report": "Esamina le prove, crea una cronologia e scrivi una nota di rapporto. Scaricala in Markdown; usa separatamente Salva backup per conservare l’intero spazio di lavoro."
 }

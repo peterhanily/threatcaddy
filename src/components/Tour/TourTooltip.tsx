@@ -151,7 +151,7 @@ export function TourTooltip({
       className="tour-tooltip"
       style={{ top: pos.top, left: pos.left }}
       role="dialog"
-      aria-label={step.title}
+      aria-label={t(`steps.${step.id}.title`, { defaultValue: step.title })}
     >
       <div className="tour-tooltip-arrow" style={arrowStyle} />
       <div className="flex items-center justify-between mb-2">
@@ -165,8 +165,8 @@ export function TourTooltip({
           {t('skipTour')}
         </button>
       </div>
-      <h3 className="text-sm font-semibold text-gray-100 mb-1">{step.title}</h3>
-      <p className="text-xs text-gray-400 leading-relaxed mb-2.5">{step.description}</p>
+      <h3 className="text-sm font-semibold text-gray-100 mb-1">{t(`steps.${step.id}.title`, { defaultValue: step.title })}</h3>
+      <p className="text-xs text-gray-400 leading-relaxed mb-2.5">{t(`steps.${step.id}.description`, { defaultValue: step.description })}</p>
 
       {/* Progress dots */}
       <div className="flex items-center gap-1 mb-2">

@@ -6,6 +6,7 @@ import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } fr
 import { nanoid } from 'nanoid';
 import { db } from '../db';
 import type { AgentDeployment, AgentProfile, ChatThread, LLMProvider } from '../types';
+import { DEFAULT_MODEL } from '../lib/models';
 
 export function useAgentDeployments(investigationId?: string) {
   const scope = useMemo(() => ({ investigationId }), [investigationId]);
@@ -76,7 +77,7 @@ export function useAgentDeployments(investigationId?: string) {
       id: threadId,
       title: `Agent: ${profile.name}`,
       messages: [],
-      model: settings?.model || profile.model || 'claude-sonnet-4-6',
+      model: settings?.model || profile.model || DEFAULT_MODEL,
       provider: (settings?.provider || 'anthropic') as LLMProvider,
       folderId: investigationId,
       tags: [],

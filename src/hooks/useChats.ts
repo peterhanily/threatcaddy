@@ -4,6 +4,7 @@ import type { ChatThread, ChatMessage } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
 import { deleteEntitiesWithReferences } from '../lib/entity-relations';
+import { DEFAULT_MODEL } from '../lib/models';
 
 /** Ensure the DB connection is open (handles v14→v15 upgrade on first call). */
 async function ensureDB() {
@@ -71,7 +72,7 @@ export function useChats() {
       id: nanoid(),
       title: 'New Chat',
       messages: [],
-      model: 'claude-sonnet-4-6',
+      model: DEFAULT_MODEL,
       provider: 'anthropic',
       tags: [],
       trashed: false,

@@ -137,5 +137,6 @@
   "firstRun.description": "Tạo vụ việc, nhập tệp nguồn được phép hoặc khám phá sự cố hộp thư hư cấu. Không cần thiết lập AI.",
   "firstRun.import": "Nhập tệp nguồn",
   "firstRun.demo": "Thử bản demo thực tế",
+  "firstRun.tour": "Xem tour nhanh",
   "firstRun.report": "Xem xét bằng chứng, lập dòng thời gian và viết ghi chú báo cáo. Tải xuống dưới dạng Markdown; lưu bản sao lưu riêng cho toàn bộ không gian làm việc."
 }

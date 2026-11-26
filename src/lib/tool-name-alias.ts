@@ -53,7 +53,14 @@ export function encodeRequest<T extends { messages: unknown[]; tools?: unknown[]
   };
 }
 
+/** The blocks a provider returned, without the gaps. The extension and the team server keep only text
+ * and tool_use blocks at their stream positions, so a model that thinks first (every current Claude
+ * model) leaves a hole, which arrives as null. */
+export function presentBlocks(blocks: unknown): unknown[] {
+  return Array.isArray(blocks) ? blocks.filter(block => block !== null && typeof block === 'object') : [];
+}
+
 /** Restore internal names on response tool_use blocks. */
 export function decodeBlocks(blocks: unknown[], decode: (name: string) => string): unknown[] {
-  return Array.isArray(blocks) ? blocks.map(block => (isToolUse(block) ? { ...block, name: decode(block.name) } : block)) : blocks;
+  return presentBlocks(blocks).map(block => (isToolUse(block) ? { ...block, name: decode(block.name) } : block));
 }

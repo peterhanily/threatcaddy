@@ -18,6 +18,7 @@ import { SUPERVISOR_TOOLS, SUPERVISOR_ACTION_PROFILE, getSupervisorToolPermissio
 import { queueAgentAction } from './agent-action-queue';
 import { toolExecutionError, type ToolExecutionResult } from './llm-tool-execution';
 import { cancellableRequest } from './request-cancellation';
+import { DEFAULT_MODEL } from './models';
 
 // ── Constants ───────────────────────────────────────────────────────────
 
@@ -204,7 +205,7 @@ async function runSupervisorCycleInner(
 ): Promise<SupervisorResult> {
   signal.throwIfAborted();
   const provider = (settings.llmDefaultProvider || 'anthropic') as LLMProvider;
-  const model = settings.llmDefaultModel || 'claude-sonnet-4-6';
+  const model = settings.llmDefaultModel || DEFAULT_MODEL;
   // The route Settings → AI shows: local endpoint first, strict explicit modes, a signed-in session for the server.
   const route = resolveRoute(settings, { extensionAvailable, serverSession: hasServerSession(), provider });
   if (route.route === 'unavailable') return { findings: [], escalations: [], error: await unavailableRouteError(route.reason) };

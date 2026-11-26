@@ -137,5 +137,6 @@
   "firstRun.description": "사건을 만들거나 승인된 원본 파일을 가져오거나 가상의 메일 침해 사례를 살펴보세요. AI 설정은 필요하지 않습니다.",
   "firstRun.import": "원본 파일 가져오기",
   "firstRun.demo": "현실적인 데모 체험",
+  "firstRun.tour": "빠른 투어 보기",
   "firstRun.report": "증거를 검토하고 타임라인을 만든 뒤 보고서 노트를 작성하세요. 노트를 Markdown으로 다운로드하고, 전체 작업 공간은 별도로 백업 저장하세요."
 }

@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid';
 import type { LLMProvider, ContentBlock } from '../types';
 import { postMessageOrigin } from './utils';
 import { hasPairedBridge } from './extension-bridge';
+import { presentBlocks } from './tool-name-alias';
 
 export const MAX_CONTEXT_MESSAGES = 40;
 
@@ -80,7 +81,7 @@ export async function summarizeConversation(
         settled = true;
         clearTimeout(timer);
         window.removeEventListener('message', handler);
-        const blocks: ContentBlock[] = event.data.contentBlocks || [];
+        const blocks = presentBlocks(event.data.contentBlocks) as ContentBlock[];
         const textBlock = blocks.find((b): b is { type: 'text'; text: string } => b.type === 'text');
         resolve(textBlock?.text?.trim() || null);
         return;
@@ -151,7 +152,7 @@ export async function generateChatTitle(
         clearTimeout(timer);
         window.removeEventListener('message', handler);
 
-        const blocks: ContentBlock[] = event.data.contentBlocks || [];
+        const blocks = presentBlocks(event.data.contentBlocks) as ContentBlock[];
         const textBlock = blocks.find((b): b is { type: 'text'; text: string } => b.type === 'text');
         const title = textBlock?.text?.trim();
         resolve(title || null);

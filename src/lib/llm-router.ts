@@ -145,6 +145,13 @@ export function hasServerSession(): boolean {
 
 export type LLMRoute = { route: 'local-direct' | 'extension' | 'server' } | { route: 'unavailable'; reason: 'no-extension' | 'no-server' | 'none' };
 
+/** Whether to tell a local model to write tool calls as `<tool_call>` text. Only the extension reads
+ * that text; a local model with an endpoint is called directly, with the tools sent as structured
+ * function definitions, and text tool calls there would be shown and never run. */
+export function usesTextToolCalls(settings: Pick<Settings, 'llmLocalEndpoint'>, provider?: string): boolean {
+  return provider === 'local' && !settings.llmLocalEndpoint?.trim();
+}
+
 /** The route a request takes. A local model with an endpoint is always called
  * directly; explicit modes never switch; Auto prefers a signed-in server. */
 export function resolveRoute(settings: Settings, env: { extensionAvailable: boolean; serverSession: boolean; provider?: LLMProvider }): LLMRoute {

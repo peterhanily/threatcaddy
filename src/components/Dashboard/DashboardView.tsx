@@ -37,10 +37,11 @@ interface DashboardViewProps {
   onCreateInvestigation?: () => void;
   onImportInvestigation?: () => void;
   onLoadDemo?: () => void;
+  onStartTour?: () => void;
   showFirstRunGuide?: boolean;
 }
 
-export function DashboardView({ links, onUpdateLinks, onViewChange, onOpenMetric, folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, allIdentities, dashboardKPIs, onUpdateKPIs, onCreateInvestigation, onImportInvestigation, onLoadDemo, showFirstRunGuide = true }: DashboardViewProps) {
+export function DashboardView({ links, onUpdateLinks, onViewChange, onOpenMetric, folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, allIdentities, dashboardKPIs, onUpdateKPIs, onCreateInvestigation, onImportInvestigation, onLoadDemo, onStartTour, showFirstRunGuide = true }: DashboardViewProps) {
   const { t } = useTranslation('dashboard');
   const [formOpen, setFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<QuickLink | undefined>();
@@ -87,7 +88,7 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, onOpenMetric
     <div className="flex-1 overflow-y-auto">
       {showFirstRunGuide && workspaceIsEmpty && onCreateInvestigation && (
         <div className="px-6 pt-6">
-          <FirstRunGuide onCreate={onCreateInvestigation} onImport={onImportInvestigation} onLoadDemo={onLoadDemo} />
+          <FirstRunGuide onCreate={onCreateInvestigation} onImport={onImportInvestigation} onLoadDemo={onLoadDemo} onStartTour={onStartTour} />
         </div>
       )}
       {/* KPI Widgets */}

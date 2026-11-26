@@ -8,6 +8,7 @@ const router = vi.hoisted(() => ({ usage: undefined as unknown }));
 vi.mock('../lib/llm-router', () => ({
   hasServerSession: () => true,
   resolveRoute: () => ({ route: 'server' }),
+  usesTextToolCalls: () => false,
   sendViaServer: (_request: unknown, callbacks: { onChunk: (text: string) => void; onDone: (reason: string, blocks: unknown[], usage?: unknown) => void }) => {
     callbacks.onChunk('Reviewed the case.');
     callbacks.onDone('end_turn', [{ type: 'text', text: 'Reviewed the case.' }], router.usage);
