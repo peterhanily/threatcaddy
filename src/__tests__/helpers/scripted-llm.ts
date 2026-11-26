@@ -11,7 +11,7 @@
 import type { LLMRouteCallbacks, LLMRouteRequest } from '../../lib/llm-router';
 
 export interface ScriptedToolCall { id?: string; name: string; input: Record<string, unknown> }
-export interface ScriptedTurn { text?: string; toolCalls?: ScriptedToolCall[] }
+export interface ScriptedTurn { text?: string; toolCalls?: ScriptedToolCall[]; usage?: { input: number; output: number } }
 
 let callCount = 0;
 
@@ -27,7 +27,8 @@ export const scriptedLLM = {
   },
 };
 
-function send(request: LLMRouteRequest, callbacks: LLMRouteCallbacks): string {
+/** The scripted model as a send function, for a caller that takes one (evals/agent-eval.ts). */
+export function scriptedSend(request: LLMRouteRequest, callbacks: LLMRouteCallbacks): string {
   scriptedLLM.requests.push(request);
   const turn = scriptedLLM.turns.shift() ?? { text: '' };
   const blocks: unknown[] = [];
@@ -36,10 +37,10 @@ function send(request: LLMRouteRequest, callbacks: LLMRouteCallbacks): string {
     blocks.push({ type: 'tool_use', id: call.id ?? `scripted_${++callCount}`, name: call.name, input: call.input });
   }
   if (turn.text) callbacks.onChunk(turn.text);
-  callbacks.onDone(turn.toolCalls?.length ? 'tool_use' : 'end_turn', blocks, { input: 1, output: 1 });
+  callbacks.onDone(turn.toolCalls?.length ? 'tool_use' : 'end_turn', blocks, turn.usage ?? { input: 1, output: 1 });
   return `scripted-${scriptedLLM.requests.length}`;
 }
 
 export function scriptedRouter<T extends object>(original: T): T {
-  return { ...original, sendViaServer: send, sendViaExtension: send, sendDirectToLocal: send };
+  return { ...original, sendViaServer: scriptedSend, sendViaExtension: scriptedSend, sendDirectToLocal: scriptedSend };
 }
