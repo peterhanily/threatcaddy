@@ -168,10 +168,12 @@ const FIELD_MERGE_TABLES = new Set(['notes', 'tasks', 'timelineEvents', 'timelin
 
 /** Fields that say what or where a record is. When either side changed one, the other side's change
  *  was made about a different record (an edit to a task a teammate trashed, a note about an indicator
- *  whose value was replaced, an end time for an event whose start moved), so nothing is merged. */
+ *  whose value was replaced, an end time for an event whose start moved, a phone number for a person
+ *  who was turned into a system), so nothing is merged. */
 const FIELD_MERGE_ANCHORS: Record<string, readonly string[]> = {
   '*': ['folderId', 'trashed', 'trashedAt', 'archived'],
   standaloneIOCs: ['type', 'value'],
+  identities: ['type', 'name'],
   timelineEvents: ['timestamp', 'timestampEnd'],
 };
 

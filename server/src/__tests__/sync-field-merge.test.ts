@@ -18,10 +18,6 @@ describe('merging a stale put by field', () => {
     expect(mergeStalePut('tasks', put({ status: 'in-progress' }), base, stored({ priority: 'high' }))).toEqual({ status: 'in-progress' });
   });
 
-  it('does not count a timestamp as changed because the log holds it as text', () => {
-    expect(mergeStalePut('tasks', put({ title: 'Collect all logs' }), base, stored({ priority: 'high' }))).toEqual({ title: 'Collect all logs' });
-  });
-
   it('reads a timestamp in the log as the time it is, whichever side changed it', () => {
     const later = new Date('2026-11-02T08:00:00Z');
     // Only the put changes it: written. (Without the conversion the unchanged case below would look changed.)
@@ -41,6 +37,12 @@ describe('merging a stale put by field', () => {
     const iocRow = (changes: Record<string, unknown> = {}) => ({ id: 'i1', type: 'ipv4', value: '10.0.0.5', folderId: 'case', analystNotes: null, confidence: 'low', trashed: false, archived: false, version: 2, ...changes });
     expect(mergeStalePut('standaloneIOCs', { analystNotes: 'internal host, benign', confidence: 'high' }, ioc, iocRow({ type: 'domain', value: 'evil.example' }))).toBeNull();
     expect(mergeStalePut('standaloneIOCs', { analystNotes: 'internal host, benign' }, ioc, iocRow({ confidence: 'high' }))).toEqual({ analystNotes: 'internal host, benign' });
+    // A phone number for a person is not merged onto an identity that became a system.
+    const person = { id: 'p1', type: 'person', name: 'J. Doe', folder_id: 'case', details: [], tags: [], aliases: [], connections: [], trashed: false, archived: false, version: 1 };
+    const identityRow = (changes: Record<string, unknown> = {}) => ({ id: 'p1', type: 'person', name: 'J. Doe', folderId: 'case', details: [], tags: [], aliases: [], connections: [], trashed: false, archived: false, version: 2, ...changes });
+    const phone = [{ id: 'd1', label: 'Phone', value: '+1 555 0100', private: true }];
+    expect(mergeStalePut('identities', { details: phone }, person, identityRow({ type: 'system', name: 'JDOE-LAPTOP' }))).toBeNull();
+    expect(mergeStalePut('identities', { details: phone }, person, identityRow({ tags: ['vip'] }))).toEqual({ details: phone });
     // An end time is not merged onto an event whose start moved.
     const event = { id: 'e1', title: 'Login', timestamp: 1000, timestamp_end: null, folder_id: 'case', trashed: false, archived: false, version: 1 };
     expect(mergeStalePut('timelineEvents', { timestampEnd: 5000 }, event, { id: 'e1', title: 'Login', timestamp: 9000, timestampEnd: null, folderId: 'case', trashed: false, archived: false, version: 2 })).toBeNull();

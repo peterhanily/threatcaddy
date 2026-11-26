@@ -68,7 +68,8 @@ describe('merging two people\'s changes to one record in PostgreSQL', () => {
     expect((await row()).version).toBe(4);
   });
 
-  it('does not write back a value a teammate deliberately reverted', async () => {
+  it('merges against the revision the client reports: from the merged revision, a teammate\'s later revert is kept', async () => {
+    // The app takes the merged row in before it asks for a merge again (sync-engine tests); this is the server's half.
     await push('dana', task(), 0);
     await push('dana', task({ priority: 'high' }), 1);
     // Omar's status change is merged (revision 3). His app takes the merged row in, so he is on 3.
