@@ -1,4 +1,4 @@
-import { eq, lt, and, isNotNull, notInArray } from 'drizzle-orm';
+import { eq, lt, and, isNotNull, notInArray, sql } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import { serverSettings, notifications, activityLog, investigationMembers, folders, botRuns } from '../db/schema.js';
@@ -40,6 +40,47 @@ export async function setRetentionSettings(notifDays: number, auditDays: number)
       await db.insert(serverSettings).values({ key, value });
     }
   }
+}
+
+const SYNC_HISTORY_RETENTION_KEY = 'sync_history_retention_days';
+const DEFAULT_SYNC_HISTORY_DAYS = 90;
+
+/** Days an earlier revision of a record stays in the sync change log; 0 keeps every revision. */
+export async function getSyncHistoryRetentionDays(): Promise<number> {
+  const [row] = await db.select().from(serverSettings).where(eq(serverSettings.key, SYNC_HISTORY_RETENTION_KEY)).limit(1);
+  const parsed = row ? parseInt(row.value, 10) : NaN;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_SYNC_HISTORY_DAYS;
+}
+
+/** Removes revisions the sync change log no longer needs: rows older than `days` for which a later
+ *  row exists for the same record in the same investigation. Every change wrote a full copy of its
+ *  record, so the log otherwise grows with every save.
+ *
+ *  What a pull needs is kept. A pull reduces the log to the newest row per record, so a client with
+ *  any cursor ends in the same state without the earlier rows. Never removed: the newest row of a
+ *  record (its current state, its tombstone or its final copy; it also carries the version a
+ *  re-created id continues from), a row that records a move (`previous_folder_id`: members of the
+ *  investigation it left learn of the removal from it), and the last row a record had in each
+ *  investigation it has been in. */
+export async function compactSyncHistory(days: number, batchSize = 5000, maxBatches = 200): Promise<number> {
+  if (!(days > 0)) return 0;
+  const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+  let removed = 0;
+  for (let batch = 0; batch < maxBatches; batch++) {
+    const deleted = await db.execute<{ cursor: string }>(sql`
+      DELETE FROM sync_changes WHERE cursor IN (
+        SELECT earlier.cursor FROM sync_changes earlier
+        WHERE earlier.created_at < ${cutoff}::timestamptz AND earlier.previous_folder_id IS NULL
+          AND EXISTS (
+            SELECT 1 FROM sync_changes later
+            WHERE later.table_name = earlier.table_name AND later.entity_id = earlier.entity_id
+              AND later.cursor > earlier.cursor AND later.folder_id IS NOT DISTINCT FROM earlier.folder_id)
+        ORDER BY earlier.cursor LIMIT ${batchSize})
+      RETURNING cursor::text AS cursor`);
+    removed += deleted.length;
+    if (deleted.length < batchSize) break;
+  }
+  return removed;
 }
 
 // Entity tables that support soft-delete via deletedAt column
@@ -140,6 +181,13 @@ export async function pruneOldData(): Promise<void> {
       }
     } catch (err) {
       logger.error('Bot runs cleanup failed', { error: describeError(err) });
+    }
+
+    try {
+      const compacted = await compactSyncHistory(await getSyncHistoryRetentionDays());
+      if (compacted > 0) logger.info(`Sync history: removed ${compacted} superseded revision(s)`);
+    } catch (err) {
+      logger.error('Sync history compaction failed', { error: describeError(err) });
     }
 
     if (deletedNotifs.length > 0 || deletedAudit.length > 0 || totalTombstones > 0 || orphanedMembers > 0 || deletedBotRuns > 0) {

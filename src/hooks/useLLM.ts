@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { LLMProvider, ContentBlock, ToolUseBlock, ToolCallRecord } from '../types';
 import { isWriteTool } from '../lib/llm-tool-defs';
 import { sendViaServer, sendDirectToLocal } from '../lib/llm-router';
-import { decodeBlocks, encodeRequest } from '../lib/tool-name-alias';
+import { decodeBlocks, encodeRequest, presentBlocks } from '../lib/tool-name-alias';
 import { nanoid } from 'nanoid';
 import { registerLockParticipant } from '../lib/workspace-lock';
 import { retainLockedChatResult, type ChatRecoveryTarget } from '../lib/locked-chat-recovery';
@@ -419,7 +419,7 @@ export function useLLM() {
           setStreamingContent(accumulatedRef.current);
         }
         const stopReason: string = event.data.stopReason || 'end_turn';
-        const contentBlocks = (decodeRef.current ? decodeBlocks(event.data.contentBlocks || [], decodeRef.current) : event.data.contentBlocks || []) as ContentBlock[];
+        const contentBlocks = (decodeRef.current ? decodeBlocks(event.data.contentBlocks || [], decodeRef.current) : presentBlocks(event.data.contentBlocks)) as ContentBlock[];
         const eventUsage: TokenUsage | undefined = event.data.usage ? { input: event.data.usage.input || 0, output: event.data.usage.output || 0 } : undefined;
         handleDoneRef.current?.(stopReason, contentBlocks, eventUsage);
         return;

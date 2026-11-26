@@ -323,99 +323,105 @@ export function Sidebar({
       <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto px-2 pt-2 space-y-0.5" aria-label="Views">
         {/* Top-level items — always visible */}
         <div data-tour="dashboard">
-          <NavItem
-            icon={<LayoutDashboard size={16} />}
-            label={t('sidebar.dashboard')}
-            active={activeView === 'dashboard' && !showTrash && !showArchive}
-            onClick={() => nav(() => navToView('dashboard'))}
-          />
-        </div>
-        <NavItem
-          icon={<Briefcase size={16} />}
-          label={t('sidebar.investigations')}
-          active={activeView === 'investigations' && !showTrash && !showArchive}
-          onClick={() => nav(() => navToView('investigations'))}
-        />
+          <div data-tour="evidence">
+            <div data-tour="products">
+              <div data-tour="identities">
+                <NavItem
+                  icon={<LayoutDashboard size={16} />}
+                  label={t('sidebar.dashboard')}
+                  active={activeView === 'dashboard' && !showTrash && !showArchive}
+                  onClick={() => nav(() => navToView('dashboard'))}
+                />
+              </div>
+              <NavItem
+                icon={<Briefcase size={16} />}
+                label={t('sidebar.investigations')}
+                active={activeView === 'investigations' && !showTrash && !showArchive}
+                onClick={() => nav(() => navToView('investigations'))}
+              />
 
-        {/* Entity views — always visible */}
-        <div className="h-px bg-border-subtle mx-1 my-1.5" />
+              {/* Entity views — always visible */}
+              <div className="h-px bg-border-subtle mx-1 my-1.5" />
 
-        <NavItem
-          icon={<FileText size={16} />}
-          label={t('sidebar.notes')}
-          badge={investigationScopedCounts ? investigationScopedCounts.notes : noteCounts.total}
-          badgeColor="bg-accent-blue/15 text-text-primary"
-          active={activeView === 'notes' && !showTrash && !showArchive}
-          onClick={() => nav(() => navToView('notes'))}
-          scopedColor={selectedFolder?.color || undefined}
-        />
-        <div data-tour="tasks">
+              <NavItem
+                icon={<FileText size={16} />}
+                label={t('sidebar.notes')}
+                badge={investigationScopedCounts ? investigationScopedCounts.notes : noteCounts.total}
+                badgeColor="bg-accent-blue/15 text-text-primary"
+                active={activeView === 'notes' && !showTrash && !showArchive}
+                onClick={() => nav(() => navToView('notes'))}
+                scopedColor={selectedFolder?.color || undefined}
+              />
+              <div data-tour="tasks">
+                <NavItem
+                  icon={<ListChecks size={16} />}
+                  label={t('sidebar.tasks')}
+                  badge={investigationScopedCounts ? investigationScopedCounts.tasks : taskCounts.total}
+                  badgeColor="bg-accent-amber/15 text-accent-amber"
+                  active={activeView === 'tasks'}
+                  onClick={() => nav(() => navToView('tasks'))}
+                  scopedColor={selectedFolder?.color || undefined}
+                />
+              </div>
+              <div data-tour="timeline">
+                <NavItem
+                  icon={<Clock size={16} />}
+                  label={t('sidebar.timeline')}
+                  badge={investigationScopedCounts ? investigationScopedCounts.events : timelineCounts?.total}
+                  badgeColor="bg-accent-green/15 text-accent-green"
+                  active={activeView === 'timeline'}
+                  onClick={() => nav(() => navToView('timeline'))}
+                  scopedColor={selectedFolder?.color || undefined}
+                />
+              </div>
+              <div data-tour="whiteboards">
+                <NavItem
+                  icon={<PenTool size={16} />}
+                  label={t('sidebar.whiteboards')}
+                  badge={investigationScopedCounts ? investigationScopedCounts.whiteboards : whiteboardCount}
+                  active={activeView === 'whiteboard'}
+                  onClick={() => nav(() => navToView('whiteboard'))}
+                  scopedColor={selectedFolder?.color || undefined}
+                />
+              </div>
+              <NavItem
+                icon={<Paperclip size={16} />}
+                label={t('sidebar.evidence')}
+                active={activeView === 'evidence'}
+                onClick={() => nav(() => navToView('evidence'))}
+                scopedColor={selectedFolder?.color || undefined}
+              />
+              </div>
+            <NavItem
+              icon={<FileOutput size={16} />}
+              label={t('sidebar.products')}
+              active={activeView === 'products'}
+              onClick={() => nav(() => navToView('products'))}
+              scopedColor={selectedFolder?.color || undefined}
+            />
+              </div>
+
+          <div className="h-1.5" />
+
           <NavItem
-            icon={<ListChecks size={16} />}
-            label={t('sidebar.tasks')}
-            badge={investigationScopedCounts ? investigationScopedCounts.tasks : taskCounts.total}
-            badgeColor="bg-accent-amber/15 text-accent-amber"
-            active={activeView === 'tasks'}
-            onClick={() => nav(() => navToView('tasks'))}
-            scopedColor={selectedFolder?.color || undefined}
-          />
-        </div>
-        <div data-tour="timeline">
-          <NavItem
-            icon={<Clock size={16} />}
-            label={t('sidebar.timeline')}
-            badge={investigationScopedCounts ? investigationScopedCounts.events : timelineCounts?.total}
+            icon={<Search size={16} />}
+            label={t('sidebar.iocs')}
+            badge={investigationScopedCounts ? investigationScopedCounts.iocs : undefined}
             badgeColor="bg-accent-green/15 text-accent-green"
-            active={activeView === 'timeline'}
-            onClick={() => nav(() => navToView('timeline'))}
+            active={activeView === 'ioc-stats'}
+            onClick={() => nav(() => navToView('ioc-stats'))}
             scopedColor={selectedFolder?.color || undefined}
           />
-        </div>
-        <div data-tour="whiteboards">
           <NavItem
-            icon={<PenTool size={16} />}
-            label={t('sidebar.whiteboards')}
-            badge={investigationScopedCounts ? investigationScopedCounts.whiteboards : whiteboardCount}
-            active={activeView === 'whiteboard'}
-            onClick={() => nav(() => navToView('whiteboard'))}
+            icon={<Contact size={16} />}
+            label={t('sidebar.identities')}
+            badge={investigationScopedCounts?.identities}
+            badgeColor="bg-accent-blue/15 text-accent-blue"
+            active={activeView === 'identities'}
+            onClick={() => nav(() => navToView('identities'))}
             scopedColor={selectedFolder?.color || undefined}
           />
-        </div>
-        <NavItem
-          icon={<Paperclip size={16} />}
-          label={t('sidebar.evidence')}
-          active={activeView === 'evidence'}
-          onClick={() => nav(() => navToView('evidence'))}
-          scopedColor={selectedFolder?.color || undefined}
-        />
-        <NavItem
-          icon={<FileOutput size={16} />}
-          label={t('sidebar.products')}
-          active={activeView === 'products'}
-          onClick={() => nav(() => navToView('products'))}
-          scopedColor={selectedFolder?.color || undefined}
-        />
-
-        <div className="h-1.5" />
-
-        <NavItem
-          icon={<Search size={16} />}
-          label={t('sidebar.iocs')}
-          badge={investigationScopedCounts ? investigationScopedCounts.iocs : undefined}
-          badgeColor="bg-accent-green/15 text-accent-green"
-          active={activeView === 'ioc-stats'}
-          onClick={() => nav(() => navToView('ioc-stats'))}
-          scopedColor={selectedFolder?.color || undefined}
-        />
-        <NavItem
-          icon={<Contact size={16} />}
-          label={t('sidebar.identities')}
-          badge={investigationScopedCounts?.identities}
-          badgeColor="bg-accent-blue/15 text-accent-blue"
-          active={activeView === 'identities'}
-          onClick={() => nav(() => navToView('identities'))}
-          scopedColor={selectedFolder?.color || undefined}
-        />
+              </div>
         <NavItem
           icon={<Network size={16} />}
           label={t('sidebar.graph')}

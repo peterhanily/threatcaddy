@@ -145,5 +145,6 @@
   "firstRun.description": "Créez un dossier, importez des fichiers sources autorisés ou explorez un incident de messagerie fictif. Aucune configuration IA nécessaire.",
   "firstRun.import": "Importer des fichiers sources",
   "firstRun.demo": "Essayer la démo réaliste",
+  "firstRun.tour": "Faire une visite rapide",
   "firstRun.report": "Examinez les preuves, créez une chronologie et rédigez une note de rapport. Téléchargez-la en Markdown ; utilisez séparément Enregistrer la sauvegarde pour conserver tout l’espace de travail."
 }

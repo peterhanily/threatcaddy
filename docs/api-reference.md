@@ -679,7 +679,7 @@ Proxy a chat request to a configured LLM provider. Requires `admin` or `analyst`
 ```json
 {
   "provider": "anthropic",
-  "model": "claude-sonnet-4-20250514",
+  "model": "claude-sonnet-5-5",
   "messages": [
     { "role": "user", "content": "Analyze this IOC..." }
   ],
@@ -706,7 +706,7 @@ Returns available LLM providers (API keys not exposed).
 ```json
 {
   "providers": [
-    { "provider": "anthropic", "models": ["claude-sonnet-4-20250514", "..."] },
+    { "provider": "anthropic", "models": ["claude-sonnet-5-5", "..."] },
     { "provider": "openai", "models": ["gpt-4o", "..."] }
   ]
 }
@@ -1358,7 +1358,7 @@ Update AI settings:
   "localModelName": "llama3",
   "customSystemPrompt": "Additional instructions...",
   "defaultProvider": "anthropic",
-  "defaultModel": "claude-sonnet-4-20250514",
+  "defaultModel": "claude-sonnet-5-5",
   "temperature": 0.7
 }
 ```
@@ -1372,7 +1372,7 @@ AI assistant with tool use (agentic loop). Streams via SSE.
 {
   "messages": [{ "role": "user", "content": "Show me user stats" }],
   "provider": "anthropic",
-  "model": "claude-sonnet-4-20250514"
+  "model": "claude-sonnet-5-5"
 }
 ```
 

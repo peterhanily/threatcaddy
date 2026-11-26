@@ -137,5 +137,6 @@
   "firstRun.description": "Bir vaka oluşturun, yetkili kaynak dosyalarını içe aktarın veya kurgusal bir posta olayını inceleyin. Yapay zekâ kurulumu gerekmez.",
   "firstRun.import": "Kaynak dosyalarını içe aktar",
   "firstRun.demo": "Gerçekçi demoyu dene",
+  "firstRun.tour": "Hızlı tura çıkın",
   "firstRun.report": "Kanıtları inceleyin, zaman çizelgesi oluşturun ve rapor notu yazın. Notu Markdown olarak indirin; tüm çalışma alanını korumak için ayrıca yedek kaydedin."
 }

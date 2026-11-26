@@ -12,7 +12,7 @@ import { PlaybookManager } from './PlaybookManager';
 import { DEFAULT_SYSTEM_PROMPT } from '../../lib/llm-tools';
 import { hasPairedBridge, isPairedBridgeCaps } from '../../lib/extension-bridge';
 import { isHttpsOrLoopback } from '../../lib/agent-hosts';
-import { MODELS, MODEL_PROVIDER_MAP } from '../../lib/models';
+import { MODELS, MODEL_PROVIDER_MAP, DEFAULT_MODEL } from '../../lib/models';
 import { hasServerSession, resolveRoute } from '../../lib/llm-router';
 import { readStoredAuth } from '../../lib/auth-storage';
 import { ExportImport } from './ExportImport';
@@ -669,7 +669,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 <label htmlFor={`${fieldId}-default-model`} className={labelClass}>{t('ai.defaultModel')}</label>
                 <select
                   id={`${fieldId}-default-model`}
-                  value={settings.llmDefaultModel || 'claude-sonnet-4-6'}
+                  value={settings.llmDefaultModel || DEFAULT_MODEL}
                   onChange={(e) => {
                     const model = e.target.value;
                     const provider = MODEL_PROVIDER_MAP[model] || (model === settings.llmLocalModelName ? 'local' : 'anthropic');

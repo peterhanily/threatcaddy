@@ -184,12 +184,13 @@ Rules:
 - The JSON inside must have "name" (the tool name) and "arguments" (the tool parameters)
 - After you call a tool, the system will execute it and provide the result in the next message, then you can respond based on the result`;
 
-export async function buildSystemPrompt(folder?: Folder, customPrompt?: string, provider?: string): Promise<string> {
+export async function buildSystemPrompt(folder?: Folder, customPrompt?: string, provider?: string, textToolCalls = provider === 'local'): Promise<string> {
   let prompt = customPrompt?.trim() || DEFAULT_SYSTEM_PROMPT;
 
-  // Local LLMs need explicit tool-calling format instructions since they don't
-  // support the OpenAI function-calling protocol natively
-  if (provider === 'local') {
+  // A local model reached through the extension is told to write tool calls as text, which the
+  // extension reads. One called directly gets structured tool definitions and no such instruction
+  // (see usesTextToolCalls in llm-router.ts).
+  if (textToolCalls) {
     prompt += LOCAL_TOOL_CALLING_INSTRUCTIONS;
   }
 

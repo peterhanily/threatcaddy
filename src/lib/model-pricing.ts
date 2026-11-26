@@ -15,8 +15,15 @@ export interface ModelPrice {
 
 const PRICES: Record<string, ModelPrice> = {
   // Anthropic
-  'claude-opus-4-6':          { inputPerM: 15,   outputPerM: 75 },
+  // List prices as of November 2026. Haiku 5.5 costs more beyond 100K tokens of prompt; cached
+  // input is cheaper. Neither is modelled: this is an estimate for comparison.
+  'claude-fable-5-2':         { inputPerM: 8,    outputPerM: 40 },
+  'claude-opus-5-5':          { inputPerM: 4,    outputPerM: 20 },
+  'claude-sonnet-5-5':        { inputPerM: 2,    outputPerM: 10 },
+  'claude-haiku-5-5':         { inputPerM: 0.1,  outputPerM: 0.5 },
+  'claude-opus-4-6':          { inputPerM: 5,    outputPerM: 25 },
   'claude-sonnet-4-6':        { inputPerM: 3,    outputPerM: 15 },
+  'claude-haiku-4-5':         { inputPerM: 1,    outputPerM: 5  },
   'claude-haiku-4-5-20251001':{ inputPerM: 1,    outputPerM: 5  },
   'claude-3-5-haiku-latest':  { inputPerM: 0.8,  outputPerM: 4  },
 

@@ -106,7 +106,8 @@ async function streamAnthropic(req: LLMChatRequest, cb: StreamCallbacks, signal:
     }
   }
 
-  cb.onDone(stopReason, contentBlocks, usage.inputTokens > 0 ? usage : undefined);
+  // Only text and tool_use blocks are kept, at their stream positions: a model that thinks first leaves a gap.
+  cb.onDone(stopReason, contentBlocks.filter(block => block !== undefined && block !== null), usage.inputTokens > 0 ? usage : undefined);
 }
 
 async function streamOpenAI(req: LLMChatRequest, cb: StreamCallbacks, signal: AbortSignal) {
@@ -312,7 +313,7 @@ export function getAvailableProviders(): Array<{ provider: string; models: strin
   if (process.env.ANTHROPIC_API_KEY) {
     providers.push({
       provider: 'anthropic',
-      models: ['claude-sonnet-4-20250514', 'claude-haiku-4-20250414'],
+      models: ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5', 'claude-sonnet-4-6'],
     });
   }
   if (process.env.OPENAI_API_KEY) {
