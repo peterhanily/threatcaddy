@@ -212,7 +212,7 @@ export interface BackupDestination {
 }
 
 /** Top-level view/page the user can navigate to. */
-export type ViewMode = 'dashboard' | 'notes' | 'tasks' | 'timeline' | 'whiteboard' | 'evidence' | 'identities' | 'products' | 'activity' | 'graph' | 'ioc-stats' | 'chat' | 'caddyshack' | 'agent' | 'investigations';
+export type ViewMode = 'dashboard' | 'overview' | 'notes' | 'tasks' | 'timeline' | 'whiteboard' | 'evidence' | 'identities' | 'products' | 'activity' | 'graph' | 'ioc-stats' | 'chat' | 'caddyshack' | 'agent' | 'investigations';
 export type EditorMode = 'edit' | 'preview' | 'split';
 export type TaskViewMode = 'list' | 'kanban';
 

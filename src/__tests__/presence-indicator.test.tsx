@@ -11,11 +11,12 @@ describe('PresenceIndicator', () => {
   });
 
   it("counts the people, and names each one's view by its sidebar name", () => {
-    render(<PresenceIndicator users={[user('a', 'Dana', 'timeline'), user('b', 'Omar', 'ioc-stats'), user('c', 'Li', 'a-view-from-a-newer-client')]} />);
-    fireEvent.click(screen.getByRole('button', { name: /3 online/ }));
+    render(<PresenceIndicator users={[user('a', 'Dana', 'timeline'), user('b', 'Omar', 'ioc-stats'), user('d', 'Kim', 'overview'), user('c', 'Li', 'a-view-from-a-newer-client')]} />);
+    fireEvent.click(screen.getByRole('button', { name: /4 online/ }));
     expect(screen.getByText('In this investigation now')).toBeInTheDocument();
     expect(screen.getByText('Dana').parentElement).toHaveTextContent('DanaTimeline');
     expect(screen.getByText('Omar').parentElement).toHaveTextContent('OmarIOCs');
+    expect(screen.getByText('Kim').parentElement).toHaveTextContent('KimOverview');
     // A view this version does not know is not shown as raw text.
     expect(screen.getByText('Li').parentElement).toHaveTextContent(/^Li$/);
   });

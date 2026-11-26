@@ -50,8 +50,9 @@ import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile } from './li
 import { useOpenedFiles } from './hooks/useOpenedFiles';
 import { fileNotePersistence } from './lib/file-note-persistence';
 import { useInvestigationData } from './hooks/useInvestigationData';
-import type { ConfidenceLevel, Identity, Note, NoteTemplate, StandaloneIOC, ChatThread, TimelineEvent } from './types';
+import type { ConfidenceLevel, Folder, Identity, Note, NoteTemplate, StandaloneIOC, ChatThread, Task, TimelineEvent } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
+const OverviewView = lazy(() => import('./components/Overview/OverviewView').then(m => ({ default: m.OverviewView })));
 const DashboardView = lazy(() => import('./components/Dashboard/DashboardView').then(m => ({ default: m.DashboardView })));
 import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from './lib/utils';
@@ -557,7 +558,7 @@ const AppInner = memo(function AppInner({
   // (InvestigationProvider can't receive navigateTo because NavigationProvider is nested inside it)
   const handleOpenInvestigation = useCallback((folderId: string, mode: import('./types').InvestigationDataMode) => {
     ctxHandleOpenInvestigation(folderId, mode);
-    navigateTo('notes');
+    navigateTo('overview');
   }, [ctxHandleOpenInvestigation, navigateTo]);
 
   const tour = useTour({
@@ -1489,6 +1490,12 @@ const AppInner = memo(function AppInner({
     setTimelineEventRequest({ id: event.id, request: Date.now() });
     navigateTo('timeline', { selectedTimelineId: event.timelineId });
   }, [setSelectedTimelineId, navigateTo]);
+  const [taskRequest, setTaskRequest] = useState<{ id: string; request: number }>();
+  const clearTaskRequest = useCallback(() => setTaskRequest(undefined), []);
+  const handleOpenTaskFromOverview = useCallback((task: Task) => {
+    setTaskRequest({ id: task.id, request: Date.now() });
+    navigateTo('tasks');
+  }, [navigateTo]);
   const [iocSearchRequest, setIocSearchRequest] = useState<{ text: string; request: number }>();
   const clearIocSearchRequest = useCallback(() => setIocSearchRequest(undefined), []);
   const handleOpenIOCFromIdentity = useCallback((ioc: StandaloneIOC) => {
@@ -1628,6 +1635,15 @@ const AppInner = memo(function AppInner({
   }, [editingFolderId, notes.notes, tasks.tasks, timeline.events, whiteboards]);
 
   const screenshareViewHidden = !!screenshareMaxLevel && (selectedContextHidden || showSettings || ['activity', 'agent', 'caddyshack', 'chat'].includes(activeView));
+  // Nothing can be added to a remote or archived investigation, or while screensharing.
+  // A remote investigation has no local folder; its header comes from the server's summary.
+  const overviewFolder = useMemo(() => {
+    if (selectedFolder || investigationMode !== 'remote') return selectedFolder;
+    const remote = remoteInvestigations.find(r => r.folderId === selectedFolderId)?.folder;
+    return remote && { name: remote.name, status: remote.status as Folder['status'], clsLevel: remote.clsLevel, papLevel: remote.papLevel,
+      createdAt: new Date(remote.createdAt).getTime(), updatedAt: new Date(remote.updatedAt).getTime() };
+  }, [selectedFolder, investigationMode, remoteInvestigations, selectedFolderId]);
+  const overviewCanAdd = investigationMode !== 'remote' && !screenshareMaxLevel && selectedFolder?.status !== 'archived';
   const filterBar = (selectedFolderId || selectedTag) ? (
     <ActiveFilterBar
       folderName={selectedFolder?.name}
@@ -1927,6 +1943,26 @@ const AppInner = memo(function AppInner({
             dashboardKPIs={settings.dashboardKPIs as import('./types').KPIMetricId[] | undefined}
             onUpdateKPIs={(kpis) => updateSettings({ dashboardKPIs: kpis })}
           />
+        ) : activeView === 'overview' ? (
+          <OverviewView
+            folder={overviewFolder}
+            notes={investigationNotes}
+            tasks={investigationTasks}
+            events={investigationTimelineEvents}
+            identities={investigationIdentities}
+            iocs={investigationStandaloneIOCs}
+            evidence={investigationEvidenceItems}
+            products={productNotes}
+            members={investigationMembers}
+            loading={investigationMode === 'remote' ? !remoteData.loadedSuccessfully : !privacyDataReady}
+            onNavigate={navigateTo}
+            onOpenTask={handleOpenTaskFromOverview}
+            onOpenEvent={handleOpenEventFromIdentity}
+            onOpenIdentity={openIdentity}
+            onImportFiles={overviewCanAdd ? () => setShowDataImport(true) : undefined}
+            onAddNote={overviewCanAdd ? handleNewNote : undefined}
+            onAddEvent={overviewCanAdd ? handleNewTimelineEvent : undefined}
+          />
         ) : activeView === 'ioc-stats' ? (
           <IOCStatsView
             notes={screensafeNotes}
@@ -2178,6 +2214,8 @@ const AppInner = memo(function AppInner({
             scopeLabel={selectedFolder?.name}
             members={investigationMembers}
             currentUserId={auth.user?.id}
+            openTaskRequest={taskRequest}
+            onOpenTaskHandled={clearTaskRequest}
           />
         ) : (
           /* Notes view — responsive: list OR editor on mobile */

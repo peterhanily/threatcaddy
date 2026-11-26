@@ -9,6 +9,7 @@ import settingsEn from '../public/locales/en/settings.json';
 import analysisEn from '../public/locales/en/analysis.json';
 import timelineEn from '../public/locales/en/timeline.json';
 import notesEn from '../public/locales/en/notes.json';
+import overviewEn from '../public/locales/en/overview.json';
 import tasksEn from '../public/locales/en/tasks.json';
 import chatEn from '../public/locales/en/chat.json';
 import graphEn from '../public/locales/en/graph.json';
@@ -39,7 +40,7 @@ const namespaces: Record<string, Record<string, unknown>> = {
   search: searchEn, activity: activityEn, whiteboard: whiteboardEn,
   tour: tourEn, playbooks: playbooksEn, import: importEn, trash: trashEn,
   investigations: investigationsEn, toast: toastEn,
-  evidence: evidenceEn, identities: identitiesEn, products: productsEn,
+  evidence: evidenceEn, identities: identitiesEn, products: productsEn, overview: overviewEn,
 };
 
 for (const [ns, data] of Object.entries(namespaces)) {
