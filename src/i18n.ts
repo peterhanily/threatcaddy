@@ -30,6 +30,7 @@ import graphEn from '../public/locales/en/graph.json';
 import importEn from '../public/locales/en/import.json';
 import integrationsEn from '../public/locales/en/integrations.json';
 import notesEn from '../public/locales/en/notes.json';
+import overviewEn from '../public/locales/en/overview.json';
 import playbooksEn from '../public/locales/en/playbooks.json';
 import searchEn from '../public/locales/en/search.json';
 import settingsEn from '../public/locales/en/settings.json';
@@ -136,7 +137,7 @@ const ALL_NS = [
   'common', 'labels', 'dates', 'analysis', 'encryption',
   'activity', 'agent', 'caddyshack', 'chat', 'dashboard',
   'evidence', 'identities', 'products', 'exec', 'graph', 'import', 'integrations', 'investigations',
-  'notes', 'playbooks', 'search', 'settings', 'tasks',
+  'notes', 'overview', 'playbooks', 'search', 'settings', 'tasks',
   'timeline', 'toast', 'tour', 'trash', 'whiteboard',
 ] as const;
 
@@ -150,7 +151,7 @@ const enResources = isStandalone ? {
   caddyshack: caddyshackEn, chat: chatEn, dashboard: dashboardEn,
   evidence: evidenceEn, identities: identitiesEn, products: productsEn,
   exec: execEn, graph: graphEn, import: importEn, integrations: integrationsEn,
-  investigations: investigationsEn, notes: notesEn, playbooks: playbooksEn,
+  investigations: investigationsEn, notes: notesEn, overview: overviewEn, playbooks: playbooksEn,
   search: searchEn, settings: settingsEn, tasks: tasksEn, timeline: timelineEn,
   toast: toastEn, tour: tourEn, trash: trashEn, whiteboard: whiteboardEn,
 } : {

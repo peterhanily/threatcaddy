@@ -99,7 +99,7 @@ function isEditingView(view: string): boolean {
 
 /** The sidebar's name for the view a teammate reports; an unknown view (a newer client) has none. */
 const VIEW_LABEL_KEYS: Record<string, string> = {
-  dashboard: 'sidebar.dashboard', investigations: 'sidebar.investigations', notes: 'sidebar.notes', editor: 'sidebar.notes',
+  dashboard: 'sidebar.dashboard', investigations: 'sidebar.investigations', overview: 'sidebar.overview', notes: 'sidebar.notes', editor: 'sidebar.notes',
   tasks: 'sidebar.tasks', timeline: 'sidebar.timeline', whiteboard: 'sidebar.whiteboards', evidence: 'sidebar.evidence',
   products: 'sidebar.products', 'ioc-stats': 'sidebar.iocs', iocs: 'sidebar.iocs', identities: 'sidebar.identities',
   graph: 'sidebar.graph', activity: 'sidebar.activity', chat: 'sidebar.caddyAI', caddyshack: 'sidebar.caddyShack',
